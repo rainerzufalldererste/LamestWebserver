@@ -43,7 +43,9 @@ namespace LamestWebserver
         {
             //default constructor
             date = DateTime.Now.DayOfWeek.ToString().Substring(0,3) + ", " + DateTime.Now.Day + " " + Months[DateTime.Now.Month] + " " + DateTime.Now.Year + " " + 
-                DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"; //Tue, 21 Apr 2015 22:51:19 GMT
+                DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"; //Tue, 21 Apr 2015 22:51:19 GMT        
+
+
         }
 
 

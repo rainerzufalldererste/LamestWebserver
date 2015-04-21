@@ -58,7 +58,7 @@ namespace LamestWebserver
                 if(bytes == 0)
                 {
                     Console.WriteLine("An error occured! ");
-                    break;
+                    //break;
                 }
 
                 UTF8Encoding enc = new UTF8Encoding();
