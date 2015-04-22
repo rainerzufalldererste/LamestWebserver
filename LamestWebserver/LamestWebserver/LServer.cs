@@ -67,45 +67,61 @@ namespace LamestWebserver
                     //break;
                 }
 
-                UTF8Encoding enc = new UTF8Encoding();
 
-                string msg_ = enc.GetString(msg, 0, 4096);
-
-                Console.WriteLine("\n" + msg_ + "\n");
-
-                HTTP_Packet htp = new HTTP_Packet(msg_);
-
-                NetworkStream ns = client.GetStream();
-
-                byte[] buffer;
-
-                /*if (htp.version != "HTTP/1.1")
+                try
                 {
-                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.0", status = "505 HTTP Version not supported", data = "" };
-                    buffer = enc.GetBytes(htp.getPackage());
-                    ns.Write(buffer, 0, buffer.Length);
-                }
-                else
-                {
-                    */
-                    if(System.IO.File.Exists("./web" + htp.data))
+                    UTF8Encoding enc = new UTF8Encoding();
+
+                    string msg_ = enc.GetString(msg, 0, 4096);
+
+                    Console.WriteLine("\n" + msg_ + "\n");
+
+                    HTTP_Packet htp = new HTTP_Packet(msg_);
+
+                    NetworkStream ns = client.GetStream();
+
+                    byte[] buffer;
+
+                    /*if (htp.version != "HTTP/1.1")
                     {
-                        string s = System.IO.File.ReadAllText("./web" + htp.data);
-                        HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
-                        buffer = enc.GetBytes(htp_.getPackage());
+                        HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.0", status = "505 HTTP Version not supported", data = "" };
+                        buffer = enc.GetBytes(htp.getPackage());
                         ns.Write(buffer, 0, buffer.Length);
-
-                        Console.WriteLine(htp_.getPackage());
                     }
                     else
                     {
-                        HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "404 Not Found", data = "", contentLength = 0 };
-                        buffer = enc.GetBytes(htp_.getPackage());
-                        ns.Write(buffer, 0, buffer.Length);
+                        */
 
-                        Console.WriteLine(htp_.getPackage());
+                    try
+                    {
+                        if (System.IO.File.Exists("./web" + htp.data))
+                        {
+                            string s = System.IO.File.ReadAllText("./web" + htp.data);
+                            HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
+                            buffer = enc.GetBytes(htp_.getPackage());
+                            ns.Write(buffer, 0, buffer.Length);
+
+                            Console.WriteLine(htp_.getPackage());
+                        }
+                        else
+                        {
+                            HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "404 Not Found", data = "", contentLength = 0 };
+                            buffer = enc.GetBytes(htp_.getPackage());
+                            ns.Write(buffer, 0, buffer.Length);
+
+                            Console.WriteLine(htp_.getPackage());
+                        }
                     }
-                //}
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("I HATE CLIENTS AND STUFF!!! " + e.Message);
+                    }
+                    //}
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine("nope. " + e.Message);
+                }
             }
         }
         
