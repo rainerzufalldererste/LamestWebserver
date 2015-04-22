@@ -119,7 +119,18 @@ namespace LamestWebserver
 
                     string msg_ = enc.GetString(msg, 0, 4096);
 
-                    Console.WriteLine("\n" + msg_ + "\n");
+                    int index = 0;
+
+                    for (int i = 0; i < msg_.Length; i++ )
+                    {
+                        if((int)msg_[i] == '\0')
+                        {
+                            index= i;
+                            break;
+                        }
+                    }
+
+                    Console.WriteLine(msg_.Substring(0,index));
 
                     HTTP_Packet htp = new HTTP_Packet(msg_);
 
@@ -141,8 +152,19 @@ namespace LamestWebserver
 
                     try
                     {
+                        if (htp.data == "")
+                        {
+                            HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "501 Not Implemented", data = "<title>Error 501: Not Implemented</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 501: Not Implemented!</h1><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
+                            htp_.contentLength = enc.GetBytes(htp_.data).Length;
+                            buffer = enc.GetBytes(htp_.getPackage());
+                            ns.Write(buffer, 0, buffer.Length);
 
-                        if (htp.data[htp.data.Length - 1] == '\\' || htp.data[htp.data.Length - 1] == '/')
+                            string sx = htp_.getPackage();
+                            if (sx.Length > 500)
+                            { sx = sx.Substring(0, 500) + "..."; }
+                            Console.WriteLine(sx);
+                        }
+                        else if (htp.data[htp.data.Length - 1] == '\\' || htp.data[htp.data.Length - 1] == '/')
                         {
                             if (System.IO.File.Exists(folder + htp.data + "index.html"))
                             {
@@ -151,7 +173,10 @@ namespace LamestWebserver
                                 buffer = enc.GetBytes(htp_.getPackage());
                                 ns.Write(buffer, 0, buffer.Length);
 
-                                Console.WriteLine(htp_.getPackage());
+                                string sx = htp_.getPackage();
+                                if (sx.Length > 500)
+                                { sx = sx.Substring(0, 500) + "..."; }
+                                Console.WriteLine(sx);
                             }
                             else
                             {
@@ -160,7 +185,10 @@ namespace LamestWebserver
                                 buffer = enc.GetBytes(htp_.getPackage());
                                 ns.Write(buffer, 0, buffer.Length);
 
-                                Console.WriteLine(htp_.getPackage());
+                                string sx = htp_.getPackage();
+                                if (sx.Length > 500)
+                                { sx = sx.Substring(0, 500) + "..."; }
+                                Console.WriteLine(sx);
                             }
                         }
                         else
@@ -172,7 +200,10 @@ namespace LamestWebserver
                                 buffer = enc.GetBytes(htp_.getPackage());
                                 ns.Write(buffer, 0, buffer.Length);
 
-                                Console.WriteLine(htp_.getPackage());
+                                string sx = htp_.getPackage();
+                                if (sx.Length > 500)
+                                { sx = sx.Substring(0, 500) + "..."; }
+                                Console.WriteLine(sx);
                             }
                             else
                             {
@@ -181,7 +212,10 @@ namespace LamestWebserver
                                 buffer = enc.GetBytes(htp_.getPackage());
                                 ns.Write(buffer, 0, buffer.Length);
 
-                                Console.WriteLine(htp_.getPackage());
+                                string sx = htp_.getPackage();
+                                if (sx.Length > 500)
+                                { sx = sx.Substring(0, 500) + "..."; }
+                                Console.WriteLine(sx);
                             }
                         }
                     }
