@@ -14,18 +14,24 @@ namespace LamestWebserver
         TcpListener tcpList;
         List<Thread> threads = new List<Thread>();
 
-        public LServer()
+        public LServer(int port)
         {
-            this.tcpList = new TcpListener(IPAddress.Any, 8080);
+            this.tcpList = new TcpListener(IPAddress.Any, port);
             Thread t = new Thread(new ThreadStart(ListenAndStuff));
             t.Start();
         }
 
         private void ListenAndStuff()
         {
-            this.tcpList.Start();
+            try
+            {
+                this.tcpList.Start();
 
-            while(true)
+            }
+            catch (Exception e) { Console.WriteLine("I Hate Servers! OTHA PORTZ! " + e.Message); return; };
+
+
+            while (true)
             {
                 TcpClient tcpClient = this.tcpList.AcceptTcpClient();
                 threads.Add(new Thread(new ParameterizedThreadStart(DoStuff)));
@@ -82,19 +88,19 @@ namespace LamestWebserver
                 else
                 {
                     */
-                    if(System.IO.File.Exists("." + htp.data))
+                    if(System.IO.File.Exists("./web/" + htp.data))
                     {
-                        string s = System.IO.File.ReadAllText("." + htp.data);
-                        HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLenght = enc.GetBytes(s).Length };
-                        buffer = enc.GetBytes(htp.getPackage());
+                        string s = System.IO.File.ReadAllText("./web/" + htp.data);
+                        HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
+                        buffer = enc.GetBytes(htp_.getPackage());
                         ns.Write(buffer, 0, buffer.Length);
 
                         Console.WriteLine(htp_.getPackage());
                     }
                     else
                     {
-                        HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "404 Not Found", data = "", contentLenght = 0 };
-                        buffer = enc.GetBytes(htp.getPackage());
+                        HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "404 Not Found", data = "", contentLength = 0 };
+                        buffer = enc.GetBytes(htp_.getPackage());
                         ns.Write(buffer, 0, buffer.Length);
 
                         Console.WriteLine(htp_.getPackage());

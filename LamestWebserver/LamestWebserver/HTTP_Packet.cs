@@ -14,7 +14,7 @@ namespace LamestWebserver
         public string date/* = DateTime.Now.DayOfWeek.ToString().Substring(0,3) + ", " + DateTime.Now.Day + " " + Months[DateTime.Now.Month] + " " + DateTime.Now.Year + " " + 
             DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"*/; //Tue, 21 Apr 2015 22:51:19 GMT
         public string modified = DateTime.Now.ToString();
-        public int contentLenght = 0;
+        public int contentLength = 0;
         public string contentType = "text/html";
         public string data = "<body>i am empty :(</body>";
 
@@ -26,11 +26,11 @@ namespace LamestWebserver
             ret += version + " " + status + "\r\n";
             ret += "Host: localhost\r\n";
             ret += "Date: " + date + "\r\n"; //do we need that?!
-            //ret += "Server: LamestWebserver (LamOS)\r\n";
+            ret += "Server: LamestWebserver (LamOS)\r\n";
             
             //ret += "Last-Modified: " + modified + "\r\n"; //do we need that?!
-            ret += "Content-Length: " + contentLenght + "\r\n";
-            ret += "Content-Type: text/html; charset=UTF-8\r\n\r\n";//"Content-Length: " + contentLenght + "\r\n";
+            ret += "Content-Type: text/html; charset=UTF-8\r\n";//"Content-Length: " + contentLenght + "\r\n";
+            ret += "Content-Length: " + contentLength + "\r\n\r\n\r\n";
             //ret += "Keep-Alive: timeout=10, max=100\r\n";
             //ret += "Connection: Keep-Alive\r\n";
             //ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n\r\n";
