@@ -69,7 +69,7 @@ namespace LamestWebserver
                 this.tcpList.Start();
 
             }
-            catch (Exception e) { Console.WriteLine("I Hate Servers! OTHA PORTZ! " + e.Message); return; };
+            catch (Exception e) { Console.WriteLine("I Hate Servers! \nTHRY OTHA PORTZ! " + e.Message); return; };
 
 
             while (running)
@@ -79,7 +79,7 @@ namespace LamestWebserver
                     TcpClient tcpClient = this.tcpList.AcceptTcpClient();
                     threads.Add(new Thread(new ParameterizedThreadStart(DoStuff)));
                     threads[threads.Count - 1].Start((object)tcpClient);
-                    Console.WriteLine("Client Connected!...");
+                    Program.addToStuff("Client Connected!...");
                 }
                 catch (Exception e) { Console.WriteLine("Something failed... Yes. " + e.Message); };
             }
@@ -102,13 +102,13 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("An error occured! " + e.Message);
+                    Program.addToStuff("An error occured! " + e.Message);
                     break;
                 }
 
                 if (bytes == 0)
                 {
-                    Console.WriteLine("An error occured! ");
+                    Program.addToStuff("An error occured! ");
                     //break;
                 }
 
@@ -130,7 +130,7 @@ namespace LamestWebserver
                         }
                     }
 
-                    Console.WriteLine(msg_.Substring(0,index));
+                    Program.addToStuff(msg_.Substring(0,index));
 
                     HTTP_Packet htp = new HTTP_Packet(msg_);
 
@@ -162,7 +162,7 @@ namespace LamestWebserver
                             string sx = htp_.getPackage();
                             if (sx.Length > 500)
                             { sx = sx.Substring(0, 500) + "..."; }
-                            Console.WriteLine(sx);
+                            Program.addToStuff(sx);
                         }
                         else if (htp.data[htp.data.Length - 1] == '\\' || htp.data[htp.data.Length - 1] == '/')
                         {
@@ -176,7 +176,7 @@ namespace LamestWebserver
                                 string sx = htp_.getPackage();
                                 if (sx.Length > 500)
                                 { sx = sx.Substring(0, 500) + "..."; }
-                                Console.WriteLine(sx);
+                                Program.addToStuff(sx);
                             }
                             else
                             {
@@ -188,7 +188,7 @@ namespace LamestWebserver
                                 string sx = htp_.getPackage();
                                 if (sx.Length > 500)
                                 { sx = sx.Substring(0, 500) + "..."; }
-                                Console.WriteLine(sx);
+                                Program.addToStuff(sx);
                             }
                         }
                         else
@@ -203,7 +203,7 @@ namespace LamestWebserver
                                 string sx = htp_.getPackage();
                                 if (sx.Length > 500)
                                 { sx = sx.Substring(0, 500) + "..."; }
-                                Console.WriteLine(sx);
+                                Program.addToStuff(sx);
                             }
                             else
                             {
@@ -215,19 +215,19 @@ namespace LamestWebserver
                                 string sx = htp_.getPackage();
                                 if (sx.Length > 500)
                                 { sx = sx.Substring(0, 500) + "..."; }
-                                Console.WriteLine(sx);
+                                Program.addToStuff(sx);
                             }
                         }
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine("I HATE CLIENTS AND STUFF!!! " + e.Message);
+                        Program.addToStuff("I HATE CLIENTS AND STUFF!!! " + e.Message);
                     }
                     //}
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("nope. " + e.Message);
+                    Program.addToStuff("nope. " + e.Message);
                 }
             }
         }

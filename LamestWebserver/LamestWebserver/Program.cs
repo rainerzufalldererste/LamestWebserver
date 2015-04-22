@@ -12,6 +12,9 @@ namespace LamestWebserver
         {
             List<LServer> ports = new List<LServer>();
 
+            System.Threading.Thread outp = new System.Threading.Thread(new System.Threading.ThreadStart(Program.showMsgs));
+            outp.Start();
+
             Console.WriteLine("Happy Server! Today is " + DateTime.Now.ToString() + " if you are wondering why you are using such a strange server...");
             Console.WriteLine();
 
@@ -26,7 +29,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
             }
-            else if(args.Length == 1)
+            else if (args.Length == 1)
             {
                 if (args[0] == "-clean")
                 {
@@ -43,7 +46,7 @@ namespace LamestWebserver
             }
             else
             {
-                for(int i = 0; i < args.Length; i++)
+                for (int i = 0; i < args.Length; i++)
                 {
                     try
                     {
@@ -62,61 +65,188 @@ namespace LamestWebserver
             {
                 string s = Console.ReadLine();
 
-                if(s == "exit")
+                if (s == "exit")
                 {
                     Console.WriteLine("no!");
                     y++;
 
-                    if(y > 2)
+                    if (y > 2)
                     {
                         break;
                     }
                 }
-
-                switch(s)
+                else
                 {
-                    case "ports": { for (int i = 0; i < ports.Count; i++) { Console.WriteLine("Port: " + ports[i].port + " Folder: " + ports[i].folder + " Threads: " + ports[i].getThreadCount()); } };
-                        Console.WriteLine("Done!");
-                        break;
 
-                    case "kill": {
-                        try
-                        {
-                            Console.WriteLine("Port: ");
-                            string id = Console.ReadLine();
-                            for (int i = 0; i < ports.Count; i++)
+                    switch (s)
+                    {
+                        case "ports": { readme = false_; for (int i = 0; i < ports.Count; i++) { Console.WriteLine("Port: " + ports[i].port + " Folder: " + ports[i].folder + " Threads: " + ports[i].getThreadCount()); } };
+                            Console.WriteLine("Done!"); readme = true_;
+                            break;
+
+                        case "kill":
                             {
-                                if (ports[i].port == Int32.Parse(id))
+                                try
                                 {
-                                    ports[i].killMe();
-                                    ports.RemoveAt(i);
-                                    Console.WriteLine("Done!");
-                                    break;
+                                    readme = false_;
+                                    Console.WriteLine("Port: ");
+                                    string id = Console.ReadLine();
+                                    for (int i = 0; i < ports.Count; i++)
+                                    {
+                                        if (ports[i].port == Int32.Parse(id))
+                                        {
+                                            ports[i].killMe();
+                                            ports.RemoveAt(i);
+                                            Console.WriteLine("Done!");
+                                            readme = true_;
+                                            break;
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        catch (Exception e) { Console.WriteLine("Failed!"); }
-                    };
-                        break;
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
 
-                    case "new":
-                        {
-                            try
+                        case "new":
                             {
-                                Console.WriteLine("Port:");
-                                string prt = Console.ReadLine();
-                                Console.WriteLine("Folder: (\".\\web\")");
-                                string fld = Console.ReadLine();
-                                ports.Add(new LServer(Int32.Parse(prt)) { folder = fld });
-                                Console.WriteLine("Done!");
-                            }
-                            catch (Exception e) { Console.WriteLine("Failed!"); }
-                        };
-                        break;
+                                readme = false_;
+                                try
+                                {
+                                    Console.WriteLine("Port:");
+                                    string prt = Console.ReadLine();
+                                    Console.WriteLine("Folder: (\"./web\")");
+                                    string fld = Console.ReadLine();
+                                    ports.Add(new LServer(Int32.Parse(prt)) { folder = fld });
+                                    Console.WriteLine("Done!");
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
 
-                    default: { Console.WriteLine("Hello " + s + "!"); }
-                        break;
+                        case "tstep":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    Console.WriteLine("New TimeStep in ms:");
+                                    string prt = Console.ReadLine();
+                                    cmdsleep = Int32.Parse(prt);
+                                    Console.WriteLine("Done!");
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
+                        case "silent":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    true_ = false;
+                                    Console.WriteLine("silence is now " + (true_?"OFF":"ON"));
+                                    Console.WriteLine("Done!");
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
+                        case "unsilent":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    true_ = true;
+                                    Console.WriteLine("silence is now " + (true_ ? "OFF" : "ON"));
+                                    Console.WriteLine("Done!");
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
+                        case "cls":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    lock (output)
+                                    {
+                                        output = new List<string>();
+                                    }
+                                    Console.WriteLine("Done!");
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
+                        case "help":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    true_ = false;
+                                    Console.WriteLine("ports     -    List all running servers");
+                                    Console.WriteLine("kill      -    Shut a running server off");
+                                    Console.WriteLine("new       -    Create a new server on port x");
+                                    Console.WriteLine("tstep     -    set log refreshing timestep");
+                                    Console.WriteLine("silent    -    hides the log");
+                                    Console.WriteLine("unsilent  -    shows the log");
+                                    Console.WriteLine("cls       -    deletes the log");
+                                    Console.WriteLine("help      -    Displays this list of cmds");
+                                    Console.WriteLine("exit      -    ");
+
+                                    Console.WriteLine();
+                                    Console.WriteLine("Done!");
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
+                        default: { Console.WriteLine("Hello " + s + "!"); }
+                            break;
+                    }
                 }
+            }
+        }
+
+        private static List<string> output = new List<string>();
+        private static int cmdsleep = 300;
+        private static bool readme = true;
+        private static bool true_ = true, false_ = false;
+
+        public static void addToStuff(string s)
+        {
+            lock (output)
+            {
+                output.Add(s);
+            }
+        }
+
+        private static void showMsgs()
+        {
+            while (true)
+            {
+                if (readme)
+                {
+                    while (output.Count > 0)
+                    {
+                        int c = output.Count - 1;
+
+                        for (int i = 0; i < c; i++)
+                        {
+                            Console.WriteLine(output[0]);
+                            output.RemoveAt(0);
+                        }
+                    }
+                }
+
+                System.Threading.Thread.Sleep(cmdsleep);
             }
         }
     }
