@@ -13,7 +13,6 @@ namespace LamestWebserver
 
             Console.WriteLine("Happy Server! Today is " + DateTime.Now.ToString() + " if you are wondering why you are using such a strange server...");
             Console.WriteLine();
-            Console.ReadLine();
 
 
             if (args.Length < 1)
@@ -21,8 +20,8 @@ namespace LamestWebserver
                 try
                 {
 
-                    Console.WriteLine("Please specify ports in param... trying to use 80... i will fail!  - example: \"lws 8080\"");
-                    LServer lserver = new LServer(80);
+                    Console.WriteLine("Please specify ports in param... trying to use 8080... i will fail - or not - yes - true!  - example: \"lws 8080\"");
+                    LServer lserver = new LServer(8080);
                 }
                 catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
             }

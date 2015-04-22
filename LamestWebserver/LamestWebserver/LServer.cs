@@ -88,9 +88,9 @@ namespace LamestWebserver
                 else
                 {
                     */
-                    if(System.IO.File.Exists("./web/" + htp.data))
+                    if(System.IO.File.Exists("./web" + htp.data))
                     {
-                        string s = System.IO.File.ReadAllText("./web/" + htp.data);
+                        string s = System.IO.File.ReadAllText("./web" + htp.data);
                         HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
                         buffer = enc.GetBytes(htp_.getPackage());
                         ns.Write(buffer, 0, buffer.Length);
