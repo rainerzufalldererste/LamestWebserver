@@ -147,6 +147,13 @@ namespace LamestWebserver
                                 {
                                     true_ = false;
                                     Console.WriteLine("silence is now " + (true_?"OFF":"ON"));
+                                    try
+                                    {
+                                        if (outp.ThreadState == System.Threading.ThreadState.Running)
+                                            outp.Abort();
+                                    }
+                                    catch (Exception) { }
+
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e) { Console.WriteLine("Failed!"); }
@@ -161,6 +168,17 @@ namespace LamestWebserver
                                 {
                                     true_ = true;
                                     Console.WriteLine("silence is now " + (true_ ? "OFF" : "ON"));
+
+                                    try
+                                    {
+                                        if (outp.ThreadState == System.Threading.ThreadState.Aborted)
+                                        {
+                                            outp = new System.Threading.Thread(new System.Threading.ThreadStart(Program.showMsgs));
+                                            outp.Start();
+                                        }
+                                    }
+                                    catch (Exception) { }
+
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e) { Console.WriteLine("Failed!"); }
@@ -209,6 +227,54 @@ namespace LamestWebserver
                             readme = true_;
                             break;
 
+                        case "frefresh":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    Console.WriteLine("Port: ");
+                                    string id = Console.ReadLine();
+                                    for (int i = 0; i < ports.Count; i++)
+                                    {
+                                        if (ports[i].port == Int32.Parse(id))
+                                        {
+                                            lock (ports[i].cache)
+                                            {
+                                                ports[i].cache = new List<PreloadedFile>();
+                                                Console.WriteLine("Done!");
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
+                        case "cachesz":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    Console.WriteLine("Port: ");
+                                    string id = Console.ReadLine();
+                                    for (int i = 0; i < ports.Count; i++)
+                                    {
+                                        if (ports[i].port == Int32.Parse(id))
+                                        {
+                                            Console.WriteLine("Maximum Size: ");
+                                            ports[i].max_cache = Int32.Parse(Console.ReadLine());
+                                            Console.WriteLine("Done!");
+                                            break;
+                                        }
+                                    }
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
                         case "help":
                             {
                                 readme = false_;
@@ -223,6 +289,8 @@ namespace LamestWebserver
                                     Console.WriteLine("unsilent  -    shows the log");
                                     Console.WriteLine("cls       -    deletes the log");
                                     Console.WriteLine("autocls   -    deletes the log automatically at sizes");
+                                    Console.WriteLine("frefresh  -    refreshes the file cache of a port");
+                                    Console.WriteLine("cachesz   -    sets the maximum file cache of a port");
                                     Console.WriteLine("help      -    Displays this list of cmds");
                                     Console.WriteLine("exit      -    ");
 
@@ -268,13 +336,25 @@ namespace LamestWebserver
                 {
                     while (output.Count > 0)
                     {
-                        int c = output.Count - 1;
-
-                        for (int i = 0; i < c; i++)
+                        try
                         {
-                            Console.WriteLine(output[0]);
-                            output.RemoveAt(0);
+                            int c = output.Count - 1;
+
+                            for (int i = 0; i < c; i++)
+                            {
+                                if (readme)
+                                {
+                                    Console.WriteLine(output[0]);
+
+                                    output.RemoveAt(0);
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
                         }
+                        catch (Exception) { }
                     }
                 }
 
