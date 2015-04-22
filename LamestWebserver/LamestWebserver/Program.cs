@@ -25,7 +25,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
             }
-            else
+            else if(args.Length == 1)
             {
                 try
                 {
@@ -33,10 +33,39 @@ namespace LamestWebserver
                 }
                 catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
             }
+            else
+            {
+                int i = 8080;
+                while (true)
+                {
+                    try
+                    {
+                        LServer lserver = new LServer(i++); //does stuff
+                    }
+                    catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
+                }
+            }
 
             Console.WriteLine();
             Console.WriteLine("Your Server did party all night like it was 1885 - and died.");
-            Console.ReadLine();
+
+            int y = 0;
+
+            while (true)
+            {
+                string s = Console.ReadLine();
+
+                if(s == "exit")
+                {
+                    Console.WriteLine("no!");
+                    y++;
+
+                    if(y > 2)
+                    {
+                        break;
+                    }
+                }
+            }
         }
     }
 }
