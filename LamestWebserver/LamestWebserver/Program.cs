@@ -184,6 +184,31 @@ namespace LamestWebserver
                             readme = true_;
                             break;
 
+
+                        case "autocls":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    Console.WriteLine("At which size should the log be cut off");
+                                    autocls = Int32.Parse(Console.ReadLine());
+                                    Console.WriteLine("the deleted size");
+                                    autocls_s = Int32.Parse(Console.ReadLine());
+
+                                    if (autocls_s > autocls)
+                                    {
+                                        int tmp = autocls;
+                                        autocls = autocls_s;
+                                        autocls_s = tmp;
+                                        Console.WriteLine("you messed things up - swapping values!");
+                                    }
+                                    Console.WriteLine("Done!");
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
                         case "help":
                             {
                                 readme = false_;
@@ -197,6 +222,7 @@ namespace LamestWebserver
                                     Console.WriteLine("silent    -    hides the log");
                                     Console.WriteLine("unsilent  -    shows the log");
                                     Console.WriteLine("cls       -    deletes the log");
+                                    Console.WriteLine("autocls   -    deletes the log automatically at sizes");
                                     Console.WriteLine("help      -    Displays this list of cmds");
                                     Console.WriteLine("exit      -    ");
 
@@ -219,12 +245,18 @@ namespace LamestWebserver
         private static int cmdsleep = 300;
         private static bool readme = true;
         private static bool true_ = true, false_ = false;
+        private static int autocls = 1000, autocls_s = 250;
 
         public static void addToStuff(string s)
         {
             lock (output)
             {
                 output.Add(s);
+
+                if(output.Count > autocls)
+                {
+                    output.RemoveRange(0, autocls_s);
+                }
             }
         }
 
