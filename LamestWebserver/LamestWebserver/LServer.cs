@@ -87,7 +87,9 @@ namespace LamestWebserver
 
                 while (i < threads.Count)
                 {
-                    if (threads[i].ThreadState == ThreadState.Running || threads[i].ThreadState == ThreadState.Unstarted)
+                    if (threads[i].ThreadState == ThreadState.Running ||
+                        threads[i].ThreadState == ThreadState.Unstarted ||
+                        threads[i].ThreadState == ThreadState.AbortRequested)
                     {
                         i++;
                     }
