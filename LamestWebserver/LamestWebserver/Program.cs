@@ -13,7 +13,7 @@ namespace LamestWebserver
             List<LServer> ports = new List<LServer>();
 
             System.Threading.Thread outp = new System.Threading.Thread(new System.Threading.ThreadStart(Program.showMsgs));
-            outp.Start();
+            //outp.Start();
 
             Console.WriteLine("Happy Server! Today is " + DateTime.Now.ToString() + " if you are wondering why you are using such a strange server...");
             Console.WriteLine();
@@ -46,11 +46,11 @@ namespace LamestWebserver
             }
             else
             {
-                for (int i = 0; i < args.Length; i++)
+                for (int i = 0; i < args.Length; i+=2)
                 {
                     try
                     {
-                        ports.Add(new LServer(Int32.Parse(args[i]))); //does stuff
+                        ports.Add(new LServer(Int32.Parse(args[i])) { folder = args[i+1] }); //does stuff
                     }
                     catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
                 }

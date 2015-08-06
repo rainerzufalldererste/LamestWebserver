@@ -17,6 +17,8 @@ namespace LamestWebserver
         public int contentLength = 0;
         public string contentType = "text/html";
         public string data = "<body>i am empty :(</body>";
+        public List<string> additional = new List<string>();
+        public bool short_ = false;
 
 
         public string getPackage()
@@ -30,7 +32,7 @@ namespace LamestWebserver
             
             //ret += "Last-Modified: " + modified + "\r\n"; //do we need that?!
             ret += "Content-Type: text/html; charset=UTF-8\r\n";//"Content-Length: " + contentLenght + "\r\n";
-            ret += "Content-Length: " + contentLength + "\r\n\r\n\r\n";
+            ret += "Content-Length: " + contentLength + (short_?"\r\n\r\n":"\r\n\r\n\r\n");
             //ret += "Keep-Alive: timeout=10, max=100\r\n";
             //ret += "Connection: Keep-Alive\r\n";
             //ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n\r\n";
@@ -43,9 +45,7 @@ namespace LamestWebserver
         {
             //default constructor
             date = DateTime.Now.DayOfWeek.ToString().Substring(0,3) + ", " + DateTime.Now.Day + " " + Months[DateTime.Now.Month] + " " + DateTime.Now.Year + " " + 
-                DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"; //Tue, 21 Apr 2015 22:51:19 GMT        
-
-
+                DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"; //Tue, 21 Apr 2015 22:51:19 GMT
         }
 
 
@@ -85,6 +85,27 @@ namespace LamestWebserver
                     }
 
                     data = linput[i].Substring(3, index - 3);
+
+                    for (int k = 0; k < data.Length - 1; k++)
+                    {
+                        if(data[k] == '?')
+                        {
+                            string add = data.Substring(k + 1);
+                            data = data.Remove(k);
+                            add = add.Replace("%20", " ").Replace("%22", "\"");
+
+                            for(int it = 0; it < add.Length - 1; it++)
+                            {
+                                if(add[it] == '&')
+                                {
+                                    additional.Add(add.Substring(0, it));
+                                    add = add.Remove(0, it + 1);
+                                }
+                            }
+
+                            additional.Add(add);
+                        }
+                    }
 
                     version = linput[i].Substring(index + 1);
                     found = true;
