@@ -152,6 +152,7 @@ namespace LamestWebserver
         {
             TcpClient client = (TcpClient)obj;
             NetworkStream nws = client.GetStream();
+            UTF8Encoding enc = new UTF8Encoding();
 
             byte[] msg = new byte[4096];
             int bytes;
@@ -177,7 +178,6 @@ namespace LamestWebserver
 
                 try
                 {
-                    UTF8Encoding enc = new UTF8Encoding();
 
                     string msg_ = enc.GetString(msg, 0, 4096);
 
@@ -265,7 +265,7 @@ namespace LamestWebserver
                                     htp.data = htp.data.Replace(" /", ""); 
                                     string s;
 
-                                    if(htp.additional.Count == 2 && htp.additional[0] == "copy")
+                                    if(htp.additional.Count == 3 && htp.additional[0] == "copy")
                                     {
                                         s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COPY complete Folder to " + htp.additional[1] + "</h1><br>";
 
@@ -392,7 +392,7 @@ namespace LamestWebserver
 
                                         s += s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
                                     }
-                                    else if (htp.additional[0] == "img")
+                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "img")
                                     {
                                         Rectangle screenSize = Screen.PrimaryScreen.Bounds;
                                         Bitmap target = new Bitmap(screenSize.Width,screenSize.Height);

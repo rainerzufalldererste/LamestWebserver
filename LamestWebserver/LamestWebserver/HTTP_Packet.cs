@@ -18,7 +18,7 @@ namespace LamestWebserver
         public string contentType = "text/html";
         public string data = "<body>i am empty :(</body>";
         public List<string> additional = new List<string>();
-        public bool short_ = false;
+        public bool short_ = true;
 
 
         public string getPackage()
