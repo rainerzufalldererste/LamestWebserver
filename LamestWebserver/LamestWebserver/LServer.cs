@@ -267,7 +267,7 @@ namespace LamestWebserver
 
                                     if(htp.additional.Count == 3 && htp.additional[0] == "copy")
                                     {
-                                        s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COPY complete Folder to " + htp.additional[1] + "</h1><br>";
+                                        s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COPY file " + htp.additional[1] + " to " + htp.additional[2] + "</h1><br>";
 
                                         try
                                         {
