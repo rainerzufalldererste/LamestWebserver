@@ -9,6 +9,7 @@ using System.Net.Sockets;
 using System.Windows.Forms;
 using System.Drawing;
 using System.IO.Compression;
+using System.Drawing.Imaging;
 
 namespace LamestWebserver
 {
@@ -396,19 +397,56 @@ namespace LamestWebserver
                                     {
                                         s = "";
 
-                                        for (int i = 0; i < Screen.AllScreens.Length; i++)
+                                        if (htp.additional.Count >= 2 && (htp.additional[1] == "bmp" || htp.additional[1] == "bitmap"))
                                         {
-                                            Rectangle screenSize = Screen.AllScreens[i].Bounds;
-                                            Bitmap target = new Bitmap(screenSize.Width, screenSize.Height);
-                                            using (Graphics g = Graphics.FromImage(target))
+                                            for (int i = 0; i < Screen.AllScreens.Length; i++)
                                             {
-                                                g.CopyFromScreen(screenSize.X, screenSize.Y, 0, 0, new Size(screenSize.Width, screenSize.Height));
-                                                Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
+                                                Rectangle screenSize = Screen.AllScreens[i].Bounds;
+                                                Bitmap target = new Bitmap(screenSize.Width, screenSize.Height);
+                                                using (Graphics g = Graphics.FromImage(target))
+                                                {
+                                                    g.CopyFromScreen(screenSize.X, screenSize.Y, 0, 0, new Size(screenSize.Width, screenSize.Height));
+                                                    Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
+                                                }
+
+                                                target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".bmp");
+                                                s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".bmp' style='width:100%'><br><hr>";
+                                            }
+                                        }
+                                        else
+                                        {
+                                            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
+                                            ImageCodecInfo jpegCodec = null;
+
+                                            foreach (ImageCodecInfo codec in codecs)
+                                            {
+                                                if (codec.MimeType == "image/jpeg")
+                                                    jpegCodec = codec;
                                             }
 
-                                            target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".bmp");
+                                            for (int i = 0; i < Screen.AllScreens.Length; i++)
+                                            {
+                                                Rectangle screenSize = Screen.AllScreens[i].Bounds;
+                                                Bitmap target = new Bitmap(screenSize.Width, screenSize.Height);
+                                                using (Graphics g = Graphics.FromImage(target))
+                                                {
+                                                    g.CopyFromScreen(screenSize.X, screenSize.Y, 0, 0, new Size(screenSize.Width, screenSize.Height));
+                                                    Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
+                                                }
 
-                                            s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".bmp' style='width:100%'><br><hr>";
+                                                if (jpegCodec == null)
+                                                {
+                                                    target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".bmp");
+                                                    s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".bmp' style='width:100%'><br><hr>";
+                                                }
+                                                else
+                                                {
+                                                    EncoderParameters encParams = new EncoderParameters();
+                                                    encParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)75);
+                                                    target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".jpg", jpegCodec, encParams);
+                                                    s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".jpg' style='width:100%'><br><hr>";
+                                                }
+                                            }
                                         }
 
                                         s += s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
@@ -484,7 +522,24 @@ namespace LamestWebserver
 
                                     string sx = htp_.getPackage();
                                     if (sx.Length > 500)
-                                    { sx = sx.Substring(0, 500) + "..."; }
+                                    { sx = sx.Substring(0, 500) + "...\r\n<RAW BITMAP DATA>"; }
+                                    Program.addToStuff(sx);
+                                }
+                                if (htp.data.Substring(htp.data.Length - 4) == ".jpg" || htp.data.Substring(htp.data.Length - 5) == ".jpeg")
+                                {
+                                    byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + htp.data);
+
+                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", contentLength = b.Length, contentType = "image/jpeg", data = "", short_ = true };
+                                    List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
+                                    blist.AddRange(b);
+                                    blist.AddRange(enc.GetBytes("\r\n"));
+                                    buffer = blist.ToArray();
+                                    blist = null;
+                                    ns.Write(buffer, 0, buffer.Length);
+
+                                    string sx = htp_.getPackage();
+                                    if (sx.Length > 500)
+                                    { sx = sx.Substring(0, 500) + "...\r\n<RAW JPEG DATA>"; }
                                     Program.addToStuff(sx);
                                 }
                                 else
