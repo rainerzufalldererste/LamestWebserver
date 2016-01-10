@@ -265,7 +265,7 @@ namespace LamestWebserver
                                     htp.data = htp.data.Replace(" /", ""); 
                                     string s;
 
-                                    if(htp.additional.Count == 3 && htp.additional[0] == "copy")
+                                    if (htp.additional.Count == 3 && htp.additional[0] == "copy")
                                     {
                                         s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COPY file " + htp.additional[1] + " to " + htp.additional[2] + "</h1><br>";
 
@@ -273,7 +273,7 @@ namespace LamestWebserver
                                         {
                                             System.IO.File.Copy(htp.additional[1], htp.additional[2]);
                                         }
-                                        catch(Exception)
+                                        catch (Exception)
                                         {
                                             s += "<br><h2 style='color:#ff0000'>!FAILED!</h2><br>";
                                         }
@@ -292,7 +292,7 @@ namespace LamestWebserver
 
                                         try
                                         {
-                                            if(!processIsInit)
+                                            if (!processIsInit)
                                             {
                                                 process = new System.Diagnostics.Process();
                                                 process.StartInfo.RedirectStandardInput = true;
@@ -337,7 +337,7 @@ namespace LamestWebserver
                                             process.Close();
                                             s = "<h2>closed old cmd prompt!</h2>";
                                         }
-                                        catch(Exception)
+                                        catch (Exception)
                                         {
                                             s = "<h2>failed to close old cmd prompt!</h2>";
                                         }
@@ -394,17 +394,22 @@ namespace LamestWebserver
                                     }
                                     else if (htp.additional.Count >= 1 && htp.additional[0] == "img")
                                     {
-                                        Rectangle screenSize = Screen.PrimaryScreen.Bounds;
-                                        Bitmap target = new Bitmap(screenSize.Width,screenSize.Height);
-                                        using(Graphics g = Graphics.FromImage(target))
+                                        s = "";
+
+                                        for (int i = 0; i < Screen.AllScreens.Length; i++)
                                         {
-                                            g.CopyFromScreen(0, 0, 0, 0, new Size(screenSize.Width, screenSize.Height));
-                                            Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10,10)));
+                                            Rectangle screenSize = Screen.AllScreens[i].Bounds;
+                                            Bitmap target = new Bitmap(screenSize.Width, screenSize.Height);
+                                            using (Graphics g = Graphics.FromImage(target))
+                                            {
+                                                g.CopyFromScreen(screenSize.X, screenSize.Y, 0, 0, new Size(screenSize.Width, screenSize.Height));
+                                                Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
+                                            }
+
+                                            target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".bmp");
+
+                                            s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".bmp' style='width:100%'><br><hr>";
                                         }
-
-                                        target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen.bmp");
-
-                                        s = "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0,3) + "/screen.bmp' style='width:100%'><br>";
 
                                         s += s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
                                     }
