@@ -30,6 +30,7 @@ namespace LamestWebserver
         public System.IO.TextWriter writer;
         public System.IO.TextReader reader;
         public string lastCmdOut = "";
+        public static List<UserData> users = new List<UserData>();
 
         public LServer(int port)
         {
@@ -197,7 +198,7 @@ namespace LamestWebserver
 
                     HTTP_Packet htp = new HTTP_Packet(msg_);
 
-                    NetworkStream ns = client.GetStream();
+                    //NetworkStream nws = client.GetStream();
 
                     byte[] buffer;
 
@@ -205,7 +206,7 @@ namespace LamestWebserver
                     {
                         HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.0", status = "505 HTTP Version not supported", data = "" };
                         buffer = enc.GetBytes(htp.getPackage());
-                        ns.Write(buffer, 0, buffer.Length);
+                        nws.Write(buffer, 0, buffer.Length);
                     }
                     else
                     {
@@ -217,10 +218,10 @@ namespace LamestWebserver
                     {
                         if (htp.data == "")
                         {
-                            HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "501 Not Implemented", data = "<title>Error 501: Not Implemented</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 501: Not Implemented!</h1><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
+                            HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "501 Not Implemented", data = "<title>Error 501: Not Implemented</title><body style='background-color: #f0f0f2;'><div style='font-family: sanws-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 501: Not Implemented!</h1><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that meanws. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
                             htp_.contentLength = enc.GetBytes(htp_.data).Length;
                             buffer = enc.GetBytes(htp_.getPackage());
-                            ns.Write(buffer, 0, buffer.Length);
+                            nws.Write(buffer, 0, buffer.Length);
 
                             string sx = htp_.getPackage();
                             if (sx.Length > 500)
@@ -234,7 +235,7 @@ namespace LamestWebserver
                             {
                                 HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = cache[cachid].contents, contentLength = cache[cachid].size };
                                 buffer = enc.GetBytes(htp_.getPackage());
-                                ns.Write(buffer, 0, buffer.Length);
+                                nws.Write(buffer, 0, buffer.Length);
 
                                 string sx = htp_.getPackage();
                                 if (sx.Length > 500)
@@ -248,7 +249,7 @@ namespace LamestWebserver
                                     string s = System.IO.File.ReadAllText(folder + htp.data + "index.html");
                                     HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
                                     buffer = enc.GetBytes(htp_.getPackage());
-                                    ns.Write(buffer, 0, buffer.Length);
+                                    nws.Write(buffer, 0, buffer.Length);
 
                                     if (cache.Count < max_cache)
                                     {
@@ -262,7 +263,6 @@ namespace LamestWebserver
                                 }
                                 else if (this.openPaths)
                                 {
-
                                     htp.data = htp.data.Replace(" /", ""); 
                                     string s;
 
@@ -289,7 +289,7 @@ namespace LamestWebserver
                                             }
                                         }
 
-                                        s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>CONSOLE: " + (htp.additional.Count > 1 ? htp.additional[1] : "&ltempty&gt") + "</h1><br>";
+                                        s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COnwsOLE: " + (htp.additional.Count > 1 ? htp.additional[1] : "&ltempty&gt") + "</h1><br>";
 
                                         try
                                         {
@@ -322,7 +322,7 @@ namespace LamestWebserver
 
                                             process.StandardOutput.Read(_buffer, 0, 0xfffff);
 
-                                            s += "<div style='font-family: Consolas, Courier-New, monospace;'>" + (lastCmdOut.Length > 0 ? "<p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" : "") + "<p>" + (new string(_buffer)).Replace("<", "&lt").Replace("<", "&gt").Replace("\r\n", "<br>") + "</p><br>";
+                                            s += "<div style='font-family: Conwsolas, Courier-New, monospace;'>" + (lastCmdOut.Length > 0 ? "<p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" : "") + "<p>" + (new string(_buffer)).Replace("<", "&lt").Replace("<", "&gt").Replace("\r\n", "<br>") + "</p><br>";
                                             lastCmdOut += (new string(_buffer)).Replace("<", "&lt").Replace("<", "&gt").Replace("\r\n", "<br>");
                                             //process.WaitForExit();
                                         }
@@ -368,8 +368,7 @@ namespace LamestWebserver
                                     else if (htp.additional.Count >= 1 && htp.additional[0] == "cleanup")
                                     {
                                         lastCmdOut = "[cleaned up]";
-                                        s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
-
+                                        s = "<div style='font-family: Conwsolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
                                     }
                                     else if (htp.additional.Count == 3 && htp.additional[0] == "zip")
                                     {
@@ -391,7 +390,7 @@ namespace LamestWebserver
 
                                         t.Start();
 
-                                        s += s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
+                                        s += s = "<div style='font-family: Conwsolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
                                     }
                                     else if (htp.additional.Count >= 1 && htp.additional[0] == "img")
                                     {
@@ -401,11 +400,11 @@ namespace LamestWebserver
                                         {
                                             for (int i = 0; i < Screen.AllScreens.Length; i++)
                                             {
-                                                Rectangle screenSize = Screen.AllScreens[i].Bounds;
-                                                Bitmap target = new Bitmap(screenSize.Width, screenSize.Height);
+                                                Rectangle screenwsize = Screen.AllScreens[i].Bounds;
+                                                Bitmap target = new Bitmap(screenwsize.Width, screenwsize.Height);
                                                 using (Graphics g = Graphics.FromImage(target))
                                                 {
-                                                    g.CopyFromScreen(screenSize.X, screenSize.Y, 0, 0, new Size(screenSize.Width, screenSize.Height));
+                                                    g.CopyFromScreen(screenwsize.X, screenwsize.Y, 0, 0, new Size(screenwsize.Width, screenwsize.Height));
                                                     Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
                                                 }
 
@@ -426,11 +425,11 @@ namespace LamestWebserver
 
                                             for (int i = 0; i < Screen.AllScreens.Length; i++)
                                             {
-                                                Rectangle screenSize = Screen.AllScreens[i].Bounds;
-                                                Bitmap target = new Bitmap(screenSize.Width, screenSize.Height);
+                                                Rectangle screenwsize = Screen.AllScreens[i].Bounds;
+                                                Bitmap target = new Bitmap(screenwsize.Width, screenwsize.Height);
                                                 using (Graphics g = Graphics.FromImage(target))
                                                 {
-                                                    g.CopyFromScreen(screenSize.X, screenSize.Y, 0, 0, new Size(screenSize.Width, screenSize.Height));
+                                                    g.CopyFromScreen(screenwsize.X, screenwsize.Y, 0, 0, new Size(screenwsize.Width, screenwsize.Height));
                                                     Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
                                                 }
 
@@ -449,7 +448,96 @@ namespace LamestWebserver
                                             }
                                         }
 
-                                        s += s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
+                                        s += s = "<div style='font-family: Conwsolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
+                                    }
+                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "login")
+                                    {
+                                        s = "";
+
+                                        if(htp.additional.Count == 3)
+                                        {
+                                            if(System.IO.File.Exists("usr"))
+                                            {
+                                                s = "[reading from usr file]<br>";
+
+                                                try
+                                                {
+                                                    string[] contents = System.IO.File.ReadAllLines("usr");
+
+                                                    for (int i = 0; i < contents.Length; i+=3)
+                                                    {
+                                                        if(contents[i] == htp.additional[1] && contents[i+1] == htp.additional[2])
+                                                        {
+                                                            s += "<h1>LOGIN OK: [RANK '" + contents[i+2] + "']</h1><br>";
+
+                                                            bool found = false;
+
+                                                            for (int j = 0; j < users.Count; j++)
+                                                            {
+                                                                if(users[j].name == contents[i])
+                                                                {
+                                                                    s += "YOU WERE ALREADY LOGGED IN!<br><br>";
+                                                                    found = true;
+                                                                    UserData u = users[j];
+                                                                    s += "[RANK: " + u.RANK + " -> " + contents[i + 2] + "]<br>";
+                                                                    s += "[LAST LOGINDATE: " + u.loginDate + "]<br>";
+                                                                    s += "[EMDPOINT: " + u.ipaddress.ToString() + "->" + ((IPEndPoint)(client.Client.RemoteEndPoint)).Address.ToString() + "]<br>";
+                                                                    u.RANK = contents[i + 2];
+                                                                    u.loginDate = DateTime.Now;
+                                                                    u.ipaddress = ((IPEndPoint)(client.Client.RemoteEndPoint)).Address;
+                                                                    users[j] = u;
+                                                                    break;
+                                                                }
+                                                            }
+
+                                                            if(!found)
+                                                            {
+                                                                s += "Welcome " + contents[i] + "! This is your first LOGIN this runtime!<br>";
+                                                                s += "[ENDPOINT: " + client.Client.RemoteEndPoint.ToString() + "]";
+
+                                                                UserData u = new UserData();
+                                                                u.name = contents[i];
+                                                                u.RANK = contents[i + 2];
+                                                                u.loginDate = DateTime.Now;
+                                                                u.ipaddress = ((IPEndPoint)(client.Client.RemoteEndPoint)).Address;
+
+                                                                users.Add(u);
+                                                            }
+
+                                                            goto USERLOGINWORKED;
+                                                        }
+                                                    }
+
+                                                    s += "<h1>[INCORRECT LOGIN DATA.]</h1>";
+
+                                                    USERLOGINWORKED:
+                                                    ;
+                                                }
+                                                catch(Exception)
+                                                {
+                                                    s += "[MISCONFIGURED usr FILE. ABORTING.]";
+                                                }
+                                            }
+                                            else
+                                            {
+                                                s = "usr file not existing! creating new usr file.<br>";
+
+                                                try
+                                                {
+                                                    System.IO.File.WriteAllText("usr", "admin\r\nadmin\r\nA");
+                                                }
+                                                catch(Exception)
+                                                {
+                                                    s += "FILE CREATION FAILED! <br>";
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            s += "<h1>Incorrect Paramteter Format!</h1><br>try ?login&username&password";
+                                        }
+
+                                        s += "<br><br>";
                                     }
                                     else
                                     {
@@ -468,10 +556,10 @@ namespace LamestWebserver
                                         s += "<a href='" + f + "'>" + f + "</a><br>";
                                     }
 
-                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = "<title>Overview</title><body style='background-color: #f0f0f2;margin: 0;padding: 0;'><div style='font-family: sans-serif;padding: 50px;margin: 2.5%;margin-left: 10%;margin-right: 10%;background-color: #fff;border-radius: 1em;'><p>" + s + "</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
+                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = "<title>Overview</title><body style='background-color: #f0f0f2;margin: 0;padding: 0;'><div style='font-family: sanws-serif;padding: 50px;margin: 2.5%;margin-left: 10%;margin-right: 10%;background-color: #fff;border-radius: 1em;'><p>" + s + "</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
                                     htp_.contentLength = enc.GetBytes(htp_.data).Length;
                                     buffer = enc.GetBytes(htp_.getPackage());
-                                    ns.Write(buffer, 0, buffer.Length);
+                                    nws.Write(buffer, 0, buffer.Length);
 
                                     string sx = htp_.getPackage();
                                     if (sx.Length > 500)
@@ -480,10 +568,10 @@ namespace LamestWebserver
                                 }
                                 else
                                 {
-                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "403 Forbidden", data = "<title>Error 403: Forbidden</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 403: Forbidden!</h1><p>Access denied to: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
+                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "403 Forbidden", data = "<title>Error 403: Forbidden</title><body style='background-color: #f0f0f2;'><div style='font-family: sanws-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 403: Forbidden!</h1><p>Access denied to: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that meanws. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
                                     htp_.contentLength = enc.GetBytes(htp_.data).Length;
                                     buffer = enc.GetBytes(htp_.getPackage());
-                                    ns.Write(buffer, 0, buffer.Length);
+                                    nws.Write(buffer, 0, buffer.Length);
 
                                     string sx = htp_.getPackage();
                                     if (sx.Length > 500)
@@ -499,7 +587,7 @@ namespace LamestWebserver
                             {
                                 HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = cache[cachid].contents, contentLength = cache[cachid].size };
                                 buffer = enc.GetBytes(htp_.getPackage());
-                                ns.Write(buffer, 0, buffer.Length);
+                                nws.Write(buffer, 0, buffer.Length);
 
                                 string sx = htp_.getPackage();
                                 if (sx.Length > 500)
@@ -518,7 +606,7 @@ namespace LamestWebserver
                                     blist.AddRange(enc.GetBytes("\r\n"));
                                     buffer = blist.ToArray();
                                     blist = null;
-                                    ns.Write(buffer, 0, buffer.Length);
+                                    nws.Write(buffer, 0, buffer.Length);
 
                                     string sx = htp_.getPackage();
                                     if (sx.Length > 500)
@@ -535,7 +623,7 @@ namespace LamestWebserver
                                     blist.AddRange(enc.GetBytes("\r\n"));
                                     buffer = blist.ToArray();
                                     blist = null;
-                                    ns.Write(buffer, 0, buffer.Length);
+                                    nws.Write(buffer, 0, buffer.Length);
 
                                     string sx = htp_.getPackage();
                                     if (sx.Length > 500)
@@ -547,7 +635,7 @@ namespace LamestWebserver
                                     string s = System.IO.File.ReadAllText(folder + htp.data);
                                     HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
                                     buffer = enc.GetBytes(htp_.getPackage());
-                                    ns.Write(buffer, 0, buffer.Length);
+                                    nws.Write(buffer, 0, buffer.Length);
 
                                     if (cache.Count < max_cache)
                                     {
@@ -562,10 +650,10 @@ namespace LamestWebserver
                             }
                             else
                             {
-                                HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "404 Not Found", data = "<title>Error 404: Page Not Found</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 404: Page Not Found!</h1><p>The following file could not be found: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
+                                HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "404 Not Found", data = "<title>Error 404: Page Not Found</title><body style='background-color: #f0f0f2;'><div style='font-family: sanws-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 404: Page Not Found!</h1><p>The following file could not be found: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that meanws. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
                                 htp_.contentLength = enc.GetBytes(htp_.data).Length;
                                 buffer = enc.GetBytes(htp_.getPackage());
-                                ns.Write(buffer, 0, buffer.Length);
+                                nws.Write(buffer, 0, buffer.Length);
 
                                 string sx = htp_.getPackage();
                                 if (sx.Length > 500)
@@ -601,5 +689,13 @@ namespace LamestWebserver
             this.contents = contents;
             this.size = size;
         }
+    }
+
+    public struct UserData
+    {
+        public string name;
+        public string RANK;
+        public IPAddress ipaddress;
+        public DateTime loginDate;
     }
 }

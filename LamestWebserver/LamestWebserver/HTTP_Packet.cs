@@ -100,6 +100,7 @@ namespace LamestWebserver
                                 {
                                     additional.Add(add.Substring(0, it));
                                     add = add.Remove(0, it + 1);
+                                    it = 0;
                                 }
                             }
 
