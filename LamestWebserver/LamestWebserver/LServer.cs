@@ -30,7 +30,7 @@ namespace LamestWebserver
         public System.IO.TextWriter writer;
         public System.IO.TextReader reader;
         public string lastCmdOut = "";
-        public static List<UserData> users = new List<UserData>();
+        public List<UserData> users = new List<UserData>();
 
         public LServer(int port)
         {
@@ -218,7 +218,7 @@ namespace LamestWebserver
                     {
                         if (htp.data == "")
                         {
-                            HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "501 Not Implemented", data = "<title>Error 501: Not Implemented</title><body style='background-color: #f0f0f2;'><div style='font-family: sanws-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 501: Not Implemented!</h1><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that meanws. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
+                            HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "501 Not Implemented", data = "<title>Error 501: Not Implemented</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 501: Not Implemented!</h1><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
                             htp_.contentLength = enc.GetBytes(htp_.data).Length;
                             buffer = enc.GetBytes(htp_.getPackage());
                             nws.Write(buffer, 0, buffer.Length);
@@ -268,32 +268,96 @@ namespace LamestWebserver
 
                                     if (htp.additional.Count == 3 && htp.additional[0] == "copy")
                                     {
-                                        s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COPY file " + htp.additional[1] + " to " + htp.additional[2] + "</h1><br>";
+                                        s = "";
 
-                                        try
+                                        if (isIPLoggedIn(client))
                                         {
-                                            System.IO.File.Copy(htp.additional[1], htp.additional[2]);
-                                        }
-                                        catch (Exception)
-                                        {
-                                            s += "<br><h2 style='color:#ff0000'>!FAILED!</h2><br>";
+                                            s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COPY file " + htp.additional[1] + " to " + htp.additional[2] + "</h1><br>";
+
+                                            try
+                                            {
+                                                System.IO.File.Copy(htp.additional[1], htp.additional[2]);
+                                            }
+                                            catch (Exception)
+                                            {
+                                                s += "<br><h2 style='color:#ff0000'>!FAILED!</h2><br>";
+                                            }
                                         }
                                     }
                                     else if (htp.additional.Count >= 1 && htp.additional[0] == "cmd")
                                     {
-                                        if (htp.additional.Count > 2)
+                                        s = "";
+
+                                        if (isIPLoggedIn(client))
                                         {
-                                            for (int i = 2; i < htp.additional.Count; i++)
+                                            if (htp.additional.Count > 2)
                                             {
-                                                htp.additional[1] += "&" + htp.additional[i];
+                                                for (int i = 2; i < htp.additional.Count; i++)
+                                                {
+                                                    htp.additional[1] += "&" + htp.additional[i];
+                                                }
+                                            }
+
+                                            s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COnsOLE: " + (htp.additional.Count > 1 ? htp.additional[1] : "&ltempty&gt") + "</h1><br>";
+
+                                            try
+                                            {
+                                                if (!processIsInit)
+                                                {
+                                                    process = new System.Diagnostics.Process();
+                                                    process.StartInfo.RedirectStandardInput = true;
+                                                    process.StartInfo.RedirectStandardOutput = true;
+                                                    process.StartInfo.RedirectStandardError = true;
+                                                    process.StartInfo.FileName = "C:\\Windows\\System32\\cmd.exe";
+                                                    process.StartInfo.UseShellExecute = false;
+
+                                                    if (htp.additional.Count > 1)
+                                                    {
+                                                        //process.StartInfo.Arguments = "/C " + htp.additional[1];
+                                                    }
+
+                                                    process.Start();
+                                                    processIsInit = true;
+                                                }
+
+                                                if (htp.additional.Count > 1)
+                                                {
+                                                    process.StandardInput.WriteLine(htp.additional[1]);
+                                                }
+
+                                                char[] _buffer = new char[0xfffff];
+
+                                                Thread.Sleep(500);
+
+                                                process.StandardOutput.Read(_buffer, 0, 0xfffff);
+
+                                                s += "<div style='font-family: Consolas, Courier-New, monospace;'>" + (lastCmdOut.Length > 0 ? "<p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" : "") + "<p>" + (new string(_buffer)).Replace("<", "&lt").Replace("<", "&gt").Replace("\r\n", "<br>") + "</p><br>";
+                                                lastCmdOut += (new string(_buffer)).Replace("<", "&lt").Replace("<", "&gt").Replace("\r\n", "<br>");
+                                                //process.WaitForExit();
+                                            }
+                                            catch (Exception)
+                                            {
+                                                s += "<br><h2 style='color:#ff0000'>!FAILED!</h2><br>";
                                             }
                                         }
+                                    }
+                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "recmd")
+                                    {
+                                        s = "";
 
-                                        s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COnwsOLE: " + (htp.additional.Count > 1 ? htp.additional[1] : "&ltempty&gt") + "</h1><br>";
-
-                                        try
+                                        if (isIPLoggedIn(client))
                                         {
-                                            if (!processIsInit)
+                                            try
+                                            {
+                                                process.Close();
+                                                s = "<h2>closed old cmd prompt!</h2>";
+                                            }
+                                            catch (Exception)
+                                            {
+                                                s = "<h2>failed to close old cmd prompt!</h2>";
+                                            }
+
+                                            try
                                             {
                                                 process = new System.Diagnostics.Process();
                                                 process.StartInfo.RedirectStandardInput = true;
@@ -302,186 +366,152 @@ namespace LamestWebserver
                                                 process.StartInfo.FileName = "C:\\Windows\\System32\\cmd.exe";
                                                 process.StartInfo.UseShellExecute = false;
 
-                                                if (htp.additional.Count > 1)
-                                                {
-                                                    //process.StartInfo.Arguments = "/C " + htp.additional[1];
-                                                }
-
                                                 process.Start();
                                                 processIsInit = true;
-                                            }
 
-                                            if (htp.additional.Count > 1)
+                                                //process.WaitForExit();
+                                                s += "<br><h2 style='color:#55ff33'>!CREATED NEW CMD-PROMPT!</h2><br>";
+                                            }
+                                            catch (Exception)
                                             {
-                                                process.StandardInput.WriteLine(htp.additional[1]);
+                                                s += "<br><h2 style='color:#ff0000'>!FAILED TO CREATE NEW CMD-PROMPT!</h2><br>";
                                             }
-
-                                            char[] _buffer = new char[0xfffff];
-
-                                            Thread.Sleep(500);
-
-                                            process.StandardOutput.Read(_buffer, 0, 0xfffff);
-
-                                            s += "<div style='font-family: Conwsolas, Courier-New, monospace;'>" + (lastCmdOut.Length > 0 ? "<p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" : "") + "<p>" + (new string(_buffer)).Replace("<", "&lt").Replace("<", "&gt").Replace("\r\n", "<br>") + "</p><br>";
-                                            lastCmdOut += (new string(_buffer)).Replace("<", "&lt").Replace("<", "&gt").Replace("\r\n", "<br>");
-                                            //process.WaitForExit();
                                         }
-                                        catch (Exception)
-                                        {
-                                            s += "<br><h2 style='color:#ff0000'>!FAILED!</h2><br>";
-                                        }
-                                    }
-                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "recmd")
-                                    {
-                                        try
-                                        {
-                                            process.Close();
-                                            s = "<h2>closed old cmd prompt!</h2>";
-                                        }
-                                        catch (Exception)
-                                        {
-                                            s = "<h2>failed to close old cmd prompt!</h2>";
-                                        }
-
-                                        try
-                                        {
-                                            process = new System.Diagnostics.Process();
-                                            process.StartInfo.RedirectStandardInput = true;
-                                            process.StartInfo.RedirectStandardOutput = true;
-                                            process.StartInfo.RedirectStandardError = true;
-                                            process.StartInfo.FileName = "C:\\Windows\\System32\\cmd.exe";
-                                            process.StartInfo.UseShellExecute = false;
-
-                                            process.Start();
-                                            processIsInit = true;
-
-                                            //process.WaitForExit();
-                                            s += "<br><h2 style='color:#55ff33'>!CREATED NEW CMD-PROMPT!</h2><br>";
-                                        }
-                                        catch (Exception)
-                                        {
-                                            s += "<br><h2 style='color:#ff0000'>!FAILED TO CREATE NEW CMD-PROMPT!</h2><br>";
-                                        }
-
 
                                     }
                                     else if (htp.additional.Count >= 1 && htp.additional[0] == "cleanup")
                                     {
-                                        lastCmdOut = "[cleaned up]";
-                                        s = "<div style='font-family: Conwsolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
+                                        s = "";
+
+                                        if (isIPLoggedIn(client))
+                                        {
+                                            lastCmdOut = "[cleaned up]";
+                                            s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
+                                        }
                                     }
                                     else if (htp.additional.Count == 3 && htp.additional[0] == "zip")
                                     {
-                                        s = "<h1>Zipping: [" + htp.additional[1] + "] to [" + htp.additional[2] + "]</h1><br>";
+                                        s = "";
 
-                                        System.Threading.Thread t = new Thread(new ThreadStart(() =>
+                                        if (isIPLoggedIn(client))
                                         {
-                                            try
+                                            s = "<h1>Zipping: [" + htp.additional[1] + "] to [" + htp.additional[2] + "]</h1><br>";
+
+                                            System.Threading.Thread t = new Thread(new ThreadStart(() =>
                                             {
-                                                ZipFile.CreateFromDirectory(htp.additional[1], htp.additional[2]);
-                                                lastCmdOut += "<br><br><h1 style='color:#55ff22'>ZIPPING SUCESS! [" + htp.additional[1] + "] to [" + htp.additional[2] + "]</h1><br><br>";
+                                                try
+                                                {
+                                                    ZipFile.CreateFromDirectory(htp.additional[1], htp.additional[2]);
+                                                    lastCmdOut += "<br><br><h1 style='color:#55ff22'>ZIPPING SUCESS! [" + htp.additional[1] + "] to [" + htp.additional[2] + "]</h1><br><br>";
+                                                }
+                                                catch (Exception e)
+                                                {
+                                                    lastCmdOut += "<br><br><h1>ZIPPING FAILED style='color:#ff5522'" + e.Message.ToString() + "</h1><br><br>";
+                                                }
                                             }
-                                            catch (Exception e)
-                                            {
-                                                lastCmdOut += "<br><br><h1>ZIPPING FAILED style='color:#ff5522'" + e.Message.ToString() + "</h1><br><br>";
-                                            }
+                                            ));
+
+                                            t.Start();
+
+                                            s += s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
                                         }
-                                        ));
-
-                                        t.Start();
-
-                                        s += s = "<div style='font-family: Conwsolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
                                     }
                                     else if (htp.additional.Count >= 1 && htp.additional[0] == "img")
                                     {
                                         s = "";
 
-                                        if (htp.additional.Count >= 2 && (htp.additional[1] == "bmp" || htp.additional[1] == "bitmap"))
+                                        if (isIPLoggedIn(client))
                                         {
-                                            for (int i = 0; i < Screen.AllScreens.Length; i++)
+
+                                            if (htp.additional.Count >= 2 && (htp.additional[1] == "bmp" || htp.additional[1] == "bitmap"))
                                             {
-                                                Rectangle screenwsize = Screen.AllScreens[i].Bounds;
-                                                Bitmap target = new Bitmap(screenwsize.Width, screenwsize.Height);
-                                                using (Graphics g = Graphics.FromImage(target))
+                                                for (int i = 0; i < Screen.AllScreens.Length; i++)
                                                 {
-                                                    g.CopyFromScreen(screenwsize.X, screenwsize.Y, 0, 0, new Size(screenwsize.Width, screenwsize.Height));
-                                                    Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
-                                                }
+                                                    Rectangle screensize = Screen.AllScreens[i].Bounds;
+                                                    Bitmap target = new Bitmap(screensize.Width, screensize.Height);
+                                                    using (Graphics g = Graphics.FromImage(target))
+                                                    {
+                                                        g.CopyFromScreen(screensize.X, screensize.Y, 0, 0, new Size(screensize.Width, screensize.Height));
+                                                        Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
+                                                    }
 
-                                                target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".bmp");
-                                                s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".bmp' style='width:100%'><br><hr>";
-                                            }
-                                        }
-                                        else
-                                        {
-                                            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
-                                            ImageCodecInfo jpegCodec = null;
-
-                                            foreach (ImageCodecInfo codec in codecs)
-                                            {
-                                                if (codec.MimeType == "image/jpeg")
-                                                    jpegCodec = codec;
-                                            }
-
-                                            for (int i = 0; i < Screen.AllScreens.Length; i++)
-                                            {
-                                                Rectangle screenwsize = Screen.AllScreens[i].Bounds;
-                                                Bitmap target = new Bitmap(screenwsize.Width, screenwsize.Height);
-                                                using (Graphics g = Graphics.FromImage(target))
-                                                {
-                                                    g.CopyFromScreen(screenwsize.X, screenwsize.Y, 0, 0, new Size(screenwsize.Width, screenwsize.Height));
-                                                    Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
-                                                }
-
-                                                if (jpegCodec == null)
-                                                {
                                                     target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".bmp");
                                                     s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".bmp' style='width:100%'><br><hr>";
                                                 }
-                                                else
+                                            }
+                                            else
+                                            {
+                                                ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
+                                                ImageCodecInfo jpegCodec = null;
+
+                                                foreach (ImageCodecInfo codec in codecs)
                                                 {
-                                                    EncoderParameters encParams = new EncoderParameters();
-                                                    encParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)75);
-                                                    target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".jpg", jpegCodec, encParams);
-                                                    s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".jpg' style='width:100%'><br><hr>";
+                                                    if (codec.MimeType == "image/jpeg")
+                                                        jpegCodec = codec;
+                                                }
+
+                                                for (int i = 0; i < Screen.AllScreens.Length; i++)
+                                                {
+                                                    Rectangle screensize = Screen.AllScreens[i].Bounds;
+                                                    Bitmap target = new Bitmap(screensize.Width, screensize.Height);
+                                                    using (Graphics g = Graphics.FromImage(target))
+                                                    {
+                                                        g.CopyFromScreen(screensize.X, screensize.Y, 0, 0, new Size(screensize.Width, screensize.Height));
+                                                        Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
+                                                    }
+
+                                                    if (jpegCodec == null)
+                                                    {
+                                                        target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".bmp");
+                                                        s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".bmp' style='width:100%'><br><hr>";
+                                                    }
+                                                    else
+                                                    {
+                                                        EncoderParameters encParams = new EncoderParameters();
+                                                        encParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)75);
+                                                        target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".jpg", jpegCodec, encParams);
+                                                        s += "<img src='/" + System.IO.Directory.GetCurrentDirectory().Remove(0, 3) + "/screen" + i + ".jpg' style='width:100%'><br><hr>";
+                                                    }
+
+                                                    target = null;
                                                 }
                                             }
-                                        }
 
-                                        s += s = "<div style='font-family: Conwsolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
+                                            s += s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
+                                        }
                                     }
                                     else if (htp.additional.Count >= 1 && htp.additional[0] == "login")
                                     {
                                         s = "";
 
-                                        if(htp.additional.Count == 3)
+                                        if (htp.additional.Count == 3)
                                         {
-                                            if(System.IO.File.Exists("usr"))
+                                            if (System.IO.File.Exists("usr" + port))
                                             {
                                                 s = "[reading from usr file]<br>";
 
                                                 try
                                                 {
-                                                    string[] contents = System.IO.File.ReadAllLines("usr");
+                                                    string[] contents = System.IO.File.ReadAllLines("usr" + port);
 
-                                                    for (int i = 0; i < contents.Length; i+=3)
+                                                    for (int i = 0; i < contents.Length; i += 3)
                                                     {
-                                                        if(contents[i] == htp.additional[1] && contents[i+1] == htp.additional[2])
+                                                        if (contents[i] == htp.additional[1] && contents[i + 1] == htp.additional[2])
                                                         {
-                                                            s += "<h1>LOGIN OK: [RANK '" + contents[i+2] + "']</h1><br>";
+                                                            s += "<h1>LOGIN OK: [RANK '" + contents[i + 2] + "']</h1><br>";
 
                                                             bool found = false;
 
                                                             for (int j = 0; j < users.Count; j++)
                                                             {
-                                                                if(users[j].name == contents[i])
+                                                                if (users[j].name == contents[i])
                                                                 {
                                                                     s += "YOU WERE ALREADY LOGGED IN!<br><br>";
                                                                     found = true;
                                                                     UserData u = users[j];
                                                                     s += "[RANK: " + u.RANK + " -> " + contents[i + 2] + "]<br>";
                                                                     s += "[LAST LOGINDATE: " + u.loginDate + "]<br>";
-                                                                    s += "[EMDPOINT: " + u.ipaddress.ToString() + "->" + ((IPEndPoint)(client.Client.RemoteEndPoint)).Address.ToString() + "]<br>";
+                                                                    s += "[IP: " + u.ipaddress.ToString() + "->" + ((IPEndPoint)(client.Client.RemoteEndPoint)).Address.ToString() + "]<br>";
                                                                     u.RANK = contents[i + 2];
                                                                     u.loginDate = DateTime.Now;
                                                                     u.ipaddress = ((IPEndPoint)(client.Client.RemoteEndPoint)).Address;
@@ -490,16 +520,17 @@ namespace LamestWebserver
                                                                 }
                                                             }
 
-                                                            if(!found)
+                                                            if (!found)
                                                             {
-                                                                s += "Welcome " + contents[i] + "! This is your first LOGIN this runtime!<br>";
-                                                                s += "[ENDPOINT: " + client.Client.RemoteEndPoint.ToString() + "]";
+                                                                s += "Welcome " + contents[i] + "! You are now logged in!<br>";
+                                                                s += "[IP: " + ((IPEndPoint)(client.Client.RemoteEndPoint)).Address + "]";
 
                                                                 UserData u = new UserData();
                                                                 u.name = contents[i];
                                                                 u.RANK = contents[i + 2];
                                                                 u.loginDate = DateTime.Now;
                                                                 u.ipaddress = ((IPEndPoint)(client.Client.RemoteEndPoint)).Address;
+                                                                u.associatedData = new List<AssocByFileUserData>();
 
                                                                 users.Add(u);
                                                             }
@@ -513,20 +544,22 @@ namespace LamestWebserver
                                                     USERLOGINWORKED:
                                                     ;
                                                 }
-                                                catch(Exception)
+                                                catch (Exception)
                                                 {
                                                     s += "[MISCONFIGURED usr FILE. ABORTING.]";
                                                 }
                                             }
                                             else
                                             {
-                                                s = "usr file not existing! creating new usr file.<br>";
+                                                s = "usr file not existing! creating new usr file...<br>";
 
                                                 try
                                                 {
-                                                    System.IO.File.WriteAllText("usr", "admin\r\nadmin\r\nA");
+                                                    System.IO.File.WriteAllText("usr" + port, "admin\r\nadmin\r\nA");
+
+                                                    s += "please configure your usr file before using.";
                                                 }
-                                                catch(Exception)
+                                                catch (Exception)
                                                 {
                                                     s += "FILE CREATION FAILED! <br>";
                                                 }
@@ -539,24 +572,49 @@ namespace LamestWebserver
 
                                         s += "<br><br>";
                                     }
+                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "logout")
+                                    {
+                                        s = "TRYING TO LOG OUT...<br><br>";
+                                        int loggedoutusers = 0;
+
+                                        for (int i = users.Count - 1; i >= 0; i--)
+                                        {
+                                            if(users[i].ipaddress == ((IPEndPoint)(client.Client.RemoteEndPoint)).Address)
+                                            {
+                                                s += "Logging out user '" + users[i].name + "'.<br>";
+                                                users.RemoveAt(i);
+                                                loggedoutusers++;
+                                            }
+                                        }
+
+                                        s += "<br>" + loggedoutusers + " Users were logged out!<br><br>";
+                                    }
                                     else
                                     {
                                         s = "<h1>Contents: [" + folder + htp.data + "] </h1><br>";
                                     }
 
-                                    string[] stuff = System.IO.Directory.GetDirectories(folder + htp.data);
-                                    foreach (string f in stuff)
+                                    if (isIPLoggedIn(client))
                                     {
-                                        s += "<a href='" + f + "/'>" + f + "/" + "</a><br>";
+                                        string[] stuff = System.IO.Directory.GetDirectories(folder + htp.data);
+
+                                        foreach (string f in stuff)
+                                        {
+                                            s += "<a href='" + f + "/'>" + f + "/" + "</a><br>";
+                                        }
+
+                                        stuff = System.IO.Directory.GetFiles(folder + htp.data);
+                                        foreach (string f in stuff)
+                                        {
+                                            s += "<a href='" + f + "'>" + f + "</a><br>";
+                                        }
+                                    }
+                                    else
+                                    {
+                                        s += "[YOU HAVE TO BE LOGGED IN TO VIEW THIS CONTENT]";
                                     }
 
-                                    stuff = System.IO.Directory.GetFiles(folder + htp.data);
-                                    foreach (string f in stuff)
-                                    {
-                                        s += "<a href='" + f + "'>" + f + "</a><br>";
-                                    }
-
-                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = "<title>Overview</title><body style='background-color: #f0f0f2;margin: 0;padding: 0;'><div style='font-family: sanws-serif;padding: 50px;margin: 2.5%;margin-left: 10%;margin-right: 10%;background-color: #fff;border-radius: 1em;'><p>" + s + "</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
+                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = "<title>Overview</title><body style='background-color: #f0f0f2;margin: 0;padding: 0;'><div style='font-family: sans-serif;padding: 50px;margin: 2.5%;margin-left: 10%;margin-right: 10%;background-color: #fff;border-radius: 1em;'><p>" + s + "</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
                                     htp_.contentLength = enc.GetBytes(htp_.data).Length;
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
@@ -568,7 +626,7 @@ namespace LamestWebserver
                                 }
                                 else
                                 {
-                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "403 Forbidden", data = "<title>Error 403: Forbidden</title><body style='background-color: #f0f0f2;'><div style='font-family: sanws-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 403: Forbidden!</h1><p>Access denied to: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that meanws. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
+                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "403 Forbidden", data = "<title>Error 403: Forbidden</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 403: Forbidden!</h1><p>Access denied to: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
                                     htp_.contentLength = enc.GetBytes(htp_.data).Length;
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
@@ -608,6 +666,10 @@ namespace LamestWebserver
                                     blist = null;
                                     nws.Write(buffer, 0, buffer.Length);
 
+                                    blist = null;
+                                    buffer = null;
+                                    b = null;
+
                                     string sx = htp_.getPackage();
                                     if (sx.Length > 500)
                                     { sx = sx.Substring(0, 500) + "...\r\n<RAW BITMAP DATA>"; }
@@ -625,6 +687,10 @@ namespace LamestWebserver
                                     blist = null;
                                     nws.Write(buffer, 0, buffer.Length);
 
+                                    blist = null;
+                                    buffer = null;
+                                    b = null;
+
                                     string sx = htp_.getPackage();
                                     if (sx.Length > 500)
                                     { sx = sx.Substring(0, 500) + "...\r\n<RAW JPEG DATA>"; }
@@ -636,6 +702,9 @@ namespace LamestWebserver
                                     HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
+
+                                    buffer = null;
+                                    s = null;
 
                                     if (cache.Count < max_cache)
                                     {
@@ -650,7 +719,7 @@ namespace LamestWebserver
                             }
                             else
                             {
-                                HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "404 Not Found", data = "<title>Error 404: Page Not Found</title><body style='background-color: #f0f0f2;'><div style='font-family: sanws-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 404: Page Not Found!</h1><p>The following file could not be found: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that meanws. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
+                                HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "404 Not Found", data = "<title>Error 404: Page Not Found</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 404: Page Not Found!</h1><p>The following file could not be found: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
                                 htp_.contentLength = enc.GetBytes(htp_.data).Length;
                                 buffer = enc.GetBytes(htp_.getPackage());
                                 nws.Write(buffer, 0, buffer.Length);
@@ -674,7 +743,17 @@ namespace LamestWebserver
                 }
             }
         }
-        
+
+        private bool isIPLoggedIn(TcpClient client)
+        {
+            for (int i = 0; i < users.Count; i++)
+            {
+                if (users[i].ipaddress.Equals(((IPEndPoint)(client.Client.RemoteEndPoint)).Address))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     public struct PreloadedFile
@@ -693,9 +772,53 @@ namespace LamestWebserver
 
     public struct UserData
     {
+        public const string INVALIDNAME = ":invalid:";
         public string name;
         public string RANK;
         public IPAddress ipaddress;
         public DateTime loginDate;
+
+        public List<AssocByFileUserData> associatedData;
+
+        public AssocByFileUserData getFileData(string file)
+        {
+            for (int i = 0; i < associatedData.Count; i++)
+            {
+                if (associatedData[i].file == file)
+                    return associatedData[i];
+            }
+
+            return new AssocByFileUserData() { file = INVALIDNAME };
+        }
+    }
+
+    public struct AssocByFileUserData
+    {
+        public string file;
+        public List<string> hashes { get; private set; }
+        public List<object> datas { get; private set; }
+
+        public object getData(string hash)
+        {
+            for (int i = 0; i < hashes.Count; i++)
+            {
+                if(hashes[i] == hash)
+                    return datas[i];
+            }
+
+            return null;
+        }
+
+        public void setData(string hash, object data)
+        {
+            for (int i = 0; i < hashes.Count; i++)
+            {
+                if (hashes[i] == hash)
+                    datas[i] = data;
+            }
+
+            hashes.Add(hash);
+            datas.Add(data);
+        }
     }
 }
