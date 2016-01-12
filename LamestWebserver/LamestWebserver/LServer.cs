@@ -486,7 +486,7 @@ namespace LamestWebserver
                                     {
                                         s = "";
 
-                                        if (htp.additionalHEAD.Count == 3)
+                                        if (htp.additionalHEAD.Count == 1 && htp.additionalPOST.Count == 2)
                                         {
                                             if (System.IO.File.Exists("usr" + port))
                                             {
@@ -498,7 +498,7 @@ namespace LamestWebserver
 
                                                     for (int i = 0; i < contents.Length; i += 3)
                                                     {
-                                                        if (contents[i] == htp.additionalHEAD[1] && contents[i + 1] == htp.additionalHEAD[2])
+                                                        if (contents[i] == htp.valuesPOST[0] && contents[i + 1] == htp.valuesPOST[1])
                                                         {
                                                             s += "<h1>LOGIN OK: [RANK '" + contents[i + 2] + "']</h1><br>";
 
@@ -539,7 +539,7 @@ namespace LamestWebserver
 
                                                             for (int j = users.Count - 1; j >= 0; j--)
                                                             {
-                                                                if(users[j].ipaddress.Equals(((IPEndPoint)(client.Client.RemoteEndPoint)).Address) && users[j].name != htp.additionalHEAD[1])
+                                                                if (users[j].ipaddress.Equals(((IPEndPoint)(client.Client.RemoteEndPoint)).Address) && users[j].name != htp.valuesPOST[0])
                                                                 {
                                                                     s += "<br><br><b>THIS IP WAS ALSO LOGGED IN AS '" + users[j].name + "' SINCE " + users[j].loginDate + ". THIS USER HAS NOW BEEN LOGGED OFF.</b><br>";
                                                                     users.RemoveAt(j);
@@ -551,6 +551,7 @@ namespace LamestWebserver
                                                     }
 
                                                     s += "<h1>[INCORRECT LOGIN DATA.]</h1>";
+                                                    s += "<h1>Enter your login data here:</h1><br><form action='?login' method='POST'><text>Username</text><br/><input type='text' name='usr' value='' size='70'><br/><br/><text>Password</text><br/><input type='password' name='pw' value='' size='70'><br/><br/><br/><button type='submit' onclick=''>Login</button></form>";
 
                                                     USERLOGINWORKED:
                                                     ;
@@ -558,6 +559,7 @@ namespace LamestWebserver
                                                 catch (Exception)
                                                 {
                                                     s += "[MISCONFIGURED usr FILE. ABORTING.]";
+                                                    s += "<h1>Enter your login data here:</h1><br><form action='?login' method='POST'><text>Username</text><br/><input type='text' name='usr' value='' size='70'><br/><br/><text>Password</text><br/><input type='password' name='pw' value='' size='70'><br/><br/><br/><button type='submit' onclick=''>Login</button></form>";
                                                 }
                                             }
                                             else
@@ -574,11 +576,13 @@ namespace LamestWebserver
                                                 {
                                                     s += "FILE CREATION FAILED! <br>";
                                                 }
+
+                                                s += "<h1>Enter your login data here:</h1><br><form action='?login' method='POST'><text>Username</text><br/><input type='text' name='usr' value='' size='70'><br/><br/><text>Password</text><br/><input type='password' name='pw' value='' size='70'><br/><br/><br/><button type='submit' onclick=''>Login</button></form>";
                                             }
                                         }
                                         else
                                         {
-                                            s += "<h1>Incorrect Paramteter Format!</h1><br>try ?login&username&password";
+                                            s += "<h1>Enter your login data here:</h1><br><form action='?login' method='POST'><text>Username</text><br/><input type='text' name='usr' value='' size='70'><br/><br/><text>Password</text><br/><input type='password' name='pw' value='' size='70'><br/><br/><br/><button type='submit' onclick=''>Login</button></form>";
                                         }
 
                                         s += "<br><br>";

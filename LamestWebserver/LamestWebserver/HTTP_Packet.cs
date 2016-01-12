@@ -56,12 +56,15 @@ namespace LamestWebserver
 
         public HTTP_Packet(string input)
         {
-            List<string> linput = new List<string>();
-            int lindex = 0;
+            /*List<string>*/
+            string[] linput = null;
+            //new List<string>();
+            
+            /*int lindex = 0;
 
             for (int i = 0; i < input.Length - 1; i++)
             {
-                if(input.Substring(i,2) == "\r\n")
+                if(input.Substring(i,2) == "\r\n" || i + 1 >= input.Length)
                 {
                     if(i - lindex - 1 > 0)
                     {
@@ -69,11 +72,13 @@ namespace LamestWebserver
                     }
                     lindex = i + 2;
                 }
-            }
+            }*/
+
+            linput = input.Replace("\0", "").Split(new string[] { "\r\n" }, StringSplitOptions.None);
 
             bool found = false;
 
-            for (int i = 0; i < linput.Count; i++)
+            for (int i = 0; i < linput.Length; i++)
             {
 
                 if(linput[i].Substring(0,"GET ".Length) == "GET ")
@@ -97,6 +102,10 @@ namespace LamestWebserver
                         if(data[k] == '?')
                         {
                             string add = data.Substring(k + 1);
+
+                            if (add[add.Length - 1] == ' ')
+                                add = add.Remove(add.Length - 1);
+
                             data = data.Remove(k);
                             add = add.Replace("%20", " ").Replace("%22", "\"");
 
@@ -124,7 +133,7 @@ namespace LamestWebserver
                                 if (k + 1 < additionalHEAD[j].Length)
                                 {
                                     valuesHEAD[j] = additionalHEAD[j].Substring(k + 1);
-                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k - 1);
+                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k);
                                 }
                             }
                         }
@@ -140,7 +149,7 @@ namespace LamestWebserver
                     type = HTTP_Type.POST;
                     int index = 5;
 
-                    for (int j = 4; j < linput[i].Length; j++)
+                    for (int j = 5; j < linput[i].Length; j++)
                     {
                         if (linput[i][j] == ' ')
                         {
@@ -149,13 +158,17 @@ namespace LamestWebserver
                         }
                     }
 
-                    data = linput[i].Substring(3, index - 3);
+                    data = linput[i].Substring(5, index - 4);
 
                     for (int k = 0; k < data.Length - 1; k++)
                     {
                         if (data[k] == '?')
                         {
                             string add = data.Substring(k + 1);
+
+                            if (add[add.Length - 1] == ' ')
+                                add = add.Remove(add.Length - 1);
+
                             data = data.Remove(k);
                             add = add.Replace("%20", " ").Replace("%22", "\"");
 
@@ -163,27 +176,27 @@ namespace LamestWebserver
                             {
                                 if (add[it] == '&')
                                 {
-                                    additionalPOST.Add(add.Substring(0, it));
-                                    valuesPOST.Add("");
+                                    additionalHEAD.Add(add.Substring(0, it));
+                                    valuesHEAD.Add("");
                                     add = add.Remove(0, it + 1);
                                     it = 0;
                                 }
                             }
 
-                            additionalPOST.Add(add);
+                            additionalHEAD.Add(add);
                         }
                     }
 
-                    for (int j = 0; j < additionalPOST.Count; j++)
+                    for (int j = 0; j < additionalHEAD.Count; j++)
                     {
-                        for (int k = 0; k < additionalPOST[j].Length; k++)
+                        for (int k = 0; k < additionalHEAD[j].Length; k++)
                         {
-                            if(additionalPOST[j][k] == '=')
+                            if(additionalHEAD[j][k] == '=')
                             {
-                                if (k + 1 < additionalPOST[j].Length)
+                                if (k + 1 < additionalHEAD[j].Length)
                                 {
-                                    valuesPOST[j] = additionalPOST[j].Substring(k + 1);
-                                    additionalPOST[j] = additionalPOST[j].Substring(0, k - 1);
+                                    valuesHEAD[j] = additionalHEAD[j].Substring(k + 1);
+                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k);
                                 }
                             }
                         }
@@ -191,6 +204,46 @@ namespace LamestWebserver
 
                     version = linput[i].Substring(index + 1);
                     found = true;
+
+                    for (int j = i; j < linput.Length; j++)
+                    {
+                        if(j > 0)
+                        {
+                            if(linput[j] != "" && linput[j-1] == "")
+                            {
+                                for (int k = j; k < linput.Length; k++)
+                                {
+                                    string[] s = linput[k].Replace("%20", " ").Replace("%22", "\"").Split('&');
+
+                                    for (int l = 0; l < s.Length; l++)
+                                    {
+                                        valuesPOST.Add("");
+                                    }
+
+                                    additionalPOST.AddRange(s);
+                                }
+
+                                goto SEARCHINGFORPOSTBODY_DONE;
+                            }
+                        }
+                    }
+
+                    SEARCHINGFORPOSTBODY_DONE:
+
+                    for (int j = 0; j < additionalPOST.Count; j++)
+                    {
+                        for (int k = 0; k < additionalPOST[j].Length; k++)
+                        {
+                            if (additionalPOST[j][k] == '=')
+                            {
+                                if (k + 1 < additionalPOST[j].Length)
+                                {
+                                    valuesPOST[j] = additionalPOST[j].Substring(k + 1);
+                                    additionalPOST[j] = additionalPOST[j].Substring(0, k);
+                                }
+                            }
+                        }
+                    }
 
                     return;
                 }
