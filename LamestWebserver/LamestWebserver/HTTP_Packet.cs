@@ -86,9 +86,9 @@ namespace LamestWebserver
                     type = HTTP_Type.GET;
                     int index = 4;
 
-                    for(int j = 4; j < linput[i].Length; j++)
+                    for (int j = 4; j < linput[i].Length; j++)
                     {
-                        if(linput[i][j] == ' ')
+                        if (linput[i][j] == ' ')
                         {
                             index = j;
                             break;
@@ -99,7 +99,7 @@ namespace LamestWebserver
 
                     for (int k = 0; k < data.Length - 1; k++)
                     {
-                        if(data[k] == '?')
+                        if (data[k] == '?')
                         {
                             string add = data.Substring(k + 1);
 
@@ -121,6 +121,7 @@ namespace LamestWebserver
                             }
 
                             additionalHEAD.Add(add);
+                            valuesHEAD.Add("");
                         }
                     }
 
@@ -133,7 +134,7 @@ namespace LamestWebserver
                                 if (k + 1 < additionalHEAD[j].Length)
                                 {
                                     valuesHEAD[j] = additionalHEAD[j].Substring(k + 1);
-                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k);
+                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k - 1);
                                 }
                             }
                         }
@@ -158,7 +159,7 @@ namespace LamestWebserver
                         }
                     }
 
-                    data = linput[i].Substring(5, index - 4);
+                    data = linput[i].Substring(4, index - 4);
 
                     for (int k = 0; k < data.Length - 1; k++)
                     {
@@ -184,6 +185,7 @@ namespace LamestWebserver
                             }
 
                             additionalHEAD.Add(add);
+                            valuesHEAD.Add("");
                         }
                     }
 

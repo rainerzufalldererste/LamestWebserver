@@ -55,7 +55,6 @@ namespace LamestWebserver
 
         public void killMe()
         {
-
             running = false;
 
             try
@@ -83,7 +82,7 @@ namespace LamestWebserver
                 catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
                 threads.RemoveAt(0);
 
-                Console.WriteLine("Thread Dead! (" + threads.Count + "/" + i + ") - port: " + port + " - folder: " + folder);
+                Console.WriteLine("Thread Dead! (" + (i - threads.Count) + "/" + i + ") - port: " + port + " - folder: " + folder);
             }
         }
 
@@ -424,7 +423,6 @@ namespace LamestWebserver
 
                                         if (isIPLoggedIn(client))
                                         {
-
                                             if (htp.additionalHEAD.Count >= 2 && (htp.additionalHEAD[1] == "bmp" || htp.additionalHEAD[1] == "bitmap"))
                                             {
                                                 for (int i = 0; i < Screen.AllScreens.Length; i++)
@@ -434,7 +432,7 @@ namespace LamestWebserver
                                                     using (Graphics g = Graphics.FromImage(target))
                                                     {
                                                         g.CopyFromScreen(screensize.X, screensize.Y, 0, 0, new Size(screensize.Width, screensize.Height));
-                                                        Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
+                                                        Cursors.Default.Draw(g, new Rectangle(new Point(Cursor.Position.X - screensize.X, Cursor.Position.Y - screensize.Y), new Size(10, 10)));
                                                     }
 
                                                     target.Save(System.IO.Directory.GetCurrentDirectory() + "/screen" + i + ".bmp");
@@ -459,7 +457,7 @@ namespace LamestWebserver
                                                     using (Graphics g = Graphics.FromImage(target))
                                                     {
                                                         g.CopyFromScreen(screensize.X, screensize.Y, 0, 0, new Size(screensize.Width, screensize.Height));
-                                                        Cursors.Default.Draw(g, new Rectangle(Cursor.Position, new Size(10, 10)));
+                                                        Cursors.Default.Draw(g, new Rectangle(new Point(Cursor.Position.X - screensize.X, Cursor.Position.Y - screensize.Y), new Size(10, 10)));
                                                     }
 
                                                     if (jpegCodec == null)
@@ -611,6 +609,9 @@ namespace LamestWebserver
 
                                     if (isIPLoggedIn(client))
                                     {
+                                        while (htp.data.Length > 0 && htp.data[0] == '/' && folder.Length > 0 && folder[folder.Length - 1] == '/')
+                                            htp.data = htp.data.Remove(0,1);
+
                                         string[] stuff = System.IO.Directory.GetDirectories(folder + htp.data);
 
                                         foreach (string f in stuff)
