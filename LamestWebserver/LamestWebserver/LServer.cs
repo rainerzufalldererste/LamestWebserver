@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.IO.Compression;
 using System.Drawing.Imaging;
+using LamestScriptHook;
 
 namespace LamestWebserver
 {
@@ -231,6 +232,7 @@ namespace LamestWebserver
                         else if (htp.data[htp.data.Length - 1] == '\\' || htp.data[htp.data.Length - 1] == '/')
                         {
                             int cachid = this.cacheHas(folder + htp.data + "index.html");
+
                             if (cachid > -1)
                             {
                                 HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = cache[cachid].contents, contentLength = cache[cachid].size };
@@ -266,17 +268,17 @@ namespace LamestWebserver
                                     htp.data = htp.data.Replace(" /", ""); 
                                     string s;
 
-                                    if (htp.additional.Count == 3 && htp.additional[0] == "copy")
+                                    if (htp.additionalHEAD.Count == 3 && htp.additionalHEAD[0] == "copy")
                                     {
                                         s = "";
 
                                         if (isIPLoggedIn(client))
                                         {
-                                            s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COPY file " + htp.additional[1] + " to " + htp.additional[2] + "</h1><br>";
+                                            s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COPY file " + htp.additionalHEAD[1] + " to " + htp.additionalHEAD[2] + "</h1><br>";
 
                                             try
                                             {
-                                                System.IO.File.Copy(htp.additional[1], htp.additional[2]);
+                                                System.IO.File.Copy(htp.additionalHEAD[1], htp.additionalHEAD[2]);
                                             }
                                             catch (Exception)
                                             {
@@ -284,21 +286,21 @@ namespace LamestWebserver
                                             }
                                         }
                                     }
-                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "cmd")
+                                    else if (htp.additionalHEAD.Count >= 1 && htp.additionalHEAD[0] == "cmd")
                                     {
                                         s = "";
 
                                         if (isIPLoggedIn(client))
                                         {
-                                            if (htp.additional.Count > 2)
+                                            if (htp.additionalHEAD.Count > 2)
                                             {
-                                                for (int i = 2; i < htp.additional.Count; i++)
+                                                for (int i = 2; i < htp.additionalHEAD.Count; i++)
                                                 {
-                                                    htp.additional[1] += "&" + htp.additional[i];
+                                                    htp.additionalHEAD[1] += "&" + htp.additionalHEAD[i];
                                                 }
                                             }
 
-                                            s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COnsOLE: " + (htp.additional.Count > 1 ? htp.additional[1] : "&ltempty&gt") + "</h1><br>";
+                                            s = "<h1>Contents: [" + folder + htp.data + "]</h1><h1 style='color:#995511'>COnsOLE: " + (htp.additionalHEAD.Count > 1 ? htp.additionalHEAD[1] : "&ltempty&gt") + "</h1><br>";
 
                                             try
                                             {
@@ -311,7 +313,7 @@ namespace LamestWebserver
                                                     process.StartInfo.FileName = "C:\\Windows\\System32\\cmd.exe";
                                                     process.StartInfo.UseShellExecute = false;
 
-                                                    if (htp.additional.Count > 1)
+                                                    if (htp.additionalHEAD.Count > 1)
                                                     {
                                                         //process.StartInfo.Arguments = "/C " + htp.additional[1];
                                                     }
@@ -320,9 +322,9 @@ namespace LamestWebserver
                                                     processIsInit = true;
                                                 }
 
-                                                if (htp.additional.Count > 1)
+                                                if (htp.additionalHEAD.Count > 1)
                                                 {
-                                                    process.StandardInput.WriteLine(htp.additional[1]);
+                                                    process.StandardInput.WriteLine(htp.additionalHEAD[1]);
                                                 }
 
                                                 char[] _buffer = new char[0xfffff];
@@ -341,7 +343,7 @@ namespace LamestWebserver
                                             }
                                         }
                                     }
-                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "recmd")
+                                    else if (htp.additionalHEAD.Count >= 1 && htp.additionalHEAD[0] == "recmd")
                                     {
                                         s = "";
 
@@ -379,7 +381,7 @@ namespace LamestWebserver
                                         }
 
                                     }
-                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "cleanup")
+                                    else if (htp.additionalHEAD.Count >= 1 && htp.additionalHEAD[0] == "cleanup")
                                     {
                                         s = "";
 
@@ -389,20 +391,20 @@ namespace LamestWebserver
                                             s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
                                         }
                                     }
-                                    else if (htp.additional.Count == 3 && htp.additional[0] == "zip")
+                                    else if (htp.additionalHEAD.Count == 3 && htp.additionalHEAD[0] == "zip")
                                     {
                                         s = "";
 
                                         if (isIPLoggedIn(client))
                                         {
-                                            s = "<h1>Zipping: [" + htp.additional[1] + "] to [" + htp.additional[2] + "]</h1><br>";
+                                            s = "<h1>Zipping: [" + htp.additionalHEAD[1] + "] to [" + htp.additionalHEAD[2] + "]</h1><br>";
 
                                             System.Threading.Thread t = new Thread(new ThreadStart(() =>
                                             {
                                                 try
                                                 {
-                                                    ZipFile.CreateFromDirectory(htp.additional[1], htp.additional[2]);
-                                                    lastCmdOut += "<br><br><h1 style='color:#55ff22'>ZIPPING SUCESS! [" + htp.additional[1] + "] to [" + htp.additional[2] + "]</h1><br><br>";
+                                                    ZipFile.CreateFromDirectory(htp.additionalHEAD[1], htp.additionalHEAD[2]);
+                                                    lastCmdOut += "<br><br><h1 style='color:#55ff22'>ZIPPING SUCESS! [" + htp.additionalHEAD[1] + "] to [" + htp.additionalHEAD[2] + "]</h1><br><br>";
                                                 }
                                                 catch (Exception e)
                                                 {
@@ -416,14 +418,14 @@ namespace LamestWebserver
                                             s += s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
                                         }
                                     }
-                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "img")
+                                    else if (htp.additionalHEAD.Count >= 1 && htp.additionalHEAD[0] == "img")
                                     {
                                         s = "";
 
                                         if (isIPLoggedIn(client))
                                         {
 
-                                            if (htp.additional.Count >= 2 && (htp.additional[1] == "bmp" || htp.additional[1] == "bitmap"))
+                                            if (htp.additionalHEAD.Count >= 2 && (htp.additionalHEAD[1] == "bmp" || htp.additionalHEAD[1] == "bitmap"))
                                             {
                                                 for (int i = 0; i < Screen.AllScreens.Length; i++)
                                                 {
@@ -480,11 +482,11 @@ namespace LamestWebserver
                                             s += s = "<div style='font-family: Consolas, Courier-New, monospace;'><p style='color: #757575;max-height: 50%;overflow-x: hidden;overflow-y: scroll;'>" + lastCmdOut + "</p>" + "<p>";
                                         }
                                     }
-                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "login")
+                                    else if (htp.additionalHEAD.Count >= 1 && htp.additionalHEAD[0] == "login")
                                     {
                                         s = "";
 
-                                        if (htp.additional.Count == 3)
+                                        if (htp.additionalHEAD.Count == 3)
                                         {
                                             if (System.IO.File.Exists("usr" + port))
                                             {
@@ -496,7 +498,7 @@ namespace LamestWebserver
 
                                                     for (int i = 0; i < contents.Length; i += 3)
                                                     {
-                                                        if (contents[i] == htp.additional[1] && contents[i + 1] == htp.additional[2])
+                                                        if (contents[i] == htp.additionalHEAD[1] && contents[i + 1] == htp.additionalHEAD[2])
                                                         {
                                                             s += "<h1>LOGIN OK: [RANK '" + contents[i + 2] + "']</h1><br>";
 
@@ -533,6 +535,15 @@ namespace LamestWebserver
                                                                 u.associatedData = new List<AssocByFileUserData>();
 
                                                                 users.Add(u);
+                                                            }
+
+                                                            for (int j = users.Count - 1; j >= 0; j--)
+                                                            {
+                                                                if(users[j].ipaddress.Equals(((IPEndPoint)(client.Client.RemoteEndPoint)).Address) && users[j].name != htp.additionalHEAD[1])
+                                                                {
+                                                                    s += "<br><br><b>THIS IP WAS ALSO LOGGED IN AS '" + users[j].name + "' SINCE " + users[j].loginDate + ". THIS USER HAS NOW BEEN LOGGED OFF.</b><br>";
+                                                                    users.RemoveAt(j);
+                                                                }
                                                             }
 
                                                             goto USERLOGINWORKED;
@@ -572,7 +583,7 @@ namespace LamestWebserver
 
                                         s += "<br><br>";
                                     }
-                                    else if (htp.additional.Count >= 1 && htp.additional[0] == "logout")
+                                    else if (htp.additionalHEAD.Count >= 1 && htp.additionalHEAD[0] == "logout")
                                     {
                                         s = "TRYING TO LOG OUT...<br><br>";
                                         int loggedoutusers = 0;
@@ -675,7 +686,7 @@ namespace LamestWebserver
                                     { sx = sx.Substring(0, 500) + "...\r\n<RAW BITMAP DATA>"; }
                                     Program.addToStuff(sx);
                                 }
-                                if (htp.data.Substring(htp.data.Length - 4) == ".jpg" || htp.data.Substring(htp.data.Length - 5) == ".jpeg")
+                                else if (htp.data.Substring(htp.data.Length - 4) == ".jpg" || htp.data.Substring(htp.data.Length - 5) == ".jpeg")
                                 {
                                     byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + htp.data);
 
@@ -694,6 +705,26 @@ namespace LamestWebserver
                                     string sx = htp_.getPackage();
                                     if (sx.Length > 500)
                                     { sx = sx.Substring(0, 500) + "...\r\n<RAW JPEG DATA>"; }
+                                    Program.addToStuff(sx);
+                                }
+                                else if (htp.data.Substring(htp.data.Length - 4) == ".hcs")
+                                {
+                                    string s = Hook.resolveScriptFromFile(folder + htp.data, client);
+                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
+                                    buffer = enc.GetBytes(htp_.getPackage());
+                                    nws.Write(buffer, 0, buffer.Length);
+
+                                    buffer = null;
+                                    s = null;
+
+                                    if (cache.Count < max_cache)
+                                    {
+                                        cache.Add(new PreloadedFile(folder + htp.data + "index.html", s, htp_.contentLength));
+                                    }
+
+                                    string sx = htp_.getPackage();
+                                    if (sx.Length > 500)
+                                    { sx = sx.Substring(0, 500) + "..."; }
                                     Program.addToStuff(sx);
                                 }
                                 else

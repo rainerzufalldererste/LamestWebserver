@@ -1,0 +1,14 @@
+﻿<title>Overview</title><body style='background-color: #f0f0f2;margin: 0;padding: 0;'><div style='font-family: sans-serif;padding: 50px;margin: 2.5%;margin-left: 10%;margin-right: 10%;background-color: #fff;border-radius: 1em;'>
+
+<?cs
+
+string processOutput()
+{
+	return "<h1>HELLO WORLD, I'M A SCRIPT</h1><br>";
+}
+
+processOutput()
+
+?>
+
+<p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>

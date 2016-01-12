@@ -17,9 +17,14 @@ namespace LamestWebserver
         public int contentLength = 0;
         public string contentType = "text/html";
         public string data = "<body>i am empty :(</body>";
-        public List<string> additional = new List<string>();
-        public bool short_ = true;
 
+        public List<string> additionalHEAD = new List<string>();
+        public List<string> valuesHEAD = new List<string>();
+        public List<string> additionalPOST = new List<string>();
+        public List<string> valuesPOST = new List<string>();
+
+        public bool short_ = true;
+        public HTTP_Type type;
 
         public string getPackage()
         {
@@ -73,6 +78,7 @@ namespace LamestWebserver
 
                 if(linput[i].Substring(0,"GET ".Length) == "GET ")
                 {
+                    type = HTTP_Type.GET;
                     int index = 4;
 
                     for(int j = 4; j < linput[i].Length; j++)
@@ -98,13 +104,88 @@ namespace LamestWebserver
                             {
                                 if(add[it] == '&')
                                 {
-                                    additional.Add(add.Substring(0, it));
+                                    additionalHEAD.Add(add.Substring(0, it));
+                                    valuesHEAD.Add("");
                                     add = add.Remove(0, it + 1);
                                     it = 0;
                                 }
                             }
 
-                            additional.Add(add);
+                            additionalHEAD.Add(add);
+                        }
+                    }
+
+                    for (int j = 0; j < additionalHEAD.Count; j++)
+                    {
+                        for (int k = 0; k < additionalHEAD[j].Length; k++)
+                        {
+                            if (additionalHEAD[j][k] == '=')
+                            {
+                                if (k + 1 < additionalHEAD[j].Length)
+                                {
+                                    valuesHEAD[j] = additionalHEAD[j].Substring(k + 1);
+                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k - 1);
+                                }
+                            }
+                        }
+                    }
+
+                    version = linput[i].Substring(index + 1);
+                    found = true;
+
+                    return;
+                }
+                else if(linput[i].Substring(0, "POST ".Length) == "POST ")
+                {
+                    type = HTTP_Type.POST;
+                    int index = 5;
+
+                    for (int j = 4; j < linput[i].Length; j++)
+                    {
+                        if (linput[i][j] == ' ')
+                        {
+                            index = j;
+                            break;
+                        }
+                    }
+
+                    data = linput[i].Substring(3, index - 3);
+
+                    for (int k = 0; k < data.Length - 1; k++)
+                    {
+                        if (data[k] == '?')
+                        {
+                            string add = data.Substring(k + 1);
+                            data = data.Remove(k);
+                            add = add.Replace("%20", " ").Replace("%22", "\"");
+
+                            for (int it = 0; it < add.Length - 1; it++)
+                            {
+                                if (add[it] == '&')
+                                {
+                                    additionalPOST.Add(add.Substring(0, it));
+                                    valuesPOST.Add("");
+                                    add = add.Remove(0, it + 1);
+                                    it = 0;
+                                }
+                            }
+
+                            additionalPOST.Add(add);
+                        }
+                    }
+
+                    for (int j = 0; j < additionalPOST.Count; j++)
+                    {
+                        for (int k = 0; k < additionalPOST[j].Length; k++)
+                        {
+                            if(additionalPOST[j][k] == '=')
+                            {
+                                if (k + 1 < additionalPOST[j].Length)
+                                {
+                                    valuesPOST[j] = additionalPOST[j].Substring(k + 1);
+                                    additionalPOST[j] = additionalPOST[j].Substring(0, k - 1);
+                                }
+                            }
                         }
                     }
 
@@ -118,5 +199,10 @@ namespace LamestWebserver
             if (!found)
                 version = "";
         }
+    }
+
+    public enum HTTP_Type
+    {
+        GET, POST
     }
 }
