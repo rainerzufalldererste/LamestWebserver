@@ -32,13 +32,15 @@ namespace LamestWebserver
         public System.IO.TextReader reader;
         public string lastCmdOut = "";
         public List<UserData> users = new List<UserData>();
+        private AssocByFileUserData globalData;
 
         public LServer(int port)
         {
+            this.port = port;
+            globalData = new AssocByFileUserData(port.ToString());
             this.tcpList = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
-            this.port = port;
         }
 
         public int cacheHas(string name)
@@ -510,10 +512,10 @@ namespace LamestWebserver
                                                                     found = true;
                                                                     UserData u = users[j];
                                                                     s += "[RANK: " + u.RANK + " -> " + contents[i + 2] + "]<br>";
-                                                                    s += "[LAST LOGINDATE: " + u.loginDate + "]<br>";
+                                                                    s += "[LAST LOGINDATE: " + u.loginTime + "]<br>";
                                                                     s += "[IP: " + u.ipaddress.ToString() + "->" + ((IPEndPoint)(client.Client.RemoteEndPoint)).Address.ToString() + "]<br>";
                                                                     u.RANK = contents[i + 2];
-                                                                    u.loginDate = DateTime.Now;
+                                                                    u.loginTime = DateTime.Now;
                                                                     u.ipaddress = ((IPEndPoint)(client.Client.RemoteEndPoint)).Address;
                                                                     users[j] = u;
                                                                     break;
@@ -525,12 +527,7 @@ namespace LamestWebserver
                                                                 s += "Welcome " + contents[i] + "! You are now logged in!<br>";
                                                                 s += "[IP: " + ((IPEndPoint)(client.Client.RemoteEndPoint)).Address + "]";
 
-                                                                UserData u = new UserData();
-                                                                u.name = contents[i];
-                                                                u.RANK = contents[i + 2];
-                                                                u.loginDate = DateTime.Now;
-                                                                u.ipaddress = ((IPEndPoint)(client.Client.RemoteEndPoint)).Address;
-                                                                u.associatedData = new List<AssocByFileUserData>();
+                                                                UserData u = new UserData(contents[i], contents[i+2], ((IPEndPoint)(client.Client.RemoteEndPoint)).Address, DateTime.Now);
 
                                                                 users.Add(u);
                                                             }
@@ -539,7 +536,7 @@ namespace LamestWebserver
                                                             {
                                                                 if (users[j].ipaddress.Equals(((IPEndPoint)(client.Client.RemoteEndPoint)).Address) && users[j].name != htp.valuesPOST[0])
                                                                 {
-                                                                    s += "<br><br><b>THIS IP WAS ALSO LOGGED IN AS '" + users[j].name + "' SINCE " + users[j].loginDate + ". THIS USER HAS NOW BEEN LOGGED OFF.</b><br>";
+                                                                    s += "<br><br><b>THIS IP WAS ALSO LOGGED IN AS '" + users[j].name + "' SINCE " + users[j].loginTime + ". THIS USER HAS NOW BEEN LOGGED OFF.</b><br>";
                                                                     users.RemoveAt(j);
                                                                 }
                                                             }
@@ -714,7 +711,7 @@ namespace LamestWebserver
                                 }
                                 else if (htp.data.Substring(htp.data.Length - 4) == ".hcs")
                                 {
-                                    string s = Hook.resolveScriptFromFile(folder + htp.data, client);
+                                    string s = Hook.resolveScriptFromFile(folder + htp.data, client, htp, htp.data, getCurrentUser(client), globalData);
                                     HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
@@ -780,6 +777,17 @@ namespace LamestWebserver
             }
         }
 
+        private UserData getCurrentUser(TcpClient client)
+        {
+            for (int i = 0; i < users.Count; i++)
+            {
+                if (users[i].ipaddress.Equals(((IPEndPoint)(client.Client.RemoteEndPoint)).Address))
+                    return users[i];
+            }
+
+            return null;
+        }
+
         private bool isIPLoggedIn(TcpClient client)
         {
             for (int i = 0; i < users.Count; i++)
@@ -803,58 +811,6 @@ namespace LamestWebserver
             this.filename = name;
             this.contents = contents;
             this.size = size;
-        }
-    }
-
-    public struct UserData
-    {
-        public const string INVALIDNAME = ":invalid:";
-        public string name;
-        public string RANK;
-        public IPAddress ipaddress;
-        public DateTime loginDate;
-
-        public List<AssocByFileUserData> associatedData;
-
-        public AssocByFileUserData getFileData(string file)
-        {
-            for (int i = 0; i < associatedData.Count; i++)
-            {
-                if (associatedData[i].file == file)
-                    return associatedData[i];
-            }
-
-            return new AssocByFileUserData() { file = INVALIDNAME };
-        }
-    }
-
-    public struct AssocByFileUserData
-    {
-        public string file;
-        public List<string> hashes { get; private set; }
-        public List<object> datas { get; private set; }
-
-        public object getData(string hash)
-        {
-            for (int i = 0; i < hashes.Count; i++)
-            {
-                if(hashes[i] == hash)
-                    return datas[i];
-            }
-
-            return null;
-        }
-
-        public void setData(string hash, object data)
-        {
-            for (int i = 0; i < hashes.Count; i++)
-            {
-                if (hashes[i] == hash)
-                    datas[i] = data;
-            }
-
-            hashes.Add(hash);
-            datas.Add(data);
         }
     }
 }

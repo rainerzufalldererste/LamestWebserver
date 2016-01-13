@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>LamestScriptHook</RootNamespace>
     <AssemblyName>LamestScriptHook</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -81,8 +81,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Master.cs" />
+    <Compile Include="Hook.cs" />
+    <Compile Include="HTTP_Packet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserData.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

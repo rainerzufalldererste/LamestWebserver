@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LamestWebserver
+namespace LamestScriptHook
 {
     public class HTTP_Packet
     {
@@ -33,7 +33,7 @@ namespace LamestWebserver
             ret += version + " " + status + "\r\n";
             ret += "Host: localhost\r\n";
             ret += "Date: " + date + "\r\n"; //do we need that?!
-            ret += "Server: LamestWebserver (LamOS)\r\n";
+            ret += "Server: LamestWebserver (LameOS)\r\n";
             
             //ret += "Last-Modified: " + modified + "\r\n"; //do we need that?!
             ret += "Content-Type: text/html; charset=UTF-8\r\n";//"Content-Length: " + contentLenght + "\r\n";

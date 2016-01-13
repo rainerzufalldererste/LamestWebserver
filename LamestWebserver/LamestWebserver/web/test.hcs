@@ -4,7 +4,14 @@
 
 string processOutput()
 {
-	return "<h1>HELLO WORLD, I'M A SCRIPT</h1><br>";
+    int b = 0;
+    
+    if(gvarExists("@blah"))
+        b = getGVar<int>("@blah");
+    
+    int @blah = setGVar<int>("@blah", b+1);
+    
+	return RemoteIP + "<h1>HELLO WORLD, I'M A SCRIPT! [" + @blah + "]</h1><br>" + packet.getPackage().Replace("\r\n","<br>");
 }
 
 processOutput()
