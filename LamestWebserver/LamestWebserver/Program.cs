@@ -171,13 +171,16 @@ namespace LamestWebserver
 
                                     try
                                     {
-                                        if (outp.ThreadState == System.Threading.ThreadState.Aborted)
+                                        if (outp.ThreadState == System.Threading.ThreadState.Aborted || outp.ThreadState == System.Threading.ThreadState.Unstarted)
                                         {
                                             outp = new System.Threading.Thread(new System.Threading.ThreadStart(Program.showMsgs));
                                             outp.Start();
                                         }
                                     }
-                                    catch (Exception) { }
+                                    catch (Exception)
+                                    {
+                                        Console.WriteLine("Starting the Thread failed...");
+                                    }
 
                                     Console.WriteLine("Done!");
                                 }
@@ -323,7 +326,11 @@ namespace LamestWebserver
 
                 if(output.Count > autocls)
                 {
-                    output.RemoveRange(0, autocls_s);
+                    try
+                    {
+                        output.RemoveRange(0, autocls_s);
+                    }
+                    catch (Exception) { }
                 }
             }
         }

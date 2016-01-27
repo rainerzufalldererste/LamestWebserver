@@ -1,4 +1,4 @@
-﻿<title>Overview</title><body style='background-color: #f0f0f2;margin: 0;padding: 0;'><div style='font-family: sans-serif;padding: 50px;margin: 2.5%;margin-left: 10%;margin-right: 10%;background-color: #fff;border-radius: 1em;'>
+﻿<html><head><title>Overview</title></head><body style='background-color: #f0f0f2;margin: 0;padding: 0;'><div style='font-family: sans-serif;padding: 50px;margin: 2.5%;margin-left: 10%;margin-right: 10%;background-color: #fff;border-radius: 1em;'>
 
 <?cs
 
@@ -11,11 +11,23 @@ string processOutput()
     
     int @blah = setGVar<int>("@blah", b+1);
     
-	return RemoteIP + "<h1>HELLO WORLD, I'M A SCRIPT! [" + @blah + "]</h1><br>" + packet.getPackage().Replace("\r\n","<br>");
+    string s = "<br><br>HTTP-Request type: " + packet.type + "<br><br>";
+    
+    for(int i = 0; i < packet.additionalHEAD.Count; i++)
+    {
+        s += "[HEAD] " + packet.additionalHEAD[i] + " is " + packet.valuesHEAD[i] + "<br>";
+    }
+    
+    for(int i = 0; i < packet.additionalPOST.Count; i++)
+    {
+        s += "[POST] " + packet.additionalPOST[i] + " is " + packet.valuesPOST[i] + "<br>";
+    }
+    
+	return RemoteIP + s + "<h1>HELLO WORLD, I'M A SCRIPT! [" + @blah + "]</h1><br>" + packet.getPackage().Replace("\r\n","<br>");
 }
 
 processOutput()
 
 ?>
 
-<p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>
+<p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body></html>

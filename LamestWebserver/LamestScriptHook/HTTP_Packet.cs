@@ -95,7 +95,7 @@ namespace LamestScriptHook
                         }
                     }
 
-                    data = linput[i].Substring(3, index - 3);
+                    data = linput[i].Substring(4, index - 4);
 
                     for (int k = 0; k < data.Length - 1; k++)
                     {
@@ -134,9 +134,14 @@ namespace LamestScriptHook
                                 if (k + 1 < additionalHEAD[j].Length)
                                 {
                                     valuesHEAD[j] = additionalHEAD[j].Substring(k + 1);
-                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k - 1);
+                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k);
                                 }
                             }
+                        }
+
+                        if(additionalHEAD[i][additionalHEAD[i].Length - 1] == '=')
+                        {
+                            additionalHEAD[i].Remove(additionalHEAD[i].Length - 1);
                         }
                     }
 
@@ -201,6 +206,11 @@ namespace LamestScriptHook
                                     additionalHEAD[j] = additionalHEAD[j].Substring(0, k);
                                 }
                             }
+                        }
+
+                        if (additionalHEAD[i][additionalHEAD[i].Length - 1] == '=')
+                        {
+                            additionalHEAD[i].Remove(additionalHEAD[i].Length - 1);
                         }
                     }
 
