@@ -163,6 +163,8 @@ namespace LamestWebserver
 
             while (running)
             {
+                msg = new byte[4096];
+
                 try
                 {
                     bytes = nws.Read(msg, 0, 4096);
