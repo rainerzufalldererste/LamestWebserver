@@ -36,17 +36,40 @@ namespace LamestWebserver
         private AssocByFileUserData globalData;
 
         private List<string> hashes = new List<string>();
-        private List<getContents> functions = new List<getContents>();
+        private List<Master.getContents> functions = new List<Master.getContents>();
+        private bool csharp_bridge = true;
 
-        public delegate string getContents(SessionData data);
-
-        public LServer(int port)
+        public LServer(int port, string folder)
         {
+            this.csharp_bridge = true;
+
+            Master.addFunctionEvent += addFunction;
+
             this.port = port;
             globalData = new AssocByFileUserData(port.ToString());
             this.tcpList = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
+        }
+
+        internal LServer(int port, bool cs_bridge)
+        {
+            this.csharp_bridge = cs_bridge;
+
+            if(cs_bridge)
+                Master.addFunctionEvent += addFunction;
+
+            this.port = port;
+            globalData = new AssocByFileUserData(port.ToString());
+            this.tcpList = new TcpListener(IPAddress.Any, port);
+            mThread = new Thread(new ThreadStart(ListenAndStuff));
+            mThread.Start();
+        }
+
+        ~LServer()
+        {
+            if(csharp_bridge)
+                Master.addFunctionEvent -= addFunction;
         }
 
         public int cacheHas(string name)
@@ -128,7 +151,7 @@ namespace LamestWebserver
             }
         }
 
-        public void addFunction(string hash, getContents getc)
+        public void addFunction(string hash, Master.getContents getc)
         {
             int id = -1;
 
@@ -262,8 +285,14 @@ namespace LamestWebserver
                     {
                         if (htp.data == "")
                         {
-                            HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "501 Not Implemented", data = "<title>Error 501: Not Implemented</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 501: Not Implemented!</h1><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>" };
-                            htp_.contentLength = enc.GetBytes(htp_.data).Length;
+                            HTTP_Packet htp_ = new HTTP_Packet()
+                            {
+                                version = "HTTP/1.1",
+                                status = "501 Not Implemented",
+                                data = "<title>Error 501: Not Implemented</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 501: Not Implemented!</h1><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>"
+                            };
+
+                            htp_.contentLength = enc.GetByteCount(htp_.data);
                             buffer = enc.GetBytes(htp_.getPackage());
                             nws.Write(buffer, 0, buffer.Length);
 
@@ -288,7 +317,20 @@ namespace LamestWebserver
 
                             if (found)
                             {
-                                functions[hashNUM](new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST));
+                                HTTP_Packet htp_ = new HTTP_Packet()
+                                {
+                                    data = functions[hashNUM](new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST))
+                                };
+
+
+                                htp_.contentLength = enc.GetByteCount(htp_.data);
+                                buffer = enc.GetBytes(htp_.getPackage());
+                                nws.Write(buffer, 0, buffer.Length);
+
+                                string sx = htp_.getPackage();
+                                if (sx.Length > 500)
+                                { sx = sx.Substring(0, 500) + "..."; }
+                                Program.addToStuff(sx);
                             }
                             else if (htp.data[htp.data.Length - 1] == '\\' || htp.data[htp.data.Length - 1] == '/')
                             {

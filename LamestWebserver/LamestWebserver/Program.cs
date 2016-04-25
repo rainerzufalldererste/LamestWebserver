@@ -25,7 +25,7 @@ namespace LamestWebserver
                 {
 
                     Console.WriteLine("Please specify ports in param... trying to use 8080... i will fail - or not - yes - true!  - example: \"lws 8080\"");
-                    ports.Add(new LServer(8080));
+                    ports.Add(new LServer(8080, true));
                 }
                 catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
             }
@@ -39,7 +39,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        ports.Add(new LServer(Int32.Parse(args[0]))); //does stuff
+                        ports.Add(new LServer(Int32.Parse(args[0]), true)); //does stuff
                     }
                     catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
                 }
@@ -50,7 +50,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        ports.Add(new LServer(Int32.Parse(args[i])) { folder = args[i+1] }); //does stuff
+                        ports.Add(new LServer(Int32.Parse(args[i]), true) { folder = args[i+1] }); //does stuff
                     }
                     catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
                 }
@@ -117,7 +117,7 @@ namespace LamestWebserver
                                     string prt = Console.ReadLine();
                                     Console.WriteLine("Folder: (\"./web\")");
                                     string fld = Console.ReadLine();
-                                    ports.Add(new LServer(Int32.Parse(prt)) { folder = fld });
+                                    ports.Add(new LServer(Int32.Parse(prt), true) { folder = fld });
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e) { Console.WriteLine("Failed!"); }
