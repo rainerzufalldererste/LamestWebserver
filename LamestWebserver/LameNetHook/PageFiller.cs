@@ -34,7 +34,7 @@ namespace LameNetHook
             }
             catch(Exception e)
             {
-                ret = "<b>An Error occured while processing the output</b><br>" + e.Message.Replace("\n","<br>") + "<br>" + e.Source.Replace("\n","<br>") + "<br>" + e.TargetSite.ToString().Replace("\n","<br>");
+                ret = "<b>An Error occured while processing the output</b><br>" + e.ToString().Replace("\r\n", "<br>");
             }
 
             return ret;

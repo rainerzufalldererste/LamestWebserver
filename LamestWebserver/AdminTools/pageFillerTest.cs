@@ -9,7 +9,7 @@ namespace AdminTools
 {
     public class pageFillerTest : LameNetHook.PageFiller
     {
-        public pageFillerTest(string URL = "pftest.data") : base(URL) { }
+        public pageFillerTest(string URL = "pftest.html") : base(URL) { }
 
         public override void processData(SessionData sessionData, ref string output)
         {

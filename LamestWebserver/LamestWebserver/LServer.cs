@@ -67,7 +67,10 @@ namespace LamestWebserver
 
 #if DEBUG
             if (csharp_bridge)
+            {
                 new AdminTools.pageFillerTest().register();
+                AdminTools.pageBuilderTest.addLamePageBuilderTest();
+            }
 #endif
         }
 
