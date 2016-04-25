@@ -109,12 +109,19 @@
     <Content Include="web\index.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="web\pftest.data">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AdminTools\AdminTools.csproj">
+      <Project>{5f05a28f-82e7-454b-b974-2a45251b504e}</Project>
+      <Name>AdminTools</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LameNetHook\LameNetHook.csproj">
       <Project>{83de098b-47e1-4a8d-ad69-1b17286c5657}</Project>
       <Name>LameNetHook</Name>

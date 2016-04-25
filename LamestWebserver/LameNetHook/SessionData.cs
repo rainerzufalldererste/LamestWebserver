@@ -25,13 +25,16 @@ namespace LameNetHook
         private List<string> additionalPOST;
         private List<string> valuesHEAD;
         private List<string> valuesPOST;
+        public string path;
 
-        public SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST) : this()
+        public SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, string path) : this()
         {
             this.additionalHEAD = additionalHEAD;
             this.additionalPOST = additionalPOST;
             this.valuesHEAD = valuesHEAD;
             this.valuesPOST = valuesPOST;
+
+            this.path = path;
         }
 
         public string getValueHead(string name)

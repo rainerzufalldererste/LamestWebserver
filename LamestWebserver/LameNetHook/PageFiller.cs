@@ -29,7 +29,7 @@ namespace LameNetHook
 
             try
             {
-                ret = System.IO.File.ReadAllText(URL);
+                ret = System.IO.File.ReadAllText(sessionData.path + "\\" + URL);
                 processData(sessionData, ref ret);
             }
             catch(Exception e)
@@ -42,16 +42,16 @@ namespace LameNetHook
 
         public abstract void processData(SessionData sessionData, ref string output);
 
-        public void placeValue(string key, string value, ref string output)
+        public void setValue(string key, string value, ref string output)
         {
-            int length = (7 + key.Length);
+            int length = (6 + key.Length);
 
             for (int i = 0; i < output.Length - length; i++)
             {
-                if(output.Substring(i,length) == "<? '" + key  + "' >")
+                if(output.Substring(i,length) == "<? " + key  + " ?>")
                 {
-                    output.Remove(i, length);
-                    output.Insert(i, value);
+                    output = output.Remove(i, length);
+                    output = output.Insert(i, value);
                     return;
                 }
             }

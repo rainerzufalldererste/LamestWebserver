@@ -64,6 +64,11 @@ namespace LamestWebserver
             this.tcpList = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
+
+#if DEBUG
+            if (csharp_bridge)
+                new AdminTools.pageFillerTest().register();
+#endif
         }
 
         ~LServer()
@@ -258,16 +263,6 @@ namespace LamestWebserver
 
                     byte[] buffer;
 
-                    /*if (htp.version != "HTTP/1.1")
-                    {
-                        HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.0", status = "505 HTTP Version not supported", data = "" };
-                        buffer = enc.GetBytes(htp.getPackage());
-                        nws.Write(buffer, 0, buffer.Length);
-                    }
-                    else
-                    {
-                        */
-
                     try
                     {
                         if (htp.data == "")
@@ -304,7 +299,7 @@ namespace LamestWebserver
                             {
                                 HTTP_Packet htp_ = new HTTP_Packet()
                                 {
-                                    data = functions[hashNUM](new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST))
+                                    data = functions[hashNUM](new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder))
                                 };
 
 
@@ -323,7 +318,7 @@ namespace LamestWebserver
 
                                 if (cachid > -1)
                                 {
-                                    HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = cache[cachid].contents, contentLength = cache[cachid].size };
+                                    HTTP_Packet htp_ = new HTTP_Packet() { data = cache[cachid].contents, contentLength = cache[cachid].size };
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
 
@@ -337,7 +332,7 @@ namespace LamestWebserver
                                     if (System.IO.File.Exists(folder + htp.data + "index.html"))
                                     {
                                         string s = System.IO.File.ReadAllText(folder + htp.data + "index.html");
-                                        HTTP_Packet htp_ = new HTTP_Packet() { version = "HTTP/1.1", status = "200 OK", data = s, contentLength = enc.GetBytes(s).Length };
+                                        HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length };
                                         buffer = enc.GetBytes(htp_.getPackage());
                                         nws.Write(buffer, 0, buffer.Length);
 
