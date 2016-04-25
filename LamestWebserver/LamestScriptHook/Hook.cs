@@ -8,7 +8,7 @@ using System.Net.Sockets;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
-using LameRessources;
+using LameNetHook;
 
 namespace LamestScriptHook
 {

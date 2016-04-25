@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LamestScriptHook
+namespace LameNetHook
 {
     public class HTTP_Packet
     {

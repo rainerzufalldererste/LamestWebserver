@@ -115,9 +115,9 @@
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LameRessources\LameRessources.csproj">
-      <Project>{1995e920-38bf-4623-b43b-f4df6211bf08}</Project>
-      <Name>LameRessources</Name>
+    <ProjectReference Include="..\LameNetHook\LameNetHook.csproj">
+      <Project>{83de098b-47e1-4a8d-ad69-1b17286c5657}</Project>
+      <Name>LameNetHook</Name>
     </ProjectReference>
     <ProjectReference Include="..\LamestScriptHook\LamestScriptHook.csproj">
       <Project>{19444577-4658-42f7-ae68-dec992c89e4e}</Project>

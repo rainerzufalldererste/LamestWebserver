@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // Allgemeine Informationen über eine Assembly werden über die folgenden 
 // Attribute gesteuert. Ändern Sie diese Attributwerte, um die Informationen zu ändern,
 // die einer Assembly zugeordnet sind.
-[assembly: AssemblyTitle("LameRessources")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("LameNetHook")]
+[assembly: AssemblyDescription("LameNetHook")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("LameRessources")]
+[assembly: AssemblyProduct("LameNetHook")]
 [assembly: AssemblyCopyright("Copyright © Christoph Stiller; 2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // Die folgende GUID bestimmt die ID der Typbibliothek, wenn dieses Projekt für COM verfügbar gemacht wird
-[assembly: Guid("1995e920-38bf-4623-b43b-f4df6211bf08")]
+[assembly: Guid("83de098b-47e1-4a8d-ad69-1b17286c5657")]
 
 // Versionsinformationen für eine Assembly bestehen aus den folgenden vier Werten:
 //
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // Sie können alle Werte angeben oder die standardmäßigen Build- und Revisionsnummern 
 // übernehmen, indem Sie "*" eingeben:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.1.*")]
-[assembly: AssemblyFileVersion("0.1")]
+[assembly: AssemblyVersion("0.2.*")]
+[assembly: AssemblyFileVersion("0.2")]
