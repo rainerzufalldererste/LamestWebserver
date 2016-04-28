@@ -44,6 +44,9 @@ namespace LameNetHook
 
         public void setValue(string key, string value, ref string output)
         {
+            if (key == null)
+                return;
+
             int length = (6 + key.Length);
 
             for (int i = 0; i < output.Length - length; i++)
@@ -51,7 +54,10 @@ namespace LameNetHook
                 if(output.Substring(i,length) == "<? " + key  + " ?>")
                 {
                     output = output.Remove(i, length);
-                    output = output.Insert(i, value);
+
+                    if(value != null)
+                        output = output.Insert(i, value);
+
                     return;
                 }
             }

@@ -292,8 +292,6 @@ namespace LameNetHook
 
             if (!found)
             {
-                h.version = "";
-
                 // Chris: Crazy chrome POST hack
                 // Chris: Resolve Endpoint and append input to that input, then delete
 
