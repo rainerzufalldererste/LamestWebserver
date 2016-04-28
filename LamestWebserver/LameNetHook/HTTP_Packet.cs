@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace LameNetHook
 {
@@ -25,6 +26,8 @@ namespace LameNetHook
 
         public bool short_ = true;
         public HTTP_Type type;
+
+        public static Dictionary<EndPoint, string> unfinishedPackets = new Dictionary<EndPoint, string>();
 
         public string getPackage()
         {
@@ -54,8 +57,10 @@ namespace LameNetHook
         }
 
 
-        public HTTP_Packet(string input)
+        public static HTTP_Packet Constructor(string input, EndPoint endp)
         {
+            HTTP_Packet h = new HTTP_Packet();
+
             /*List<string>*/
             string[] linput = null;
             //new List<string>();
@@ -83,7 +88,7 @@ namespace LameNetHook
 
                 if(linput[i].Substring(0,"GET ".Length) == "GET ")
                 {
-                    type = HTTP_Type.GET;
+                    h.type = HTTP_Type.GET;
                     int index = 4;
 
                     for (int j = 4; j < linput[i].Length; j++)
@@ -95,64 +100,64 @@ namespace LameNetHook
                         }
                     }
 
-                    data = linput[i].Substring(4, index - 4);
+                    h.data = linput[i].Substring(4, index - 4);
 
-                    for (int k = 0; k < data.Length - 1; k++)
+                    for (int k = 0; k < h.data.Length - 1; k++)
                     {
-                        if (data[k] == '?')
+                        if (h.data[k] == '?')
                         {
-                            string add = data.Substring(k + 1);
+                            string add = h.data.Substring(k + 1);
 
                             if (add[add.Length - 1] == ' ')
                                 add = add.Remove(add.Length - 1);
 
-                            data = data.Remove(k);
+                            h.data = h.data.Remove(k);
                             add = add.Replace("%20", " ").Replace("%22", "\"");
 
                             for(int it = 0; it < add.Length - 1; it++)
                             {
                                 if(add[it] == '&')
                                 {
-                                    additionalHEAD.Add(add.Substring(0, it));
-                                    valuesHEAD.Add("");
+                                    h.additionalHEAD.Add(add.Substring(0, it));
+                                    h.valuesHEAD.Add("");
                                     add = add.Remove(0, it + 1);
                                     it = 0;
                                 }
                             }
 
-                            additionalHEAD.Add(add);
-                            valuesHEAD.Add("");
+                            h.additionalHEAD.Add(add);
+                            h.valuesHEAD.Add("");
                         }
                     }
 
-                    for (int j = 0; j < additionalHEAD.Count; j++)
+                    for (int j = 0; j < h.additionalHEAD.Count; j++)
                     {
-                        for (int k = 0; k < additionalHEAD[j].Length; k++)
+                        for (int k = 0; k < h.additionalHEAD[j].Length; k++)
                         {
-                            if (additionalHEAD[j][k] == '=')
+                            if (h.additionalHEAD[j][k] == '=')
                             {
-                                if (k + 1 < additionalHEAD[j].Length)
+                                if (k + 1 < h.additionalHEAD[j].Length)
                                 {
-                                    valuesHEAD[j] = additionalHEAD[j].Substring(k + 1);
-                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k);
+                                    h.valuesHEAD[j] = h.additionalHEAD[j].Substring(k + 1);
+                                    h.additionalHEAD[j] = h.additionalHEAD[j].Substring(0, k);
                                 }
                             }
                         }
 
-                        if(additionalHEAD[i][additionalHEAD[i].Length - 1] == '=')
+                        if(h.additionalHEAD[i][h.additionalHEAD[i].Length - 1] == '=')
                         {
-                            additionalHEAD[i].Remove(additionalHEAD[i].Length - 1);
+                            h.additionalHEAD[i].Remove(h.additionalHEAD[i].Length - 1);
                         }
                     }
 
-                    version = linput[i].Substring(index + 1);
+                    h.version = linput[i].Substring(index + 1);
                     found = true;
 
-                    return;
+                    return h;
                 }
                 else if(linput[i].Substring(0, "POST ".Length) == "POST ")
                 {
-                    type = HTTP_Type.POST;
+                    h.type = HTTP_Type.POST;
                     int index = 5;
 
                     for (int j = 5; j < linput[i].Length; j++)
@@ -164,57 +169,57 @@ namespace LameNetHook
                         }
                     }
 
-                    data = linput[i].Substring(4, index - 4);
+                    h.data = linput[i].Substring(4, index - 4);
 
-                    for (int k = 0; k < data.Length - 1; k++)
+                    for (int k = 0; k < h.data.Length - 1; k++)
                     {
-                        if (data[k] == '?')
+                        if (h.data[k] == '?')
                         {
-                            string add = data.Substring(k + 1);
+                            string add = h.data.Substring(k + 1);
 
                             if (add[add.Length - 1] == ' ')
                                 add = add.Remove(add.Length - 1);
 
-                            data = data.Remove(k);
+                            h.data = h.data.Remove(k);
                             add = add.Replace("%20", " ").Replace("%22", "\"");
 
                             for (int it = 0; it < add.Length - 1; it++)
                             {
                                 if (add[it] == '&')
                                 {
-                                    additionalHEAD.Add(add.Substring(0, it));
-                                    valuesHEAD.Add("");
+                                    h.additionalHEAD.Add(add.Substring(0, it));
+                                    h.valuesHEAD.Add("");
                                     add = add.Remove(0, it + 1);
                                     it = 0;
                                 }
                             }
 
-                            additionalHEAD.Add(add);
-                            valuesHEAD.Add("");
+                            h.additionalHEAD.Add(add);
+                            h.valuesHEAD.Add("");
                         }
                     }
 
-                    for (int j = 0; j < additionalHEAD.Count; j++)
+                    for (int j = 0; j < h.additionalHEAD.Count; j++)
                     {
-                        for (int k = 0; k < additionalHEAD[j].Length; k++)
+                        for (int k = 0; k < h.additionalHEAD[j].Length; k++)
                         {
-                            if(additionalHEAD[j][k] == '=')
+                            if(h.additionalHEAD[j][k] == '=')
                             {
-                                if (k + 1 < additionalHEAD[j].Length)
+                                if (k + 1 < h.additionalHEAD[j].Length)
                                 {
-                                    valuesHEAD[j] = additionalHEAD[j].Substring(k + 1);
-                                    additionalHEAD[j] = additionalHEAD[j].Substring(0, k);
+                                    h.valuesHEAD[j] = h.additionalHEAD[j].Substring(k + 1);
+                                    h.additionalHEAD[j] = h.additionalHEAD[j].Substring(0, k);
                                 }
                             }
                         }
 
-                        if (additionalHEAD[i][additionalHEAD[i].Length - 1] == '=')
+                        if (h.additionalHEAD[i][h.additionalHEAD[i].Length - 1] == '=')
                         {
-                            additionalHEAD[i].Remove(additionalHEAD[i].Length - 1);
+                            h.additionalHEAD[i].Remove(h.additionalHEAD[i].Length - 1);
                         }
                     }
 
-                    version = linput[i].Substring(index + 1);
+                    h.version = linput[i].Substring(index + 1);
                     found = true;
 
                     for (int j = i; j < linput.Length; j++)
@@ -229,10 +234,10 @@ namespace LameNetHook
 
                                     for (int l = 0; l < s.Length; l++)
                                     {
-                                        valuesPOST.Add("");
+                                        h.valuesPOST.Add("");
                                     }
 
-                                    additionalPOST.AddRange(s);
+                                    h.additionalPOST.AddRange(s);
                                 }
 
                                 goto SEARCHINGFORPOSTBODY_DONE;
@@ -242,27 +247,68 @@ namespace LameNetHook
 
                     SEARCHINGFORPOSTBODY_DONE:
 
-                    for (int j = 0; j < additionalPOST.Count; j++)
+                    for (int j = 0; j < h.additionalPOST.Count; j++)
                     {
-                        for (int k = 0; k < additionalPOST[j].Length; k++)
+                        for (int k = 0; k < h.additionalPOST[j].Length; k++)
                         {
-                            if (additionalPOST[j][k] == '=')
+                            if (h.additionalPOST[j][k] == '=')
                             {
-                                if (k + 1 < additionalPOST[j].Length)
+                                if (k + 1 < h.additionalPOST[j].Length)
                                 {
-                                    valuesPOST[j] = additionalPOST[j].Substring(k + 1);
-                                    additionalPOST[j] = additionalPOST[j].Substring(0, k);
+                                    h.valuesPOST[j] = h.additionalPOST[j].Substring(k + 1);
+                                    h.additionalPOST[j] = h.additionalPOST[j].Substring(0, k);
                                 }
                             }
                         }
                     }
 
-                    return;
+                    // Chris: Crazy hack for Chrome POST packets
+                    if(h.additionalPOST.Count == 0)
+                    {
+                        // Chris: is there a content-length?
+                        bool contlfound = false;
+
+                        // Chris: search for it
+                        for (int j = i + 1; j < linput.Length; j++)
+                        {
+                            if(linput[j].Substring(0, 16) == "Content-Length: ")
+                            {
+                                if(int.TryParse(linput[j].Substring(16), out h.contentLength))
+                                    contlfound = true;
+                                break;
+                            }
+                        }
+
+                        if(contlfound && h.contentLength > 0 && linput[linput.Length - 1] == "" && linput[linput.Length - 2] == "")
+                        {
+                            unfinishedPackets.Add(endp, input);
+                            return new HTTP_Packet() { version = "POST_PACKET_INCOMING" };
+                        }
+                    }
+
+                    return h;
                 }
             }
 
             if (!found)
-                version = "";
+            {
+                h.version = "";
+
+                // Chris: Crazy chrome POST hack
+                // Chris: Resolve Endpoint and append input to that input, then delete
+
+                string oldinput = unfinishedPackets[endp];
+
+                if (oldinput != null)
+                {
+                    unfinishedPackets.Remove(endp);
+                    oldinput += input;
+                }
+
+                return Constructor(oldinput, endp);
+            }
+
+            return h;
         }
     }
 

@@ -260,7 +260,7 @@ namespace LamestWebserver
 
                     Program.addToStuff(msg_);
 
-                    HTTP_Packet htp = new HTTP_Packet(msg_);
+                    HTTP_Packet htp = HTTP_Packet.Constructor(msg_, client.Client.RemoteEndPoint);
 
                     //NetworkStream nws = client.GetStream();
 
@@ -268,7 +268,11 @@ namespace LamestWebserver
 
                     try
                     {
-                        if (htp.data == "")
+                        if(htp.version == "POST_PACKET_INCOMING")
+                        {
+                            continue;
+                        }
+                        else if (htp.data == "")
                         {
                             HTTP_Packet htp_ = new HTTP_Packet()
                             {
