@@ -89,7 +89,7 @@ namespace LameNetHook
 
             for (int i = 0; i < ret.Length - 1; i++)
             {
-                if(ret[i] == '<' && ret[i + 1] == 'a')
+                if((ret[i] == '<' && ret[i + 1] == 'a') || (i > 5 && ret.Substring(i-6,7) == "<button"))
                 {
                     int state = 0;
                     int hrefPos = -1, onclickPos = -1;
@@ -98,7 +98,7 @@ namespace LameNetHook
                     char stringEndChar = '\0';
 
                     // search for href
-                    for (int j = i; j < ret.Length - 5; j++)
+                    for (int j = i + 1; j < ret.Length - 5; j++)
                     {
                         if(state == 0 && j < ret.Length - 5 && ret.Substring(j, 4) == "href" && hrefPos == -1)
                         {
@@ -152,8 +152,20 @@ namespace LameNetHook
                         {
                             if(linkStartPos > -1 && linkEndPos > -1)
                             {
-                                if(onclickStartPos > -1 && onclickEndPos > -1)
+                                ret = ret.Remove(linkStartPos - 1, 1);
+                                ret = ret.Insert(linkStartPos - 1, "\"");
+
+                                ret = ret.Remove(linkEndPos + 1, 1);
+                                ret = ret.Insert(linkEndPos + 1, "\"");
+
+                                if (onclickStartPos > -1 && onclickEndPos > -1)
                                 {
+                                    ret = ret.Remove(onclickStartPos - 1, 1);
+                                    ret = ret.Insert(onclickStartPos - 1, "\"");
+
+                                    ret = ret.Remove(onclickEndPos + 1, 1);
+                                    ret = ret.Insert(onclickEndPos + 1, "\"");
+
                                     string hash = SessionContainer.getHash();
                                     string add = ";var f_"
                                         + hash + "=document.createElement('form');f_"
@@ -162,10 +174,12 @@ namespace LameNetHook
                                         + ret.Substring(linkStartPos, linkEndPos - linkStartPos + 1) + "');f_"
                                         + hash + ".setAttribute('enctype','text/html');var i_"
                                         + hash + "=document.createElement('input');i_"
-                                        + hash + ".setAttribute('type','hidden');i.setAttribute('name','ssid');i_"
+                                        + hash + ".setAttribute('type','hidden');i_"
+                                        + hash + ".setAttribute('name','ssid');i_"
                                         + hash + ".setAttribute('value','"
                                         + sessionData.ssid + "');f_"
-                                        + hash + ".appendChild(i);document.body.appendChild(f_"
+                                        + hash + ".appendChild(i_"
+                                        + hash + ");document.body.appendChild(f_"
                                         + hash + ");f_"
                                         + hash + ".submit();document.body.remove(f_"
                                         + hash + ");";

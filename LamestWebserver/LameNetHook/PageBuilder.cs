@@ -50,7 +50,12 @@ namespace LameNetHook
             if (!string.IsNullOrWhiteSpace(additionalHeadLines))
                 ret += additionalHeadLines;
 
-            ret += "</head>\n<body>\n";
+            ret += "</head>\n<body";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n";
 
             if (!string.IsNullOrWhiteSpace(text))
                 ret += text.Replace("\n","<br>");
@@ -92,15 +97,34 @@ namespace LameNetHook
 
     public abstract class HElement
     {
+        public string id = "";
+        public string name = "";
+
         public abstract override string ToString();
     }
 
+    public class HNewLine : HElement
+    {
+        public override string ToString()
+        {
+            return "\n<br>\n";
+        }
+    }
+
+    public class HLine : HElement
+    {
+        public override string ToString()
+        {
+            return "\n<hr>\n";
+        }
+    }
+
+
     public class HContainer : HElement
     {
-        public string id = "";
-        public string name = "";
         public List<HElement> elements = new List<HElement>();
         public string text;
+        public string descriptionTags;
 
         public void addElement(HElement element)
         {
@@ -116,6 +140,9 @@ namespace LameNetHook
 
             if (!string.IsNullOrWhiteSpace(name))
                 ret += "name='" + name + "'";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
 
             ret += ">\n";
 
@@ -152,6 +179,9 @@ namespace LameNetHook
             if (!string.IsNullOrWhiteSpace(name))
                 ret += "name='" + name + "' ";
 
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
             ret += "method='POST' ";
 
             ret += ">\n<input type='hidden' name='ssid' value='" + sdata.ssid + "'>\n";
@@ -165,6 +195,51 @@ namespace LameNetHook
             }
 
             ret += "\n</form>\n";
+
+            return ret;
+        }
+    }
+    public class HButton : HContainer
+    {
+        string href, onclick;
+
+        public HButton(string text = "", string href = "", string onclick = "")
+        {
+            this.text = text;
+            this.href = href;
+            this.onclick = onclick;
+        }
+
+        public override string ToString()
+        {
+            string ret = "<button ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(href))
+                ret += "href='" + href + "' ";
+
+            if (!string.IsNullOrWhiteSpace(onclick))
+                ret += "onclick='" + onclick + "' ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n";
+
+            if (!string.IsNullOrWhiteSpace(text))
+                ret += text.Replace("\n", "<br>");
+
+            for (int i = 0; i < elements.Count; i++)
+            {
+                ret += elements[i];
+            }
+
+            ret += "\n</button>\n";
 
             return ret;
         }

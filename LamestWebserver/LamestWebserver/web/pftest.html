@@ -13,17 +13,7 @@
             <input type="submit" />
     </form>
     <br>
-    <a href="#blah" onclick="">This link will be left untouched</a><br>
-    <a href="">This link will be left untouched</a><br>
-    <a href="#abc">This link will be left untouched</a><br>
-    <a href="#" href="pftest.html">This link will be left untouched</a><br>
-    <a onclick="var href = 0" href="#">This link will be left untouched</a><br>
-    <a onclick="var href = 0;" href="#123">This link will be left untouched</a><br>
-    <br><hr><br><br>
-    <a href="pftest.html">this link will be changed</a><br>
-    <a href="pftest.html" onclick="var x = 0">this link will be changed</a><br>
-    <a href="pftest.html" onclick="var x = 0;">this link will be changed</a><br>
-    <a href="pftest.html" onclick="">this link will be changed</a><br>
-    <a onclick="var x = -11" href="pftest.html">this link will be changed</a><br>
-    <a onclick="var x = -11;" href="pftest.html">this link will be changed</a><br>
+    <a href="#blah">This link will be left untouched because it doesn't leave the page</a><br>
+    <a href="pftest.html" onclick="var x = 0;">this link will be changed because it does leave the page</a><br>
+    <? content ?>
 </body>

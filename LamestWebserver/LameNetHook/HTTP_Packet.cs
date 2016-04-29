@@ -295,7 +295,7 @@ namespace LameNetHook
                 // Chris: Crazy chrome POST hack
                 // Chris: Resolve Endpoint and append input to that input, then delete
 
-                System.Threading.Thread.Sleep(5);
+                System.Threading.Thread.Sleep(2);
 
                 string oldinput = unfinishedPackets[endp];
 
