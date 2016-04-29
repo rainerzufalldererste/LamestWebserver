@@ -16,6 +16,9 @@ namespace AdminTools
             setValue("head", sessionData.getValueHead("head"), ref output);
             setValue("last", "I AM REPLACED", ref output);
             setValue("middle", "let me be in the middle!", ref output);
+            
+            if(!sessionData.knownUser)
+                sessionData.registerUser("");
         }
     }
 }

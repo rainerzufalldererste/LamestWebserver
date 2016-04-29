@@ -60,21 +60,7 @@ namespace LameNetHook
             string hash = "";
 
             // Chris: generate hash
-            if(enc == null)
-            {
-                Aes aes = new AesManaged() { Mode = CipherMode.ECB };
-                aes.GenerateIV();
-                aes.GenerateKey();
-                enc = aes.CreateEncryptor();
-            }
-
-            enc.TransformBlock(lastHash, 0, 16, lastHash, 0);
-
-            for (int i = 0; i < lastHash.Length; i++)
-            {
-                hash += hashChars[(lastHash[i] & 0xf0) >> 4];
-                hash += hashChars[lastHash[i] & 0x0f];
-            }
+            hash = getHash();
 
             // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
             if (getIDfromList(hash, FileNames).HasValue)
@@ -178,6 +164,29 @@ namespace LameNetHook
             mutex.ReleaseMutex();
 
             return ID.Value;
+        }
+
+        internal static string getHash()
+        {
+            string hash = "";
+
+            if (enc == null)
+            {
+                Aes aes = new AesManaged() { Mode = CipherMode.ECB };
+                aes.GenerateIV();
+                aes.GenerateKey();
+                enc = aes.CreateEncryptor();
+            }
+
+            enc.TransformBlock(lastHash, 0, 16, lastHash, 0);
+
+            for (int i = 0; i < lastHash.Length; i++)
+            {
+                hash += hashChars[(lastHash[i] & 0xf0) >> 4];
+                hash += hashChars[lastHash[i] & 0x0f];
+            }
+
+            return hash;
         }
     }
 
@@ -301,6 +310,7 @@ namespace LameNetHook
         /// <returns>the SSID for the user</returns>
         public string registerUser(string userName)
         {
+            this.userName = userName;
             return ssid = SessionContainer.getSSIDforUser(userName);
         }
 
@@ -313,7 +323,7 @@ namespace LameNetHook
             if(!knownUser)
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
 
-            return registerUser(userName);
+            return ssid = SessionContainer.getSSIDforUser(userName);
         }
 
         // ===============================================================================================================================================

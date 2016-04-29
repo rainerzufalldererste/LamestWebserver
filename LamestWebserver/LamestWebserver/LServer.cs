@@ -274,6 +274,7 @@ namespace LamestWebserver
                         {
                             HTTP_Packet htp_ = new HTTP_Packet()
                             {
+                                status = "501 Not Implemented",
                                 data = "<title>Error 501: Not Implemented</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 501: Not Implemented!</h1><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>"
                             };
 
@@ -286,14 +287,14 @@ namespace LamestWebserver
                             int hashNUM = 0;
                             bool found = false;
 
-                            while(htp.data.Length > 1 && htp.data[0] == ' ')
+                            while(htp.data.Length > 1 && (htp.data[0] == ' ' || htp.data[0] == '/'))
                             {
                                 htp.data = htp.data.Remove(0, 1);
                             }
 
                             for (; hashNUM < hashes.Count; hashNUM++)
                             {
-                                if (hashes[hashNUM] == htp.data || hashes[hashNUM] == htp.data.Substring(1))
+                                if (hashes[hashNUM] == htp.data)
                                 {
                                     found = true;
                                     break;
@@ -340,6 +341,7 @@ namespace LamestWebserver
                                     {
                                         HTTP_Packet htp_ = new HTTP_Packet()
                                         {
+                                            status = "403 Forbidden",
                                             data = "<title>Error 403: Forbidden</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 403: Forbidden!</h1><p>Access denied to: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>"
                                         };
 
@@ -432,6 +434,7 @@ namespace LamestWebserver
                                 {
                                     HTTP_Packet htp_ = new HTTP_Packet()
                                     {
+                                        status = "404 File Not Found",
                                         data = "<title>Error 404: Page Not Found</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 404: Page Not Found!</h1><p>The following file could not be found: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>"
                                     };
 

@@ -7,4 +7,23 @@
     <? middle ?> and some other text right here. <br />
     <b> - <? last ?> - </b><br>
     <a HREF(pftest.html)>HREF Sample</a>
+    <br> the current SSID is <SSID>!<br>
+    <form action="pftest.html" method="post">
+        <ISSID> this hidden element will be an input containing the SSID
+            <input type="submit" />
+    </form>
+    <br>
+    <a href="#blah" onclick="">This link will be left untouched</a><br>
+    <a href="">This link will be left untouched</a><br>
+    <a href="#abc">This link will be left untouched</a><br>
+    <a href="#" href="pftest.html">This link will be left untouched</a><br>
+    <a onclick="var href = 0" href="#">This link will be left untouched</a><br>
+    <a onclick="var href = 0;" href="#123">This link will be left untouched</a><br>
+    <br><hr><br><br>
+    <a href="pftest.html">this link will be changed</a><br>
+    <a href="pftest.html" onclick="var x = 0">this link will be changed</a><br>
+    <a href="pftest.html" onclick="var x = 0;">this link will be changed</a><br>
+    <a href="pftest.html" onclick="">this link will be changed</a><br>
+    <a onclick="var x = -11" href="pftest.html">this link will be changed</a><br>
+    <a onclick="var x = -11;" href="pftest.html">this link will be changed</a><br>
 </body>
