@@ -256,7 +256,7 @@ namespace LamestWebserver
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
 
-                    Program.addToStuff(msg_);
+                    //Program.addToStuff(msg_);
 
                     HTTP_Packet htp = HTTP_Packet.Constructor(msg_, client.Client.RemoteEndPoint);
 
@@ -280,16 +280,16 @@ namespace LamestWebserver
                             htp_.contentLength = enc.GetByteCount(htp_.data);
                             buffer = enc.GetBytes(htp_.getPackage());
                             nws.Write(buffer, 0, buffer.Length);
-
-                            string sx = htp_.getPackage();
-                            if (sx.Length > 500)
-                            { sx = sx.Substring(0, 500) + "..."; }
-                            Program.addToStuff(sx);
                         }
                         else
                         {
                             int hashNUM = 0;
                             bool found = false;
+
+                            while(htp.data.Length > 1 && htp.data[0] == ' ')
+                            {
+                                htp.data = htp.data.Remove(0, 1);
+                            }
 
                             for (; hashNUM < hashes.Count; hashNUM++)
                             {
@@ -311,11 +311,6 @@ namespace LamestWebserver
                                 htp_.contentLength = enc.GetByteCount(htp_.data);
                                 buffer = enc.GetBytes(htp_.getPackage());
                                 nws.Write(buffer, 0, buffer.Length);
-
-                                string sx = htp_.getPackage();
-                                if (sx.Length > 500)
-                                { sx = sx.Substring(0, 500) + "..."; }
-                                Program.addToStuff(sx);
                             }
                             else if (htp.data[htp.data.Length - 1] == '\\' || htp.data[htp.data.Length - 1] == '/')
                             {
@@ -326,11 +321,6 @@ namespace LamestWebserver
                                     HTTP_Packet htp_ = new HTTP_Packet() { data = cache[cachid].contents, contentLength = cache[cachid].size };
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
-
-                                    string sx = htp_.getPackage();
-                                    if (sx.Length > 500)
-                                    { sx = sx.Substring(0, 500) + "..."; }
-                                    Program.addToStuff(sx);
                                 }
                                 else
                                 {
@@ -345,11 +335,6 @@ namespace LamestWebserver
                                         {
                                             cache.Add(new PreloadedFile(folder + htp.data + "index.html", s, htp_.contentLength));
                                         }
-
-                                        string sx = htp_.getPackage();
-                                        if (sx.Length > 500)
-                                        { sx = sx.Substring(0, 500) + "..."; }
-                                        Program.addToStuff(sx);
                                     }
                                     else
                                     {
@@ -361,11 +346,6 @@ namespace LamestWebserver
                                         htp_.contentLength = enc.GetBytes(htp_.data).Length;
                                         buffer = enc.GetBytes(htp_.getPackage());
                                         nws.Write(buffer, 0, buffer.Length);
-
-                                        string sx = htp_.getPackage();
-                                        if (sx.Length > 500)
-                                        { sx = sx.Substring(0, 500) + "..."; }
-                                        Program.addToStuff(sx);
                                     }
                                 }
                             }
@@ -400,11 +380,6 @@ namespace LamestWebserver
                                         blist = null;
                                         buffer = null;
                                         b = null;
-
-                                        string sx = htp_.getPackage();
-                                        if (sx.Length > 500)
-                                        { sx = sx.Substring(0, 500) + "...\r\n<RAW BITMAP DATA>"; }
-                                        Program.addToStuff(sx);
                                     }
                                     else if (htp.data.Substring(htp.data.Length - 4) == ".jpg" || htp.data.Substring(htp.data.Length - 5) == ".jpeg")
                                     {
@@ -421,11 +396,6 @@ namespace LamestWebserver
                                         blist = null;
                                         buffer = null;
                                         b = null;
-
-                                        string sx = htp_.getPackage();
-                                        if (sx.Length > 500)
-                                        { sx = sx.Substring(0, 500) + "...\r\n<RAW JPEG DATA>"; }
-                                        Program.addToStuff(sx);
                                     }
                                     else if (htp.data.Substring(htp.data.Length - 4) == ".hcs")
                                     {
@@ -441,11 +411,6 @@ namespace LamestWebserver
                                         {
                                             cache.Add(new PreloadedFile(folder + htp.data + "index.html", s, htp_.contentLength));
                                         }
-
-                                        string sx = htp_.getPackage();
-                                        if (sx.Length > 500)
-                                        { sx = sx.Substring(0, 500) + "..."; }
-                                        Program.addToStuff(sx);
                                     }
                                     else
                                     {
@@ -461,11 +426,6 @@ namespace LamestWebserver
                                         {
                                             cache.Add(new PreloadedFile(folder + htp.data + "index.html", s, htp_.contentLength));
                                         }
-
-                                        string sx = htp_.getPackage();
-                                        if (sx.Length > 500)
-                                        { sx = sx.Substring(0, 500) + "..."; }
-                                        Program.addToStuff(sx);
                                     }
                                 }
                                 else
@@ -478,11 +438,6 @@ namespace LamestWebserver
                                     htp_.contentLength = enc.GetBytes(htp_.data).Length;
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
-
-                                    string sx = htp_.getPackage();
-                                    if (sx.Length > 500)
-                                    { sx = sx.Substring(0, 500) + "..."; }
-                                    Program.addToStuff(sx);
                                 }
                             }
                         }

@@ -251,8 +251,7 @@ namespace LameNetHook
                 knownUser = true;
                 userName = SessionContainer.getUserNameAt(userID.Value);
                 
-                // Chris: get next SSID
-                ssid = SessionContainer.getSSIDforUser(userName);
+                // the user keeps his session id so that mutiple tabs are possible...
 
                 userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
             }
@@ -293,6 +292,28 @@ namespace LameNetHook
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Registers the user and assigns a SSID
+        /// </summary>
+        /// <param name="userName">the User to register</param>
+        /// <returns>the SSID for the user</returns>
+        public string registerUser(string userName)
+        {
+            return ssid = SessionContainer.getSSIDforUser(userName);
+        }
+
+        /// <summary>
+        /// gets a new SSID for the current user needed for higher security variants (multiple tabs are not possible!)
+        /// </summary>
+        /// <returns>the new ssid</returns>
+        public string getNextSSID()
+        {
+            if(!knownUser)
+                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
+
+            return registerUser(userName);
         }
 
         // ===============================================================================================================================================

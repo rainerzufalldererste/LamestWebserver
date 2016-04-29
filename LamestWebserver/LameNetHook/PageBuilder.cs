@@ -127,7 +127,44 @@ namespace LameNetHook
                 ret += elements[i];
             }
 
-            ret += "\n</div>";
+            ret += "\n</div>\n";
+
+            return ret;
+        }
+    }
+
+    public class HForm : HContainer
+    {
+        private SessionData sdata;
+
+        public HForm(SessionData sessionData)
+        {
+            sdata = sessionData;
+        }
+
+        public override string ToString()
+        {
+            string ret = "<form ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "' ";
+
+            ret += "method='POST' ";
+
+            ret += ">\n<input type='hidden' name='ssid' value='" + sdata.ssid + "'>\n";
+
+            if (!string.IsNullOrWhiteSpace(text))
+                ret += text.Replace("\n", "<br>");
+
+            for (int i = 0; i < elements.Count; i++)
+            {
+                ret += elements[i];
+            }
+
+            ret += "\n</form>\n";
 
             return ret;
         }

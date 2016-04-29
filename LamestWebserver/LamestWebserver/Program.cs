@@ -13,7 +13,7 @@ namespace LamestWebserver
             List<LServer> ports = new List<LServer>();
 
             System.Threading.Thread outp = new System.Threading.Thread(new System.Threading.ThreadStart(Program.showMsgs));
-            //outp.Start();
+            // outp.Start();
 
             Console.WriteLine("Happy Server! Today is " + DateTime.Now.ToString() + " if you are wondering why you are using such a strange server...");
             Console.WriteLine();
@@ -345,7 +345,7 @@ namespace LamestWebserver
                     {
                         try
                         {
-                            int c = output.Count - 1;
+                            int c = output.Count;
 
                             for (int i = 0; i < c; i++)
                             {
