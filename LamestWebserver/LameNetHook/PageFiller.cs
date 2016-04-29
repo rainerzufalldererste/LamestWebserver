@@ -10,6 +10,11 @@ namespace LameNetHook
     {
         public readonly string URL;
 
+        /// <summary>
+        /// Replace the HREFs on this Page to include the sessionID
+        /// </summary>
+        protected bool replaceHREFs = true;
+
         public PageFiller(string URL)
         {
             this.URL = URL;
@@ -30,7 +35,13 @@ namespace LameNetHook
             try
             {
                 ret = System.IO.File.ReadAllText(sessionData.path + "\\" + URL);
+
                 processData(sessionData, ref ret);
+
+                processInsertions(ref ret);
+
+                if (replaceHREFs)
+                    processHREFs(ref ret);
             }
             catch(Exception e)
             {
@@ -38,6 +49,18 @@ namespace LameNetHook
             }
 
             return ret;
+        }
+
+        private void processInsertions(ref string ret)
+        {
+            // TODO: <ISSID> to a hidden input containing the SSID
+            // TODO: <SSID> to the SSID
+        }
+
+        private void processHREFs(ref string ret)
+        {
+            // TODO: href="#" untouched
+            // TODO: href="somelink.html?123=bla" even with onclick="xyz" to contain the ssid in post
         }
 
         public abstract void processData(SessionData sessionData, ref string output);

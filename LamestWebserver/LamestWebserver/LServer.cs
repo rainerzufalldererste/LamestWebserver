@@ -29,8 +29,6 @@ namespace LamestWebserver
         public bool openPaths = true;
         public System.Diagnostics.Process process = null;
         public bool processIsInit = false;
-        public System.IO.TextWriter writer;
-        public System.IO.TextReader reader;
         public string lastCmdOut = "";
         public List<UserData> users = new List<UserData>();
         private AssocByFileUserData globalData;
@@ -47,7 +45,7 @@ namespace LamestWebserver
 
             this.port = port;
             globalData = new AssocByFileUserData(port.ToString());
-            this.tcpList = new TcpListener(IPAddress.Any, port);
+            tcpList = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
         }
@@ -306,7 +304,7 @@ namespace LamestWebserver
                             {
                                 HTTP_Packet htp_ = new HTTP_Packet()
                                 {
-                                    data = functions[hashNUM](new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder))
+                                    data = functions[hashNUM](new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder, htp.data))
                                 };
 
 

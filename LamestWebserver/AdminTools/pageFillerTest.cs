@@ -14,7 +14,7 @@ namespace AdminTools
         public override void processData(SessionData sessionData, ref string output)
         {
             setValue("head", sessionData.getValueHead("head"), ref output);
-            setValue("last", "I AM REPLACED " + SessionContainer.getSSIDforUser("user"), ref output);
+            setValue("last", "I AM REPLACED", ref output);
             setValue("middle", "let me be in the middle!", ref output);
         }
     }
