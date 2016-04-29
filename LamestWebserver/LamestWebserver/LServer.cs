@@ -447,12 +447,12 @@ namespace LamestWebserver
                     }
                     catch (Exception e)
                     {
-                        Program.addToStuff("I HATE CLIENTS AND STUFF!!! " + e.Message);
+                        Program.addToStuff("I HATE CLIENTS AND STUFF!!! " + e);
                     }
                 }
                 catch (Exception e)
                 {
-                    Program.addToStuff("nope. " + e.Message);
+                    Program.addToStuff("nope. " + e);
                 }
             }
         }

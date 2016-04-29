@@ -16,7 +16,7 @@ namespace AdminTools
             setValue("head", sessionData.getValueHead("head"), ref output);
             setValue("last", "I AM REPLACED", ref output);
             setValue("middle", "let me be in the middle!", ref output);
-            setValue("content", new HButton("button one", "pftest.html") + "\n" + new HButton("button two", "pftest.html"), ref output);
+            setValue("content", new HNewLine().ToString() + new HButton("button one", "pftest.html") + new HButton("button two", "#"), ref output);
 
             if(!sessionData.knownUser)
                 sessionData.registerUser("");

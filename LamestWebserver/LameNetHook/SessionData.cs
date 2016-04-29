@@ -38,6 +38,7 @@ namespace LameNetHook
                 userID = UserNames.Count - 1;
                 UserHashes.Add(null);
                 FilePerUserNames.Add(new List<string>());
+                FilePerUserObjects.Add(new List<Dictionary<string, object>>());
                 UserObjects.Add(new Dictionary<string, object>());
 
                 mutex.ReleaseMutex();
@@ -158,8 +159,8 @@ namespace LameNetHook
             mutex.WaitOne();
 
             FilePerUserNames[userID].Add(FileNames[fileID]);
+            FilePerUserObjects[userID].Add(new Dictionary<string, object>());
             ID = FilePerUserNames.Count - 1;
-            FilePerUserObjects[userID][ID.Value] = new Dictionary<string, object>();
 
             mutex.ReleaseMutex();
 
