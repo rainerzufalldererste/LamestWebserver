@@ -34,7 +34,7 @@ namespace LameNetHook
         {
             string ret = "<html>\n<head>\n<title>" + title + "</title>\n";
 
-            if(!string.IsNullOrWhiteSpace(favicon))
+            if (!string.IsNullOrWhiteSpace(favicon))
                 ret += "<link rel='shortcut icon' href='" + favicon + "'>\n";
 
             for (int i = 0; i < stylesheets.Count; i++)
@@ -58,7 +58,7 @@ namespace LameNetHook
             ret += ">\n";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += text.Replace("\n","<br>");
+                ret += text.Replace("\n", "<br>");
 
             for (int i = 0; i < base.elements.Count; i++)
             {
@@ -78,7 +78,7 @@ namespace LameNetHook
             {
                 ret = getContentMethod.Invoke(sessionData);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 ret = "<b>An Error occured while processing the output</b><br>" + e.ToString().Replace("\r\n", "<br>");
             }
@@ -119,6 +119,120 @@ namespace LameNetHook
         }
     }
 
+    public class HPlainText : HElement
+    {
+        public string text;
+
+        public HPlainText(string text)
+        {
+            this.text = text;
+        }
+
+        public override string ToString()
+        {
+            return text;
+        }
+    }
+
+    public class HLink : HElement
+    {
+        string href, onclick, text, descriptionTags;
+
+        public HLink(string text = "", string href = "", string onclick = "")
+        {
+            this.text = text;
+            this.href = href;
+            this.onclick = onclick;
+        }
+
+        public override string ToString()
+        {
+            string ret = "<a ";
+
+            if (!string.IsNullOrWhiteSpace(href))
+                ret += "href='" + href + "' ";
+
+            if (!string.IsNullOrWhiteSpace(onclick))
+                ret += "onclick='" + onclick + "' ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">";
+
+            if (!string.IsNullOrWhiteSpace(text))
+                ret += text.Replace("\n", "<br>");
+
+            ret += "</a>\n";
+
+            return ret;
+        }
+    }
+
+    public class HImage : HElement
+    {
+        string source, descriptionTags;
+
+        public HImage(string source = "")
+        {
+            this.source = source;
+        }
+
+        public override string ToString()
+        {
+            string ret = "<img ";
+
+            if (!string.IsNullOrWhiteSpace(source))
+                ret += "src='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n";
+
+            return ret;
+        }
+    }
+
+    public class HText : HElement
+    {
+        string text, descriptionTags;
+
+        public HText(string text = "")
+        {
+            this.text = text;
+        }
+
+        public override string ToString()
+        {
+            string ret = "<p ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n" + text.Replace("\n","<br>") + "\n</p>\n";
+
+            return ret;
+        }
+    }
 
     public class HContainer : HElement
     {
@@ -199,20 +313,26 @@ namespace LameNetHook
             return ret;
         }
     }
+
     public class HButton : HContainer
     {
         string href, onclick;
+        EButtonType type;
 
-        public HButton(string text = "", string href = "", string onclick = "")
+        public HButton(string text = "", string href = "", EButtonType type = EButtonType.button, string onclick = "")
         {
             this.text = text;
             this.href = href;
             this.onclick = onclick;
+            this.type = type;
         }
 
         public override string ToString()
         {
             string ret = "<button ";
+
+            if (type != EButtonType.button)
+                ret += "type='" + type + "' ";
 
             if (!string.IsNullOrWhiteSpace(id))
                 ret += "id='" + id + "' ";
@@ -242,6 +362,102 @@ namespace LameNetHook
             ret += "\n</button>\n";
 
             return ret;
+        }
+
+        public enum EButtonType : byte
+        {
+            button, reset, submit
+        }
+    }
+
+    public class HList : HContainer
+    {
+        private EListType listType;
+
+        public HList(EListType listType)
+        {
+            this.listType = listType;
+        }
+
+        public override string ToString()
+        {
+            string ret = "<" + (listType == EListType.OrderedList ? "ol" : "ul") + " ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n";
+
+            if (!string.IsNullOrWhiteSpace(text))
+                ret += text.Replace("\n", "<br>");
+
+            for (int i = 0; i < elements.Count; i++)
+            {
+                ret += "<li>\n" + elements[i] + "</li>\n";
+            }
+
+            ret += "</" + (listType == EListType.OrderedList ? "ol" : "ul") + ">\n";
+
+            return ret;
+        }
+
+        public enum EListType : byte
+        {
+            OrderedList, UnorderedList
+        }
+    }
+
+    public class HTable : HElement
+    {
+        private ICollection<ICollection<HElement>> data;
+        public string descriptionTags;
+
+        public HTable(ICollection<ICollection<HElement>> data)
+        {
+            this.data = data;
+        }
+
+        public override string ToString()
+        {
+            string ret = "<table ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n";
+
+            foreach(ICollection<HElement> outer in data)
+            {
+                ret += "<tr>\n";
+
+                foreach(HElement element in outer)
+                {
+                    ret += "<td>\n" + element + "</td>\n";
+                }
+
+                ret += "</tr>\n";
+            }
+
+            ret += "</table>\n";
+
+            return ret;
+        }
+
+        public enum EListType : byte
+        {
+            OrderedList, UnorderedList
         }
     }
 }
