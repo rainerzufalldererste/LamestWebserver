@@ -123,38 +123,53 @@ namespace LamestWebserver
             }
         }
 
-        public int getThreadCount() { int num = 1; for (int i = 0; i < threads.Count; i++) { if (threads[i].IsAlive) { num++; } } return num; }
+        public int getThreadCount()
+        {
+            int num = 1;
+
+            cleanThreads();
+
+            for (int i = 0; i < threads.Count; i++)
+            {
+                if (threads[i] != null && threads[i].IsAlive)
+                {
+                    num++;
+                }
+            }
+
+            return num;
+        }
+
+        Mutex cleanMutex = new Mutex();
 
         public void cleanThreads()
         {
-            if (!clearing)
+            cleanMutex.WaitOne();
+
+            int i = 0;
+
+            while (i < threads.Count)
             {
-                clearing = true;
-
-                int i = 0;
-
-                while (i < threads.Count)
+                if (threads[i] == null ||
+                    threads[i].ThreadState == ThreadState.Running ||
+                    threads[i].ThreadState == ThreadState.Unstarted ||
+                    threads[i].ThreadState == ThreadState.AbortRequested)
                 {
-                    if (threads[i].ThreadState == ThreadState.Running ||
-                        threads[i].ThreadState == ThreadState.Unstarted ||
-                        threads[i].ThreadState == ThreadState.AbortRequested)
-                    {
-                        i++;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            threads[i].Abort();
-                        }
-                        catch (Exception) { }
-
-                        threads.RemoveAt(i);
-                    }
+                    i++;
                 }
+                else
+                {
+                    try
+                    {
+                        threads[i].Abort();
+                    }
+                    catch (Exception) { }
 
-                clearing = false;
+                    threads.RemoveAt(i);
+                }
             }
+
+            cleanMutex.ReleaseMutex();
         }
 
         public void addFunction(string hash, Master.getContents getc)
@@ -208,18 +223,28 @@ namespace LamestWebserver
             {
                 try
                 {
-                    TcpClient tcpClient = this.tcpList.AcceptTcpClient();
-                    threads.Add(new Thread(new ParameterizedThreadStart(DoStuff)));
-                    threads[threads.Count - 1].Start((object)tcpClient);
-                    Program.addToStuff("Client Connected!...");
-                    
-                    if(threads.Count % 100 == 0)
+                    if (tcpList.Pending())
                     {
-                        threads.Add(new Thread(new ThreadStart(cleanThreads)));
-                        threads[threads.Count - 1].Start();
+                        TcpClient tcpClient = this.tcpList.AcceptTcpClient();
+                        threads.Add(new Thread(new ParameterizedThreadStart(DoStuff)));
+                        threads[threads.Count - 1].Start((object)tcpClient);
+                        Program.addToStuff("Client Connected!...");
+
+                        if (threads.Count % 25 == 0)
+                        {
+                            threads.Add(new Thread(new ThreadStart(cleanThreads)));
+                            threads[threads.Count - 1].Start();
+                        }
+                    }
+                    else
+                    {
+                        System.Threading.Thread.Sleep(1);
                     }
                 }
-                catch (Exception e) { Console.WriteLine("Something failed... Yes. " + e.Message); };
+                catch (Exception e)
+                {
+                    Console.WriteLine("Something failed... Yes. " + e.Message);
+                };
             }
         }
 
@@ -229,8 +254,8 @@ namespace LamestWebserver
             NetworkStream nws = client.GetStream();
             UTF8Encoding enc = new UTF8Encoding();
 
-            byte[] msg = new byte[4096];
-            int bytes;
+            byte[] msg;
+            int bytes = 0;
 
             while (running)
             {
@@ -248,7 +273,7 @@ namespace LamestWebserver
 
                 if (bytes == 0)
                 {
-                    continue;
+                    break;
                 }
 
 
