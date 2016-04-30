@@ -20,9 +20,9 @@ namespace LameNetHook
 
         public static string getErrorMsg(string title, string message)
         {
-            return "<title>" + title 
-                + "</title><body style='background-color:#f0f0f2;background-image: url(\"/server/error.png\");background-repeat:repeat;background-size: 8%;'><div style='font-family:sans-serif;width:600px;margin:5em auto;padding:50px;background-color:#fff;border-radius: 1em;padding-top:22px;padding-bottom:22px;'><h1>"
-                + title + "</h1><hr><p style='overflow:overlay;'>" + message.Replace("\n","<br>") + "</p><br><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>";
+            return "<head><title>" + title 
+                + "</title><style type=\"text/css\">hr{border:solid;border-width:5;color:#FDCD48;'><p style='overflow:overlay;}</style></head><body style='background-color:#f0f0f0;background-image: url(\"/server/error.png\");background-repeat:repeat;background-size:125px;'><div style='font-family:\"Segoe UI\",sans-serif;width:70%;max-width:800px;margin:5em auto;padding:50px;background-color:#fff;border-radius: 1em;padding-top:22px;padding-bottom:22px;border:solid;border-color:#FDD248;border-width:1;'><h1>"
+                + title + "</h1><hr>" + message.Replace("\n","<br>") + "<p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>";
         }
     }
 }

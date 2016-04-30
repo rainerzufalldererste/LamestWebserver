@@ -21,9 +21,10 @@ namespace LameNetHook
         public PageFiller(string URL)
         {
             this.URL = URL;
+            register();
         }
 
-        public void register()
+        private void register()
         {
             Master.callAddFunctionEvent(URL, this.getContents);
         }

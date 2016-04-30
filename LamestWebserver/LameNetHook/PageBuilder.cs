@@ -86,7 +86,7 @@ namespace LameNetHook
             return ret;
         }
 
-        public void register(string URL = null)
+        private void register(string URL = null)
         {
             if (URL == null)
                 URL = this.URL;

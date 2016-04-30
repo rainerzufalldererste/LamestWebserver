@@ -329,8 +329,9 @@ namespace LamestWebserver
                             else
                             {
                                 Demos.pageBuilderTest.addLamePageBuilderTest();
-                                new Demos.pageFillerTest().register();
+                                new Demos.pageFillerTest();
                                 new Demos.CardGame.loginScreen();
+                                LameNetHook.InstantPageResponse.generateRedirect("redirect.html", "redirect.html");
                                 Console.WriteLine("The Demos were added.");
                             }
                             break;
