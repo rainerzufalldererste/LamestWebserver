@@ -243,7 +243,7 @@ namespace LamestWebserver
                                         {
                                             lock (ports[i].cache)
                                             {
-                                                ports[i].cache = new List<PreloadedFile>();
+                                                ports[i].cache.Clear();
                                                 Console.WriteLine("Done!");
                                                 break;
                                             }
@@ -278,6 +278,63 @@ namespace LamestWebserver
                             readme = true_;
                             break;
 
+                        case "cache":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    Console.WriteLine("Port: ");
+                                    string id = Console.ReadLine();
+                                    for (int i = 0; i < ports.Count; i++)
+                                    {
+                                        if (ports[i].port == Int32.Parse(id))
+                                        {
+                                            ports[i].useCache = true;
+                                            Console.WriteLine("Done!");
+                                            break;
+                                        }
+                                    }
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
+                        case "uncache":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    Console.WriteLine("Port: ");
+                                    string id = Console.ReadLine();
+                                    for (int i = 0; i < ports.Count; i++)
+                                    {
+                                        if (ports[i].port == Int32.Parse(id))
+                                        {
+                                            ports[i].useCache = false;
+                                            ports[i].cache.Clear();
+                                            Console.WriteLine("Done!");
+                                            break;
+                                        }
+                                    }
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                            };
+                            readme = true_;
+                            break;
+
+                        case "add demos":
+                            if (demosadded)
+                                Console.WriteLine("The Demos have already been added");
+                            else
+                            {
+                                Demos.pageBuilderTest.addLamePageBuilderTest();
+                                new Demos.pageFillerTest().register();
+                                new Demos.CardGame.loginScreen();
+                                Console.WriteLine("The Demos were added.");
+                            }
+                            break;
+
                         case "help":
                             {
                                 readme = false_;
@@ -292,9 +349,12 @@ namespace LamestWebserver
                                     Console.WriteLine("unsilent  -    shows the log");
                                     Console.WriteLine("cls       -    deletes the log");
                                     Console.WriteLine("autocls   -    deletes the log automatically at sizes");
+                                    Console.WriteLine("cache     -    enables the cache of a port");
+                                    Console.WriteLine("uncache   -    disables the cache of a port");
                                     Console.WriteLine("frefresh  -    refreshes the file cache of a port");
                                     Console.WriteLine("cachesz   -    sets the maximum file cache of a port");
                                     Console.WriteLine("help      -    Displays this list of cmds");
+                                    Console.WriteLine("add demos -    Adds the demo files to the server");
                                     Console.WriteLine("exit      -    ");
 
                                     Console.WriteLine();
@@ -317,6 +377,7 @@ namespace LamestWebserver
         private static bool readme = true;
         private static bool true_ = true, false_ = false;
         private static int autocls = 1000, autocls_s = 250;
+        private static bool demosadded = false;
 
         public static void addToStuff(string s)
         {

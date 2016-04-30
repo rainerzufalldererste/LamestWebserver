@@ -112,15 +112,18 @@
     <Content Include="web\pftest.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="web\server\error.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AdminTools\AdminTools.csproj">
+    <ProjectReference Include="..\AdminTools\Demos.csproj">
       <Project>{5f05a28f-82e7-454b-b974-2a45251b504e}</Project>
-      <Name>AdminTools</Name>
+      <Name>Demos</Name>
     </ProjectReference>
     <ProjectReference Include="..\LameNetHook\LameNetHook.csproj">
       <Project>{83de098b-47e1-4a8d-ad69-1b17286c5657}</Project>
@@ -130,6 +133,9 @@
       <Project>{19444577-4658-42f7-ae68-dec992c89e4e}</Project>
       <Name>LamestScriptHook</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="web\cgame\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

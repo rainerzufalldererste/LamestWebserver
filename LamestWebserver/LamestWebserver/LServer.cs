@@ -36,6 +36,7 @@ namespace LamestWebserver
         private List<string> hashes = new List<string>();
         private List<Master.getContents> functions = new List<Master.getContents>();
         private bool csharp_bridge = true;
+        internal bool useCache = false;
 
         public LServer(int port, string folder)
         {
@@ -62,14 +63,6 @@ namespace LamestWebserver
             this.tcpList = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
-
-#if DEBUG
-            if (csharp_bridge)
-            {
-                new AdminTools.pageFillerTest().register();
-                AdminTools.pageBuilderTest.addLamePageBuilderTest();
-            }
-#endif
         }
 
         ~LServer()
@@ -80,6 +73,9 @@ namespace LamestWebserver
 
         public int cacheHas(string name)
         {
+            if (!useCache)
+                return -1;
+            
             for (int i = 0; i < cache.Count; i++)
             {
                 if(cache[i].filename == name)
@@ -300,7 +296,9 @@ namespace LamestWebserver
                             HTTP_Packet htp_ = new HTTP_Packet()
                             {
                                 status = "501 Not Implemented",
-                                data = "<title>Error 501: Not Implemented</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 501: Not Implemented!</h1><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>"
+                                data = Master.getErrorMsg(
+                                    "Error 501: Not Implemented",
+                                    "<p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
                             };
 
                             htp_.contentLength = enc.GetByteCount(htp_.data);
@@ -357,7 +355,7 @@ namespace LamestWebserver
                                         buffer = enc.GetBytes(htp_.getPackage());
                                         nws.Write(buffer, 0, buffer.Length);
 
-                                        if (cache.Count < max_cache)
+                                        if (useCache && cache.Count < max_cache)
                                         {
                                             cache.Add(new PreloadedFile(folder + htp.data + "index.html", s, htp_.contentLength));
                                         }
@@ -367,7 +365,9 @@ namespace LamestWebserver
                                         HTTP_Packet htp_ = new HTTP_Packet()
                                         {
                                             status = "403 Forbidden",
-                                            data = "<title>Error 403: Forbidden</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 403: Forbidden!</h1><p>Access denied to: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>"
+                                            data = Master.getErrorMsg(
+                                                "Error 403: Forbidden",
+                                                "<p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
                                         };
 
                                         htp_.contentLength = enc.GetBytes(htp_.data).Length;
@@ -384,17 +384,12 @@ namespace LamestWebserver
                                     HTTP_Packet htp_ = new HTTP_Packet() { data = cache[cachid].contents, contentLength = cache[cachid].size };
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
-
-                                    string sx = htp_.getPackage();
-                                    if (sx.Length > 500)
-                                    { sx = sx.Substring(0, 500) + "..."; }
-                                    Program.addToStuff(sx);
                                 }
-                                else if (System.IO.File.Exists((folder != "/" ? folder : "") + htp.data))
+                                else if (System.IO.File.Exists((folder != "/" ? folder : "") + "/" + htp.data))
                                 {
                                     if (htp.data.Substring(htp.data.Length - 4) == ".bmp")
                                     {
-                                        byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + htp.data);
+                                        byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + "/" + htp.data);
 
                                         HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "img/Bitmap", data = "", short_ = true };
                                         List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
@@ -410,7 +405,7 @@ namespace LamestWebserver
                                     }
                                     else if (htp.data.Substring(htp.data.Length - 4) == ".jpg" || htp.data.Substring(htp.data.Length - 5) == ".jpeg")
                                     {
-                                        byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + htp.data);
+                                        byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + "/" + htp.data);
 
                                         HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "image/jpeg", data = "", short_ = true };
                                         List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
@@ -424,24 +419,35 @@ namespace LamestWebserver
                                         buffer = null;
                                         b = null;
                                     }
+                                    else if (htp.data.Substring(htp.data.Length - 4) == ".png")
+                                    {
+                                        byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + "/" + htp.data);
+
+                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "image/png", data = "", short_ = true };
+                                        List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
+                                        blist.AddRange(b);
+                                        blist.AddRange(enc.GetBytes("\r\n"));
+                                        buffer = blist.ToArray();
+                                        blist = null;
+                                        nws.Write(buffer, 0, buffer.Length);
+
+                                        blist = null;
+                                        buffer = null;
+                                        b = null;
+                                    }
                                     else if (htp.data.Substring(htp.data.Length - 4) == ".hcs")
                                     {
-                                        string s = Hook.resolveScriptFromFile(folder + htp.data, client, htp, htp.data, getCurrentUser(client), globalData);
+                                        string s = Hook.resolveScriptFromFile(folder + "/" + htp.data, client, htp, htp.data, getCurrentUser(client), globalData);
                                         HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length };
                                         buffer = enc.GetBytes(htp_.getPackage());
                                         nws.Write(buffer, 0, buffer.Length);
 
                                         buffer = null;
                                         s = null;
-
-                                        if (cache.Count < max_cache)
-                                        {
-                                            cache.Add(new PreloadedFile(folder + htp.data + "index.html", s, htp_.contentLength));
-                                        }
                                     }
                                     else
                                     {
-                                        string s = System.IO.File.ReadAllText(folder + htp.data);
+                                        string s = System.IO.File.ReadAllText(folder + "/" + htp.data);
                                         HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length };
                                         buffer = enc.GetBytes(htp_.getPackage());
                                         nws.Write(buffer, 0, buffer.Length);
@@ -449,9 +455,9 @@ namespace LamestWebserver
                                         buffer = null;
                                         s = null;
 
-                                        if (cache.Count < max_cache)
+                                        if (useCache && cache.Count < max_cache)
                                         {
-                                            cache.Add(new PreloadedFile(folder + htp.data + "index.html", s, htp_.contentLength));
+                                            cache.Add(new PreloadedFile(folder + htp.data, s, htp_.contentLength));
                                         }
                                     }
                                 }
@@ -460,7 +466,9 @@ namespace LamestWebserver
                                     HTTP_Packet htp_ = new HTTP_Packet()
                                     {
                                         status = "404 File Not Found",
-                                        data = "<title>Error 404: Page Not Found</title><body style='background-color: #f0f0f2;'><div style='font-family: sans-serif;width: 600px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;'><h1>Error 404: Page Not Found!</h1><p>The following file could not be found: " + htp.data + "</p><hr><p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>"
+                                        data = Master.getErrorMsg(
+                                            "Error 404: Page Not Found",
+                                            "<p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
                                     };
 
                                     htp_.contentLength = enc.GetBytes(htp_.data).Length;

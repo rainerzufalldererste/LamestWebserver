@@ -50,7 +50,7 @@ namespace LameNetHook
             if (!string.IsNullOrWhiteSpace(additionalHeadLines))
                 ret += additionalHeadLines;
 
-            ret += "</head>\n<body";
+            ret += "</head>\n<body ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -62,7 +62,7 @@ namespace LameNetHook
 
             for (int i = 0; i < base.elements.Count; i++)
             {
-                ret += base.elements[i];
+                ret += base.elements[i].getContent(sessionData);
             }
 
             ret += "</body>\n</html>";
@@ -80,7 +80,7 @@ namespace LameNetHook
             }
             catch (Exception e)
             {
-                ret = "<b>An Error occured while processing the output</b><br>" + e.ToString().Replace("\r\n", "<br>");
+                ret = Master.getErrorMsg("Exception in PageBuilder '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.ToString());
             }
 
             return ret;
@@ -100,12 +100,12 @@ namespace LameNetHook
         public string id = "";
         public string name = "";
 
-        public abstract override string ToString();
+        public abstract string getContent(SessionData sessionData);
     }
 
     public class HNewLine : HElement
     {
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             return "\n<br>\n";
         }
@@ -113,7 +113,7 @@ namespace LameNetHook
 
     public class HLine : HElement
     {
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             return "\n<hr>\n";
         }
@@ -128,7 +128,7 @@ namespace LameNetHook
             this.text = text;
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             return text;
         }
@@ -145,7 +145,7 @@ namespace LameNetHook
             this.onclick = onclick;
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<a ";
 
@@ -184,7 +184,7 @@ namespace LameNetHook
             this.source = source;
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<img ";
 
@@ -215,7 +215,7 @@ namespace LameNetHook
             this.text = text;
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<p ";
 
@@ -229,6 +229,38 @@ namespace LameNetHook
                 ret += descriptionTags;
 
             ret += ">\n" + text.Replace("\n","<br>") + "\n</p>\n";
+
+            return ret;
+        }
+    }
+    public class HHeadline : HElement
+    {
+        string text, descriptionTags;
+        int level;
+
+        public HHeadline(string text = "", int level = 1)
+        {
+            this.text = text;
+            this.level = level;
+
+            if (level > 6 || level < 1)
+                throw new Exception("the level has to be between 1 and 6!");
+        }
+
+        public override string getContent(SessionData sessionData)
+        {
+            string ret = "<h" + level + " ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n" + text.Replace("\n", "<br>") + "\n</h" + level + ">\n";
 
             return ret;
         }
@@ -247,7 +279,7 @@ namespace LameNetHook
             this.value = value;
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<input ";
 
@@ -309,7 +341,7 @@ namespace LameNetHook
             elements.Add(element);
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<div ";
 
@@ -329,7 +361,7 @@ namespace LameNetHook
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += elements[i];
+                ret += elements[i].getContent(sessionData);
             }
 
             ret += "\n</div>\n";
@@ -340,16 +372,19 @@ namespace LameNetHook
 
     public class HForm : HContainer
     {
-        private SessionData sdata;
+        public string action;
 
-        public HForm(SessionData sessionData)
+        public HForm(string action)
         {
-            sdata = sessionData;
+            this.action = action;
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<form ";
+
+            if (!string.IsNullOrWhiteSpace(action))
+                ret += "action='" + action + "' ";
 
             if (!string.IsNullOrWhiteSpace(id))
                 ret += "id='" + id + "' ";
@@ -362,14 +397,14 @@ namespace LameNetHook
 
             ret += "method='POST' ";
 
-            ret += ">\n<input type='hidden' name='ssid' value='" + sdata.ssid + "'>\n";
+            ret += ">\n<input type='hidden' name='ssid' value='" + sessionData.ssid + "'>\n";
 
             if (!string.IsNullOrWhiteSpace(text))
                 ret += text.Replace("\n", "<br>");
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += elements[i];
+                ret += elements[i].getContent(sessionData);
             }
 
             ret += "\n</form>\n";
@@ -383,15 +418,22 @@ namespace LameNetHook
         string href, onclick;
         EButtonType type;
 
-        public HButton(string text = "", string href = "", EButtonType type = EButtonType.button, string onclick = "")
+        public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "")
         {
             this.text = text;
             this.href = href;
             this.onclick = onclick;
             this.type = type;
         }
+        public HButton(string text, string href = "", string onclick = "")
+        {
+            this.text = text;
+            this.href = href;
+            this.onclick = onclick;
+            this.type = EButtonType.button;
+        }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<button ";
 
@@ -420,7 +462,7 @@ namespace LameNetHook
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += elements[i];
+                ret += elements[i].getContent(sessionData);
             }
 
             ret += "\n</button>\n";
@@ -443,7 +485,7 @@ namespace LameNetHook
             this.listType = listType;
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<" + (listType == EListType.OrderedList ? "ol" : "ul") + " ";
 
@@ -463,7 +505,7 @@ namespace LameNetHook
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += "<li>\n" + elements[i] + "</li>\n";
+                ret += "<li>\n" + elements[i].getContent(sessionData) + "</li>\n";
             }
 
             ret += "</" + (listType == EListType.OrderedList ? "ol" : "ul") + ">\n";
@@ -487,7 +529,7 @@ namespace LameNetHook
             this.data = data;
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<table ";
 
@@ -508,7 +550,7 @@ namespace LameNetHook
 
                 foreach(HElement element in outer)
                 {
-                    ret += "<td>\n" + element + "</td>\n";
+                    ret += "<td>\n" + element.getContent(sessionData) + "</td>\n";
                 }
 
                 ret += "</tr>\n";
@@ -538,7 +580,7 @@ namespace LameNetHook
             this.text = text;
         }
 
-        public override string ToString()
+        public override string getContent(SessionData sessionData)
         {
             string ret = "<" + tagName + " ";
 
@@ -560,7 +602,7 @@ namespace LameNetHook
 
                 for (int i = 0; i < elements.Count; i++)
                 {
-                    ret += elements[i];
+                    ret += elements[i].getContent(sessionData);
                 }
 
                 ret += "\n</" + tagName  + ">\n";

@@ -39,7 +39,7 @@ namespace LameNetHook
             ret += "Server: LamestWebserver (LameOS)\r\n";
             
             //ret += "Last-Modified: " + modified + "\r\n"; //do we need that?!
-            ret += "Content-Type: text/html; charset=UTF-8\r\n";//"Content-Length: " + contentLenght + "\r\n";
+            ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n";//"Content-Length: " + contentLenght + "\r\n";
             ret += "Content-Length: " + contentLength + (short_?"\r\n\r\n":"\r\n\r\n\r\n");
             //ret += "Keep-Alive: timeout=10, max=100\r\n";
             //ret += "Connection: Keep-Alive\r\n";

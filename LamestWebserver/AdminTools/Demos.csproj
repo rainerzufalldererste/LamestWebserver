@@ -7,8 +7,8 @@
     <ProjectGuid>{5F05A28F-82E7-454B-B974-2A45251B504E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AdminTools</RootNamespace>
-    <AssemblyName>AdminTools</AssemblyName>
+    <RootNamespace>Demos</RootNamespace>
+    <AssemblyName>Demos</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CardGame.cs" />
     <Compile Include="pageBuilderTest.cs" />
     <Compile Include="pageFillerTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

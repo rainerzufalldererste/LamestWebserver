@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LameNetHook;
 
-namespace AdminTools
+namespace Demos
 {
     public class pageFillerTest : LameNetHook.PageFiller
     {

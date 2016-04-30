@@ -45,7 +45,7 @@ namespace LameNetHook
             }
             catch(Exception e)
             {
-                ret = "<b>An Error occured while processing the output</b><br>" + e.ToString().Replace("\r\n", "<br>");
+                ret = Master.getErrorMsg("Exception in PageFiller '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.ToString());
             }
 
             return ret;
