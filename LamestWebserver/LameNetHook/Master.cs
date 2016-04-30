@@ -9,7 +9,6 @@ namespace LameNetHook
     public static class Master
     {
         public delegate string getContents(SessionData data);
-        public delegate void getContentsRefOutput(SessionData data, ref string output);
 
         public delegate void addFunction(string hash, getContents function);
         public static event addFunction addFunctionEvent;

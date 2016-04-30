@@ -44,6 +44,7 @@
     <Compile Include="Master.cs" />
     <Compile Include="PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />
+    <Compile Include="PageResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SessionData.cs" />
   </ItemGroup>
