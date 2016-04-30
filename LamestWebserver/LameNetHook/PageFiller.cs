@@ -98,7 +98,7 @@ namespace LameNetHook
                     char stringEndChar = '\0';
 
                     // search for href
-                    for (int j = i + 1; j < ret.Length - 5; j++)
+                    for (int j = i + 3; j < ret.Length - 5; j++)
                     {
                         if(state == 0 && j < ret.Length - 5 && ret.Substring(j, 4) == "href" && hrefPos == -1)
                         {

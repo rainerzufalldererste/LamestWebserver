@@ -234,6 +234,70 @@ namespace LameNetHook
         }
     }
 
+    public class HInput : HElement
+    {
+        public EInputType inputType;
+        public string value;
+        public string descriptionTags;
+
+        public HInput(EInputType inputType, string name, string value = "")
+        {
+            this.inputType = inputType;
+            this.name = name;
+            this.value = value;
+        }
+
+        public override string ToString()
+        {
+            string ret = "<input ";
+
+            ret += "type='" + (inputType != EInputType.datetime_local ? inputType.ToString() : "datetime-local") + "' ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "' ";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(value))
+                ret += "value='" + name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n";
+
+            return ret;
+        }
+
+        public enum EInputType : byte
+        {
+            button,
+            checkbox,
+            color,
+            date,
+            datetime,
+            datetime_local,
+            email,
+            file,
+            hidden,
+            image,
+            month,
+            number,
+            password,
+            radio,
+            range,
+            reset,
+            search,
+            submit,
+            tel,
+            text,
+            time,
+            url,
+            week,
+        }
+    }
+
     public class HContainer : HElement
     {
         public List<HElement> elements = new List<HElement>();
@@ -458,6 +522,51 @@ namespace LameNetHook
         public enum EListType : byte
         {
             OrderedList, UnorderedList
+        }
+    }
+
+    public class HTag : HContainer
+    {
+        public bool hasContent;
+        public string tagName;
+
+        public HTag(string tagName, string descriptionTags, bool hasContent = false, string text = "")
+        {
+            this.tagName = tagName;
+            this.descriptionTags = descriptionTags;
+            this.hasContent = hasContent;
+            this.text = text;
+        }
+
+        public override string ToString()
+        {
+            string ret = "<" + tagName + " ";
+
+            if (!string.IsNullOrWhiteSpace(id))
+                ret += "id='" + id + "'";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                ret += "name='" + name + "'";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n";
+
+            if (hasContent)
+            {
+                if (!string.IsNullOrWhiteSpace(text))
+                    ret += text.Replace("\n", "<br>");
+
+                for (int i = 0; i < elements.Count; i++)
+                {
+                    ret += elements[i];
+                }
+
+                ret += "\n</" + tagName  + ">\n";
+            }
+
+            return ret;
         }
     }
 }
