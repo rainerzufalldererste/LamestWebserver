@@ -10,7 +10,7 @@ namespace LamestWebserver
     {
         static void Main(string[] args)
         {
-            List<LServer> ports = new List<LServer>();
+            List<WebServer> ports = new List<WebServer>();
 
             System.Threading.Thread outp = new System.Threading.Thread(new System.Threading.ThreadStart(Program.showMsgs));
             // outp.Start();
@@ -24,7 +24,7 @@ namespace LamestWebserver
                 try
                 {
                     Console.WriteLine("Please specify ports in param... trying to use 8080... i will fail - or not - yes - true!  - example: \"lws 8080\"");
-                    ports.Add(new LServer(8080, "./web", true));
+                    ports.Add(new WebServer(8080, "./web", true));
                 }
                 catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
             }
@@ -38,7 +38,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        ports.Add(new LServer(Int32.Parse(args[0]), "./web", true)); //does stuff
+                        ports.Add(new WebServer(Int32.Parse(args[0]), "./web", true)); //does stuff
                     }
                     catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
                 }
@@ -49,7 +49,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        ports.Add(new LServer(Int32.Parse(args[i]), args[i + 1], true)); //does stuff
+                        ports.Add(new WebServer(Int32.Parse(args[i]), args[i + 1], true)); //does stuff
                     }
                     catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
                 }
@@ -116,7 +116,7 @@ namespace LamestWebserver
                                     string prt = Console.ReadLine();
                                     Console.WriteLine("Folder: (\"./web\")");
                                     string fld = Console.ReadLine();
-                                    ports.Add(new LServer(Int32.Parse(prt), fld, true));
+                                    ports.Add(new WebServer(Int32.Parse(prt), fld, true));
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e) { Console.WriteLine("Failed!" + e); }
@@ -329,7 +329,7 @@ namespace LamestWebserver
                             {
                                 Demos.pageBuilderTest.addLamePageBuilderTest();
                                 new Demos.pageFillerTest();
-                                new Demos.CardGame.loginScreen();
+                                Demos.CardGame.register();
                                 LameNetHook.InstantPageResponse.addRedirect("redirect.html", "redirect.html");
                                 Console.WriteLine("The Demos were added.");
                             }

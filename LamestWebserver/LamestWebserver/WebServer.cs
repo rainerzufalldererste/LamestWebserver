@@ -15,7 +15,7 @@ using LameNetHook;
 
 namespace LamestWebserver
 {
-    public class LServer
+    public class WebServer
     {
         TcpListener tcpList;
         List<Thread> threads = new List<Thread>();
@@ -38,7 +38,7 @@ namespace LamestWebserver
         private bool csharp_bridge = true;
         internal bool useCache = false;
 
-        public LServer(int port, string folder)
+        public WebServer(int port, string folder)
         {
             this.csharp_bridge = true;
 
@@ -52,7 +52,7 @@ namespace LamestWebserver
             mThread.Start();
         }
 
-        internal LServer(int port, string folder, bool cs_bridge)
+        internal WebServer(int port, string folder, bool cs_bridge)
         {
             this.csharp_bridge = cs_bridge;
 
@@ -69,7 +69,7 @@ namespace LamestWebserver
             mThread.Start();
         }
 
-        ~LServer()
+        ~WebServer()
         {
             if (csharp_bridge)
             {

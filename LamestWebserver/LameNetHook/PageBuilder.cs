@@ -62,20 +62,20 @@ namespace LameNetHook
             string ret = "<html>\n<head>\n<title>" + title + "</title>\n";
 
             if (!string.IsNullOrWhiteSpace(favicon))
-                ret += "<link rel='shortcut icon' href='" + favicon + "'>\n";
+                ret += "<link rel=\"shortcut icon\" href='" + favicon + "'>\n";
 
             for (int i = 0; i < stylesheetLinks.Count; i++)
             {
-                ret += "<link rel='stylesheet' href='" + stylesheetLinks[i] + "'>\n";
+                ret += "<link rel=\"stylesheet\" href='" + stylesheetLinks[i] + "'>\n";
             }
 
             for (int i = 0; i < scripts.Count; i++)
             {
-                ret += "<script type='text/javascript'>" + scripts[i] + "</script>\n";
+                ret += "<script type=\"text/javascript\">" + scripts[i] + "</script>\n";
             }
 
-            if (string.IsNullOrWhiteSpace(stylesheetCode))
-                ret += "<style type=\"text / css\">" + stylesheetCode + "</style>";
+            if (!string.IsNullOrWhiteSpace(stylesheetCode))
+                ret += "<style type=\"text/css\">" + stylesheetCode + "</style>";
 
             if (!string.IsNullOrWhiteSpace(additionalHeadLines))
                 ret += additionalHeadLines;
@@ -731,6 +731,42 @@ namespace LameNetHook
         public override string getContent(SessionData sessionData)
         {
             return runtimeCode.Invoke(sessionData);
+        }
+
+        /// <summary>
+        /// returns a conditional non-static piece of code, which is computed every request if conditionalCode returns true, codeIfTRUE is executed, if it returns false, codeIfFALSE is executed
+        /// </summary>
+        /// <param name="codeIfTRUE">The code to execute if conditionalCode returns TRUE</param>
+        /// <param name="codeIfFALSE">The code to execute if conditionalCode returns FALSE</param>
+        /// <param name="conditionalCode">The Conditional code</param>
+        /// <returns>returns a HRuntimeCode : HElement</returns>
+        public static HRuntimeCode getConditionalRuntimeCode(Master.getContents codeIfTRUE, Master.getContents codeIfFALSE, Func<SessionData, bool> conditionalCode)
+        {
+            return new HRuntimeCode((SessionData sessionData) => 
+                {
+                    if (conditionalCode(sessionData))
+                        return codeIfTRUE(sessionData);
+
+                    return codeIfFALSE(sessionData);
+                });
+        }
+
+        /// <summary>
+        /// returns a conditional non-static HElement, which is computed every request if conditionalCode returns true, elementIfTRUE is returned, if it returns false, elementIfFALSE is returned
+        /// </summary>
+        /// <param name="elementIfTRUE"></param>
+        /// <param name="elementIfFALSE"></param>
+        /// <param name="conditionalCode">The Conditional code</param>
+        /// <returns>returns a HRuntimeCode : HElement</returns>
+        public static HRuntimeCode getConditionalRuntimeCode(HElement elementIfTRUE, HElement elementIfFALSE, Func<SessionData, bool> conditionalCode)
+        {
+            return new HRuntimeCode((SessionData sessionData) =>
+            {
+                if (conditionalCode(sessionData))
+                    return elementIfTRUE == null ? "" : elementIfTRUE.getContent(sessionData);
+
+                return elementIfFALSE == null ? "" : elementIfFALSE.getContent(sessionData);
+            });
         }
     }
 }

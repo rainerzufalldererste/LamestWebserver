@@ -13,7 +13,7 @@ namespace Demos
 
         public override void processData(SessionData sessionData, ref string output)
         {
-            setValue("head", sessionData.getValueHead("head"), ref output);
+            setValue("head", sessionData.getHTTP_HEAD_Value("head"), ref output);
             setValue("last", "I AM REPLACED", ref output);
             setValue("middle", "let me be in the middle!", ref output);
             setValue("content", new HNewLine().ToString() + new HButton("button one", "pftest.html") + new HButton("button two", "#"), ref output);

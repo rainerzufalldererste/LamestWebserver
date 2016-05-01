@@ -28,7 +28,7 @@ namespace LameNetHook
         /// <returns></returns>
         public static string getSSIDforUser(string user)
         {
-            int? userID = getIDfromList(user, UserNames);
+            int? userID = getIndexFromList(user, UserNames);
             
             if(!userID.HasValue)
             {
@@ -80,16 +80,16 @@ namespace LameNetHook
 
             // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
 
-            if (getIDfromList(hash, FileNames).HasValue)
+            if (getIndexFromList(hash, FileNames).HasValue)
                 goto GENERATE_NEW_HASH;
 
-            if (getIDfromList(hash, UserHashes).HasValue)
+            if (getIndexFromList(hash, UserHashes).HasValue)
                 goto GENERATE_NEW_HASH;
 
             return hash;
         }
 
-        private static int? getIDfromList<T>(T value, List<T> list)
+        private static int? getIndexFromList<T>(T value, List<T> list)
         {
             if (value == null)
                 return null;
@@ -107,7 +107,7 @@ namespace LameNetHook
 
         internal static int? getUserIDFromSSID(string ssid)
         {
-            return getIDfromList(ssid, UserHashes);
+            return getIndexFromList(ssid, UserHashes);
         }
 
         internal static string getUserNameAt(int userID)
@@ -120,7 +120,7 @@ namespace LameNetHook
 
         internal static int getFileID(string file)
         {
-            int? id = getIDfromList(file, FileNames);
+            int? id = getIndexFromList(file, FileNames);
 
             if (id.HasValue)
                 return id.Value;
@@ -167,7 +167,7 @@ namespace LameNetHook
 
         internal static int getFilePerUserID(int userID, int fileID)
         {
-            int? ID = getIDfromList(FileNames[fileID], FilePerUserNames[userID]);
+            int? ID = getIndexFromList(FileNames[fileID], FilePerUserNames[userID]);
 
             if (ID.HasValue)
                 return ID.Value;
@@ -181,6 +181,11 @@ namespace LameNetHook
             mutex.ReleaseMutex();
 
             return ID.Value;
+        }
+
+        internal static int? getUserIDFromName(string userName)
+        {
+            return getIndexFromList(userName, UserNames);
         }
     }
 
@@ -246,7 +251,7 @@ namespace LameNetHook
 
             fileID = SessionContainer.getFileID(file);
 
-            this.ssid = getValuePost("ssid");
+            this.ssid = getHTTP_POST_value("ssid");
             this.userID = SessionContainer.getUserIDFromSSID(ssid);
 
             if (userID.HasValue)
@@ -270,7 +275,7 @@ namespace LameNetHook
         /// </summary>
         /// <param name="name">The name of the HTTP HEAD variable</param>
         /// <returns>the value of the given HTTP HEAD variable (or null if not existent)</returns>
-        public string getValueHead(string name)
+        public string getHTTP_HEAD_Value(string name)
         {
             for (int i = 0; i < varsHEAD.Count; i++)
             {
@@ -286,7 +291,7 @@ namespace LameNetHook
         /// </summary>
         /// <param name="name">The name of the HTTP POST variable</param>
         /// <returns>the value of the given HTTP POST variable (or null if not existent)</returns>
-        public string getValuePost(string name)
+        public string getHTTP_POST_value(string name)
         {
             for (int i = 0; i < varsPOST.Count; i++)
             {
@@ -563,6 +568,26 @@ namespace LameNetHook
         public T getFileVariable<T>(string name)
         {
             return (T)getFileVariable(name);
+        }
+
+        /// <summary>
+        /// Tells if a user has ever been registered with the given name
+        /// </summary>
+        /// <param name="userName">the name of the user</param>
+        /// <returns>true if the user has ever existed</returns>
+        public bool userExists(string userName)
+        {
+            return getUserIndex(userName).HasValue;
+        }
+
+        /// <summary>
+        /// Tells the Index of a user if he has ever been registered
+        /// </summary>
+        /// <param name="userName">the name of the user</param>
+        /// <returns>the index or null - as close as an int? can get to null</returns>
+        public int? getUserIndex(string userName)
+        {
+            return SessionContainer.getUserIDFromName(userName);
         }
     }
 }
