@@ -26,7 +26,12 @@ namespace LameNetHook
 
         private void register()
         {
-            Master.callAddFunctionEvent(URL, this.getContents);
+            Master.addFuntionToServer(URL, this.getContents);
+        }
+
+        protected void removeFromServer()
+        {
+            Master.removeFunctionFromServer(URL);
         }
 
         private string getContents(SessionData sessionData)
@@ -167,7 +172,7 @@ namespace LameNetHook
                                     ret = ret.Remove(onclickEndPos + 1, 1);
                                     ret = ret.Insert(onclickEndPos + 1, "\"");
 
-                                    string hash = SessionContainer.getHash();
+                                    string hash = SessionContainer.generateHash();
                                     string add = ";var f_"
                                         + hash + "=document.createElement('form');f_"
                                         + hash + ".setAttribute('method','POST');f_"

@@ -8,18 +8,45 @@ namespace LameNetHook
 {
     public class PageBuilder : HContainer
     {
+        /// <summary>
+        /// a function pointer to the executed method on getContent(SessionData sessionData)
+        /// </summary>
         public Func<SessionData, string> getContentMethod;
+
+        /// <summary>
+        /// the title of this page
+        /// </summary>
         public string title;
+
+        /// <summary>
+        /// the URL at which this page is / will be available at
+        /// </summary>
         public string URL = "";
 
         /// <summary>
         /// Path to the stylesheets. Prefer strings. Else: toString() will be used
         /// </summary>
-        public List<Object> stylesheets = new List<object>();
+        public List<Object> stylesheetLinks = new List<object>();
 
+        /// <summary>
+        /// javascript code directly bound into the page code
+        /// </summary>
         public List<string> scripts = new List<string>();
+
+        /// <summary>
+        /// additional lines added to the "<head>" segment of the page
+        /// </summary>
         public string additionalHeadLines;
+
+        /// <summary>
+        /// The icon to display
+        /// </summary>
         public string favicon = null;
+
+        /// <summary>
+        /// CSS code directly bound into the page code
+        /// </summary>
+        public string stylesheetCode;
 
         public PageBuilder(string title, string URL)
         {
@@ -37,15 +64,18 @@ namespace LameNetHook
             if (!string.IsNullOrWhiteSpace(favicon))
                 ret += "<link rel='shortcut icon' href='" + favicon + "'>\n";
 
-            for (int i = 0; i < stylesheets.Count; i++)
+            for (int i = 0; i < stylesheetLinks.Count; i++)
             {
-                ret += "<link rel='stylesheet' href='" + stylesheets[i] + "'>\n";
+                ret += "<link rel='stylesheet' href='" + stylesheetLinks[i] + "'>\n";
             }
 
             for (int i = 0; i < scripts.Count; i++)
             {
-                ret += "<script type='text / javascript'>" + scripts[i] + "</script>\n";
+                ret += "<script type='text/javascript'>" + scripts[i] + "</script>\n";
             }
+
+            if (string.IsNullOrWhiteSpace(stylesheetCode))
+                ret += "<style type=\"text / css\">" + stylesheetCode + "</style>";
 
             if (!string.IsNullOrWhiteSpace(additionalHeadLines))
                 ret += additionalHeadLines;
@@ -86,12 +116,14 @@ namespace LameNetHook
             return ret;
         }
 
-        private void register(string URL = null)
+        private void register()
         {
-            if (URL == null)
-                URL = this.URL;
+            Master.addFuntionToServer(URL, getContents);
+        }
 
-            Master.callAddFunctionEvent(URL, getContents);
+        protected void removeFromServer()
+        {
+            Master.removeFunctionFromServer(URL);
         }
     }
 
@@ -149,11 +181,38 @@ namespace LameNetHook
         {
             string ret = "<a ";
 
-            if (!string.IsNullOrWhiteSpace(href))
-                ret += "href='" + href + "' ";
+            if (href.Length > 0)
+            {
+                if (href[0] == '#')
+                    ret += "href='" + href + "' ";
+                else
+                    ret += "href='#' ";
 
-            if (!string.IsNullOrWhiteSpace(onclick))
-                ret += "onclick='" + onclick + "' ";
+                string hash = SessionContainer.generateHash();
+                string add = ";var f_"
+                    + hash + "=document.createElement('form');f_"
+                    + hash + ".setAttribute('method','POST');f_"
+                    + hash + ".setAttribute('action','"
+                        + href + "');f_"
+                    + hash + ".setAttribute('enctype','text/html');var i_"
+                    + hash + "=document.createElement('input');i_"
+                    + hash + ".setAttribute('type','hidden');i_"
+                    + hash + ".setAttribute('name','ssid');i_"
+                    + hash + ".setAttribute('value','"
+                        + sessionData.ssid + "');f_"
+                    + hash + ".appendChild(i_"
+                    + hash + ");document.body.appendChild(f_"
+                    + hash + ");f_"
+                    + hash + ".submit();document.body.remove(f_"
+                    + hash + ");";
+
+                ret += " onclick='" + onclick + add + "'";
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(onclick))
+                    ret += "onclick='" + onclick + "' ";
+            }
 
             if (!string.IsNullOrWhiteSpace(id))
                 ret += "id='" + id + "' ";
@@ -418,6 +477,13 @@ namespace LameNetHook
         string href, onclick;
         EButtonType type;
 
+        /// <summary>
+        /// Creates a button. SUBMIT BUTTONS SHOULDN'T HAVE A HREF!
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="type"></param>
+        /// <param name="href">SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
+        /// <param name="onclick"></param>
         public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "")
         {
             this.text = text;
@@ -425,6 +491,13 @@ namespace LameNetHook
             this.onclick = onclick;
             this.type = type;
         }
+
+        /// <summary>
+        /// Creates a button.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="href">SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
+        /// <param name="onclick"></param>
         public HButton(string text, string href = "", string onclick = "")
         {
             this.text = text;
@@ -446,11 +519,38 @@ namespace LameNetHook
             if (!string.IsNullOrWhiteSpace(name))
                 ret += "name='" + name + "' ";
 
-            if (!string.IsNullOrWhiteSpace(href))
-                ret += "href='" + href + "' ";
+            if (href.Length > 0 && type != EButtonType.submit)
+            {
+                if (href[0] == '#')
+                    ret += "href='" + href + "' ";
+                else
+                    ret += "href='#' ";
 
-            if (!string.IsNullOrWhiteSpace(onclick))
-                ret += "onclick='" + onclick + "' ";
+                string hash = SessionContainer.generateHash();
+                string add = ";var f_"
+                    + hash + "=document.createElement('form');f_"
+                    + hash + ".setAttribute('method','POST');f_"
+                    + hash + ".setAttribute('action','"
+                        + href + "');f_"
+                    + hash + ".setAttribute('enctype','text/html');var i_"
+                    + hash + "=document.createElement('input');i_"
+                    + hash + ".setAttribute('type','hidden');i_"
+                    + hash + ".setAttribute('name','ssid');i_"
+                    + hash + ".setAttribute('value','"
+                        + sessionData.ssid + "');f_"
+                    + hash + ".appendChild(i_"
+                    + hash + ");document.body.appendChild(f_"
+                    + hash + ");f_"
+                    + hash + ".submit();document.body.remove(f_"
+                    + hash + ");";
+
+                ret += " onclick='" + onclick + add + "'";
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(onclick))
+                    ret += "onclick='" + onclick + "' ";
+            }
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -609,6 +709,28 @@ namespace LameNetHook
             }
 
             return ret;
+        }
+    }
+
+    /// <summary>
+    /// Non-static content, which is computed every request
+    /// </summary>
+    public class HRuntimeCode : HElement
+    {
+        public Master.getContents runtimeCode;
+
+        /// <summary>
+        /// Creates non-static content, which is computed every request
+        /// </summary>
+        /// <param name="runtimeCode">The code to execute every request</param>
+        public HRuntimeCode(Master.getContents runtimeCode)
+        {
+            this.runtimeCode = runtimeCode;
+        }
+
+        public override string getContent(SessionData sessionData)
+        {
+            return runtimeCode.Invoke(sessionData);
         }
     }
 }

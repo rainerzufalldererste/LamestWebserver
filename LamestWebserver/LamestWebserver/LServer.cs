@@ -43,6 +43,7 @@ namespace LamestWebserver
             this.csharp_bridge = true;
 
             Master.addFunctionEvent += addFunction;
+            Master.removeFunctionEvent += removeFunction;
 
             this.port = port;
             globalData = new AssocByFileUserData(port.ToString());
@@ -51,12 +52,15 @@ namespace LamestWebserver
             mThread.Start();
         }
 
-        internal LServer(int port, bool cs_bridge)
+        internal LServer(int port, string folder, bool cs_bridge)
         {
             this.csharp_bridge = cs_bridge;
 
-            if(cs_bridge)
+            if (cs_bridge)
+            {
                 Master.addFunctionEvent += addFunction;
+                Master.removeFunctionEvent += removeFunction;
+            }
 
             this.port = port;
             globalData = new AssocByFileUserData(port.ToString());
@@ -67,8 +71,11 @@ namespace LamestWebserver
 
         ~LServer()
         {
-            if(csharp_bridge)
+            if (csharp_bridge)
+            {
                 Master.addFunctionEvent -= addFunction;
+                Master.removeFunctionEvent -= removeFunction;
+            }
         }
 
         public int cacheHas(string name)
@@ -298,7 +305,7 @@ namespace LamestWebserver
                                 status = "501 Not Implemented",
                                 data = Master.getErrorMsg(
                                     "Error 501: Not Implemented",
-                                    "<p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
+                                            "<p>The Package you were sending:<br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
                             };
 
                             htp_.contentLength = enc.GetByteCount(htp_.data);
@@ -367,7 +374,7 @@ namespace LamestWebserver
                                             status = "403 Forbidden",
                                             data = Master.getErrorMsg(
                                                 "Error 403: Forbidden",
-                                                "<p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
+                                            "<p>The Package you were sending:<br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
                                         };
 
                                         htp_.contentLength = enc.GetBytes(htp_.data).Length;
@@ -435,6 +442,36 @@ namespace LamestWebserver
                                         buffer = null;
                                         b = null;
                                     }
+                                    else if (htp.data.Substring(htp.data.Length - 4) == ".css")
+                                    {
+                                        string s = System.IO.File.ReadAllText(folder + "/" + htp.data);
+                                        HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length, contentType = "text/css" };
+                                        buffer = enc.GetBytes(htp_.getPackage());
+                                        nws.Write(buffer, 0, buffer.Length);
+
+                                        buffer = null;
+                                        s = null;
+
+                                        if (useCache && cache.Count < max_cache)
+                                        {
+                                            cache.Add(new PreloadedFile(folder + htp.data, s, htp_.contentLength));
+                                        }
+                                    }
+                                    else if (htp.data.Substring(htp.data.Length - 4) == ".js")
+                                    {
+                                        string s = System.IO.File.ReadAllText(folder + "/" + htp.data);
+                                        HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length, contentType = "text/javascript" };
+                                        buffer = enc.GetBytes(htp_.getPackage());
+                                        nws.Write(buffer, 0, buffer.Length);
+
+                                        buffer = null;
+                                        s = null;
+
+                                        if (useCache && cache.Count < max_cache)
+                                        {
+                                            cache.Add(new PreloadedFile(folder + htp.data, s, htp_.contentLength));
+                                        }
+                                    }
                                     else if (htp.data.Substring(htp.data.Length - 4) == ".hcs")
                                     {
                                         string s = Hook.resolveScriptFromFile(folder + "/" + htp.data, client, htp, htp.data, getCurrentUser(client), globalData);
@@ -468,7 +505,7 @@ namespace LamestWebserver
                                         status = "404 File Not Found",
                                         data = Master.getErrorMsg(
                                             "Error 404: Page Not Found",
-                                            "<p>The Package you were sending: <br><br>" + msg_.Replace("\r\n", "<br>") + "</p><hr><br><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
+                                            "<p>The Package you were sending:<br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
                                     };
 
                                     htp_.contentLength = enc.GetBytes(htp_.data).Length;

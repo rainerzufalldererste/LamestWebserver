@@ -23,9 +23,8 @@ namespace LamestWebserver
             {
                 try
                 {
-
                     Console.WriteLine("Please specify ports in param... trying to use 8080... i will fail - or not - yes - true!  - example: \"lws 8080\"");
-                    ports.Add(new LServer(8080, true));
+                    ports.Add(new LServer(8080, "./web", true));
                 }
                 catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
             }
@@ -39,7 +38,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        ports.Add(new LServer(Int32.Parse(args[0]), true)); //does stuff
+                        ports.Add(new LServer(Int32.Parse(args[0]), "./web", true)); //does stuff
                     }
                     catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
                 }
@@ -50,7 +49,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        ports.Add(new LServer(Int32.Parse(args[i]), true) { folder = args[i+1] }); //does stuff
+                        ports.Add(new LServer(Int32.Parse(args[i]), args[i + 1], true)); //does stuff
                     }
                     catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
                 }
@@ -103,7 +102,7 @@ namespace LamestWebserver
                                         }
                                     }
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -117,10 +116,10 @@ namespace LamestWebserver
                                     string prt = Console.ReadLine();
                                     Console.WriteLine("Folder: (\"./web\")");
                                     string fld = Console.ReadLine();
-                                    ports.Add(new LServer(Int32.Parse(prt), true) { folder = fld });
+                                    ports.Add(new LServer(Int32.Parse(prt), fld, true));
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -135,7 +134,7 @@ namespace LamestWebserver
                                     cmdsleep = Int32.Parse(prt);
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -156,7 +155,7 @@ namespace LamestWebserver
 
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -184,7 +183,7 @@ namespace LamestWebserver
 
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -200,7 +199,7 @@ namespace LamestWebserver
                                     }
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -225,7 +224,7 @@ namespace LamestWebserver
                                     }
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -250,7 +249,7 @@ namespace LamestWebserver
                                         }
                                     }
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -273,7 +272,7 @@ namespace LamestWebserver
                                         }
                                     }
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -295,7 +294,7 @@ namespace LamestWebserver
                                         }
                                     }
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -318,7 +317,7 @@ namespace LamestWebserver
                                         }
                                     }
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
@@ -331,7 +330,7 @@ namespace LamestWebserver
                                 Demos.pageBuilderTest.addLamePageBuilderTest();
                                 new Demos.pageFillerTest();
                                 new Demos.CardGame.loginScreen();
-                                LameNetHook.InstantPageResponse.generateRedirect("redirect.html", "redirect.html");
+                                LameNetHook.InstantPageResponse.addRedirect("redirect.html", "redirect.html");
                                 Console.WriteLine("The Demos were added.");
                             }
                             break;
@@ -361,7 +360,7 @@ namespace LamestWebserver
                                     Console.WriteLine();
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!"); }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;

@@ -11,11 +11,19 @@ namespace LameNetHook
         public delegate string getContents(SessionData data);
 
         public delegate void addFunction(string hash, getContents function);
-        public static event addFunction addFunctionEvent;
+        public delegate void removeFunction(string hash);
 
-        internal static void callAddFunctionEvent(string hashname, getContents getc)
+        public static event addFunction addFunctionEvent;
+        public static event removeFunction removeFunctionEvent;
+
+        internal static void addFuntionToServer(string URL, getContents getc)
         {
-            addFunctionEvent(hashname, getc);
+            addFunctionEvent(URL, getc);
+        }
+
+        internal static void removeFunctionFromServer(string URL)
+        {
+            removeFunctionEvent(URL);
         }
 
         public static string getErrorMsg(string title, string message)

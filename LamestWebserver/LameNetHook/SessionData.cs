@@ -44,7 +44,7 @@ namespace LameNetHook
                 mutex.ReleaseMutex();
             }
 
-            UserHashes[userID.Value] = getNewHash();
+            UserHashes[userID.Value] = generateHash();
 
             return UserHashes[userID.Value];
         }
@@ -55,15 +55,31 @@ namespace LameNetHook
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
         };
 
-        private static string getNewHash()
+        public static string generateHash()
         {
             GENERATE_NEW_HASH:
             string hash = "";
 
             // Chris: generate hash
-            hash = getHash();
+
+            if (enc == null)
+            {
+                Aes aes = new AesManaged() { Mode = CipherMode.ECB };
+                aes.GenerateIV();
+                aes.GenerateKey();
+                enc = aes.CreateEncryptor();
+            }
+
+            enc.TransformBlock(lastHash, 0, 16, lastHash, 0);
+
+            for (int i = 0; i < lastHash.Length; i++)
+            {
+                hash += hashChars[(lastHash[i] & 0xf0) >> 4];
+                hash += hashChars[lastHash[i] & 0x0f];
+            }
 
             // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
+
             if (getIDfromList(hash, FileNames).HasValue)
                 goto GENERATE_NEW_HASH;
 
@@ -165,29 +181,6 @@ namespace LameNetHook
             mutex.ReleaseMutex();
 
             return ID.Value;
-        }
-
-        internal static string getHash()
-        {
-            string hash = "";
-
-            if (enc == null)
-            {
-                Aes aes = new AesManaged() { Mode = CipherMode.ECB };
-                aes.GenerateIV();
-                aes.GenerateKey();
-                enc = aes.CreateEncryptor();
-            }
-
-            enc.TransformBlock(lastHash, 0, 16, lastHash, 0);
-
-            for (int i = 0; i < lastHash.Length; i++)
-            {
-                hash += hashChars[(lastHash[i] & 0xf0) >> 4];
-                hash += hashChars[lastHash[i] & 0x0f];
-            }
-
-            return hash;
         }
     }
 
