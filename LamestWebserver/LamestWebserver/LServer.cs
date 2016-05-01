@@ -305,7 +305,7 @@ namespace LamestWebserver
                                 status = "501 Not Implemented",
                                 data = Master.getErrorMsg(
                                     "Error 501: Not Implemented",
-                                            "<p>The Package you were sending:<br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
+                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
                             };
 
                             htp_.contentLength = enc.GetByteCount(htp_.data);
@@ -374,7 +374,7 @@ namespace LamestWebserver
                                             status = "403 Forbidden",
                                             data = Master.getErrorMsg(
                                                 "Error 403: Forbidden",
-                                            "<p>The Package you were sending:<br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
+                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
                                         };
 
                                         htp_.contentLength = enc.GetBytes(htp_.data).Length;
@@ -505,7 +505,7 @@ namespace LamestWebserver
                                         status = "404 File Not Found",
                                         data = Master.getErrorMsg(
                                             "Error 404: Page Not Found",
-                                            "<p>The Package you were sending:<br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
+                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
                                     };
 
                                     htp_.contentLength = enc.GetBytes(htp_.data).Length;
