@@ -4,23 +4,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using LameNetHook;
+using System.Threading;
 
 namespace Demos
 {
     public static class CardGame
     {
-        private static List<string> secretKeys = new List<string>();
         private static string stylesheet = "body{font-family: \"Segoe UI\", sans-serif; background-color: #444444; background-image: url(\"/cgame/card.png\"); background-repeat: repeat; background-size: 125px;} div{font-family: \"Segoe UI\",sans-serif;width: 70 %;max-width: 800px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;padding-top: 22px;padding-bottom: 22px;}";
 
         public static void register()
         {
-            new loginScreen();
-            new lobby();
+            new LoginScreen();
+            new Lobby();
         }
 
-        public class loginScreen : PageBuilder
+        public class LoginScreen : PageBuilder
         {
-            public loginScreen() : base("CardGame - Login", "cgame/")
+            private static List<string> secretKeys = new List<string>();
+
+            public LoginScreen() : base("CardGame - Login", "cgame/")
             {
                 stylesheetCode = stylesheet;
 
@@ -62,6 +64,7 @@ namespace Demos
                                         if(secretKeys[id.Value] == key)
                                         {
                                             sessionData.registerUser(userName);
+                                            sessionData.setUserVariable("cycles", (int?)6);
                                             return true;
                                         }
 
@@ -71,6 +74,7 @@ namespace Demos
                                     {
                                         sessionData.registerUser(userName);
                                         secretKeys.Add(key);
+                                        sessionData.setUserVariable("cycles", (int?)6);
                                         return true;
                                     }
                                 }))
@@ -92,9 +96,15 @@ namespace Demos
             }
         }
 
-        public class lobby : PageBuilder
+        public class Lobby : PageBuilder
         {
-            public lobby() : base("CardGame - Lobby", "cgame/lobby")
+            private List<int> searchingPlayers = new List<int>();
+            private List<int> findingPlayers = new List<int>();
+            private string nextGameHash = "";
+            private GameHandler currentGame;
+            private Mutex mutex = new Mutex();
+
+            public Lobby() : base("CardGame - Lobby", "cgame/lobby")
             {
                 stylesheetCode = stylesheet;
 
@@ -102,18 +112,19 @@ namespace Demos
                     HRuntimeCode.getConditionalRuntimeCode(
                         new HContainer() { elements = new List<HElement>()
                             {
-                                new HScript(ScriptCollection.getPageReloadInMilliseconds, 5000),
+                                new HScript(ScriptCollection.getPageReloadInMilliseconds, 2000),
                                 new HText("Searching for a lobby... <i>(The Page might reload a couple of times)</i>"),
                                 new HRuntimeCode((SessionData sessionData) => 
                                     {
-                                        int? cycles = sessionData.getUserFileVariable<int?>(nameof(cycles));
+                                        int? cycles = sessionData.getUserVariable<int?>(nameof(cycles));
 
                                         if(cycles.HasValue)
                                         {
                                             if(cycles < 2)
                                             {
                                                 // make sure your next game doesn't start with cycle < 2.
-                                                sessionData.setUserFileVariable<object>(nameof(cycles), null); // clears the variable space for "cycles"
+                                                sessionData.setUserVariable<object>(nameof(cycles), null); // clears the variable space for "cycles" & removes it.
+                                                searchingPlayers.Remove(sessionData.userID.Value);
 
                                                 return new HScript(
                                                     ScriptCollection.getPageReferalToX,
@@ -121,19 +132,61 @@ namespace Demos
                                             }
                                             else
                                             {
-                                                // TODO: find a nice game for you.
+                                                if(cycles == 6)
+                                                {
+                                                    searchingPlayers.Add(sessionData.userID.Value);
+                                                }
 
-                                                cycles--;
-                                                sessionData.setUserFileVariable(nameof(cycles), cycles);
+                                                if (findingPlayers.Contains(sessionData.userID.Value))
+                                                {
+                                                    if(nextGameHash == "")
+                                                    {
+                                                        registerNextGame();
+                                                    }
+
+                                                    findingPlayers.Remove(sessionData.userID.Value);
+                                                    searchingPlayers.Remove(sessionData.userID.Value);
+
+                                                    if(findingPlayers.Count == 0)
+                                                    {
+                                                        nextGameHash = "";
+                                                    }
+
+                                                    return new HScript(ScriptCollection.getPageReferalToX, nextGameHash).getContent(sessionData); // <- without operator overloading
+                                                }
+                                                else if(searchingPlayers.Contains(sessionData.userID.Value))
+                                                {
+                                                    if(searchingPlayers.Count >= cycles)
+                                                    {
+                                                        mutex.WaitOne();
+                                                        for (int i = 0; i < searchingPlayers.Count; i++)
+                                                        {
+                                                            findingPlayers.Add(searchingPlayers[i]);
+			                                            }
+                                                        mutex.ReleaseMutex();
+                                                    }
+                                                    else
+                                                    {
+                                                        cycles--;
+                                                        sessionData.setUserVariable(nameof(cycles), cycles);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    // you were kicked out because you waited to long or sth...
+                                                    cycles = 5;
+                                                    searchingPlayers.Add(sessionData.userID.Value);
+                                                    sessionData.setUserVariable(nameof(cycles), cycles);
+                                                }
                                             }
                                         }
                                         else
                                         {
-                                            cycles = 6;
-                                            sessionData.setUserFileVariable(nameof(cycles), cycles);
+                                            cycles = 5;
+                                            sessionData.setUserVariable(nameof(cycles), cycles);
                                         }
 
-                                        return "";
+                                        return "[ " + cycles + " | " + sessionData.userID.Value + " ]" + new HTable( findingPlayers.Cast<object>(), searchingPlayers.Cast<object>() ).getContent(sessionData);
                                     }),
                             }},
                         new HContainer() { elements = new List<HElement>()
@@ -142,6 +195,26 @@ namespace Demos
                             new HLink("you have to login first. click here to log in.", "/cgame/") } }
                         ,
                         (SessionData sessionData) => sessionData.knownUser ));
+            }
+
+            private void registerNextGame()
+            {
+                nextGameHash = "cgame/" + SessionContainer.generateHash(); // generates a new hash
+                currentGame = new GameHandler(nextGameHash);
+                nextGameHash = "/" + nextGameHash;
+            }
+        }
+
+        public class GameHandler : PageResponse
+        {
+            public GameHandler(string hashURL) : base(hashURL)
+            {
+
+            }
+
+            protected override string getContents(SessionData sessionData)
+            {
+                return "wow, dude, i'm a game! (" + sessionData.ssid + ")";
             }
         }
     }

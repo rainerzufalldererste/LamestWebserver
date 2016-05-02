@@ -56,9 +56,9 @@ namespace LameNetHook
             if (sessionData == null || string.IsNullOrWhiteSpace(sessionData.ssid))
                 return "window.location = '" + arguments[0] + ";'";
 
-            string ret = "var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','"
+            string ret = "onload = function() {var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','"
                         + arguments[0] + "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','"
-                        + sessionData.ssid + "');f.appendChild(i);document.body.appendChild(f);f.submit();document.body.remove(f);";
+                        + sessionData.ssid + "');f.appendChild(i);document.body.appendChild(f);f.submit();document.body.remove(f);};";
 
             return ret;
         }

@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 
 namespace LameNetHook
 {
-    internal static class SessionContainer
+    public static class SessionContainer
     {
         private static Mutex mutex = new Mutex();
 
@@ -26,7 +26,7 @@ namespace LameNetHook
         /// </summary>
         /// <param name="user"></param>
         /// <returns></returns>
-        public static string getSSIDforUser(string user)
+        internal static string getSSIDforUser(string user)
         {
             int? userID = getIndexFromList(user, UserNames);
             
@@ -293,9 +293,6 @@ namespace LameNetHook
             {
                 knownUser = true;
                 userName = SessionContainer.getUserNameAt(userID.Value);
-                
-                // the user keeps his session id so that mutiple tabs are possible...
-
                 userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
             }
             else
@@ -345,7 +342,15 @@ namespace LameNetHook
         public string registerUser(string userName)
         {
             this.userName = userName;
-            return ssid = SessionContainer.getSSIDforUser(userName);
+            knownUser = true;
+
+            ssid = SessionContainer.getSSIDforUser(userName);
+            userID = SessionContainer.getUserIDFromSSID(ssid);
+
+            userName = SessionContainer.getUserNameAt(userID.Value);
+            userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
+
+            return ssid;
         }
 
         /// <summary>

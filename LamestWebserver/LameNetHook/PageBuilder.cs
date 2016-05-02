@@ -672,10 +672,16 @@ namespace LameNetHook
 
     public class HTable : HElement
     {
-        private ICollection<ICollection<HElement>> data;
+        private List<List<HElement>> elements;
+        private IEnumerable<object>[] data;
         public string descriptionTags;
 
-        public HTable(ICollection<ICollection<HElement>> data)
+        public HTable(List<List<HElement>> elements)
+        {
+            this.elements = elements;
+        }
+
+        public HTable(params IEnumerable<object>[] data)
         {
             this.data = data;
         }
@@ -695,16 +701,33 @@ namespace LameNetHook
 
             ret += ">\n";
 
-            foreach(ICollection<HElement> outer in data)
+            if (elements != null)
             {
-                ret += "<tr>\n";
-
-                foreach(HElement element in outer)
+                foreach (ICollection<HElement> outer in elements)
                 {
-                    ret += "<td>\n" + element.getContent(sessionData) + "</td>\n";
-                }
+                    ret += "<tr>\n";
 
-                ret += "</tr>\n";
+                    foreach (HElement element in outer)
+                    {
+                        ret += "<td>\n" + element.getContent(sessionData) + "</td>\n";
+                    }
+
+                    ret += "</tr>\n";
+                }
+            }
+            else
+            {
+                foreach (IEnumerable<object> outer in data)
+                {
+                    ret += "<tr>\n";
+
+                    foreach (object obj in outer)
+                    {
+                        ret += "<td>\n" + obj + "</td>\n";
+                    }
+
+                    ret += "</tr>\n";
+                }
             }
 
             ret += "</table>\n";
