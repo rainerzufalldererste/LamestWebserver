@@ -121,7 +121,7 @@ namespace Demos
 
                                         if(cycles.HasValue)
                                         {
-                                            if(cycles < 2)
+                                            if(cycles < 2 && !findingPlayers.Contains(sessionData.userID.Value))
                                             {
                                                 // make sure your next game doesn't start with cycle < 2.
                                                 sessionData.setUserVariable<object>(nameof(cycles), null); // clears the variable space for "cycles" & removes it.
@@ -143,10 +143,12 @@ namespace Demos
                                                     if(nextGameHash == "")
                                                     {
                                                         registerNextGame();
+                                                        currentGame.setSize(findingPlayers.Count);
                                                     }
                                                     
                                                     findingPlayers.Remove(sessionData.userID.Value);
                                                     searchingPlayers.Remove(sessionData.userID.Value);
+                                                    sessionData.setUserVariable<object>(nameof(cycles), null);
 
                                                     string lastgamehash = nextGameHash;
 
@@ -207,9 +209,10 @@ namespace Demos
             }
         }
 
-        public class GameHandler : PageResponse
+        public class GameHandler : SyncronizedPageResponse
         {
             private List<int> joinedUserIDs = new List<int>();
+            private int size = -1;
 
             public GameHandler(string hashURL) : base(hashURL)
             {
@@ -221,7 +224,12 @@ namespace Demos
                 if (!joinedUserIDs.Contains(sessionData.userID.Value))
                     joinedUserIDs.Add(sessionData.userID.Value);
 
-                return "wow, dude, i'm a game! (" + sessionData.ssid + ")" + new HNewLine() * sessionData + "[" + sessionData.userID.Value + "] " + new HTable(joinedUserIDs.Cast<object>()) * sessionData;
+                return "wow, dude, i'm a game! (" + sessionData.ssid + ")" + new HNewLine() * sessionData + "[" + sessionData.userID.Value + ": (" + joinedUserIDs.Count + "/" + size + ")] " + new HTable(joinedUserIDs.Cast<object>()) * sessionData;
+            }
+
+            internal void setSize(int size)
+            {
+                this.size = size;
             }
         }
     }

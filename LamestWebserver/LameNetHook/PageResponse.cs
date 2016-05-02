@@ -26,6 +26,44 @@ namespace LameNetHook
         protected abstract string getContents(SessionData sessionData);
     }
 
+    public abstract class SyncronizedPageResponse : PageResponse
+    {
+        public string URL { get; protected set; }
+        private System.Threading.Mutex mutex = new System.Threading.Mutex();
+
+        public SyncronizedPageResponse(string URL, bool register = true) : base(URL, false)
+        {
+            if (register)
+                Master.addFuntionToServer(URL, getContentSyncronously);
+        }
+
+        protected void removeFromServer()
+        {
+            Master.removeFunctionFromServer(URL);
+        }
+
+        private string getContentSyncronously(SessionData sessionData)
+        {
+            string s;
+
+            try
+            {
+                mutex.WaitOne();
+                s = getContents(sessionData);
+                mutex.ReleaseMutex();
+            }
+            catch (Exception e)
+            {
+                mutex.ReleaseMutex();
+                throw (e);
+            }
+
+            return s;
+        }
+
+        protected override abstract string getContents(SessionData sessionData);
+    }
+
     public static class InstantPageResponse
     {
         private static System.Threading.Mutex mutex = new System.Threading.Mutex();
