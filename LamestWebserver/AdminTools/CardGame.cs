@@ -45,7 +45,7 @@ namespace Demos
 
                             new HHeadline("Login:", 1),
 
-                            new HForm(InstantPageResponse.addOneTimeConditionalRedirect("/cgame/lobby?abcdefg", "/cgame/?failed", (SessionData sessionData) => 
+                            new HForm(InstantPageResponse.addOneTimeConditionalRedirect("/cgame/lobby", "/cgame/?failed", (SessionData sessionData) => 
                                 {
                                     string userName = sessionData.getHTTP_POST_value("user");
                                     string key = sessionData.getHTTP_POST_value("key");
@@ -61,6 +61,7 @@ namespace Demos
                                     {
                                         if(secretKeys[id.Value] == key)
                                         {
+                                            sessionData.registerUser(userName);
                                             return true;
                                         }
 
@@ -101,10 +102,45 @@ namespace Demos
                     HRuntimeCode.getConditionalRuntimeCode(
                         new HContainer() { elements = new List<HElement>()
                             {
-                                new HScript(ScriptCollection.getPageReloadAtMilliseconds, 5000),
-                                new HText("Searching for a lobby... <i>(The Page might reload a couple of times)</i>")
+                                new HScript(ScriptCollection.getPageReloadInMilliseconds, 5000),
+                                new HText("Searching for a lobby... <i>(The Page might reload a couple of times)</i>"),
+                                new HRuntimeCode((SessionData sessionData) => 
+                                    {
+                                        int? cycles = sessionData.getUserFileVariable<int?>(nameof(cycles));
+
+                                        if(cycles.HasValue)
+                                        {
+                                            if(cycles < 2)
+                                            {
+                                                // make sure your next game doesn't start with cycle < 2.
+                                                sessionData.setUserFileVariable<object>(nameof(cycles), null); // clears the variable space for "cycles"
+
+                                                return new HScript(
+                                                    ScriptCollection.getPageReferalToX,
+                                                    InstantPageResponse.addOneTimeTimedRedirect("/cgame/", "Sorry.\nWe couldn't find a game for you.", 5000, true)) * sessionData; // <- operator overloading can be fishy. this executes HScript.getContent(sessionData);
+                                            }
+                                            else
+                                            {
+                                                // TODO: find a nice game for you.
+
+                                                cycles--;
+                                                sessionData.setUserFileVariable(nameof(cycles), cycles);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            cycles = 6;
+                                            sessionData.setUserFileVariable(nameof(cycles), cycles);
+                                        }
+
+                                        return "";
+                                    }),
                             }},
-                        new HContainer() { elements = new List<HElement>() { new HLink("you have to login first. click here to log in.", "/cgame/") } },
+                        new HContainer() { elements = new List<HElement>()
+                        {
+                            new HScript(ScriptCollection.getPageReferalToXInMilliseconds, "/cgame/", 2500),
+                            new HLink("you have to login first. click here to log in.", "/cgame/") } }
+                        ,
                         (SessionData sessionData) => sessionData.knownUser ));
             }
         }

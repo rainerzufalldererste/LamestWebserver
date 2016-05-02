@@ -26,7 +26,7 @@ namespace LameNetHook
         /// <summary>
         /// Path to the stylesheets. Prefer strings. Else: toString() will be used
         /// </summary>
-        public List<Object> stylesheetLinks = new List<object>();
+        public List<object> stylesheetLinks = new List<object>();
 
         /// <summary>
         /// javascript code directly bound into the page code
@@ -48,6 +48,11 @@ namespace LameNetHook
         /// </summary>
         public string stylesheetCode;
 
+        /// <summary>
+        /// Creates a new PageBuilder and registers it at the server for a specified url
+        /// </summary>
+        /// <param name="title">The window title</param>
+        /// <param name="URL">the URL at which to register this page</param>
         public PageBuilder(string title, string URL)
         {
             this.title = title;
@@ -55,6 +60,16 @@ namespace LameNetHook
             getContentMethod = buildContent;
 
             register();
+        }
+
+        /// <summary>
+        /// Creates a new PageBuilder, but does not register it at the server for a specified url
+        /// </summary>
+        /// <param name="title"></param>
+        public PageBuilder(string title)
+        {
+            this.title = title;
+            getContentMethod = buildContent;
         }
 
         protected string buildContent(SessionData sessionData)
@@ -133,6 +148,20 @@ namespace LameNetHook
         public string name = "";
 
         public abstract string getContent(SessionData sessionData);
+
+        /// <summary>
+        /// FISHY FISHY FISHY FISH, TASE A PIECE OF WISHY DISH
+        /// </summary>
+        /// <returns>element getContent(sessionData)</returns>
+        public static string operator * (HElement element, SessionData sessionData)
+        {
+            return element.getContent(sessionData);
+        }
+
+        public override string ToString()
+        {
+            throw new Exception("No, ToString is not the Method you should be using. Use getContent(SessionData sessionData).");
+        }
     }
 
     public class HNewLine : HElement
@@ -736,18 +765,23 @@ namespace LameNetHook
 
     public class HScript : HElement
     {
-        private object arguments;
+        private object[] arguments;
         private bool dynamic;
         private string script;
         private ScriptCollection.scriptFuction scriptFunction;
-
+        /// <summary>
+        /// generates a static script (not the ones that need SessionData or the SSID)
+        /// </summary>
         public HScript(string scriptText)
         {
             this.dynamic = false;
             this.script = scriptText;
         }
 
-        public HScript(ScriptCollection.scriptFuction scriptFunction, object arguments)
+        /// <summary>
+        /// generates a runtime defined script (like the ones, that need SessionData or the SSID)
+        /// </summary>
+        public HScript(ScriptCollection.scriptFuction scriptFunction, params object[] arguments)
         {
             this.dynamic = true;
             this.scriptFunction = scriptFunction;

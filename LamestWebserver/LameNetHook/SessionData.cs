@@ -191,9 +191,13 @@ namespace LameNetHook
 
     public class SessionData
     {
-        private int? userID;
         private int fileID;
         private int userFileID;
+
+        /// <summary>
+        /// The index of the current User in the database
+        /// </summary>
+        public int? userID { get; private set; }
 
         /// <summary>
         /// The SSID of the current Request
@@ -258,12 +262,12 @@ namespace LameNetHook
         /// <summary>
         /// The EndPoint of the connected client
         /// </summary>
-        public System.Net.EndPoint _remote_endpoint;
+        public System.Net.EndPoint _remoteEndPoint;
 
         /// <summary>
         /// The EndPoint of the server
         /// </summary>
-        private System.Net.EndPoint _local_endpoint;
+        private System.Net.EndPoint _localEndPoint;
 
         public SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws)
         {
@@ -277,8 +281,8 @@ namespace LameNetHook
             this.rawPacket = packet;
             this._tcpClient = client;
             this._networkStream = nws;
-            this._remote_endpoint = _tcpClient.Client.RemoteEndPoint;
-            this._local_endpoint = _tcpClient.Client.LocalEndPoint;
+            this._remoteEndPoint = _tcpClient.Client.RemoteEndPoint;
+            this._localEndPoint = _tcpClient.Client.LocalEndPoint;
 
             fileID = SessionContainer.getFileID(file);
 
@@ -361,12 +365,19 @@ namespace LameNetHook
 
         private T2 getObjectFromDictionary<T, T2>(T key, Dictionary<T, T2> dictionary)
         {
-            return dictionary[key];
+            return dictionary.ContainsKey(key) ? dictionary[key] : default(T2);
         }
 
         private void setValueToDictionary<T, T2>(T key, T2 value, Dictionary<T, T2> dictionary)
         {
-            dictionary[key] = value;
+            if (value == null)
+            {
+                dictionary.Remove(key);
+            }
+            else
+            {
+                dictionary[key] = value;
+            }
         }
 
         // ===============================================================================================================================================
@@ -498,7 +509,7 @@ namespace LameNetHook
             if (!knownUser)
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
 
-            setValueToDictionary(name, value, SessionContainer.getUserFileDictionary(userID.Value, fileID));
+            setValueToDictionary(name, value, SessionContainer.getUserFileDictionary(userID.Value, userFileID));
         }
 
         /// <summary>
@@ -511,7 +522,7 @@ namespace LameNetHook
             if (!knownUser)
                 return null;
 
-            return getObjectFromDictionary(name, SessionContainer.getUserFileDictionary(userID.Value, fileID));
+            return getObjectFromDictionary(name, SessionContainer.getUserFileDictionary(userID.Value, userFileID));
         }
 
         /// <summary>

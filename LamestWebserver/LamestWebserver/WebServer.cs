@@ -333,10 +333,19 @@ namespace LamestWebserver
 
                             if (found)
                             {
-                                HTTP_Packet htp_ = new HTTP_Packet()
+                                HTTP_Packet htp_ = new HTTP_Packet();
+
+                                try
                                 {
-                                    data = functions[hashNUM](new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder, htp.data, msg_, client, nws))
-                                };
+                                    htp_.data = functions[hashNUM].Invoke(new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder, htp.data, msg_, client, nws));
+                                }
+                                catch(Exception e)
+                                {
+                                    htp_.data = Master.getErrorMsg("Exception in Page Response for '"
+                                        + htp.data + "'", "<b>An Error occured while processing the output</b><br>"
+                                        + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + msg_.Replace("\r\n", "<br>") + "</div></p>");
+                                }
 
 
                                 htp_.contentLength = enc.GetByteCount(htp_.data);
