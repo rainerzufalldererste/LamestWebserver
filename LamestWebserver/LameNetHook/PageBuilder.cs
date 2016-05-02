@@ -874,4 +874,77 @@ namespace LameNetHook
             });
         }
     }
+
+    /// <summary>
+    /// Non-static content, which is computed every request AND SYNCRONIZED
+    /// </summary>
+    public class HSyncronizedRuntimeCode : HElement
+    {
+        public Master.getContents runtimeCode;
+        public System.Threading.Mutex mutex = new System.Threading.Mutex();
+
+        /// <summary>
+        /// Creates non-static content, which is computed every request AND SYNCRONIZED
+        /// </summary>
+        /// <param name="runtimeCode">The code to execute every request</param>
+        public HSyncronizedRuntimeCode(Master.getContents runtimeCode)
+        {
+            this.runtimeCode = runtimeCode;
+        }
+
+        public override string getContent(SessionData sessionData)
+        {
+            string s = "";
+
+            try
+            {
+                mutex.WaitOne();
+                s = runtimeCode.Invoke(sessionData);
+                mutex.ReleaseMutex();
+            }
+            catch(Exception e)
+            {
+                mutex.ReleaseMutex();
+                throw e;
+            }
+
+            return s;
+        }
+
+        /// <summary>
+        /// returns a conditional non-static piece of code, which is computed every request if conditionalCode returns true, codeIfTRUE is executed, if it returns false, codeIfFALSE is executed AND SYNCRONIZED
+        /// </summary>
+        /// <param name="codeIfTRUE">The code to execute if conditionalCode returns TRUE</param>
+        /// <param name="codeIfFALSE">The code to execute if conditionalCode returns FALSE</param>
+        /// <param name="conditionalCode">The Conditional code</param>
+        /// <returns>returns a HRuntimeCode : HElement</returns>
+        public static HSyncronizedRuntimeCode getConditionalRuntimeCode(Master.getContents codeIfTRUE, Master.getContents codeIfFALSE, Func<SessionData, bool> conditionalCode)
+        {
+            return new HSyncronizedRuntimeCode((SessionData sessionData) =>
+            {
+                if (conditionalCode(sessionData))
+                    return codeIfTRUE(sessionData);
+
+                return codeIfFALSE(sessionData);
+            });
+        }
+
+        /// <summary>
+        /// returns a conditional non-static HElement, which is computed every request if conditionalCode returns true, elementIfTRUE is returned, if it returns false, elementIfFALSE is returned AND SYNCRONIZED
+        /// </summary>
+        /// <param name="elementIfTRUE"></param>
+        /// <param name="elementIfFALSE"></param>
+        /// <param name="conditionalCode">The Conditional code</param>
+        /// <returns>returns a HRuntimeCode : HElement</returns>
+        public static HSyncronizedRuntimeCode getConditionalRuntimeCode(HElement elementIfTRUE, HElement elementIfFALSE, Func<SessionData, bool> conditionalCode)
+        {
+            return new HSyncronizedRuntimeCode((SessionData sessionData) =>
+            {
+                if (conditionalCode(sessionData))
+                    return elementIfTRUE == null ? "" : elementIfTRUE.getContent(sessionData);
+
+                return elementIfFALSE == null ? "" : elementIfFALSE.getContent(sessionData);
+            });
+        }
+    }
 }

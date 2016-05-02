@@ -106,15 +106,16 @@ namespace Demos
 
             public Lobby() : base("CardGame - Lobby", "cgame/lobby")
             {
+
                 stylesheetCode = stylesheet;
 
                 addElement(
                     HRuntimeCode.getConditionalRuntimeCode(
                         new HContainer() { elements = new List<HElement>()
                             {
-                                new HScript(ScriptCollection.getPageReloadInMilliseconds, 2000),
+                                new HScript(ScriptCollection.getPageReloadInMilliseconds, 2500),
                                 new HText("Searching for a lobby... <i>(The Page might reload a couple of times)</i>"),
-                                new HRuntimeCode((SessionData sessionData) => 
+                                new HSyncronizedRuntimeCode((SessionData sessionData) => 
                                     {
                                         int? cycles = sessionData.getUserVariable<int?>(nameof(cycles));
 
@@ -136,34 +137,35 @@ namespace Demos
                                                 {
                                                     searchingPlayers.Add(sessionData.userID.Value);
                                                 }
-
+                                                
                                                 if (findingPlayers.Contains(sessionData.userID.Value))
                                                 {
                                                     if(nextGameHash == "")
                                                     {
                                                         registerNextGame();
                                                     }
-
+                                                    
                                                     findingPlayers.Remove(sessionData.userID.Value);
                                                     searchingPlayers.Remove(sessionData.userID.Value);
+
+                                                    string lastgamehash = nextGameHash;
 
                                                     if(findingPlayers.Count == 0)
                                                     {
                                                         nextGameHash = "";
                                                     }
 
-                                                    return new HScript(ScriptCollection.getPageReferalToX, nextGameHash).getContent(sessionData); // <- without operator overloading
+                                                    return new HScript(ScriptCollection.getPageReferalToX, lastgamehash).getContent(sessionData); // <- without operator overloading
                                                 }
                                                 else if(searchingPlayers.Contains(sessionData.userID.Value))
                                                 {
                                                     if(searchingPlayers.Count >= cycles)
                                                     {
-                                                        mutex.WaitOne();
-                                                        for (int i = 0; i < searchingPlayers.Count; i++)
+                                                        for (int i = searchingPlayers.Count - 1; i > -1; i--)
                                                         {
                                                             findingPlayers.Add(searchingPlayers[i]);
+                                                            searchingPlayers.RemoveAt(i);
 			                                            }
-                                                        mutex.ReleaseMutex();
                                                     }
                                                     else
                                                     {
@@ -173,22 +175,22 @@ namespace Demos
                                                 }
                                                 else
                                                 {
-                                                    // you were kicked out because you waited to long or sth...
                                                     cycles = 5;
-                                                    searchingPlayers.Add(sessionData.userID.Value);
                                                     sessionData.setUserVariable(nameof(cycles), cycles);
+                                                    searchingPlayers.Add(sessionData.userID.Value);
                                                 }
                                             }
                                         }
                                         else
                                         {
-                                            cycles = 5;
+                                            cycles = 6;
                                             sessionData.setUserVariable(nameof(cycles), cycles);
                                         }
 
                                         return "[ " + cycles + " | " + sessionData.userID.Value + " ]" + new HTable( findingPlayers.Cast<object>(), searchingPlayers.Cast<object>() ).getContent(sessionData);
                                     }),
-                            }},
+                            }
+                        },
                         new HContainer() { elements = new List<HElement>()
                         {
                             new HScript(ScriptCollection.getPageReferalToXInMilliseconds, "/cgame/", 2500),
@@ -207,6 +209,8 @@ namespace Demos
 
         public class GameHandler : PageResponse
         {
+            private List<int> joinedUserIDs = new List<int>();
+
             public GameHandler(string hashURL) : base(hashURL)
             {
 
@@ -214,7 +218,10 @@ namespace Demos
 
             protected override string getContents(SessionData sessionData)
             {
-                return "wow, dude, i'm a game! (" + sessionData.ssid + ")";
+                if (!joinedUserIDs.Contains(sessionData.userID.Value))
+                    joinedUserIDs.Add(sessionData.userID.Value);
+
+                return "wow, dude, i'm a game! (" + sessionData.ssid + ")" + new HNewLine() * sessionData + "[" + sessionData.userID.Value + "] " + new HTable(joinedUserIDs.Cast<object>()) * sessionData;
             }
         }
     }
