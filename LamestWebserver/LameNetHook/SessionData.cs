@@ -240,7 +240,32 @@ namespace LameNetHook
         /// </summary>
         public string file;
 
-        public SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, string path, string file)
+        /// <summary>
+        /// the raw packet sent to the server
+        /// </summary>
+        public string rawPacket;
+
+        /// <summary>
+        /// The original tcpClient of the server. Handle with care.
+        /// </summary>
+        public System.Net.Sockets.TcpClient _tcpClient;
+
+        /// <summary>
+        /// The original networkStream of the server. Handle with care.
+        /// </summary>
+        public System.Net.Sockets.NetworkStream _networkStream;
+
+        /// <summary>
+        /// The EndPoint of the connected client
+        /// </summary>
+        public System.Net.EndPoint _remote_endpoint;
+
+        /// <summary>
+        /// The EndPoint of the server
+        /// </summary>
+        private System.Net.EndPoint _local_endpoint;
+
+        public SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws)
         {
             this.varsHEAD = additionalHEAD;
             this.varsPOST = additionalPOST;
@@ -248,6 +273,12 @@ namespace LameNetHook
             this.valuesPOST = valuesPOST;
             this.path = path;
             this.file = file;
+
+            this.rawPacket = packet;
+            this._tcpClient = client;
+            this._networkStream = nws;
+            this._remote_endpoint = _tcpClient.Client.RemoteEndPoint;
+            this._local_endpoint = _tcpClient.Client.LocalEndPoint;
 
             fileID = SessionContainer.getFileID(file);
 

@@ -194,7 +194,7 @@ namespace LameNetHook
                     + hash + ".setAttribute('method','POST');f_"
                     + hash + ".setAttribute('action','"
                         + href + "');f_"
-                    + hash + ".setAttribute('enctype','text/html');var i_"
+                    + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
                     + hash + "=document.createElement('input');i_"
                     + hash + ".setAttribute('type','hidden');i_"
                     + hash + ".setAttribute('name','ssid');i_"
@@ -206,7 +206,7 @@ namespace LameNetHook
                     + hash + ".submit();document.body.remove(f_"
                     + hash + ");";
 
-                ret += " onclick='" + onclick + add + "'";
+                ret += " onclick=\"" + onclick + add + "\"";
             }
             else
             {
@@ -432,18 +432,40 @@ namespace LameNetHook
     public class HForm : HContainer
     {
         public string action;
+        private bool fixedAction;
+        private string redirectTRUE, redirectFALSE;
+        Func<SessionData, bool> conditionalCode;
 
         public HForm(string action)
         {
             this.action = action;
+            fixedAction = true;
+        }
+
+        /// <summary>
+        /// redirects if the conditional code returns true and executes other code if the conditional code returns false
+        /// </summary>
+        public HForm(string redirectURLifTRUE, string redirectURLifFALSE, Func<SessionData, bool> conditionalCode)
+        {
+            fixedAction = false;
+            redirectTRUE = redirectURLifTRUE;
+            redirectFALSE = redirectURLifFALSE;
+            this.conditionalCode = conditionalCode;
         }
 
         public override string getContent(SessionData sessionData)
         {
             string ret = "<form ";
 
-            if (!string.IsNullOrWhiteSpace(action))
-                ret += "action='" + action + "' ";
+            if (fixedAction)
+            {
+                if (!string.IsNullOrWhiteSpace(action))
+                    ret += "action='" + action + "' ";
+            }
+            else
+            {
+                ret += "action='" + InstantPageResponse.addOneTimeConditionalRedirect(redirectTRUE, redirectFALSE, conditionalCode, true) + "' ";
+            }
 
             if (!string.IsNullOrWhiteSpace(id))
                 ret += "id='" + id + "' ";
@@ -532,7 +554,7 @@ namespace LameNetHook
                     + hash + ".setAttribute('method','POST');f_"
                     + hash + ".setAttribute('action','"
                         + href + "');f_"
-                    + hash + ".setAttribute('enctype','text/html');var i_"
+                    + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
                     + hash + "=document.createElement('input');i_"
                     + hash + ".setAttribute('type','hidden');i_"
                     + hash + ".setAttribute('name','ssid');i_"
@@ -544,7 +566,7 @@ namespace LameNetHook
                     + hash + ".submit();document.body.remove(f_"
                     + hash + ");";
 
-                ret += " onclick='" + onclick + add + "'";
+                ret += " onclick=\"" + onclick + add + "\"";
             }
             else
             {
@@ -709,6 +731,32 @@ namespace LameNetHook
             }
 
             return ret;
+        }
+    }
+
+    public class HScript : HElement
+    {
+        private object arguments;
+        private bool dynamic;
+        private string script;
+        private ScriptCollection.scriptFuction scriptFunction;
+
+        public HScript(string scriptText)
+        {
+            this.dynamic = false;
+            this.script = scriptText;
+        }
+
+        public HScript(ScriptCollection.scriptFuction scriptFunction, object arguments)
+        {
+            this.dynamic = true;
+            this.scriptFunction = scriptFunction;
+            this.arguments = arguments;
+        }
+
+        public override string getContent(SessionData sessionData)
+        {
+            return "<script type\"text/javascript\">\n" + (dynamic ? scriptFunction(sessionData, arguments) : script) + "\n</script>\n";
         }
     }
 

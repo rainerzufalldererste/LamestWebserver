@@ -77,7 +77,7 @@ namespace LameNetHook
                             string href = ret.Substring(i + 6, (j + 1) - i - 7);
                             ret = ret.Remove(i, (j + 1) - i);
                             ret = ret.Insert(i, " href=\"#\" onclick=\"var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','" + href +
-                                "');f.setAttribute('enctype','text/html');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','" + sessionData.ssid +
+                                "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','" + sessionData.ssid +
                                 "');f.appendChild(i);document.body.appendChild(f);f.submit();document.body.remove(f);\"");
 
                             i = j + 1;
@@ -178,7 +178,7 @@ namespace LameNetHook
                                         + hash + ".setAttribute('method','POST');f_"
                                         + hash + ".setAttribute('action','"
                                         + ret.Substring(linkStartPos, linkEndPos - linkStartPos + 1) + "');f_"
-                                        + hash + ".setAttribute('enctype','text/html');var i_"
+                                        + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
                                         + hash + "=document.createElement('input');i_"
                                         + hash + ".setAttribute('type','hidden');i_"
                                         + hash + ".setAttribute('name','ssid');i_"
@@ -213,7 +213,7 @@ namespace LameNetHook
                                 {
                                     string add = "#\" onclick =\"var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','"
                                         + ret.Substring(linkStartPos, linkEndPos - linkStartPos + 1)
-                                        + "');f.setAttribute('enctype','text/html');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','"
+                                        + "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','"
                                         + sessionData.ssid
                                         + "');f.appendChild(i);document.body.appendChild(f);f.submit();document.body.remove(f);";
 

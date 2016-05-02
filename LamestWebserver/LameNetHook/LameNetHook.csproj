@@ -46,6 +46,7 @@
     <Compile Include="PageFiller.cs" />
     <Compile Include="PageResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ScriptCollection.cs" />
     <Compile Include="SessionData.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

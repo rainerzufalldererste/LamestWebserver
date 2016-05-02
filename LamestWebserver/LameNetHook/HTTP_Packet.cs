@@ -57,7 +57,7 @@ namespace LameNetHook
         }
 
 
-        public static HTTP_Packet Constructor(string input, EndPoint endp)
+        public static HTTP_Packet Constructor(ref string input, EndPoint endp)
         {
             HTTP_Packet h = new HTTP_Packet();
 
@@ -144,9 +144,9 @@ namespace LameNetHook
                             }
                         }
 
-                        if(h.additionalHEAD[i][h.additionalHEAD[i].Length - 1] == '=')
+                        if(h.additionalHEAD[j][h.additionalHEAD[j].Length - 1] == '=')
                         {
-                            h.additionalHEAD[i].Remove(h.additionalHEAD[i].Length - 1);
+                            h.additionalHEAD[j] = h.additionalHEAD[j].Remove(h.additionalHEAD[j].Length - 1);
                         }
                     }
 
@@ -213,9 +213,9 @@ namespace LameNetHook
                             }
                         }
 
-                        if (h.additionalHEAD[i][h.additionalHEAD[i].Length - 1] == '=')
+                        if (h.additionalHEAD[j][h.additionalHEAD[j].Length - 1] == '=')
                         {
-                            h.additionalHEAD[i].Remove(h.additionalHEAD[i].Length - 1);
+                            h.additionalHEAD[j] = h.additionalHEAD[j].Remove(h.additionalHEAD[j].Length - 1);
                         }
                     }
 
@@ -260,6 +260,11 @@ namespace LameNetHook
                                 }
                             }
                         }
+
+                        if (h.additionalPOST[j][h.additionalPOST[j].Length - 1] == '=')
+                        {
+                            h.additionalPOST[j] = h.additionalPOST[j].Remove(h.additionalPOST[j].Length - 1);
+                        }
                     }
 
                     // Chris: Crazy hack for Chrome POST packets
@@ -302,10 +307,10 @@ namespace LameNetHook
                 if (oldinput != null)
                 {
                     unfinishedPackets.Remove(endp);
-                    oldinput += input;
+                    input = oldinput + input;
                 }
 
-                return Constructor(oldinput, endp);
+                return Constructor(ref input, endp);
             }
 
             return h;

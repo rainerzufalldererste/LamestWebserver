@@ -286,7 +286,7 @@ namespace LamestWebserver
 
                     //Program.addToStuff(msg_);
 
-                    HTTP_Packet htp = HTTP_Packet.Constructor(msg_, client.Client.RemoteEndPoint);
+                    HTTP_Packet htp = HTTP_Packet.Constructor(ref msg_, client.Client.RemoteEndPoint);
 
                     //NetworkStream nws = client.GetStream();
 
@@ -335,7 +335,7 @@ namespace LamestWebserver
                             {
                                 HTTP_Packet htp_ = new HTTP_Packet()
                                 {
-                                    data = functions[hashNUM](new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder, htp.data))
+                                    data = functions[hashNUM](new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder, htp.data, msg_, client, nws))
                                 };
 
 

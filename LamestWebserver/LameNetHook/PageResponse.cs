@@ -49,25 +49,29 @@ namespace LameNetHook
         /// </summary>
         /// <param name="code">the code to execute</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string addOneTimeInstantPageResponse(Master.getContents code)
+        public static string addOneTimeInstantPageResponse(Master.getContents code, bool instantlyRemove = false)
         {
             string hash = SessionContainer.generateHash();
 
-            mutex.WaitOne();
-
-            if(maximumOneTimePageResponses > 0)
+            if (instantlyRemove)
             {
-                if (oneTimePageResponses.Count + 1 > maximumOneTimePageResponses)
-                    oneTimePageResponses.RemoveAt(0);
+                mutex.WaitOne();
+
+                if (maximumOneTimePageResponses > 0)
+                {
+                    if (oneTimePageResponses.Count + 1 > maximumOneTimePageResponses)
+                        oneTimePageResponses.RemoveAt(0);
+                }
+
+                oneTimePageResponses.Add(hash);
+
+                mutex.ReleaseMutex();
             }
-
-            oneTimePageResponses.Add(hash);
-
-            mutex.ReleaseMutex();
 
             Master.addFuntionToServer(hash, (SessionData sessionData) => 
                 {
-                    Master.removeFunctionFromServer(hash);
+                    if(instantlyRemove)
+                        Master.removeFunctionFromServer(hash);
                     return code.Invoke(sessionData);
                 });
 
@@ -117,19 +121,20 @@ namespace LameNetHook
         /// adds a temporary page to the server, that redirects to "destinationURL" (only available for ONE request)
         /// </summary>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string addOneTimeRedirect(string destinationURL)
+        public static string addOneTimeRedirect(string destinationURL, bool instantlyRemove = false)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) => 
                 {
                     return generateRedirectCode(destinationURL, sessionData);
-                });
+                }
+                , instantlyRemove);
         }
 
         /// <summary>
         /// adds a temporary page to the server, that redirects to "destinationURLifTRUE" if the conditional code returns true and redirects to "destinationURLifFALSE" if the conditional code returns false (only available for ONE request)
         /// </summary>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string addOneTimeConditionalRedirect(string destinationURLifTRUE, string destinationURLifFALSE, Func<SessionData, bool> conditionalCode)
+        public static string addOneTimeConditionalRedirect(string destinationURLifTRUE, string destinationURLifFALSE, Func<SessionData, bool> conditionalCode, bool instantlyRemove = false)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) =>
                 {
@@ -137,14 +142,15 @@ namespace LameNetHook
                         return generateRedirectCode(destinationURLifTRUE, sessionData);
 
                     return generateRedirectCode(destinationURLifFALSE, sessionData);
-                });
+                }
+                , instantlyRemove);
         }
 
         /// <summary>
         /// adds a temporary page to the server, that redirects if the conditional code returns true and executes other code if the conditional code returns false (only available for ONE request)
         /// </summary>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string addOneTimeRedirectOrCode(string destinationURLifTRUE, Master.getContents codeIfFALSE, Func<SessionData, bool> conditionalCode)
+        public static string addOneTimeRedirectOrCode(string destinationURLifTRUE, Master.getContents codeIfFALSE, Func<SessionData, bool> conditionalCode, bool instantlyRemove = false)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) =>
             {
@@ -152,7 +158,8 @@ namespace LameNetHook
                     return generateRedirectCode(destinationURLifTRUE, sessionData);
 
                 return codeIfFALSE(sessionData);
-            });
+            }
+                , instantlyRemove);
         }
 
         public static string generateRedirectCode(string destinationURL, SessionData sessionData = null)
@@ -168,11 +175,11 @@ namespace LameNetHook
             {
                 return "<head><script type=\"text/javascript\">onload = function(){var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','"
                                 + destinationURL +
-                                "');f.setAttribute('enctype','text/html');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','" 
+                                "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','"
                                 + sessionData.ssid +
                                 "');f.appendChild(i);document.body.appendChild(f);f.submit();document.body.remove(f);}</script><title>Page Redirection</title><style type=\"text/css\">hr{border:solid;border-width:5;color:#FDCD48;'><p style='overflow:overlay;}</style></head><body style='background-color:#f0f0f0;background-image: url(\"/server/error.png\");background-repeat:repeat;background-size:125px;'><div style='font-family:\"Segoe UI\",sans-serif;width:70%;max-width:800px;margin:5em auto;padding:50px;background-color:#fff;border-radius: 1em;padding-top:22px;padding-bottom:22px;border:solid;border-color:#FDD248;border-width:1;'><h1>Page Redirection</h1><hr><p>If you are not redirected automatically, follow this <a href='#' onclick=\"var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','" 
                                 + destinationURL +
-                                "');f.setAttribute('enctype','text/html');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','" 
+                                "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','" 
                                 + sessionData.ssid +
                                 "');f.appendChild(i);document.body.appendChild(f);f.submit();document.body.remove(f);\">link.</a></p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>";
             }

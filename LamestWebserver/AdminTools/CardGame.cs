@@ -10,25 +10,25 @@ namespace Demos
     public static class CardGame
     {
         private static List<string> secretKeys = new List<string>();
+        private static string stylesheet = "body{font-family: \"Segoe UI\", sans-serif; background-color: #444444; background-image: url(\"/cgame/card.png\"); background-repeat: repeat; background-size: 125px;} div{font-family: \"Segoe UI\",sans-serif;width: 70 %;max-width: 800px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;padding-top: 22px;padding-bottom: 22px;}";
 
         public static void register()
         {
             new loginScreen();
+            new lobby();
         }
 
         public class loginScreen : PageBuilder
         {
             public loginScreen() : base("CardGame - Login", "cgame/")
             {
-                stylesheetCode = "body{font-family: \"Segoe UI\", sans-serif; background-color: #444444; background-image: url(\"/cgame/card.png\"); background-repeat: repeat; background-size: 125px;} div{font-family: \"Segoe UI\",sans-serif;width: 70 %;max-width: 800px;margin: 5em auto;padding: 50px;background-color: #fff;border-radius: 1em;padding-top: 22px;padding-bottom: 22px;}";
+                stylesheetCode = stylesheet;
 
                 addElement(
                     new HContainer()
                     {
                         elements = new List<HElement>()
                         {
-                            new HHeadline("Login:", 1),
-
                             HRuntimeCode.getConditionalRuntimeCode(
                                 null,
                                 new HContainer()
@@ -43,7 +43,9 @@ namespace Demos
                                     return true;
                                 }),
 
-                            new HForm(InstantPageResponse.addOneTimeConditionalRedirect("/cgame/lobby", "/cgame/?failed", (SessionData sessionData) => 
+                            new HHeadline("Login:", 1),
+
+                            new HForm(InstantPageResponse.addOneTimeConditionalRedirect("/cgame/lobby?abcdefg", "/cgame/?failed", (SessionData sessionData) => 
                                 {
                                     string userName = sessionData.getHTTP_POST_value("user");
                                     string key = sessionData.getHTTP_POST_value("key");
@@ -86,6 +88,24 @@ namespace Demos
                             }
                         }
                     });
+            }
+        }
+
+        public class lobby : PageBuilder
+        {
+            public lobby() : base("CardGame - Lobby", "cgame/lobby")
+            {
+                stylesheetCode = stylesheet;
+
+                addElement(
+                    HRuntimeCode.getConditionalRuntimeCode(
+                        new HContainer() { elements = new List<HElement>()
+                            {
+                                new HScript(ScriptCollection.getPageReloadAtMilliseconds, 5000),
+                                new HText("Searching for a lobby... <i>(The Page might reload a couple of times)</i>")
+                            }},
+                        new HContainer() { elements = new List<HElement>() { new HLink("you have to login first. click here to log in.", "/cgame/") } },
+                        (SessionData sessionData) => sessionData.knownUser ));
             }
         }
     }
