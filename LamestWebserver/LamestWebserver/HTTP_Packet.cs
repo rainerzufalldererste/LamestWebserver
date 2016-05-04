@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net;
+using System.Web;
 
 namespace LamestWebserver
 {
@@ -60,26 +61,10 @@ namespace LamestWebserver
         public static HTTP_Packet Constructor(ref string input, EndPoint endp)
         {
             HTTP_Packet h = new HTTP_Packet();
-
-            /*List<string>*/
-            string[] linput = null;
-            //new List<string>();
             
-            /*int lindex = 0;
+            string[] linput = null;
 
-            for (int i = 0; i < input.Length - 1; i++)
-            {
-                if(input.Substring(i,2) == "\r\n" || i + 1 >= input.Length)
-                {
-                    if(i - lindex - 1 > 0)
-                    {
-                        linput.Add(input.Substring(lindex, i - lindex));
-                    }
-                    lindex = i + 2;
-                }
-            }*/
-
-            linput = input.Replace("\0", "").Split(new string[] { "\r\n" }, StringSplitOptions.None);
+            linput = HttpUtility.UrlDecode(input).Split(new string[] { "\r\n" }, StringSplitOptions.None);
 
             bool found = false;
 
@@ -112,9 +97,9 @@ namespace LamestWebserver
                                 add = add.Remove(add.Length - 1);
 
                             h.data = h.data.Remove(k);
-                            add = add.Replace("%20", " ").Replace("%22", "\"");
+                            add = linput[k].Replace('+', ' '); // HttpUtility.HtmlDecode(linput[k]);
 
-                            for(int it = 0; it < add.Length - 1; it++)
+                            for (int it = 0; it < add.Length - 1; it++)
                             {
                                 if(add[it] == '&')
                                 {
@@ -181,7 +166,7 @@ namespace LamestWebserver
                                 add = add.Remove(add.Length - 1);
 
                             h.data = h.data.Remove(k);
-                            add = add.Replace("%20", " ").Replace("%22", "\"");
+                            add = linput[k].Replace('+', ' '); //HttpUtility.HtmlDecode(linput[k]);
 
                             for (int it = 0; it < add.Length - 1; it++)
                             {
@@ -230,7 +215,7 @@ namespace LamestWebserver
                             {
                                 for (int k = j; k < linput.Length; k++)
                                 {
-                                    string[] s = linput[k].Replace("%20", " ").Replace("%22", "\"").Split('&');
+                                    string[] s = /*HttpUtility.HtmlDecode(*/linput[k].Replace('+',' ')/*)*/.Split('&');
 
                                     for (int l = 0; l < s.Length; l++)
                                     {

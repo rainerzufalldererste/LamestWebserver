@@ -42,5 +42,10 @@ namespace LamestWebserver
         {
             return new HPlainText(i.ToString());
         }
+
+        public static void startServer(int port, string directory)
+        {
+            ServerHandler.ports.Add(new WebServer(port, directory, true));
+        }
     }
 }

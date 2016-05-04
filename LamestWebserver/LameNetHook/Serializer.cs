@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace LameNetHook
+namespace LamestWebserver
 {
-    public static class Serialize
+    public static class Serializer
     {
         public static T getData<T>(string filename)
         {

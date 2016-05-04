@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using LameNetHook;
+using LamestWebserver;
 
 namespace Demos
 {
-    public class pageFillerTest : LameNetHook.PageFiller
+    public class pageFillerTest : LamestWebserver.PageFiller
     {
-        public pageFillerTest(string URL = "pftest.html") : base(URL) { }
+        public pageFillerTest() : base("pftest.html") { }
 
         public override void processData(SessionData sessionData, ref string output)
         {

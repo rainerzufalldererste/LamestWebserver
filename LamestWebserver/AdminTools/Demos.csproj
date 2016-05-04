@@ -5,12 +5,13 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5F05A28F-82E7-454B-B974-2A45251B504E}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Demos</RootNamespace>
     <AssemblyName>Demos</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -29,6 +30,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -43,14 +47,18 @@
     <Compile Include="CardGame.cs" />
     <Compile Include="pageBuilderTest.cs" />
     <Compile Include="pageFillerTest.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="xmlParseTest.cs" />
+    <Compile Include="XmlTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LameNetHook\LameNetHook.csproj">
-      <Project>{83de098b-47e1-4a8d-ad69-1b17286c5657}</Project>
-      <Name>LameNetHook</Name>
+    <ProjectReference Include="..\LamestWebserver\LamestWebserver.csproj">
+      <Project>{2e0e1f99-3de7-4636-9e18-93e5cb837965}</Project>
+      <Name>LamestWebserver</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

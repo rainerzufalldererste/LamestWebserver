@@ -90,8 +90,8 @@ namespace LamestWebserver
 
         private void processHREFs(ref string ret, SessionData sessionData)
         {
-            // TODO: href="#" untouched
-            // TODO: href="somelink.html?123=bla" even with onclick="xyz" to contain the ssid in post
+            // href="#" untouched
+            // href="somelink.html?123=bla" even with onclick="xyz" will contain the ssid in post
 
             for (int i = 0; i < ret.Length - 1; i++)
             {

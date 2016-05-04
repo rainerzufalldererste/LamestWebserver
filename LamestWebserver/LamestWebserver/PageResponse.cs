@@ -28,18 +28,12 @@ namespace LamestWebserver
 
     public abstract class SyncronizedPageResponse : PageResponse
     {
-        public string URL { get; protected set; }
         private System.Threading.Mutex mutex = new System.Threading.Mutex();
 
         public SyncronizedPageResponse(string URL, bool register = true) : base(URL, false)
         {
             if (register)
                 Master.addFuntionToServer(URL, getContentSyncronously);
-        }
-
-        protected void removeFromServer()
-        {
-            Master.removeFunctionFromServer(URL);
         }
 
         private string getContentSyncronously(SessionData sessionData)

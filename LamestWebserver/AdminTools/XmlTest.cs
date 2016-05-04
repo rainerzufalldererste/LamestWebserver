@@ -1,4 +1,4 @@
-﻿using LameNetHook;
+﻿using LamestWebserver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Demos
 {
-    public static class xmlTest
+    public static class XmlTest
     {
         private static List<dataPiece> dataValues = new List<dataPiece>();
 
@@ -80,11 +80,11 @@ namespace Demos
                     new HNewLine(),
                     new HLink("serialize",
                         InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?sfail", (SessionData sessionData) =>
-                            { try { Serialize.writeData(dataValues, "xmltest.xml"); return true; } catch(Exception) { return false; } })),
+                            { try { Serializer.writeData(dataValues, "xmltest.xml"); return true; } catch(Exception) { return false; } })),
                     new HNewLine(),
                     new HLink("deserialize",
                         InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?fail", (SessionData sessionData) => 
-                            { try { dataValues = Serialize.getData<List<dataPiece>>("xmltest.xml"); return true; } catch(Exception) { return false; } })),
+                            { try { dataValues = Serializer.getData<List<dataPiece>>("xmltest.xml"); return true; } catch(Exception) { return false; } })),
                     new HNewLine(),
                     new HRuntimeCode((SessionData sessionData) =>
                         {

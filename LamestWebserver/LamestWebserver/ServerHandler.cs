@@ -6,27 +6,28 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
-    class Program
+    public class ServerHandler
     {
-        static void Main(string[] args)
-        {
-            List<WebServer> ports = new List<WebServer>();
+        internal static List<WebServer> ports = new List<WebServer>();
 
-            System.Threading.Thread outp = new System.Threading.Thread(new System.Threading.ThreadStart(Program.showMsgs));
+        public static void Main(string[] args)
+        {
+            System.Threading.Thread outp = new System.Threading.Thread(new System.Threading.ThreadStart(ServerHandler.showMsgs));
             // outp.Start();
 
-            Console.WriteLine("Happy Server! Today is " + DateTime.Now.ToString() + " if you are wondering why you are using such a strange server...");
-            Console.WriteLine();
+            Console.WriteLine("\n=== === === === LAMEST WEBSERVER === === === ===\n");
 
 
             if (args.Length < 1)
             {
+                /*
                 try
                 {
                     Console.WriteLine("Please specify ports in param... trying to use 8080... i will fail - or not - yes - true!  - example: \"lws 8080\"");
                     ports.Add(new WebServer(8080, "./web", true));
                 }
                 catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
+                */
             }
             else if (args.Length == 1)
             {
@@ -55,8 +56,7 @@ namespace LamestWebserver
                 }
             }
 
-            Console.WriteLine();
-            Console.WriteLine("Your Server did party all night like it was 1885 - and died.");
+            Console.WriteLine("Type Help to get help. Don't type exit.\n");
 
             int y = 0;
 
@@ -66,7 +66,7 @@ namespace LamestWebserver
 
                 if (s == "exit")
                 {
-                    Console.WriteLine("no!");
+                    Console.WriteLine("You don't want to exit the server.");
                     y++;
 
                     if (y > 2)
@@ -172,7 +172,7 @@ namespace LamestWebserver
                                     {
                                         if (outp.ThreadState == System.Threading.ThreadState.Aborted || outp.ThreadState == System.Threading.ThreadState.Unstarted)
                                         {
-                                            outp = new System.Threading.Thread(new System.Threading.ThreadStart(Program.showMsgs));
+                                            outp = new System.Threading.Thread(new System.Threading.ThreadStart(ServerHandler.showMsgs));
                                             outp.Start();
                                         }
                                     }
@@ -322,20 +322,6 @@ namespace LamestWebserver
                             readme = true_;
                             break;
 
-                        case "add demos":
-                            if (demosadded)
-                                Console.WriteLine("The Demos have already been added");
-                            else
-                            {
-                                Demos.pageBuilderTest.addLamePageBuilderTest();
-                                new Demos.pageFillerTest();
-                                Demos.CardGame.register();
-                                Demos.xmlTest.register();
-                                LameNetHook.InstantPageResponse.addRedirect("redirect.html", "redirect.html");
-                                Console.WriteLine("The Demos were added.");
-                            }
-                            break;
-
                         case "help":
                             {
                                 readme = false_;
@@ -355,18 +341,14 @@ namespace LamestWebserver
                                     Console.WriteLine("frefresh  -    refreshes the file cache of a port");
                                     Console.WriteLine("cachesz   -    sets the maximum file cache of a port");
                                     Console.WriteLine("help      -    Displays this list of cmds");
-                                    Console.WriteLine("add demos -    Adds the demo files to the server");
                                     Console.WriteLine("exit      -    ");
-
-                                    Console.WriteLine();
-                                    Console.WriteLine("Done!");
                                 }
                                 catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
                             readme = true_;
                             break;
 
-                        default: { Console.WriteLine("Hello " + s + "!"); }
+                        default: { Console.WriteLine("Invalid command '" + s + "'! If you need help, type 'help'."); }
                             break;
                     }
                 }
@@ -378,7 +360,6 @@ namespace LamestWebserver
         private static bool readme = true;
         private static bool true_ = true, false_ = false;
         private static int autocls = 1000, autocls_s = 250;
-        private static bool demosadded = false;
 
         public static void addToStuff(string s)
         {

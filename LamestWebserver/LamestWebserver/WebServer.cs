@@ -11,7 +11,7 @@ using System.Drawing;
 using System.IO.Compression;
 using System.Drawing.Imaging;
 using LamestScriptHook;
-using LameNetHook;
+using LamestWebserver;
 
 namespace LamestWebserver
 {
@@ -109,7 +109,7 @@ namespace LamestWebserver
             }
             catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
 
-            Console.WriteLine("Main Thread Dead! - port: " + port + " - folder: " + folder);
+            Console.WriteLine("Main Thread Died! - port: " + port + " - folder: " + folder);
 
             int i = threads.Count;
 
@@ -122,7 +122,7 @@ namespace LamestWebserver
                 catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
                 threads.RemoveAt(0);
 
-                Console.WriteLine("Thread Dead! (" + (i - threads.Count) + "/" + i + ") - port: " + port + " - folder: " + folder);
+                Console.WriteLine("Thread Died! (" + (i - threads.Count) + "/" + i + ") - port: " + port + " - folder: " + folder);
             }
         }
 
@@ -219,7 +219,7 @@ namespace LamestWebserver
                 this.tcpList.Start();
 
             }
-            catch (Exception e) { Console.WriteLine("I Hate Servers! \nTHRY OTHA PORTZ! " + e.Message); return; };
+            catch (Exception e) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine("The TcpListener couldn't be started. The Port is probably blocked.\n\n"); Console.ForegroundColor = ConsoleColor.White; Console.WriteLine(e + "\n"); return; };
 
 
             while (running)
@@ -231,7 +231,7 @@ namespace LamestWebserver
                         TcpClient tcpClient = this.tcpList.AcceptTcpClient();
                         threads.Add(new Thread(new ParameterizedThreadStart(DoStuff)));
                         threads[threads.Count - 1].Start((object)tcpClient);
-                        Program.addToStuff("Client Connected!...");
+                        ServerHandler.addToStuff("Client Connected!...");
 
                         if (threads.Count % 25 == 0)
                         {
@@ -241,12 +241,12 @@ namespace LamestWebserver
                     }
                     else
                     {
-                        System.Threading.Thread.Sleep(1);
+                        Thread.Sleep(1);
                     }
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Something failed... Yes. " + e.Message);
+                    Console.WriteLine("The TcpListener failed.\n" + e + "\n");
                 };
             }
         }
@@ -270,7 +270,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    Program.addToStuff("An error occured! " + e.Message);
+                    ServerHandler.addToStuff("An error occured! " + e.Message);
                     break;
                 }
 
@@ -526,12 +526,12 @@ namespace LamestWebserver
                     }
                     catch (Exception e)
                     {
-                        Program.addToStuff("I HATE CLIENTS AND STUFF!!! " + e);
+                        ServerHandler.addToStuff("An error occured in the client: " + e);
                     }
                 }
                 catch (Exception e)
                 {
-                    Program.addToStuff("nope. " + e);
+                    ServerHandler.addToStuff("nope. " + e);
                 }
             }
         }
