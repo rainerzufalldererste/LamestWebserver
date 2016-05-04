@@ -330,6 +330,7 @@ namespace LamestWebserver
                                 Demos.pageBuilderTest.addLamePageBuilderTest();
                                 new Demos.pageFillerTest();
                                 Demos.CardGame.register();
+                                Demos.xmlTest.register();
                                 LameNetHook.InstantPageResponse.addRedirect("redirect.html", "redirect.html");
                                 Console.WriteLine("The Demos were added.");
                             }

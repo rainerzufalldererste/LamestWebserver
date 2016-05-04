@@ -8,6 +8,10 @@ namespace LameNetHook
 {
     public class PageBuilder : HContainer
     {
+        private Func<SessionData, bool> conditionalCode;
+        private bool condition = false;
+        private string referealURL;
+
         /// <summary>
         /// a function pointer to the executed method on getContent(SessionData sessionData)
         /// </summary>
@@ -63,7 +67,21 @@ namespace LameNetHook
         }
 
         /// <summary>
-        /// Creates a new PageBuilder, but does not register it at the server for a specified url
+        /// Creates a page builder and registers it as the server for a specified URL. If the conditionalCode returns false the page will not be parsed and the user will be refered to the referalURL
+        /// </summary>
+        /// <param name="title">The window title</param>
+        /// <param name="URL">the URL at which to register this page</param>
+        /// <param name="referalURL">the URL at which to refer if the conditionalCode returns false</param>
+        /// <param name="conditionalCode">the conditionalCode</param>
+        public PageBuilder(string title, string URL, string referalURL, Func<SessionData, bool> conditionalCode) : this(title, URL)
+        {
+            this.condition = true;
+            this.conditionalCode = conditionalCode;
+            this.referealURL = referalURL;
+        }
+
+        /// <summary>
+        /// Creates a new PageBuilder, but does _NOT_ register it at the server for a specified url
         /// </summary>
         /// <param name="title"></param>
         public PageBuilder(string title)
@@ -74,6 +92,9 @@ namespace LameNetHook
 
         protected string buildContent(SessionData sessionData)
         {
+            if (condition && !conditionalCode(sessionData))
+                return InstantPageResponse.generateRedirectCode(referealURL, sessionData);
+
             string ret = "<html>\n<head>\n<title>" + title + "</title>\n";
 
             if (!string.IsNullOrWhiteSpace(favicon))
@@ -634,6 +655,23 @@ namespace LameNetHook
         public HList(EListType listType)
         {
             this.listType = listType;
+        }
+
+        public HList(EListType listType, IEnumerable<string> input) : this(listType)
+        {
+            List<HElement> data = new List<HElement>();
+
+            foreach(string s in input)
+            {
+                data.Add(s.toHElemenet());
+            }
+
+            this.elements = data;
+        }
+
+        public HList(EListType listType, params HElement[] elements) : this(listType)
+        {
+            this.elements = elements.ToList();
         }
 
         public override string getContent(SessionData sessionData)

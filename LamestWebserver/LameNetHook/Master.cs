@@ -32,5 +32,15 @@ namespace LameNetHook
                 + "</title><style type=\"text/css\">hr{border:solid;border-width:5;color:#FDCD48;'><p style='overflow:overlay;}</style></head><body style='background-color:#f0f0f0;background-image: url(\"/server/error.png\");background-repeat:repeat;background-size:125px;'><div style='font-family:\"Segoe UI\",sans-serif;width:70%;max-width:800px;margin:5em auto;padding:50px;background-color:#fff;border-radius: 1em;padding-top:22px;padding-bottom:22px;border:solid;border-color:#FDD248;border-width:1;'><h1>"
                 + title + "</h1><hr>" + message.Replace("\n","<br>") + "<p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>";
         }
+
+        public static HElement toHElemenet(this string s)
+        {
+            return new HPlainText(s);
+        }
+
+        public static HElement toHElemenet(this int i)
+        {
+            return new HPlainText(i.ToString());
+        }
     }
 }

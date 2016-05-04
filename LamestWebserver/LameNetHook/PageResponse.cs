@@ -139,6 +139,18 @@ namespace LameNetHook
         }
 
         /// <summary>
+        /// adds a page to the server, that redirects to "destinationURL" and executes the given code
+        /// </summary>
+        public static void addRedirectWithCode(string originURL, string destinationURL, Action<SessionData> action)
+        {
+            addInstantPageResponse(originURL, (SessionData sessionData) =>
+                {
+                    action(sessionData);
+                    return generateRedirectCode(destinationURL, sessionData);
+                });
+        }
+
+        /// <summary>
         /// adds a page to the server, that redirects to "destinationURLifTRUE" if the conditional code returns true and redirects to "destinationURLifFALSE" if the conditional code returns false
         /// </summary>
         public static void addConditionalRedirect(string originalURL, string destinationURLifTRUE, string destinationURLifFALSE, Func<SessionData, bool> conditionalCode)
@@ -176,6 +188,19 @@ namespace LameNetHook
                 {
                     return generateRedirectCode(destinationURL, sessionData);
                 }
+                , instantlyRemove);
+        }
+
+        /// <summary>
+        /// adds a temporary page to the server, that redirects to "destinationURL" and executes the given code (only available for ONE request)
+        /// </summary>
+        public static string addOneTimeRedirectWithCode(string destinationURL, Action<SessionData> action, bool instantlyRemove = false)
+        {
+            return addOneTimeInstantPageResponse((SessionData sessionData) =>
+            {
+                action(sessionData);
+                return generateRedirectCode(destinationURL, sessionData);
+            }
                 , instantlyRemove);
         }
 
