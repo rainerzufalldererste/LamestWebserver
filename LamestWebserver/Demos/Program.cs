@@ -19,19 +19,16 @@ namespace Demos
             new pageFillerTest();
             CardGame.register();
             XmlTest.register();
-            Console.WriteLine("Demos added.\n\nType exit to quit.\n");
+            Console.WriteLine("Demos added.\n\n");
 
             string input = "";
 
-            while (input != "exit")
+            while (input != "lws")
             {
                 input = Console.ReadLine();
-
-                if(input == "lws")
-                {
-                    ServerHandler.Main(args);
-                }
             }
+
+            ServerHandler.Main(args);
         }
     }
 }
