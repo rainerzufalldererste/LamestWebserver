@@ -79,11 +79,11 @@ namespace Demos
                     new HLink("add element", "xmladd"),
                     new HNewLine(),
                     new HLink("serialize",
-                        InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?sfail", (SessionData sessionData) =>
+                        InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?sfail", false, (SessionData sessionData) =>
                             { try { Serializer.writeData(dataValues, "xmltest.xml"); return true; } catch(Exception) { return false; } })),
                     new HNewLine(),
                     new HLink("deserialize",
-                        InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?fail", (SessionData sessionData) => 
+                        InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?fail", false, (SessionData sessionData) => 
                             { try { dataValues = Serializer.getData<List<dataPiece>>("xmltest.xml"); return true; } catch(Exception) { return false; } })),
                     new HNewLine(),
                     new HRuntimeCode((SessionData sessionData) =>
@@ -107,7 +107,7 @@ namespace Demos
 
             protected override string getContents(SessionData sessionData)
             {
-                return new HForm(InstantPageResponse.addOneTimeRedirectWithCode("xmltest", (SessionData sessionData_) =>
+                return new HForm(InstantPageResponse.addOneTimeRedirectWithCode("xmltest", true, (SessionData sessionData_) =>
                     {
                         int age = -1;
 

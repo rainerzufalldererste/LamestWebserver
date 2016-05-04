@@ -514,7 +514,7 @@ namespace LamestWebserver
             }
             else
             {
-                ret += "action='" + InstantPageResponse.addOneTimeConditionalRedirect(redirectTRUE, redirectFALSE, conditionalCode, true) + "' ";
+                ret += "action='" + InstantPageResponse.addOneTimeConditionalRedirect(redirectTRUE, redirectFALSE, true, conditionalCode) + "' ";
             }
 
             if (!string.IsNullOrWhiteSpace(id))

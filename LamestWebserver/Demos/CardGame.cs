@@ -47,7 +47,7 @@ namespace Demos
 
                             new HHeadline("Login:", 1),
 
-                            new HForm(InstantPageResponse.addOneTimeConditionalRedirect("/cgame/lobby", "/cgame/?failed", (SessionData sessionData) => 
+                            new HForm(InstantPageResponse.addOneTimeConditionalRedirect("/cgame/lobby", "/cgame/?failed", false, (SessionData sessionData) => 
                                 {
                                     string userName = sessionData.getHTTP_POST_value("user");
                                     string key = sessionData.getHTTP_POST_value("key");

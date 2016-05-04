@@ -80,8 +80,9 @@ namespace LamestWebserver
         /// adds a temporary page to the server, that executes the given code (only available for ONE request)
         /// </summary>
         /// <param name="code">the code to execute</param>
+        /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string addOneTimeInstantPageResponse(Master.getContents code, bool instantlyRemove = false)
+        public static string addOneTimeInstantPageResponse(Master.getContents code, bool instantlyRemove)
         {
             string hash = SessionContainer.generateHash();
 
@@ -175,8 +176,9 @@ namespace LamestWebserver
         /// <summary>
         /// adds a temporary page to the server, that redirects to "destinationURL" (only available for ONE request)
         /// </summary>
+        /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string addOneTimeRedirect(string destinationURL, bool instantlyRemove = false)
+        public static string addOneTimeRedirect(string destinationURL, bool instantlyRemove)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) => 
                 {
@@ -187,8 +189,9 @@ namespace LamestWebserver
 
         /// <summary>
         /// adds a temporary page to the server, that redirects to "destinationURL" and executes the given code (only available for ONE request)
+        /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
         /// </summary>
-        public static string addOneTimeRedirectWithCode(string destinationURL, Action<SessionData> action, bool instantlyRemove = false)
+        public static string addOneTimeRedirectWithCode(string destinationURL, bool instantlyRemove, Action<SessionData> action)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) =>
             {
@@ -201,8 +204,9 @@ namespace LamestWebserver
         /// <summary>
         /// adds a temporary page to the server, that redirects to "destinationURL" in X milliseconds (only available for ONE request)
         /// </summary>
+        /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string addOneTimeTimedRedirect(string destinationURL, string message, int milliseconds, bool instantlyRemove = false)
+        public static string addOneTimeTimedRedirect(string destinationURL, string message, int milliseconds, bool instantlyRemove)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) =>
             {
@@ -214,8 +218,9 @@ namespace LamestWebserver
         /// <summary>
         /// adds a temporary page to the server, that redirects to "destinationURLifTRUE" if the conditional code returns true and redirects to "destinationURLifFALSE" if the conditional code returns false (only available for ONE request)
         /// </summary>
+        /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string addOneTimeConditionalRedirect(string destinationURLifTRUE, string destinationURLifFALSE, Func<SessionData, bool> conditionalCode, bool instantlyRemove = false)
+        public static string addOneTimeConditionalRedirect(string destinationURLifTRUE, string destinationURLifFALSE, bool instantlyRemove, Func<SessionData, bool> conditionalCode)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) =>
                 {
@@ -230,8 +235,9 @@ namespace LamestWebserver
         /// <summary>
         /// adds a temporary page to the server, that redirects if the conditional code returns true and executes other code if the conditional code returns false (only available for ONE request)
         /// </summary>
+        /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string addOneTimeRedirectOrCode(string destinationURLifTRUE, Master.getContents codeIfFALSE, Func<SessionData, bool> conditionalCode, bool instantlyRemove = false)
+        public static string addOneTimeRedirectOrCode(string destinationURLifTRUE, Master.getContents codeIfFALSE, bool instantlyRemove, Func<SessionData, bool> conditionalCode)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) =>
             {
