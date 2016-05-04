@@ -5,10 +5,7 @@ VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LamestWebserver", "LamestWebserver\LamestWebserver.csproj", "{2E0E1F99-3DE7-4636-9E18-93E5CB837965}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demos", "AdminTools\Demos.csproj", "{5F05A28F-82E7-454B-B974-2A45251B504E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{2E0E1F99-3DE7-4636-9E18-93E5CB837965} = {2E0E1F99-3DE7-4636-9E18-93E5CB837965}
-	EndProjectSection
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demos", "Demos\Demos.csproj", "{5F05A28F-82E7-454B-B974-2A45251B504E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
