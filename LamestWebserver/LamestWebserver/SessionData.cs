@@ -247,7 +247,7 @@ namespace LamestWebserver
         /// <summary>
         /// the raw packet sent to the server
         /// </summary>
-        public string rawPacket;
+        public string _rawPacket;
 
         /// <summary>
         /// The original tcpClient of the server. Handle with care.
@@ -278,7 +278,7 @@ namespace LamestWebserver
             this.path = path;
             this.file = file;
 
-            this.rawPacket = packet;
+            this._rawPacket = packet;
             this._tcpClient = client;
             this._networkStream = nws;
             this._remoteEndPoint = _tcpClient.Client.RemoteEndPoint;

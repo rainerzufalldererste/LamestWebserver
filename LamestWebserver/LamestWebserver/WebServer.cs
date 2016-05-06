@@ -30,8 +30,6 @@ namespace LamestWebserver
         public System.Diagnostics.Process process = null;
         public bool processIsInit = false;
         public string lastCmdOut = "";
-        public List<UserData> users = new List<UserData>();
-        private AssocByFileUserData globalData;
 
         private List<string> hashes = new List<string>();
         private List<Master.getContents> functions = new List<Master.getContents>();
@@ -46,7 +44,6 @@ namespace LamestWebserver
             Master.removeFunctionEvent += removeFunction;
 
             this.port = port;
-            globalData = new AssocByFileUserData(port.ToString());
             tcpList = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
@@ -66,7 +63,6 @@ namespace LamestWebserver
             }
 
             this.port = port;
-            globalData = new AssocByFileUserData(port.ToString());
             this.tcpList = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
@@ -289,12 +285,7 @@ namespace LamestWebserver
                 try
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
-
-                    //Program.addToStuff(msg_);
-
                     HTTP_Packet htp = HTTP_Packet.Constructor(ref msg_, client.Client.RemoteEndPoint);
-
-                    //NetworkStream nws = client.GetStream();
 
                     byte[] buffer;
 
@@ -381,6 +372,8 @@ namespace LamestWebserver
                                         {
                                             cache.Add(new PreloadedFile(folder + htp.data + "index.html", s, htp_.contentLength));
                                         }
+
+                                        buffer = null;
                                     }
                                     else
                                     {
@@ -395,6 +388,8 @@ namespace LamestWebserver
                                         htp_.contentLength = enc.GetBytes(htp_.data).Length;
                                         buffer = enc.GetBytes(htp_.getPackage());
                                         nws.Write(buffer, 0, buffer.Length);
+
+                                        buffer = null;
                                     }
                                 }
                             }
@@ -489,13 +484,26 @@ namespace LamestWebserver
                                     }
                                     else if (htp.data.Substring(htp.data.Length - 4) == ".hcs")
                                     {
-                                        string s = Hook.resolveScriptFromFile(folder + "/" + htp.data, client, htp, htp.data, getCurrentUser(client), globalData);
-                                        HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length };
+                                        string result = "";
+
+                                        try
+                                        {
+                                            result = Hook.resolveScriptFromFile(folder + "/" + htp.data, new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder, htp.data, msg_, client, nws));
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            result = Master.getErrorMsg("Exception in C# Script for '"
+                                                + htp.data + "'", "<b>An Error occured while processing the output</b><br>"
+                                                + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                + msg_.Replace("\r\n", "<br>") + "</div></p>");
+                                        }
+
+                                        HTTP_Packet htp_ = new HTTP_Packet() { data = result, contentLength = enc.GetBytes(result).Length };
                                         buffer = enc.GetBytes(htp_.getPackage());
                                         nws.Write(buffer, 0, buffer.Length);
 
                                         buffer = null;
-                                        s = null;
+                                        result = null;
                                     }
                                     else
                                     {
@@ -540,28 +548,6 @@ namespace LamestWebserver
                     ServerHandler.addToStuff("An error occured in the client handler: " + e);
                 }
             }
-        }
-
-        private UserData getCurrentUser(TcpClient client)
-        {
-            for (int i = 0; i < users.Count; i++)
-            {
-                if (users[i].ipaddress.Equals(((IPEndPoint)(client.Client.RemoteEndPoint)).Address))
-                    return users[i];
-            }
-
-            return null;
-        }
-
-        private bool isIPLoggedIn(TcpClient client)
-        {
-            for (int i = 0; i < users.Count; i++)
-            {
-                if (users[i].ipaddress.Equals(((IPEndPoint)(client.Client.RemoteEndPoint)).Address))
-                    return true;
-            }
-
-            return false;
         }
     }
 
