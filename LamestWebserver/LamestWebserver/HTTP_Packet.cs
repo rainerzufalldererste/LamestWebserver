@@ -97,7 +97,7 @@ namespace LamestWebserver
                                 add = add.Remove(add.Length - 1);
 
                             h.data = h.data.Remove(k);
-                            add = linput[k].Replace('+', ' '); // HttpUtility.HtmlDecode(linput[k]);
+                            add = add.Replace('+', ' '); // HttpUtility.HtmlDecode(linput[k]);
 
                             for (int it = 0; it < add.Length - 1; it++)
                             {
@@ -166,7 +166,7 @@ namespace LamestWebserver
                                 add = add.Remove(add.Length - 1);
 
                             h.data = h.data.Remove(k);
-                            add = linput[k].Replace('+', ' '); //HttpUtility.HtmlDecode(linput[k]);
+                            add = add.Replace('+', ' '); //HttpUtility.HtmlDecode(linput[k]);
 
                             for (int it = 0; it < add.Length - 1; it++)
                             {

@@ -38,7 +38,7 @@ namespace LamestWebserver
         private bool csharp_bridge = true;
         internal bool useCache = false;
 
-        public WebServer(int port, string folder)
+        public WebServer(int port, string folder, bool silent = false)
         {
             this.csharp_bridge = true;
 
@@ -50,9 +50,12 @@ namespace LamestWebserver
             tcpList = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
+
+            if (!silent)
+                Console.WriteLine("WebServer started on port " + port + ".");
         }
 
-        internal WebServer(int port, string folder, bool cs_bridge)
+        internal WebServer(int port, string folder, bool cs_bridge, bool silent = false)
         {
             this.csharp_bridge = cs_bridge;
 
@@ -67,6 +70,9 @@ namespace LamestWebserver
             this.tcpList = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
+
+            if (!silent)
+                Console.WriteLine("WebServer started on port " + port + ".");
         }
 
         ~WebServer()
@@ -93,7 +99,7 @@ namespace LamestWebserver
                 return -1;
         }
 
-        public void killMe()
+        public void stopServer()
         {
             running = false;
 
@@ -109,7 +115,7 @@ namespace LamestWebserver
             }
             catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
 
-            Console.WriteLine("Main Thread Died! - port: " + port + " - folder: " + folder);
+            Console.WriteLine("Main Thread stopped! - port: " + port + " - folder: " + folder);
 
             int i = threads.Count;
 
@@ -122,7 +128,7 @@ namespace LamestWebserver
                 catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
                 threads.RemoveAt(0);
 
-                Console.WriteLine("Thread Died! (" + (i - threads.Count) + "/" + i + ") - port: " + port + " - folder: " + folder);
+                Console.WriteLine("Thread stopped! (" + (i - threads.Count) + "/" + i + ") - port: " + port + " - folder: " + folder);
             }
         }
 
@@ -231,7 +237,7 @@ namespace LamestWebserver
                         TcpClient tcpClient = this.tcpList.AcceptTcpClient();
                         threads.Add(new Thread(new ParameterizedThreadStart(DoStuff)));
                         threads[threads.Count - 1].Start((object)tcpClient);
-                        ServerHandler.addToStuff("Client Connected!...");
+                        ServerHandler.addToStuff("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
                         if (threads.Count % 25 == 0)
                         {
@@ -270,7 +276,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.addToStuff("An error occured! " + e.Message);
+                    ServerHandler.addToStuff("An error occured in the client handler:  " + e);
                     break;
                 }
 
@@ -526,12 +532,12 @@ namespace LamestWebserver
                     }
                     catch (Exception e)
                     {
-                        ServerHandler.addToStuff("An error occured in the client: " + e);
+                        ServerHandler.addToStuff("An error occured in the client handler: " + e);
                     }
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.addToStuff("nope. " + e);
+                    ServerHandler.addToStuff("An error occured in the client handler: " + e);
                 }
             }
         }

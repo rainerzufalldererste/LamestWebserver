@@ -43,9 +43,38 @@ namespace LamestWebserver
             return new HPlainText(i.ToString());
         }
 
-        public static void startServer(int port, string directory)
+        public static void StartServer(int port, string directory, bool silent = false)
         {
-            ServerHandler.ports.Add(new WebServer(port, directory, true));
+            ServerHandler.RunningServers.Add(new WebServer(port, directory, true, silent));
+        }
+
+        public static void StopServers()
+        {
+            for (int i = ServerHandler.RunningServers.Count - 1; i > -1; i--)
+            {
+                try
+                {
+                    ServerHandler.RunningServers[i].stopServer();
+                    ServerHandler.RunningServers.RemoveAt(i);
+                }
+                catch (Exception) { }
+            }
+        }
+
+        public static void StopServer(int port)
+        {
+            for (int i = ServerHandler.RunningServers.Count - 1; i > -1; i--)
+            {
+                if (ServerHandler.RunningServers[i].port == port)
+                {
+                    try
+                    {
+                        ServerHandler.RunningServers[i].stopServer();
+                        ServerHandler.RunningServers.RemoveAt(i);
+                    }
+                    catch (Exception) { }
+                }
+            }
         }
     }
 }

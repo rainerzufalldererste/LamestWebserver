@@ -8,7 +8,7 @@ namespace LamestWebserver
 {
     public class ServerHandler
     {
-        internal static List<WebServer> ports = new List<WebServer>();
+        internal static List<WebServer> RunningServers = new List<WebServer>();
 
         public static void Main(string[] args)
         {
@@ -39,7 +39,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        ports.Add(new WebServer(Int32.Parse(args[0]), "./web", true)); //does stuff
+                        RunningServers.Add(new WebServer(Int32.Parse(args[0]), "./web", true)); //does stuff
                     }
                     catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
                 }
@@ -50,7 +50,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        ports.Add(new WebServer(Int32.Parse(args[i]), args[i + 1], true)); //does stuff
+                        RunningServers.Add(new WebServer(Int32.Parse(args[i]), args[i + 1], true)); //does stuff
                     }
                     catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
                 }
@@ -79,7 +79,7 @@ namespace LamestWebserver
 
                     switch (s)
                     {
-                        case "ports": { readme = false_; for (int i = 0; i < ports.Count; i++) { Console.WriteLine("Port: " + ports[i].port + " Folder: " + ports[i].folder + " Threads: " + ports[i].getThreadCount()); } };
+                        case "ports": { readme = false_; for (int i = 0; i < RunningServers.Count; i++) { Console.WriteLine("Port: " + RunningServers[i].port + " Folder: " + RunningServers[i].folder + " Threads: " + RunningServers[i].getThreadCount()); } };
                             Console.WriteLine("Done!"); readme = true_;
                             break;
 
@@ -90,12 +90,12 @@ namespace LamestWebserver
                                     readme = false_;
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < ports.Count; i++)
+                                    for (int i = 0; i < RunningServers.Count; i++)
                                     {
-                                        if (ports[i].port == Int32.Parse(id))
+                                        if (RunningServers[i].port == Int32.Parse(id))
                                         {
-                                            ports[i].killMe();
-                                            ports.RemoveAt(i);
+                                            RunningServers[i].stopServer();
+                                            RunningServers.RemoveAt(i);
                                             Console.WriteLine("Done!");
                                             readme = true_;
                                             break;
@@ -116,7 +116,7 @@ namespace LamestWebserver
                                     string prt = Console.ReadLine();
                                     Console.WriteLine("Folder: (\"./web\")");
                                     string fld = Console.ReadLine();
-                                    ports.Add(new WebServer(Int32.Parse(prt), fld, true));
+                                    RunningServers.Add(new WebServer(Int32.Parse(prt), fld, true));
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e) { Console.WriteLine("Failed!" + e); }
@@ -236,13 +236,13 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < ports.Count; i++)
+                                    for (int i = 0; i < RunningServers.Count; i++)
                                     {
-                                        if (ports[i].port == Int32.Parse(id))
+                                        if (RunningServers[i].port == Int32.Parse(id))
                                         {
-                                            lock (ports[i].cache)
+                                            lock (RunningServers[i].cache)
                                             {
-                                                ports[i].cache.Clear();
+                                                RunningServers[i].cache.Clear();
                                                 Console.WriteLine("Done!");
                                                 break;
                                             }
@@ -261,12 +261,12 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < ports.Count; i++)
+                                    for (int i = 0; i < RunningServers.Count; i++)
                                     {
-                                        if (ports[i].port == Int32.Parse(id))
+                                        if (RunningServers[i].port == Int32.Parse(id))
                                         {
                                             Console.WriteLine("Maximum Size: ");
-                                            ports[i].max_cache = Int32.Parse(Console.ReadLine());
+                                            RunningServers[i].max_cache = Int32.Parse(Console.ReadLine());
                                             Console.WriteLine("Done!");
                                             break;
                                         }
@@ -284,11 +284,11 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < ports.Count; i++)
+                                    for (int i = 0; i < RunningServers.Count; i++)
                                     {
-                                        if (ports[i].port == Int32.Parse(id))
+                                        if (RunningServers[i].port == Int32.Parse(id))
                                         {
-                                            ports[i].useCache = true;
+                                            RunningServers[i].useCache = true;
                                             Console.WriteLine("Done!");
                                             break;
                                         }
@@ -306,12 +306,12 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < ports.Count; i++)
+                                    for (int i = 0; i < RunningServers.Count; i++)
                                     {
-                                        if (ports[i].port == Int32.Parse(id))
+                                        if (RunningServers[i].port == Int32.Parse(id))
                                         {
-                                            ports[i].useCache = false;
-                                            ports[i].cache.Clear();
+                                            RunningServers[i].useCache = false;
+                                            RunningServers[i].cache.Clear();
                                             Console.WriteLine("Done!");
                                             break;
                                         }
