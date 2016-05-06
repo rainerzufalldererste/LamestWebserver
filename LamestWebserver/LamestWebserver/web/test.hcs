@@ -7,13 +7,11 @@ string processOutput()
 	if(count != null)
 	{
 		count++;
-		
 		setFileVariable(nameof(count), count);
 	}
 	else
 	{
 		count = 0;
-		
 		setFileVariable(nameof(count), count);
 	}
     

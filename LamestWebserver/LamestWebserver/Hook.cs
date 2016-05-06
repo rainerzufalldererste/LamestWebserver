@@ -46,9 +46,9 @@ namespace LamestScriptHook
                 for (int i = 0; i < scripts.Count; i++)
                 {
                     try
-                    { 
-                        var script = CSharpScript.Create(scripts[i], ScriptOptions.Default, typeof(SessionData));
-                        var task = script.RunAsync(sessionData);
+                    {
+                        Script script  = CSharpScript.Create(scripts[i], ScriptOptions.Default, typeof(SessionData));
+                        Task<ScriptState> task = script.RunAsync(sessionData);
 
                         string output = task.Result.ReturnValue.ToString();
 
@@ -59,8 +59,65 @@ namespace LamestScriptHook
                     }
                     catch (Exception e)
                     {
-                        scripts[i] = "<h2>Script Error (in Script " + (i+1) + "):</h2> <br>" + e.ToString().Replace("\n", "<br>") + "<br><br>Exiting";
-                        break;
+                        int line_ = -1;
+                        int char_ = -1;
+
+                        string e_ = e.ToString();
+
+                        try
+                        {
+                            if (e_.Substring(0, "Microsoft.CodeAnalysis.Scripting.CompilationErrorException: (".Length) == "Microsoft.CodeAnalysis.Scripting.CompilationErrorException: (")
+                            {
+                                int start = "Microsoft.CodeAnalysis.Scripting.CompilationErrorException: (".Length;
+                                int k = start;
+                                int length = e_.Length;
+                                bool state = true;
+
+                                for (; k < length; k++)
+                                {
+                                    if(state && e_[k] == ',')
+                                    {
+                                        int.TryParse(e_.Substring(start, k - start), out line_);
+                                        state = false;
+                                        start = k + 1;
+                                    }
+                                    else if(!state && e_[k] == ')')
+                                    {
+                                        int.TryParse(e_.Substring(start, k - start), out char_);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception) { }
+
+                        string text = e_.Replace("\n", "<br>") + "<hr>Code:<br><br><div style='font-family:monospace;'>";
+
+                        string[] lines = scripts[i].Replace("\r", "").Split('\n');
+
+                        for (int j = 0; j < lines.Length; j++)
+                        {
+                            if (j+1 == line_ && line_ > 0 && char_ > 0)
+                            {
+                                if (char_ < lines[j].Length)
+                                {
+                                    text += "<b style='color:#BCD820;'>" + (j + 1).ToString("0000") + "|</b>    " + System.Web.HttpUtility.HtmlEncode(lines[j].Substring(0, char_ - 1)) + "<u style='color:#EC3939;font-weight: bold;'>" + System.Web.HttpUtility.HtmlEncode(lines[j].Substring(char_ - 1)) + "</u><br>";
+                                }
+                                else
+                                {
+                                    text += "<b style='color:#BCD820;'>" + (j + 1).ToString("0000") + "|</b>    " + System.Web.HttpUtility.HtmlEncode(lines[j]) + "<b style='color:#EC3939;'>_</b><br>";
+                                }
+                            }
+                            else
+                            {
+                                text += "<b style='color:#507C42'>" + (j + 1).ToString("0000") + "|</b>    " + System.Web.HttpUtility.HtmlEncode(lines[j]) + "<br>";
+                            }
+                        }
+
+                        text += "</div>";
+
+                        scripts[i] = Master.getErrorMsg("Script Error (in Script " + (i+1) + ")", text);
+                        return scripts[i];
                     }
                 }
 
