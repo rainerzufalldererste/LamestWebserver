@@ -113,7 +113,7 @@ namespace Demos
                     HRuntimeCode.getConditionalRuntimeCode(
                         new HContainer() { elements = new List<HElement>()
                             {
-                                new HScript(ScriptCollection.getPageReloadInMilliseconds, 2500),
+                                new HScript(ScriptCollection.getPageReloadWithFullPOSTInMilliseconds, 2500),
                                 new HText("Searching for a lobby... <i>(The Page might reload a couple of times)</i>"),
                                 new HSyncronizedRuntimeCode((SessionData sessionData) => 
                                     {
@@ -203,7 +203,7 @@ namespace Demos
 
             private void registerNextGame()
             {
-                nextGameHash = "cgame/" + SessionContainer.generateHash(); // generates a new hash
+                nextGameHash = SessionContainer.generateHash(); // generates a new hash
                 currentGame = new GameHandler(nextGameHash);
                 nextGameHash = "/" + nextGameHash;
             }
@@ -211,8 +211,143 @@ namespace Demos
 
         public class GameHandler : SyncronizedPageResponse
         {
+            public enum CardType : byte
+            {
+                Eichenblatt, Löwenzahn, Sonnenblume, Feder, Knoblauch, Pilz, Rabe, Mistel, Kristall
+            }
+
+            public class Card
+            {
+                public CardType[] pictures = new CardType[3];
+                public byte specality = 0;
+                public CardType special;
+
+                public static Random rand = new Random();
+
+                public Card()
+                {
+                    double d;
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        d = rand.NextDouble() * 100d;
+
+                        if(d < 16)
+                        {
+                            pictures[i] = CardType.Eichenblatt;
+                        }
+                        else if(d < 32)
+                        {
+                            pictures[i] = CardType.Löwenzahn;
+                        }
+                        else if (d < 48)
+                        {
+                            pictures[i] = CardType.Sonnenblume;
+                        }
+                        else if(d < 60)
+                        {
+                            pictures[i] = CardType.Feder;
+                        }
+                        else if (d < 70)
+                        {
+                            pictures[i] = CardType.Knoblauch;
+                        }
+                        else if(d < 77.5d)
+                        {
+                            pictures[i] = CardType.Pilz;
+                        }
+                        else if(d < 85)
+                        {
+                            pictures[i] = CardType.Rabe;
+                        }
+                        else if (d < 92.5d)
+                        {
+                            pictures[i] = CardType.Mistel;
+                        }
+                        else if (d < 97.5d)
+                        {
+                            pictures[i] = CardType.Kristall;
+                        }
+                    }
+
+                    if (pictures[0] == pictures[1])
+                    {
+                        specality++;
+                        special = pictures[0];
+                    }
+
+                    if (pictures[0] == pictures[2])
+                    {
+                        specality++;
+                        special = pictures[0];
+                    }
+
+                    if (pictures[1] == pictures[2])
+                    {
+                        specality++;
+                        special = pictures[1];
+                    }
+                }
+
+                public bool cardPlayable(Card c)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        if (c.pictures[0] == pictures[i]) return true;
+                        if (c.pictures[1] == pictures[i]) return true;
+                        if (c.pictures[2] == pictures[i]) return true;
+                    }
+
+                    return false;
+                }
+
+                public override string ToString()
+                {
+                    string output = "";
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output += pictures[i] + "<br>";
+                    }
+
+                    return output;
+                }
+            }
+
+            public class GObject
+            {
+                public static int LASTID = 0;
+
+                public enum EGOType
+                {
+                    Creature, RavenNest, CornField
+                }
+
+                public EGOType type = EGOType.Creature;
+                public int health = 1;
+                public int durability = 1;
+                public int ID = 0;
+
+                public GObject()
+                {
+                    ID = LASTID++;
+                }
+            }
+
+            public class Player
+            {
+                public List<Card> cards = new List<Card>();
+                public List<GObject> minions = new List<GObject>();
+                public int health = 50;
+            }
+
             private List<int> joinedUserIDs = new List<int>();
             private int size = -1;
+            private int activePlayer = 0;
+            private int gameState = 0;
+            private List<Player> players = new List<Player>();
+
+            private Card topCard = new Card();
 
             public GameHandler(string hashURL) : base(hashURL)
             {
@@ -221,10 +356,131 @@ namespace Demos
 
             protected override string getContents(SessionData sessionData)
             {
-                if (!joinedUserIDs.Contains(sessionData.userID.Value))
-                    joinedUserIDs.Add(sessionData.userID.Value);
+                if (!sessionData.knownUser)
+                    return "YOU ARE NOT LOGGED IN!";
 
-                return "wow, dude, i'm a game! (" + sessionData.ssid + ")" + new HNewLine() * sessionData + "[" + sessionData.userID.Value + ": (" + joinedUserIDs.Count + "/" + size + ")] " + new HTable(joinedUserIDs.Cast<object>()) * sessionData;
+                if (joinedUserIDs.Count == 0)
+                    activePlayer = 0;
+
+                if (!joinedUserIDs.Contains(sessionData.userID.Value))
+                {
+                    joinedUserIDs.Add(sessionData.userID.Value);
+                    players.Add(new Player() { cards = new List<Card>() { new Card(), new Card(), new Card(), new Card(), new Card(), new Card(), new Card(), new Card() } });
+                }
+
+                int thisplayer = -1;
+
+                for (int i = 0; i < joinedUserIDs.Count; i++)
+                {
+                    if(joinedUserIDs[i] == sessionData.userID.Value)
+                    {
+                        thisplayer = i;
+                        break;
+                    }
+                }
+
+                if (thisplayer == -1)
+                    return "THIS IS NOT YOUR GAME!";
+
+                string postvalue = sessionData.getHTTP_POST_value("card");
+
+                if(players.Count <= 1 && joinedUserIDs.Count > 1)
+                {
+                    removeFromServer();
+
+                    return new HScript(ScriptCollection.getPageReferalToX, InstantPageResponse.addOneTimeTimedRedirect("/cgame/lobby", "You have lost the game!", 2500, true)) * sessionData;
+                }
+
+                if (thisplayer == activePlayer && postvalue != null)
+                {
+                    int card_num = -1;
+
+                    int.TryParse(postvalue, out card_num);
+
+                    if(card_num >= 0 && card_num < players[thisplayer].cards.Count && topCard.cardPlayable(players[thisplayer].cards[card_num]))
+                    {
+                        topCard = players[thisplayer].cards[card_num];
+                        players[thisplayer].cards.RemoveAt(card_num);
+
+                        if(players[thisplayer].cards.Count == 0)
+                        {
+                            players.RemoveAt(thisplayer);
+
+                            activePlayer++;
+
+                            if (activePlayer >= players.Count)
+                            {
+                                activePlayer = 0;
+                            }
+
+                            return new HScript(ScriptCollection.getPageReferalToX, InstantPageResponse.addOneTimeTimedRedirect("/cgame/lobby", "You have won the game!", 2500, true)) * sessionData;
+                        }
+
+                        activePlayer++;
+
+                        if(activePlayer >= players.Count)
+                        {
+                            activePlayer = 0;
+                        }
+
+                        return new HScript(ScriptCollection.getPageReloadInMilliseconds, 0) * sessionData;
+                    }
+                }
+
+                postvalue = sessionData.getHTTP_POST_value("draw");
+
+                if(thisplayer == activePlayer && postvalue != null && postvalue == "1")
+                {
+                    players[thisplayer].cards.Add(new Card());
+                    activePlayer++;
+
+                    if (activePlayer >= players.Count)
+                    {
+                        activePlayer = 0;
+                    }
+
+                    return new HScript(ScriptCollection.getPageReloadInMilliseconds, 0) * sessionData;
+                }
+
+                string output =
+                    "<div style='position: relative;text-align: center;padding: 20;width: 180;min-width: 100;border-style: solid;font-family: \"Georgia\", \"Times New Roman\", serif, sans-serif;color: #BFB39E;background: #544E44;'>" + topCard.ToString() + "</div><br><br>" +
+                    (
+                        thisplayer == activePlayer ?
+                        new HForm("")
+                        {
+                            descriptionTags = "style='position: relative;text-align: right;'",
+                            elements = new List<HElement>()
+                            {
+                                new HInput(HInput.EInputType.hidden, "draw", "1"), new HButton("Draw a card", HButton.EButtonType.submit)
+                                {
+                                    descriptionTags = "style='background: #EADDC6; border-style: solid; border-color: #A09580; border-radius: 10px; width: 150px; height: 40px;font-size: 15px;margin: 10px;font-family: sans-serif;font-weight: bold;color: #544E44;'"
+                                }
+                            }
+                        } 
+                        : (HElement)new HScript(ScriptCollection.getPageReloadInMilliseconds, 1000)
+                    ) * sessionData +  "<div style='overflow:scroll;'>";
+
+                for (int i = 0; i < players[thisplayer].cards.Count; i++)
+                {
+                    output += new HContainer()
+                    {
+                        descriptionTags = "style='display: table-cell;padding: 20;width: 180;min-width: 100;height: 220; border-style: solid;font-family: \"Georgia\", \"Times New Roman\", serif, sans-serif;color: #BFB39E;background: #544E44;'",
+                        elements = new List<HElement>()
+                        {
+                            new HPlainText(players[thisplayer].cards[i].ToString()),
+                            (thisplayer == activePlayer && topCard.cardPlayable(players[thisplayer].cards[i]) ? 
+                                new HForm("")
+                                {
+                                    elements = new List<HElement>() { new HNewLine(), new HInput(HInput.EInputType.hidden, "card", i.ToString()), new HButton("play this card", HButton.EButtonType.submit) }
+                                } 
+                                : (HElement)new HPlainText())
+                        }
+                    } * sessionData;
+                }
+
+                output += "</div>";
+
+                return "wow, dude, i'm a game! (" + sessionData.ssid + ")" + new HNewLine() * sessionData + "[" + sessionData.userID.Value + ": (" + joinedUserIDs.Count + "/" + size + ")] " + new HTable(joinedUserIDs.Cast<object>()) * sessionData + "<hr>" + output;
             }
 
             internal void setSize(int size)

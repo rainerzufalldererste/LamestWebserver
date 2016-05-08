@@ -183,6 +183,11 @@ namespace LamestWebserver
         {
             throw new Exception("No, ToString is not the Method you should be using. Use getContent(SessionData sessionData).");
         }
+
+        public static implicit operator HElement(string s)
+        {
+            return new HPlainText(s);
+        }
     }
 
     public class HNewLine : HElement
@@ -205,7 +210,7 @@ namespace LamestWebserver
     {
         public string text;
 
-        public HPlainText(string text)
+        public HPlainText(string text = "")
         {
             this.text = text;
         }
@@ -401,7 +406,7 @@ namespace LamestWebserver
                 ret += "name='" + name + "' ";
 
             if (!string.IsNullOrWhiteSpace(value))
-                ret += "value='" + name + "' ";
+                ret += "value='" + value + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -501,6 +506,23 @@ namespace LamestWebserver
             redirectTRUE = redirectURLifTRUE;
             redirectFALSE = redirectURLifFALSE;
             this.conditionalCode = conditionalCode;
+        }
+
+        /// <summary>
+        /// creates a form containing a few values which are added to elements. It can also contain a submit button.
+        /// </summary>
+        public HForm(string action, bool addSubmitButton, string buttontext = "", params Tuple<string, string>[] values)
+        {
+            fixedAction = true;
+            this.action = action;
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                elements.Add(new HInput(HInput.EInputType.hidden, values[i].Item1, values[i].Item2));
+            }
+
+            if (addSubmitButton)
+                elements.Add(new HButton(buttontext, HButton.EButtonType.submit));
         }
 
         public override string getContent(SessionData sessionData)
