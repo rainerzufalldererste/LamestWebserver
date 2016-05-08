@@ -314,31 +314,9 @@ namespace Demos
                 }
             }
 
-            public class GObject
-            {
-                public static int LASTID = 0;
-
-                public enum EGOType
-                {
-                    Creature, RavenNest, CornField
-                }
-
-                public EGOType type = EGOType.Creature;
-                public int health = 1;
-                public int durability = 1;
-                public int ID = 0;
-
-                public GObject()
-                {
-                    ID = LASTID++;
-                }
-            }
-
             public class Player
             {
                 public List<Card> cards = new List<Card>();
-                public List<GObject> minions = new List<GObject>();
-                public int health = 50;
             }
 
             private List<int> joinedUserIDs = new List<int>();
