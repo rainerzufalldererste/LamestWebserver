@@ -64,7 +64,7 @@ namespace LamestWebserver
             
             string[] linput = null;
 
-            linput = HttpUtility.UrlDecode(input).Split(new string[] { "\r\n" }, StringSplitOptions.None);
+            linput = input.Split(new string[] { "\r\n" }, StringSplitOptions.None);
 
             bool found = false;
 
@@ -133,6 +133,9 @@ namespace LamestWebserver
                         {
                             h.additionalHEAD[j] = h.additionalHEAD[j].Remove(h.additionalHEAD[j].Length - 1);
                         }
+
+                        h.valuesHEAD[j] = HttpUtility.UrlDecode(h.valuesHEAD[j]);
+                        h.additionalHEAD[j] = HttpUtility.UrlDecode(h.additionalHEAD[j]);
                     }
 
                     h.version = linput[i].Substring(index + 1);
@@ -202,6 +205,9 @@ namespace LamestWebserver
                         {
                             h.additionalHEAD[j] = h.additionalHEAD[j].Remove(h.additionalHEAD[j].Length - 1);
                         }
+
+                        h.valuesHEAD[j] = HttpUtility.UrlDecode(h.valuesHEAD[j]);
+                        h.additionalHEAD[j] = HttpUtility.UrlDecode(h.additionalHEAD[j]);
                     }
 
                     h.version = linput[i].Substring(index + 1);
@@ -250,6 +256,9 @@ namespace LamestWebserver
                         {
                             h.additionalPOST[j] = h.additionalPOST[j].Remove(h.additionalPOST[j].Length - 1);
                         }
+
+                        h.valuesPOST[j] = HttpUtility.UrlDecode(h.valuesPOST[j]);
+                        h.additionalPOST[j] = HttpUtility.UrlDecode(h.additionalPOST[j]);
                     }
 
                     // Chris: Crazy hack for Chrome POST packets

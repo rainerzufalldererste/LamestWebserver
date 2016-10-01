@@ -136,7 +136,7 @@ namespace LamestWebserver
             return ret;
         }
 
-        public string getContents(SessionData sessionData)
+        public override string getContent(SessionData sessionData)
         {
             string ret;
 
@@ -154,7 +154,7 @@ namespace LamestWebserver
 
         private void register()
         {
-            Master.addFuntionToServer(URL, getContents);
+            Master.addFuntionToServer(URL, getContent);
         }
 
         protected void removeFromServer()
@@ -291,7 +291,8 @@ namespace LamestWebserver
 
     public class HImage : HElement
     {
-        string source, descriptionTags;
+        string source;
+        public string descriptionTags;
 
         public HImage(string source = "")
         {
@@ -303,7 +304,7 @@ namespace LamestWebserver
             string ret = "<img ";
 
             if (!string.IsNullOrWhiteSpace(source))
-                ret += "src='" + id + "' ";
+                ret += "src='" + source + "' ";
 
             if (!string.IsNullOrWhiteSpace(id))
                 ret += "id='" + id + "' ";
@@ -322,7 +323,7 @@ namespace LamestWebserver
 
     public class HText : HElement
     {
-        string text, descriptionTags;
+        public string text, descriptionTags;
 
         public HText(string text = "")
         {
@@ -460,10 +461,10 @@ namespace LamestWebserver
             string ret = "<div ";
 
             if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "'";
+                ret += "id='" + id + "' ";
 
             if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "'";
+                ret += "name='" + name + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -481,6 +482,22 @@ namespace LamestWebserver
             ret += "\n</div>\n";
 
             return ret;
+        }
+
+        public void addElements(List<HElement> list)
+        {
+            for(int i = 0; i < list.Count; i++)
+            {
+                addElement(list[i]);
+            }
+        }
+
+        public void addElements(params HElement[] list)
+        {
+            for (int i = 0; i < list.Length; i++)
+            {
+                addElement(list[i]);
+            }
         }
     }
 
@@ -546,7 +563,7 @@ namespace LamestWebserver
                 ret += "name='" + name + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+                ret += descriptionTags + " ";
 
             ret += "method='POST' ";
 
@@ -600,6 +617,7 @@ namespace LamestWebserver
             this.type = EButtonType.button;
         }
 
+
         public override string getContent(SessionData sessionData)
         {
             string ret = "<button ";
@@ -647,7 +665,7 @@ namespace LamestWebserver
             }
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+                ret += descriptionTags + " ";
 
             ret += ">\n";
 
@@ -685,7 +703,7 @@ namespace LamestWebserver
 
             foreach(string s in input)
             {
-                data.Add(s.toHElemenet());
+                data.Add(s.toHElement());
             }
 
             this.elements = data;
@@ -819,10 +837,10 @@ namespace LamestWebserver
             string ret = "<" + tagName + " ";
 
             if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "'";
+                ret += "id='" + id + "' ";
 
             if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "'";
+                ret += "name='" + name + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
