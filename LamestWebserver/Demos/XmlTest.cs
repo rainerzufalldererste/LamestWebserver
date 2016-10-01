@@ -83,7 +83,7 @@ namespace Demos
                             { try { Serializer.writeData(dataValues, "xmltest.xml"); return true; } catch(Exception) { return false; } })),
                     new HNewLine(),
                     new HLink("deserialize",
-                        InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?fail", false, (SessionData sessionData) => 
+                        InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?fail", false, (SessionData sessionData) =>
                             { try { dataValues = Serializer.getData<List<dataPiece>>("xmltest.xml"); return true; } catch(Exception) { return false; } })),
                     new HNewLine(),
                     new HRuntimeCode((SessionData sessionData) =>
@@ -92,7 +92,7 @@ namespace Demos
 
                             for(int i = 0; i < dataValues.Count; i++)
                             {
-                                s += new HList(HList.EListType.UnorderedList, dataValues[i].name.toHElemenet(), dataValues[i].age.toHElemenet(), dataValues[i].data.toHElemenet(), new HList(HList.EListType.OrderedList, dataValues[i].ancestors)) * sessionData;
+                                s += new HList(HList.EListType.UnorderedList, dataValues[i].name.toHElement(), dataValues[i].age.toHElement(), dataValues[i].data.toHElement(), new HList(HList.EListType.OrderedList, dataValues[i].ancestors)) * sessionData;
                             }
 
                             return s;
@@ -108,14 +108,14 @@ namespace Demos
             protected override string getContents(SessionData sessionData)
             {
                 return new HForm(InstantPageResponse.addOneTimeRedirectWithCode("xmltest", true, (SessionData sessionData_) =>
-                    {
-                        int age = -1;
+                {
+                    int age = -1;
 
-                        if (sessionData_.getHTTP_POST_value("name") != null && int.TryParse(sessionData_.getHTTP_POST_value("age"), out age) && sessionData_.getHTTP_POST_value("data") != null)
-                        {
-                            dataValues.Add(new dataPiece(sessionData_.getHTTP_POST_value("name"), sessionData_.getHTTP_POST_value("data"), age));
-                        }
-                    }))
+                    if (sessionData_.getHTTP_POST_Value("name") != null && int.TryParse(sessionData_.getHTTP_POST_Value("age"), out age) && sessionData_.getHTTP_POST_Value("data") != null)
+                    {
+                        dataValues.Add(new dataPiece(sessionData_.getHTTP_POST_Value("name"), sessionData_.getHTTP_POST_Value("data"), age));
+                    }
+                }))
                 {
                     elements = new List<HElement>()
                     {

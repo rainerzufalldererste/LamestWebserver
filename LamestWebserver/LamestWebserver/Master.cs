@@ -38,7 +38,7 @@ namespace LamestWebserver
             return new HPlainText(s);
         }
 
-        public static HElement toHElemenet(this int i)
+        public static HElement toHElement(this int i)
         {
             return new HPlainText(i.ToString());
         }
