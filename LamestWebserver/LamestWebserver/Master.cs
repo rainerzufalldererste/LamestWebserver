@@ -33,12 +33,12 @@ namespace LamestWebserver
                 + title + "</h1><hr>" + message.Replace("\n","<br>") + "<p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>";
         }
 
-        public static HElement toHElemenet(this string s)
+        public static HElement toHElement(this string s)
         {
             return new HPlainText(s);
         }
 
-        public static HElement toHElemenet(this int i)
+        public static HElement toHElement(this int i)
         {
             return new HPlainText(i.ToString());
         }
@@ -75,6 +75,16 @@ namespace LamestWebserver
                     catch (Exception) { }
                 }
             }
+        }
+
+        public static string FormatTo_HTTP_URL(string input)
+        {
+            return System.Web.HttpUtility.HtmlEncode(input);
+        }
+
+        public static string FormatTo_HTML(string text)
+        {
+            return new System.Web.HtmlString(text).ToHtmlString();
         }
     }
 }

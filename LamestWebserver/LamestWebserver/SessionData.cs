@@ -2,11 +2,16 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Security.Cryptography;
+using System.Runtime.Serialization;
 
 namespace LamestWebserver
 {
     public static class SessionContainer
     {
+        private static Mutex persistencyMutex = new Mutex();
+        private static List<List<string>> persistentUserDataHashes;
+        private static List<List<object>> persistentUserData;
+
         private static Mutex mutex = new Mutex();
 
         private static List<string> FileNames = new List<string>();
@@ -41,12 +46,138 @@ namespace LamestWebserver
                 FilePerUserObjects.Add(new List<Dictionary<string, object>>());
                 UserObjects.Add(new Dictionary<string, object>());
 
-                mutex.ReleaseMutex();
+
+                persistencyMutex.WaitOne();
+
+                try
+                {
+                    if (persistentUserData == null)
+                        readPersistency();
+
+                    persistentUserDataHashes.Add(new List<string>());
+                    persistentUserData.Add(new List<object>());
+                    writePersistency();
+
+                    persistencyMutex.ReleaseMutex();
+                    mutex.ReleaseMutex();
+                }
+                catch (Exception e)
+                {
+                    persistencyMutex.ReleaseMutex();
+                    mutex.ReleaseMutex();
+
+                    throw e;
+                }
             }
 
             UserHashes[userID.Value] = generateHash();
 
             return UserHashes[userID.Value];
+        }
+
+        private static void readPersistency()
+        {
+            try
+            {
+                persistentUserData = Serializer.getData<List<List<object>>>("./user/userdata.xml");
+                persistentUserDataHashes = Serializer.getData<List<List<string>>>("./user/userhashes.xml");
+            }
+            catch(Exception)
+            {
+                persistentUserData = new List<List<object>>();
+                persistentUserDataHashes = new List<List<string>>();
+            }
+        }
+
+        private static void writePersistency()
+        {
+            try
+            {
+                Serializer.writeData(persistentUserData, "./user/usersdata.xml");
+                Serializer.writeData(persistentUserDataHashes, "./user/userhashes.xml");
+            }
+            catch(Exception)
+            {
+                if(!System.IO.Directory.Exists("./user/"))
+                {
+                    System.IO.Directory.CreateDirectory("./user/");
+                }
+
+                Serializer.writeData(persistentUserData, "./user/usersdata.xml");
+                Serializer.writeData(persistentUserDataHashes, "./user/userhashes.xml");
+            }
+        }
+
+        internal static void setPersistentUserVariable(int UserID, string hash, object value)
+        {
+            persistencyMutex.WaitOne();
+
+            try
+            {
+                int? id = getIndexFromList(hash, persistentUserData[UserID]);
+
+                if (value == null)
+                {
+                    if (id.HasValue)
+                    {
+                        persistentUserDataHashes[UserID].RemoveAt(id.Value);
+                        persistentUserData[UserID].RemoveAt(id.Value);
+                        writePersistency();
+                    }
+                }
+                else
+                {
+                    if(id.HasValue)
+                    {
+                        persistentUserData[UserID][id.Value] = value;
+                    }
+                    else
+                    {
+                        persistentUserDataHashes[UserID].Add(hash);
+                        persistentUserData[UserID].Add(value);
+                    }
+
+                    writePersistency();
+                }
+
+                persistencyMutex.ReleaseMutex();
+            }
+            catch(Exception e)
+            {
+                persistencyMutex.ReleaseMutex();
+
+                throw e;
+            }
+        }
+
+        internal static object getPersistentUserVariable(int UserID, string hash)
+        {
+            object ret;
+            persistencyMutex.WaitOne();
+
+            try
+            {
+                int? id = getIndexFromList(hash, persistentUserData[UserID]);
+
+                if (id.HasValue)
+                {
+                    ret = persistentUserData[UserID][id.Value];
+                }
+                else
+                {
+                    ret = null;
+                }
+
+                persistencyMutex.ReleaseMutex();
+            }
+            catch (Exception e)
+            {
+                persistencyMutex.ReleaseMutex();
+
+                throw e;
+            }
+
+            return ret;
         }
 
         private static byte[] lastHash = new byte[16];
@@ -286,7 +417,7 @@ namespace LamestWebserver
 
             fileID = SessionContainer.getFileID(file);
 
-            this.ssid = getHTTP_POST_value("ssid");
+            this.ssid = getHTTP_POST_Value("ssid");
             this.userID = SessionContainer.getUserIDFromSSID(ssid);
 
             if (userID.HasValue)
@@ -323,7 +454,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="name">The name of the HTTP POST variable</param>
         /// <returns>the value of the given HTTP POST variable (or null if not existent)</returns>
-        public string getHTTP_POST_value(string name)
+        public string getHTTP_POST_Value(string name)
         {
             for (int i = 0; i < varsPOST.Count; i++)
             {
@@ -607,6 +738,42 @@ namespace LamestWebserver
         }
 
         /// <summary>
+        /// get the value of a persistently saved variable
+        /// </summary>
+        /// <param name="hash">the name of the variable</param>
+        /// <returns>the value of the variable</returns>
+        public object getPersistentUserVariable(string hash)
+        {
+            if (!knownUser)
+                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
+
+            return SessionContainer.getPersistentUserVariable(userID.Value, hash);
+        }
+
+        /// <summary>
+        /// get the value of a persistently saved variable and cast it to T
+        /// </summary>
+        /// <param name="hash">the name of the variable</param>
+        /// <returns>the value of the variable</returns>
+        public T getPersistentUserVariable<T>(string hash) 
+        {
+            return (T)getPersistentUserVariable(hash);
+        }
+
+        /// <summary>
+        /// set the value of a persistently saved variable
+        /// </summary>
+        /// <param name="hash">the name of the variable</param>
+        /// <param name="value">the value of the variable</param>
+        public void setPersistentUserVariable<T>(string hash, T value)
+        {
+            if (!knownUser)
+                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
+
+            SessionContainer.setPersistentUserVariable(userID.Value, hash, value);
+        }
+
+        /// <summary>
         /// get the value (or null if not existent) from the variables saved globally for the current _FILE_ and casts it to a specified Type T
         /// </summary>
         /// <typeparam name="T">The type T to cast the value to</typeparam>
@@ -635,6 +802,18 @@ namespace LamestWebserver
         public int? getUserIndex(string userName)
         {
             return SessionContainer.getUserIDFromName(userName);
+        }
+
+        /// <summary>
+        /// deletes the registration of the current user.
+        /// </summary>
+        public void unregiserUser()
+        {
+            if (!knownUser)
+                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
+            
+            getNextSSID();
+            ssid = "";
         }
     }
 }

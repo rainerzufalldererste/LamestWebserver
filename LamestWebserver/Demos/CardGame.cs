@@ -49,8 +49,8 @@ namespace Demos
 
                             new HForm(InstantPageResponse.addOneTimeConditionalRedirect("/cgame/lobby", "/cgame/?failed", false, (SessionData sessionData) => 
                                 {
-                                    string userName = sessionData.getHTTP_POST_value("user");
-                                    string key = sessionData.getHTTP_POST_value("key");
+                                    string userName = sessionData.getHTTP_POST_Value("user");
+                                    string key = sessionData.getHTTP_POST_Value("key");
 
                                     if(string.IsNullOrWhiteSpace(userName))
                                         return false;
@@ -360,7 +360,7 @@ namespace Demos
                 if (thisplayer == -1)
                     return "THIS IS NOT YOUR GAME!";
 
-                string postvalue = sessionData.getHTTP_POST_value("card");
+                string postvalue = sessionData.getHTTP_POST_Value("card");
 
                 if(players.Count <= 1 && joinedUserIDs.Count > 1)
                 {
@@ -405,7 +405,7 @@ namespace Demos
                     }
                 }
 
-                postvalue = sessionData.getHTTP_POST_value("draw");
+                postvalue = sessionData.getHTTP_POST_Value("draw");
 
                 if(thisplayer == activePlayer && postvalue != null && postvalue == "1")
                 {
