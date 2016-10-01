@@ -92,6 +92,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\AVLHashMap.cs" />
+    <Compile Include="Collections\FriendlyQueue.cs" />
     <Compile Include="Hook.cs" />
     <Compile Include="HTTP_Packet.cs" />
     <Compile Include="Master.cs" />
