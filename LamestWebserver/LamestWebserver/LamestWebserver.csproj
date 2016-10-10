@@ -95,8 +95,6 @@
   <ItemGroup>
     <Compile Include="Collections\AVLHashMap.cs" />
     <Compile Include="Collections\AVLTree.cs" />
-    <Compile Include="Collections\FriendlyQueue.cs" />
-    <Compile Include="Collections\AVLHashMapGC.cs" />
     <Compile Include="Hook.cs" />
     <Compile Include="HTTP_Packet.cs" />
     <Compile Include="Master.cs" />
@@ -113,27 +111,9 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="web\test.hcs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="user\readme.txt" />
-    <Content Include="web\cgame\card.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\gic.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\ilias.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\index.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\pftest.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="web\server\error.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

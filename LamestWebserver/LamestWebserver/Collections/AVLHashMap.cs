@@ -137,7 +137,7 @@ namespace LamestWebserver.Collections
             return value.Equals(default(TValue));
         }
 
-        public unsafe void Add(KeyValuePair<TKey, TValue> item)
+        public void Add(KeyValuePair<TKey, TValue> item)
         {
             int hash = Math.Abs(item.Key.GetHashCode()) % size;
 
@@ -225,7 +225,7 @@ namespace LamestWebserver.Collections
 
                 for (int i = balances_minus.Count - 1; i >= 0; i--)
                 {
-                    balances_minus[i].balance++;
+                    balances_minus[i].balance--;
                 }
 
                 DONT_CHANGE_BALANCE:;
@@ -387,12 +387,14 @@ namespace LamestWebserver.Collections
 
                         for (int i = right.Count - 1; i >= 0; i--)
                         {
-                            right[i].balance++;
+                            if(right[i].left == null)
+                                right[i].balance++;
                         }
 
                         for (int i = left.Count - 1; i >= 0; i--)
                         {
-                            left[i].balance--;
+                            if (left[i].right == null)
+                                left[i].balance--;
                         }
 
                         elementCount--;
@@ -439,7 +441,9 @@ namespace LamestWebserver.Collections
             
             private void rebalance()
             {
-                if(_balance > 1)
+                Console.WriteLine(this.ToString());
+
+                if (_balance > 1)
                 {
                     //          5_2             |              7
                     //      2        7_1        |        5          8
@@ -465,9 +469,12 @@ namespace LamestWebserver.Collections
                     }
                     else
                     {
-                        this._balance -= 2;
+                        /*this._balance -= 2;
                         right.left._balance = -right._balance + 1;
-                        right._balance -= 1;
+                        right._balance -= 1;*/
+                        this.value =        (TValue)(object)9999;
+                        right.value =       (TValue)(object)99999;
+                        right.left.value =  (TValue)(object)999999;
 
                         rotr(right.left);
                         rotl(right);
@@ -485,7 +492,7 @@ namespace LamestWebserver.Collections
                     //  0     3                 |    1     4                |   0           4      6
                     //          4               |  0                        |
 
-                    if (right.balance < 0)
+                    if (left.balance < 0)
                     {
                         this._balance += 2;
                         left._balance += 1;
@@ -502,6 +509,11 @@ namespace LamestWebserver.Collections
                         rotr(left);
                     }
                 }
+
+                if (head != null)
+                    Console.WriteLine("\n=====\n" + this.head + "\n\n\n");
+                else
+                    Console.WriteLine("\n=====\n" + this + "\n\n\n");
             }
 
             private static void rotl(AVLNode node)
@@ -517,7 +529,7 @@ namespace LamestWebserver.Collections
                 // change, who is r,l (also isLeft)
                 bool tmpb = node.isLeft;
                 node.isLeft = oldhead.isLeft;
-                oldhead.isLeft = false;
+                oldhead.isLeft = true;
 
                 if (node.head != null)
                 {
@@ -553,7 +565,7 @@ namespace LamestWebserver.Collections
                 // change, who is r,l (also isLeft)
                 bool tmpb = node.isLeft;
                 node.isLeft = oldhead.isLeft;
-                oldhead.isLeft = true;
+                oldhead.isLeft = false;
 
                 if (node.head != null)
                 {
@@ -577,7 +589,13 @@ namespace LamestWebserver.Collections
 
             public override string ToString()
             {
-                return "(" + (left != null ? left.ToString() + ", " : "" ) + key.ToString() + " (" + balance + ")" + (right != null ? ", " + right.ToString() : "") + ")";
+                return this.ToString(0);
+                //return "(" + (left != null ? left.ToString() + ", " : "" ) + key.ToString() + " [" + balance + "]" + (right != null ? ", " + right.ToString() : "") + ")";
+            }
+
+            public string ToString(int count)
+            {
+                return (left != null ? left.ToString(count + 4) : new string(' ', count + 4) + "+ null") + "\n" + new string(' ', count) + (isLeft ? "L" : "R") + " " + key.ToString() + " (" + _balance + ") \n" + (right != null ? right.ToString(count + 4) : new string(' ', count + 4) + "+ null");
             }
         }
     }

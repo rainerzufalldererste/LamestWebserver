@@ -4,7 +4,7 @@ using LamestWebserver;
 using LamestWebserver.Collections;
 using System.Collections.Generic;
 
-namespace LamestWebserver.Collections
+namespace UnitTests
 {
     [TestClass]
     public class CollectionUnitTests
@@ -19,10 +19,10 @@ namespace LamestWebserver.Collections
                 hashmap.Add(i.ToString(), i + 1);
             }
 
-            /*for (int i = 0; i < 8000; i++)
+            for (int i = 0; i < 8000; i++)
             {
                 Assert.IsTrue(hashmap[i.ToString()] == i + 1);
-            }*/
+            }
 
             for (int i = 0; i < hashmap.HashMap.Length; i++)
             {
