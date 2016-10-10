@@ -314,7 +314,7 @@ namespace LamestWebserver
                             int hashNUM = 0;
                             bool found = false;
 
-                            while(htp.data.Length > 1 && (htp.data[0] == ' ' || htp.data[0] == '/'))
+                            while(htp.data.Length >= 1 && (htp.data[0] == ' ' || htp.data[0] == '/'))
                             {
                                 htp.data = htp.data.Remove(0, 1);
                             }

@@ -52,13 +52,13 @@
     <Compile Include="XmlTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\LamestWebserver\LamestWebserver.csproj">
       <Project>{2e0e1f99-3de7-4636-9e18-93e5cb837965}</Project>
       <Name>LamestWebserver</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
