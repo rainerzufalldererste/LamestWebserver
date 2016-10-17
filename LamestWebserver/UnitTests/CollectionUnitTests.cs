@@ -12,24 +12,21 @@ namespace UnitTests
         [TestMethod]
         public void testAVLHashMaps()
         {
-            AVLHashMap<string, int> hashmap = new AVLHashMap<string, int>(1);
+            AVLHashMap<string, string> hashmap = new AVLHashMap<string, string>(1);
+            List<string> hashes = new List<string>();
+            List<string> values = new List<string>();
 
-            for (int i = 0; i < 8000; i++)
+            for (int i = 0; i < 1000; i++)
             {
-                hashmap.Add(i.ToString(), i + 1);
+                hashes.Add(SessionContainer.generateHash());
+                values.Add(SessionContainer.generateHash());
+                hashmap[hashes[i]] = values[i];
+                Assert.IsTrue(hashmap[hashes[i]] == values[i]);
             }
 
-            for (int i = 0; i < 8000; i++)
+            for (int i = 0; i < 1000; i++)
             {
-                Assert.IsTrue(hashmap[i.ToString()] == i + 1);
-            }
-
-            for (int i = 0; i < hashmap.HashMap.Length; i++)
-            {
-                if(hashmap.HashMap[i] != null && !(hashmap.HashMap[i] is KeyValuePair<string, int>))
-                {
-                    Console.WriteLine(hashmap.HashMap[i].ToString() + "\n\n");
-                }
+                Assert.IsTrue(hashmap[hashes[i]] == values[i]);
             }
         }
     }

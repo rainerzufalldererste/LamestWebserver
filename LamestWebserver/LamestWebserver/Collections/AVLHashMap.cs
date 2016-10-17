@@ -72,13 +72,18 @@ namespace LamestWebserver.Collections
                 }
                 else // if HashMap[hash] is an AVL Node search for it
                 {
+                    //Console.WriteLine("\n------------\n------------\n------------\n" + "Searching for '" + key + "'");
+                    
                     AVLNode node = (AVLNode)HashMap[hash];
                     int compare = key.CompareTo(node.key);
 
                     while (true)
                     {
+                        //Console.WriteLine(node + "\n------------\n");
+
                         if (compare < 0)
                         {
+                            //Console.WriteLine(key + " < \n" + node.key + " (" + compare + ")");
                             node = node.left;
 
                             if (node != null)
@@ -88,6 +93,7 @@ namespace LamestWebserver.Collections
                         }
                         else if (compare > 0)
                         {
+                            //Console.WriteLine(key + " > \n" + node.key + " (" + compare + ")");
                             node = node.right;
 
                             if (node != null)
@@ -154,16 +160,16 @@ namespace LamestWebserver.Collections
                 }
                 else
                 {
-                    AVLNode node = new AVLNode() { head = null, key = ((KeyValuePair<TKey, TValue>)HashMap[hash]).Key, value = ((KeyValuePair<TKey, TValue>)HashMap[hash]).Value };
+                    AVLNode node = new AVLNode(key: ((KeyValuePair<TKey, TValue>)HashMap[hash]).Key, value: ((KeyValuePair<TKey, TValue>)HashMap[hash]).Value) { head = null };
 
                     if (item.Key.CompareTo(((KeyValuePair<TKey, TValue>)HashMap[hash]).Key) < 0)
                     {
-                        node.left = new AVLNode() { head = node, key = item.Key, value = item.Value, isLeft = true };
+                        node.left = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = true };
                         node._depthL = 1;
                     }
                     else
                     {
-                        node.right = new AVLNode() { head = node, key = item.Key, value = item.Value, isLeft = false };
+                        node.right = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = false };
                         node._depthR = 1;
                     }
 
@@ -174,7 +180,6 @@ namespace LamestWebserver.Collections
             else
             {
                 // TODO: Add to AVLTree; if exists don't add to elementCount and Dequeue old item if maxSize.HasValue; if !exists add to elementCount
-                List<AVLNode> balances = new List<AVLNode>();
                 AVLNode node = (AVLNode)HashMap[hash];
                 int compare = item.Key.CompareTo(node.key);
 
@@ -182,16 +187,18 @@ namespace LamestWebserver.Collections
                 {
                     if (compare < 0)
                     {
-                        balances.Add(node);
-
                         if (node.left == null)
                         {
-                            node.left = new AVLNode() { head = node, key = item.Key, value = item.Value, isLeft = true };
+                            node.left = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = true };
                             node._depthL = 1;
-                            Console.ForegroundColor = ConsoleColor.Green;
+                            /*Console.ForegroundColor = ConsoleColor.Green;
                             Console.WriteLine("\n" + node.ToString() + "\n");
-                            Console.ForegroundColor = ConsoleColor.Gray;
-                            AVLNode.balanceBubbleUp(node);
+                            Console.ForegroundColor = ConsoleColor.Gray;*/
+                            AVLNode.balanceBubbleUp(node, HashMap, hash);
+                            /*Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine("\n" + node.ToString() + "\n");
+                            Console.ForegroundColor = ConsoleColor.Gray;*/
+                            elementCount++;
                             break;
                         }
                         else
@@ -202,16 +209,18 @@ namespace LamestWebserver.Collections
                     }
                     else if (compare > 0)
                     {
-                        balances.Add(node);
-
                         if (node.right == null)
                         {
-                            node.right = new AVLNode() { head = node, key = item.Key, value = item.Value, isLeft = false };
+                            node.right = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = false };
                             node._depthR = 1;
-                            Console.ForegroundColor = ConsoleColor.Green;
+                            /*Console.ForegroundColor = ConsoleColor.Green;
                             Console.WriteLine("\n" + node.ToString() + "\n");
-                            Console.ForegroundColor = ConsoleColor.Gray;
-                            AVLNode.balanceBubbleUp(node);
+                            Console.ForegroundColor = ConsoleColor.Gray;*/
+                            AVLNode.balanceBubbleUp(node, HashMap, hash);
+                            /*Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.WriteLine("\n" + node.ToString() + "\n");
+                            Console.ForegroundColor = ConsoleColor.Gray;*/
+                            elementCount++;
                             break;
                         }
                         else
@@ -223,11 +232,14 @@ namespace LamestWebserver.Collections
                     else
                     {
                         node.value = item.Value;
-                        goto DONT_CHANGE_BALANCE;
                     }
                 }
 
-                DONT_CHANGE_BALANCE:;
+                /*
+                Action<AVLNode> checkNotZero = null;
+                checkNotZero = (AVLNode n) => { if (n != null) { System.Diagnostics.Debug.Assert(!n.value.Equals((TValue)((object)0)), "value is 0 for" + item.Value); checkNotZero(n.right); checkNotZero(n.left); } };
+
+                checkNotZero(node);*/
             }
         }
 
@@ -279,7 +291,7 @@ namespace LamestWebserver.Collections
                 List<AVLNode> left = new List<AVLNode>();
 
                 AVLNode node = (AVLNode)HashMap[hash];
-                int compare = item.Key.CompareTo(node);
+                int compare = item.Key.CompareTo(node.key);
 
                 while(true)
                 {
@@ -428,7 +440,7 @@ namespace LamestWebserver.Collections
             HashMap = (object[])info.GetValue(nameof(HashMap), typeof(object[]));
         }
 
-        internal class AVLNode
+        public class AVLNode
         {
             internal AVLNode head, left, right;
             internal int balance { get { return -_depthL + _depthR ; } }
@@ -437,17 +449,23 @@ namespace LamestWebserver.Collections
             internal TKey key;
             internal TValue value;
             internal bool isLeft = true;
-            
-            private void rebalance()
+
+            public AVLNode(TKey key, TValue value)
             {
-                AVLNode displayNode = this;
+                this.key = key;
+                this.value = value;
+            }
+            
+            private void rebalance(object[] HashMap, int index)
+            {
+                /*AVLNode displayNode = this;
 
                 while (displayNode.head != null)
                     displayNode = displayNode.head;
 
                 Console.ForegroundColor = ConsoleColor.Gray;
 
-                Console.WriteLine(displayNode.ToString());
+                Console.WriteLine(displayNode.ToString());*/
 
                 if (balance > 1)
                 {
@@ -472,9 +490,10 @@ namespace LamestWebserver.Collections
                         this._balance -= 2;
                         right._balance -= 1;
                         */
-                        rotl(right);
+                        //Console.WriteLine("rotl");
+                        rotl(right, HashMap, index);
 
-                        Console.Write("(ROTL)");
+                        /*Console.Write("(ROTL)");*/
                     }
                     else
                     {
@@ -486,20 +505,23 @@ namespace LamestWebserver.Collections
                         /*this.value =        (TValue)(object)9999;
                         right.value =       (TValue)(object)99999;
                         right.left.value =  (TValue)(object)999999;*/
+                        //Console.WriteLine("rotr");
 
-                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        rotr(right.left, HashMap, index);
+
+                        /*Console.ForegroundColor = ConsoleColor.Yellow;
+
                         while (displayNode.head != null)
                             displayNode = displayNode.head;
 
-                        rotr(right.left);
-
                         Console.WriteLine("\n==ROTR===\n" + displayNode + "\n\n\n");
 
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;*/
+                        //Console.WriteLine("rotl");
 
-                        rotl(right);
+                        rotl(right, HashMap, index);
 
-                        Console.Write("(ROTL)");
+                        /*Console.Write("(ROTL)");*/
                     }
                 }
                 else if(balance < -1)
@@ -520,12 +542,14 @@ namespace LamestWebserver.Collections
                         this._balance += 2;
                         left._balance += 1;
                         */
-                        rotr(left);
+                        //Console.WriteLine("rotr");
+                        rotr(left, HashMap, index);
 
-                        Console.Write("(ROTL)");
+                        /*Console.Write("(ROTL)");*/
                     }
                     else
                     {
+                        //Console.WriteLine("rotl");
                         /*
                         this.value =        (TValue)(object)9999;
                         left.value =        (TValue)(object)99999;
@@ -535,28 +559,63 @@ namespace LamestWebserver.Collections
                         left.right._balance = -left._balance - 1;
                         left._balance -= 1;*/
 
-                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        rotl(left.right, HashMap, index);
+                        //Console.WriteLine("rotr");
+
+                        /*Console.ForegroundColor = ConsoleColor.Yellow;
+
                         while (displayNode.head != null)
                             displayNode = displayNode.head;
 
-                        rotl(left.right);
-
                         Console.WriteLine("\n==ROTL===\n" + displayNode + "\n\n\n");
                         
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;*/
 
-                        rotr(left);
+                        rotr(left, HashMap, index);
 
-                        Console.Write("(ROTR)");
+                        /*Console.Write("(ROTR)");*/
                     }
                 }
 
-                while (displayNode.head != null)
+                /*while (displayNode.head != null)
                     displayNode = displayNode.head;
 
                 Console.WriteLine("\n=====\n" + displayNode + "\n\n\n");
 
-                checkNodes(displayNode);
+                checkNodes(displayNode);*/
+
+                /*AVLNode displaynode = this;
+
+                while (displaynode.head != null)
+                    displaynode = displaynode.head;
+
+                checkOrder(displaynode);
+                checkHeads(displaynode, default(TKey));
+                Console.WriteLine("Keys OK!\n\n");*/
+            }
+
+            private static void checkHeads(AVLNode node, TKey key)
+            {
+                if(node.head != null)
+                {
+                    System.Diagnostics.Debug.Assert(node.head.key.Equals(key), "Mismatching Head Keys: (is " + node.head.key + " should be " + key + ")", node.head.ToString());
+                }
+
+                if (node.right != null)
+                    checkHeads(node.right, node.key);
+
+                if (node.left != null)
+                    checkHeads(node.left, node.key);
+            }
+
+            private static void checkOrder(AVLNode node)
+            {
+                var list = node.getSortedKeys();
+
+                for (int i = 0; i < list.Count - 1; i++)
+                {
+                    System.Diagnostics.Debug.Assert(list[i].CompareTo(list[i + 1]) < 0, "Unordered Keys");
+                }
             }
 
             private static void checkNodes(AVLNode node)
@@ -601,10 +660,14 @@ namespace LamestWebserver.Collections
                 return Math.Max(r,l);
             }
 
-            private static void rotl(AVLNode node)
+            private static void rotl(AVLNode node, object[] HashMap, int index)
             {
-                string node_ = node.ToString();
-                string head_ = node.head.ToString();
+                /*Console.ForegroundColor = ConsoleColor.DarkGreen;
+                if(node.head != null)
+                    Console.WriteLine("\n\n" + node.head.ToString() + "\n--");
+                else
+                    Console.WriteLine("\n\n" + node.ToString() + "\n--");
+                Console.ForegroundColor = ConsoleColor.Gray;*/
 
                 // swap head
                 AVLNode oldhead = node.head;
@@ -627,23 +690,49 @@ namespace LamestWebserver.Collections
                         node.head.right = node;
                     }
                 }
+                else
+                {
+                    HashMap[index] = node;
+                }
 
                 // update children
                 oldhead.right = node.left;
                 node.left = oldhead;
 
+                if (oldhead.right != null)
+                {
+                    oldhead.right.isLeft = false;
+                    oldhead.right.head = oldhead;
+                }
+
+                oldhead.isLeft = true;
+
                 // update balances
-                oldhead._depthR -= 2;
+                if (node._depthL == 0 && node._depthR == 0)
+                    oldhead._depthR -= 1;
+                else
+                    oldhead._depthR -= 2;
 
                 node._depthL += 1;
                 /*oldhead._balance -= 2;
                 node._balance -= 1;*/
+
+                /*Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine("\nROT L:\n" + node.ToString() + "\n");
+                Console.ForegroundColor = ConsoleColor.Gray;*/
+
+                //balanceBubbleUp(node);
+                //checkNodes(node);
             }
 
-            private static void rotr(AVLNode node)
+            private static void rotr(AVLNode node, object[] HashMap, int index)
             {
-                string node_ = node.ToString();
-                string head_ = node.head.ToString();
+                /*Console.ForegroundColor = ConsoleColor.DarkCyan;
+                if (node.head != null)
+                    Console.WriteLine("\n\n" + node.head.ToString() + "\n--");
+                else
+                    Console.WriteLine("\n\n" + node.ToString() + "\n--");
+                Console.ForegroundColor = ConsoleColor.Gray;*/
 
                 // swap head
                 AVLNode oldhead = node.head;
@@ -666,16 +755,39 @@ namespace LamestWebserver.Collections
                         node.head.right = node;
                     }
                 }
+                else
+                {
+                    HashMap[index] = node;
+                }
+
                 // update children
                 oldhead.left = node.right;
                 node.right = oldhead;
 
+                if(oldhead.left != null)
+                { 
+                    oldhead.left.isLeft = true;
+                    oldhead.left.head = oldhead;
+                }
+
+                oldhead.isLeft = false;
+
                 // update balances
-                oldhead._depthL -= 2;
+                if (node._depthL == 0 && node._depthR == 0)
+                    oldhead._depthL -= 1;
+                else
+                    oldhead._depthL -= 2;
 
                 node._depthR += 1;
                 /*oldhead._balance;
                 node._balance += 1;*/
+
+                /*Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.WriteLine("\nROT R:\n" + node.ToString() + "\n");
+                Console.ForegroundColor = ConsoleColor.Gray;*/
+
+                //balanceBubbleUp(node);
+                //checkNodes(node);
             }
 
             public override string ToString()
@@ -686,7 +798,7 @@ namespace LamestWebserver.Collections
 
             public string ToString(int count)
             {
-                return (right != null ? right.ToString(count + 4) : new string(' ', count + 4) + "+ null") + "\n" + new string(' ', count) + (isLeft ? "L" : "R") + " " + key.ToString() + " (" + balance + " | L: " + _depthL + " - R: " + _depthR + ") \n" + (left != null ? left.ToString(count + 4) : new string(' ', count + 4) + "+ null");
+                return (right != null ? right.ToString(count + 4) : new string(' ', count + 4) + "+ null") + "\n" + new string(' ', count) + (isLeft ? "L" : "R") + " \"" + key.ToString() + "\" : \"" + value.ToString() + "\" (" + balance + " | L" + _depthL + "R" + _depthR + ") \n" + (left != null ? left.ToString(count + 4) : new string(' ', count + 4) + "+ null");
             }
 
             internal static int getMaxDepth(AVLNode node)
@@ -700,7 +812,7 @@ namespace LamestWebserver.Collections
                 return Math.Max(node._depthL, node._depthR);
             }
 
-            internal static void balanceBubbleUp(AVLNode node)
+            internal static void balanceBubbleUp(AVLNode node, object[] HashMap, int index)
             {
                 while (node.head != null)
                 {
@@ -720,13 +832,40 @@ namespace LamestWebserver.Collections
                     }
 
                     if (Math.Abs(node.head.balance) > 1)
-                        node.head.rebalance();
+                        node.head.rebalance(HashMap, index);
                     else
                         node = node.head;
                 }
+            }
 
-                Console.WriteLine("\n-\n" + node + "\n-\n");
-                Console.ReadLine();
+            public List<TValue> getSorted()
+            {
+                List<TValue> ret = new List<TValue>();
+
+                if (left != null)
+                    ret.AddRange(left.getSorted());
+
+                ret.Add(this.value);
+
+                if (right != null)
+                    ret.AddRange(right.getSorted());
+
+                return ret;
+            }
+
+            public List<TKey> getSortedKeys()
+            {
+                List<TKey> ret = new List<TKey>();
+
+                if (left != null)
+                    ret.AddRange(left.getSortedKeys());
+
+                ret.Add(this.key);
+
+                if (right != null)
+                    ret.AddRange(right.getSortedKeys());
+
+                return ret;
             }
         }
     }
