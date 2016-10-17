@@ -159,12 +159,12 @@ namespace LamestWebserver.Collections
                     if (item.Key.CompareTo(((KeyValuePair<TKey, TValue>)HashMap[hash]).Key) < 0)
                     {
                         node.left = new AVLNode() { head = node, key = item.Key, value = item.Value, isLeft = true };
-                        node.balance--;
+                        node._depthL = 1;
                     }
                     else
                     {
                         node.right = new AVLNode() { head = node, key = item.Key, value = item.Value, isLeft = false };
-                        node.balance++;
+                        node._depthR = 1;
                     }
 
                     HashMap[hash] = node;
@@ -174,8 +174,7 @@ namespace LamestWebserver.Collections
             else
             {
                 // TODO: Add to AVLTree; if exists don't add to elementCount and Dequeue old item if maxSize.HasValue; if !exists add to elementCount
-                List<AVLNode> balances_plus = new List<AVLNode>();
-                List<AVLNode> balances_minus = new List<AVLNode>();
+                List<AVLNode> balances = new List<AVLNode>();
                 AVLNode node = (AVLNode)HashMap[hash];
                 int compare = item.Key.CompareTo(node.key);
 
@@ -183,11 +182,16 @@ namespace LamestWebserver.Collections
                 {
                     if (compare < 0)
                     {
-                        balances_minus.Add(node);
+                        balances.Add(node);
 
                         if (node.left == null)
                         {
-                            node.left = new AVLNode() { head = node, key = item.Key, value = item.Value, balance = 0, isLeft = true };
+                            node.left = new AVLNode() { head = node, key = item.Key, value = item.Value, isLeft = true };
+                            node._depthL = 1;
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("\n" + node.ToString() + "\n");
+                            Console.ForegroundColor = ConsoleColor.Gray;
+                            AVLNode.balanceBubbleUp(node);
                             break;
                         }
                         else
@@ -198,11 +202,16 @@ namespace LamestWebserver.Collections
                     }
                     else if (compare > 0)
                     {
-                        balances_plus.Add(node);
+                        balances.Add(node);
 
                         if (node.right == null)
                         {
-                            node.right = new AVLNode() { head = node, key = item.Key, value = item.Value, balance = 0, isLeft = false };
+                            node.right = new AVLNode() { head = node, key = item.Key, value = item.Value, isLeft = false };
+                            node._depthR = 1;
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("\n" + node.ToString() + "\n");
+                            Console.ForegroundColor = ConsoleColor.Gray;
+                            AVLNode.balanceBubbleUp(node);
                             break;
                         }
                         else
@@ -216,16 +225,6 @@ namespace LamestWebserver.Collections
                         node.value = item.Value;
                         goto DONT_CHANGE_BALANCE;
                     }
-                }
-
-                for (int i = balances_plus.Count - 1; i >= 0; i--)
-                {
-                    balances_plus[i].balance++;
-                }
-
-                for (int i = balances_minus.Count - 1; i >= 0; i--)
-                {
-                    balances_minus[i].balance--;
                 }
 
                 DONT_CHANGE_BALANCE:;
@@ -328,7 +327,7 @@ namespace LamestWebserver.Collections
                                     }
                                     else
                                     {
-                                        node.head.balance--;
+                                        node.head._depthL--;
                                         node.head.left = node.right;
                                     }
                                 }
@@ -354,13 +353,13 @@ namespace LamestWebserver.Collections
                                 if (childLeft != null)
                                 {
                                     child.head.right = childLeft;
-                                    child.head.balance--;
+                                    child.head._depthL--;
 
                                 }
                                 else
                                 {
                                     child.head.right = null;
-                                    child.head.balance--;
+                                    child.head._depthL--;
                                 }
 
                                 if (node.head == null) // is root node
@@ -375,8 +374,7 @@ namespace LamestWebserver.Collections
                                     child.left = node.left;
                                     child.right = node.right;
 
-                                    child.balance = node.balance - 1;
-                                    child.head.balance--;
+                                    // TODO: balances
                                 }
                             }
                         }
@@ -388,13 +386,13 @@ namespace LamestWebserver.Collections
                         for (int i = right.Count - 1; i >= 0; i--)
                         {
                             if(right[i].left == null)
-                                right[i].balance++;
+                                right[i]._depthR++;
                         }
 
                         for (int i = left.Count - 1; i >= 0; i--)
                         {
                             if (left[i].right == null)
-                                left[i].balance--;
+                                left[i]._depthR--;
                         }
 
                         elementCount--;
@@ -433,17 +431,25 @@ namespace LamestWebserver.Collections
         internal class AVLNode
         {
             internal AVLNode head, left, right;
-            internal int balance { get { return _balance; } set { _balance = value; if ( Math.Abs(_balance) > 1 ) { rebalance(); } } }
-            private int _balance = 0;
+            internal int balance { get { return -_depthL + _depthR ; } }
+            internal int _depthL = 0;
+            internal int _depthR = 0;
             internal TKey key;
             internal TValue value;
             internal bool isLeft = true;
             
             private void rebalance()
             {
-                Console.WriteLine(this.ToString());
+                AVLNode displayNode = this;
 
-                if (_balance > 1)
+                while (displayNode.head != null)
+                    displayNode = displayNode.head;
+
+                Console.ForegroundColor = ConsoleColor.Gray;
+
+                Console.WriteLine(displayNode.ToString());
+
+                if (balance > 1)
                 {
                     //          5_2             |              7
                     //      2        7_1        |        5          8
@@ -462,22 +468,38 @@ namespace LamestWebserver.Collections
 
                     if(right.balance > 0)
                     {
+                        /*
                         this._balance -= 2;
                         right._balance -= 1;
-
+                        */
                         rotl(right);
+
+                        Console.Write("(ROTL)");
                     }
                     else
                     {
-                        /*this._balance -= 2;
+                        /*
+                        this._balance -= 2;
                         right.left._balance = -right._balance + 1;
-                        right._balance -= 1;*/
-                        this.value =        (TValue)(object)9999;
+                        right._balance += 1;
+                        */
+                        /*this.value =        (TValue)(object)9999;
                         right.value =       (TValue)(object)99999;
-                        right.left.value =  (TValue)(object)999999;
+                        right.left.value =  (TValue)(object)999999;*/
+
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        while (displayNode.head != null)
+                            displayNode = displayNode.head;
 
                         rotr(right.left);
+
+                        Console.WriteLine("\n==ROTR===\n" + displayNode + "\n\n\n");
+
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+
                         rotl(right);
+
+                        Console.Write("(ROTL)");
                     }
                 }
                 else if(balance < -1)
@@ -494,26 +516,89 @@ namespace LamestWebserver.Collections
 
                     if (left.balance < 0)
                     {
+                        /*
                         this._balance += 2;
                         left._balance += 1;
-
+                        */
                         rotr(left);
+
+                        Console.Write("(ROTL)");
                     }
                     else
                     {
-                        this._balance += 2;
+                        /*
+                        this.value =        (TValue)(object)9999;
+                        left.value =        (TValue)(object)99999;
+                        left.right.value =  (TValue)(object)999999;
+                        */
+                        /*this._balance += 2;
                         left.right._balance = -left._balance - 1;
-                        left._balance += 1;
+                        left._balance -= 1;*/
+
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        while (displayNode.head != null)
+                            displayNode = displayNode.head;
 
                         rotl(left.right);
+
+                        Console.WriteLine("\n==ROTL===\n" + displayNode + "\n\n\n");
+                        
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+
                         rotr(left);
+
+                        Console.Write("(ROTR)");
                     }
                 }
 
-                if (head != null)
-                    Console.WriteLine("\n=====\n" + this.head + "\n\n\n");
-                else
-                    Console.WriteLine("\n=====\n" + this + "\n\n\n");
+                while (displayNode.head != null)
+                    displayNode = displayNode.head;
+
+                Console.WriteLine("\n=====\n" + displayNode + "\n\n\n");
+
+                checkNodes(displayNode);
+            }
+
+            private static void checkNodes(AVLNode node)
+            {
+                while(node.head != null)
+                {
+                    node = node.head;
+                }
+
+                checkNode(node);
+                checkBalance(node);
+            }
+
+            private static void checkNode(AVLNode node)
+            {
+                if(node.right != null)
+                {
+                    System.Diagnostics.Debug.Assert(!node.right.isLeft, "The Node to the Right is not marked as !isLeft", node.ToString());
+                    checkNode(node.right);
+                }
+
+                if (node.left != null)
+                {
+                    System.Diagnostics.Debug.Assert(node.left.isLeft, "The Node to the Left is not marked as isLeft", node.ToString());
+                    checkNode(node.left);
+                }
+            }
+
+            private static int checkBalance(AVLNode node)
+            {
+                int r = 0, l = 0;
+
+                if (node.right != null)
+                    r = checkBalance(node.right) + 1;
+
+                if (node.left != null)
+                    l = checkBalance(node.left) + 1;
+
+                System.Diagnostics.Debug.Assert(node._depthL == l, "Invalid Depth L (is" + node._depthL + " should be " + l + ")", node.ToString());
+                System.Diagnostics.Debug.Assert(node._depthR == r, "Invalid Depth R (is" + node._depthR + " should be " + r + ")", node.ToString());
+
+                return Math.Max(r,l);
             }
 
             private static void rotl(AVLNode node)
@@ -546,9 +631,12 @@ namespace LamestWebserver.Collections
                 // update children
                 oldhead.right = node.left;
                 node.left = oldhead;
-                /*
+
                 // update balances
-                oldhead._balance -= 2;
+                oldhead._depthR -= 2;
+
+                node._depthL += 1;
+                /*oldhead._balance -= 2;
                 node._balance -= 1;*/
             }
 
@@ -581,9 +669,12 @@ namespace LamestWebserver.Collections
                 // update children
                 oldhead.left = node.right;
                 node.right = oldhead;
-                /*
+
                 // update balances
-                // oldhead._balance;
+                oldhead._depthL -= 2;
+
+                node._depthR += 1;
+                /*oldhead._balance;
                 node._balance += 1;*/
             }
 
@@ -595,7 +686,47 @@ namespace LamestWebserver.Collections
 
             public string ToString(int count)
             {
-                return (left != null ? left.ToString(count + 4) : new string(' ', count + 4) + "+ null") + "\n" + new string(' ', count) + (isLeft ? "L" : "R") + " " + key.ToString() + " (" + _balance + ") \n" + (right != null ? right.ToString(count + 4) : new string(' ', count + 4) + "+ null");
+                return (right != null ? right.ToString(count + 4) : new string(' ', count + 4) + "+ null") + "\n" + new string(' ', count) + (isLeft ? "L" : "R") + " " + key.ToString() + " (" + balance + " | L: " + _depthL + " - R: " + _depthR + ") \n" + (left != null ? left.ToString(count + 4) : new string(' ', count + 4) + "+ null");
+            }
+
+            internal static int getMaxDepth(AVLNode node)
+            {
+                if (node.right != null)
+                    node._depthR = 1 + getMaxDepth(node.right);
+
+                if (node.left != null)
+                    node._depthL = 1 + getMaxDepth(node.left);
+
+                return Math.Max(node._depthL, node._depthR);
+            }
+
+            internal static void balanceBubbleUp(AVLNode node)
+            {
+                while (node.head != null)
+                {
+                    if(node._depthL > node._depthR)
+                    {
+                        if (node.isLeft)
+                            node.head._depthL = node._depthL + 1;
+                        else
+                            node.head._depthR = node._depthL + 1;
+                    }
+                    else
+                    {
+                        if (node.isLeft)
+                            node.head._depthL = node._depthR + 1;
+                        else
+                            node.head._depthR = node._depthR + 1;
+                    }
+
+                    if (Math.Abs(node.head.balance) > 1)
+                        node.head.rebalance();
+                    else
+                        node = node.head;
+                }
+
+                Console.WriteLine("\n-\n" + node + "\n-\n");
+                Console.ReadLine();
             }
         }
     }

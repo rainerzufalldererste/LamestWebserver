@@ -12,7 +12,7 @@ namespace UnitTests
         [TestMethod]
         public void testAVLHashMaps()
         {
-            AVLHashMap<string, int> hashmap = new AVLHashMap<string, int>(20);
+            AVLHashMap<string, int> hashmap = new AVLHashMap<string, int>(1);
 
             for (int i = 0; i < 8000; i++)
             {
@@ -28,7 +28,7 @@ namespace UnitTests
             {
                 if(hashmap.HashMap[i] != null && !(hashmap.HashMap[i] is KeyValuePair<string, int>))
                 {
-                    Console.WriteLine(hashmap.ToString() + "\n\n");
+                    Console.WriteLine(hashmap.HashMap[i].ToString() + "\n\n");
                 }
             }
         }
