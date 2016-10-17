@@ -13,7 +13,7 @@ namespace LamestWebserver.Collections
         private int size = 1024;
         protected int elementCount = 0;
 
-        public object[] HashMap { get; private set; }
+        internal object[] HashMap { get; private set; }
 
         public AVLHashMap(int size = 1024)
         {
@@ -132,9 +132,10 @@ namespace LamestWebserver.Collections
             Add(new KeyValuePair<TKey, TValue>(key, value));
         }
 
-        public bool Remove(TKey key)
+        public bool Remove(KeyValuePair<TKey, TValue> item)
         {
-            throw new NotImplementedException();
+            // TODO: Search for exact finds!
+            return Remove(item.Key);
         }
 
         public bool TryGetValue(TKey key, out TValue value)
@@ -235,6 +236,10 @@ namespace LamestWebserver.Collections
                     }
                 }
 
+#if DEBUG
+                AVLNode.checkNodes(node);
+#endif
+
                 /*
                 Action<AVLNode> checkNotZero = null;
                 checkNotZero = (AVLNode n) => { if (n != null) { System.Diagnostics.Debug.Assert(!n.value.Equals((TValue)((object)0)), "value is 0 for" + item.Value); checkNotZero(n.right); checkNotZero(n.left); } };
@@ -271,13 +276,13 @@ namespace LamestWebserver.Collections
             throw new NotImplementedException();
         }
 
-        public bool Remove(KeyValuePair<TKey, TValue> item)
+        public bool Remove(TKey key)
         {
-            int hash = Math.Abs(item.Key.GetHashCode()) % size;
+            int hash = Math.Abs(key.GetHashCode()) % size;
             
             if (HashMap[hash] is KeyValuePair<TKey, TValue>)
             {
-                if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(item.Key))
+                if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
                 {
                     HashMap[hash] = null;
                     elementCount--;
@@ -291,7 +296,7 @@ namespace LamestWebserver.Collections
                 List<AVLNode> left = new List<AVLNode>();
 
                 AVLNode node = (AVLNode)HashMap[hash];
-                int compare = item.Key.CompareTo(node.key);
+                int compare = key.CompareTo(node.key);
 
                 while(true)
                 {
@@ -301,7 +306,7 @@ namespace LamestWebserver.Collections
 
                         if(node != null)
                         {
-                            compare = item.Key.CompareTo(node.key);
+                            compare = key.CompareTo(node.key);
                             left.Add(node.head);
                         }
                         else
@@ -315,7 +320,7 @@ namespace LamestWebserver.Collections
 
                         if (node != null)
                         {
-                            compare = item.Key.CompareTo(node.key);
+                            compare = key.CompareTo(node.key);
                             right.Add(node.head);
                         }
                         else
@@ -325,22 +330,127 @@ namespace LamestWebserver.Collections
                     }
                     else
                     {
-                        if(node.isLeft)
+                        if(node.right == null && node.left == null) // no children
+                        {
+                            if (node.head == null) // was the top node
+                            {
+                                HashMap[hash] = null;
+                            }
+                            else
+                            {
+                                if (node.isLeft)
+                                {
+                                    node.head.left = null;
+                                    node.head._depthL = 0;
+                                }
+                                else
+                                {
+                                    node.head.right = null;
+                                    node.head._depthR = 0;
+                                }
+
+                                AVLNode.balanceBubbleUp(node.head, HashMap, hash);
+                            }
+                        }
+                        else if(node.right == null || node.left == null) // one child
+                        {
+                            AVLNode child = node.right != null ? node.right : node.left;
+
+                            if (node.head == null) // was the top node
+                            {
+                                HashMap[hash] = child;
+                                child.head = null;
+                            }
+                            else
+                            {
+                                if (node.isLeft)
+                                {
+                                    node.head.left = child;
+                                    child.head = node.head;
+                                    node.head._depthL -= 1;
+                                }
+                                else
+                                {
+                                    node.head.right = child;
+                                    child.head = node.head;
+                                    node.head._depthR -= 1;
+                                }
+
+                                AVLNode.balanceBubbleUp(node.head, HashMap, hash);
+                            }
+                        }
+                        else // two children :O
+                        {
+                            AVLNode child = node.right, childhead = node.head;
+
+                            while(child.left != null)
+                            {
+                                childhead = child;
+                                child = child.left;
+                            }
+
+                            childhead.left = null;
+                            childhead._depthL = 0;
+
+                            child.head = node.head;
+                            child.isLeft = node.isLeft;
+
+                            if(node.head == null)
+                            {
+                                HashMap[hash] = child;
+                            }
+                            else
+                            {
+                                if(node.isLeft)
+                                {
+                                    node.head.left = child;
+                                }
+                                else
+                                {
+                                    node.head.right = child;
+                                }
+                            }
+
+                            child.left = node.left;
+                            child.right = node.right;
+
+                            if(child == child.right)
+                            {
+                                child.right = null;
+                                child._depthR = 0;
+                            }
+                            else
+                            {
+                                child._depthR -= 1;
+                                child.right.head = child;
+                            }
+
+                            child.left.head = child;
+
+                            AVLNode.balanceBubbleUp(childhead, HashMap, hash);
+                        }
+#region oldcode
+
+                        /*if(node.isLeft)
                         {
                             AVLNode child = node.right;
 
-                            if (child == null)
+                            if (node.right == null)
                             {
                                 if (node.left != null)
                                 {
                                     if (node.head == null) // is root node
                                     {
-                                        // TODO: implement
+                                        HashMap[hash] = node.left;
+                                        node.left.head = null;
                                     }
                                     else
                                     {
                                         node.head._depthL--;
-                                        node.head.left = node.right;
+                                        node.head.left = node.left;
+                                        node.left.head = node.head;
+                                        // node.left.isLeft = true; // Redundant
+                                        AVLNode.balanceBubbleUp(node.head, HashMap, hash);
                                     }
                                 }
                                 else // else: node has no children
@@ -349,6 +459,29 @@ namespace LamestWebserver.Collections
                                     {
                                         HashMap[hash] = null;
                                     }
+                                    else
+                                    {
+                                        node.head.left = null;
+                                        node.head._depthL = 0;
+                                        AVLNode.balanceBubbleUp(node.head, HashMap, hash);
+                                    }
+                                }
+                            }
+                            else if (node.left == null)
+                            {
+                                // We know that node.right can't be null
+                                if (node.head == null) // is root node
+                                {
+                                    HashMap[hash] = node.right;
+                                    node.right.head = null;
+                                }
+                                else
+                                {
+                                    node.head._depthL--;
+                                    node.head.left = node.right;
+                                    node.right.head = node.head;
+                                    node.right.isLeft = false;
+                                    AVLNode.balanceBubbleUp(node.head, HashMap, hash);
                                 }
                             }
                             else
@@ -405,15 +538,16 @@ namespace LamestWebserver.Collections
                         {
                             if (left[i].right == null)
                                 left[i]._depthR--;
-                        }
+                        }*/
 
+                        #endregion
                         elementCount--;
                         return true;
                     }
                 }
             }
 
-            throw new NotImplementedException();
+            return false; // Redundant
         }
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
@@ -592,6 +726,11 @@ namespace LamestWebserver.Collections
                 checkOrder(displaynode);
                 checkHeads(displaynode, default(TKey));
                 Console.WriteLine("Keys OK!\n\n");*/
+                //Console.WriteLine("\n");
+
+#if TEST
+                checkNodeSelf(this);
+#endif
             }
 
             private static void checkHeads(AVLNode node, TKey key)
@@ -618,29 +757,43 @@ namespace LamestWebserver.Collections
                 }
             }
 
-            private static void checkNodes(AVLNode node)
+            internal static void checkNodes(AVLNode node)
             {
                 while(node.head != null)
                 {
                     node = node.head;
                 }
 
-                checkNode(node);
+                checkSide(node);
                 checkBalance(node);
+                checkOrder(node);
+                checkHeads(node, default(TKey));
             }
 
-            private static void checkNode(AVLNode node)
+            private static void checkNodeSelf(AVLNode node)
+            {
+                checkSide(node);
+                checkBalance(node);
+                checkOrder(node);
+
+                if (node.head != null)
+                    checkHeads(node, node.head.key);
+                else
+                    checkHeads(node, default(TKey));
+            }
+
+            private static void checkSide(AVLNode node)
             {
                 if(node.right != null)
                 {
                     System.Diagnostics.Debug.Assert(!node.right.isLeft, "The Node to the Right is not marked as !isLeft", node.ToString());
-                    checkNode(node.right);
+                    checkSide(node.right);
                 }
 
                 if (node.left != null)
                 {
                     System.Diagnostics.Debug.Assert(node.left.isLeft, "The Node to the Left is not marked as isLeft", node.ToString());
-                    checkNode(node.left);
+                    checkSide(node.left);
                 }
             }
 
@@ -654,8 +807,8 @@ namespace LamestWebserver.Collections
                 if (node.left != null)
                     l = checkBalance(node.left) + 1;
 
-                System.Diagnostics.Debug.Assert(node._depthL == l, "Invalid Depth L (is" + node._depthL + " should be " + l + ")", node.ToString());
-                System.Diagnostics.Debug.Assert(node._depthR == r, "Invalid Depth R (is" + node._depthR + " should be " + r + ")", node.ToString());
+                System.Diagnostics.Debug.Assert(node._depthL == l, "Invalid Depth L (is " + node._depthL + " should be " + l + ")", node.ToString());
+                System.Diagnostics.Debug.Assert(node._depthR == r, "Invalid Depth R (is " + node._depthR + " should be " + r + ")", node.ToString());
 
                 return Math.Max(r,l);
             }
@@ -708,12 +861,14 @@ namespace LamestWebserver.Collections
                 oldhead.isLeft = true;
 
                 // update balances
-                if (node._depthL == 0 && node._depthR == 0)
+                /*if (node._depthR == 0 && node._depthL == 0 || oldhead.balance > 0)
                     oldhead._depthR -= 1;
                 else
-                    oldhead._depthR -= 2;
+                    oldhead._depthR -= 2;*/
+                updateDepth(oldhead);
+                updateDepth(node);
 
-                node._depthL += 1;
+                //node._depthL += 1;
                 /*oldhead._balance -= 2;
                 node._balance -= 1;*/
 
@@ -773,12 +928,14 @@ namespace LamestWebserver.Collections
                 oldhead.isLeft = false;
 
                 // update balances
-                if (node._depthL == 0 && node._depthR == 0)
+                /*if (node._depthR == 0 && node._depthL == 0 || oldhead.balance < 0)
                     oldhead._depthL -= 1;
                 else
-                    oldhead._depthL -= 2;
+                    oldhead._depthL -= 2;*/
+                updateDepth(oldhead);
+                updateDepth(node);
 
-                node._depthR += 1;
+                //node._depthR += 1;
                 /*oldhead._balance;
                 node._balance += 1;*/
 
@@ -788,6 +945,12 @@ namespace LamestWebserver.Collections
 
                 //balanceBubbleUp(node);
                 //checkNodes(node);
+            }
+
+            private static void updateDepth(AVLNode node)
+            {
+                node._depthL = node.left == null ? 0 : Math.Max(node.left._depthL, node.left._depthR) + 1;
+                node._depthR = node.right == null ? 0 : Math.Max(node.right._depthL, node.right._depthR) + 1;
             }
 
             public override string ToString()
