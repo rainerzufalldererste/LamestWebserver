@@ -17,7 +17,7 @@ namespace LamestWebserver
 {
     public class WebServer
     {
-        TcpListener tcpList;
+        TcpListener tcpListener;
         List<Thread> threads = new List<Thread>();
         Thread mThread;
         public int port;
@@ -36,17 +36,29 @@ namespace LamestWebserver
         private bool csharp_bridge = true;
         internal bool useCache = false;
 
+        Mutex cleanMutex = new Mutex();
+        private bool silent;
+
         public WebServer(int port, string folder, bool silent = false)
         {
+            if (!tcpPortIsUnused(port))
+            {
+                if (!silent)
+                    Console.WriteLine("Failed to start the WebServer. The tcp port " + port + " is currently used.");
+
+                throw new InvalidOperationException("The tcp port " + port + " is currently used.");
+            }
+
             this.csharp_bridge = true;
 
             Master.addFunctionEvent += addFunction;
             Master.removeFunctionEvent += removeFunction;
 
             this.port = port;
-            tcpList = new TcpListener(IPAddress.Any, port);
+            tcpListener = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
+            this.silent = silent;
 
             if (!silent)
                 Console.WriteLine("WebServer started on port " + port + ".");
@@ -54,6 +66,14 @@ namespace LamestWebserver
 
         internal WebServer(int port, string folder, bool cs_bridge, bool silent = false)
         {
+            if (!tcpPortIsUnused(port))
+            {
+                if (!silent)
+                    Console.WriteLine("Failed to start the WebServer. The tcp port " + port + " is currently used.");
+
+                throw new InvalidOperationException("The tcp port " + port + " is currently used.");
+            }
+
             this.csharp_bridge = cs_bridge;
 
             if (cs_bridge)
@@ -63,9 +83,10 @@ namespace LamestWebserver
             }
 
             this.port = port;
-            this.tcpList = new TcpListener(IPAddress.Any, port);
+            this.tcpListener = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(ListenAndStuff));
             mThread.Start();
+            this.silent = silent;
 
             if (!silent)
                 Console.WriteLine("WebServer started on port " + port + ".");
@@ -77,6 +98,15 @@ namespace LamestWebserver
             {
                 Master.addFunctionEvent -= addFunction;
                 Master.removeFunctionEvent -= removeFunction;
+
+                for (int i = 0; i < threads.Count; i++)
+                {
+                    try
+                    {
+                        threads[i].Abort();
+                    }
+                    catch (Exception) { }
+                }
             }
         }
 
@@ -101,7 +131,7 @@ namespace LamestWebserver
 
             try
             {
-                tcpList.Stop();
+                tcpListener.Stop();
             }
             catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
 
@@ -144,8 +174,6 @@ namespace LamestWebserver
 
             return num;
         }
-
-        Mutex cleanMutex = new Mutex();
 
         public void cleanThreads()
         {
@@ -218,7 +246,7 @@ namespace LamestWebserver
         {
             try
             {
-                this.tcpList.Start();
+                tcpListener.Start();
 
             }
             catch (Exception e) { Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine("The TcpListener couldn't be started. The Port is probably blocked.\n\n"); Console.ForegroundColor = ConsoleColor.White; Console.WriteLine(e + "\n"); return; };
@@ -228,11 +256,15 @@ namespace LamestWebserver
             {
                 try
                 {
-                    if (tcpList.Pending())
-                    {
-                        TcpClient tcpClient = this.tcpList.AcceptTcpClient();
-                        threads.Add(new Thread(new ParameterizedThreadStart(DoStuff)));
-                        threads[threads.Count - 1].Start((object)tcpClient);
+                    //if (tcpListener.Pending())
+                    //{
+                        // TcpClient tcpClient = tcpListener.AcceptTcpClient();
+                        Task<TcpClient> tcpRcvTask = tcpListener.AcceptTcpClientAsync();
+                        tcpRcvTask.Wait();
+                        TcpClient tcpClient = tcpRcvTask.Result;
+                        Thread t = new Thread(new ParameterizedThreadStart(DoStuff));
+                        threads.Add(t);
+                        t.Start((object)tcpClient);
                         ServerHandler.addToStuff("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
                         if (threads.Count % 25 == 0)
@@ -240,16 +272,17 @@ namespace LamestWebserver
                             threads.Add(new Thread(new ThreadStart(cleanThreads)));
                             threads[threads.Count - 1].Start();
                         }
-                    }
+                    /*}
                     else
                     {
                         Thread.Sleep(1);
-                    }
+                    }*/
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("The TcpListener failed.\n" + e + "\n");
-                };
+                    if(!silent)
+                        Console.WriteLine("The TcpListener failed.\n" + e + "\n");
+                }
             }
         }
 
@@ -314,7 +347,7 @@ namespace LamestWebserver
                             int hashNUM = 0;
                             bool found = false;
 
-                            while(htp.data.Length >= 1 && (htp.data[0] == ' ' || htp.data[0] == '/'))
+                            while(htp.data.Length >= 2 && (htp.data[0] == ' ' || htp.data[0] == '/'))
                             {
                                 htp.data = htp.data.Remove(0, 1);
                             }
@@ -343,15 +376,14 @@ namespace LamestWebserver
                                         + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                         + msg_.Replace("\r\n", "<br>") + "</div></p>");
                                 }
-
-
+                                
                                 htp_.contentLength = enc.GetByteCount(htp_.data);
                                 buffer = enc.GetBytes(htp_.getPackage());
                                 nws.Write(buffer, 0, buffer.Length);
                             }
                             else if (htp.data[htp.data.Length - 1] == '\\' || htp.data[htp.data.Length - 1] == '/')
                             {
-                                int cachid = this.cacheHas(folder + htp.data + "index.html");
+                                int cachid = cacheHas(folder + htp.data + "index.html");
 
                                 if (cachid > -1)
                                 {
@@ -548,6 +580,31 @@ namespace LamestWebserver
                     ServerHandler.addToStuff("An error occured in the client handler: " + e);
                 }
             }
+        }
+
+        /// <summary>
+        /// Source: http://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
+        /// </summary>
+        /// <param name="port">The TCP-Port to check for</param>
+        /// <returns>true if unused</returns>
+        public static bool tcpPortIsUnused(int port)
+        {
+            // Evaluate current system tcp connections. This is the same information provided
+            // by the netstat command line application, just in .Net strongly-typed object
+            // form.  We will look through the list, and if our port we would like to use
+            // in our TcpClient is occupied, we will set isAvailable to false.
+            System.Net.NetworkInformation.IPGlobalProperties ipGlobalProperties = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties();
+            IPEndPoint[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpListeners();
+
+            foreach (IPEndPoint endpoint in tcpConnInfoArray)
+            {
+                if (endpoint.Port == port)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 

@@ -12,7 +12,15 @@ namespace Demos
         static void Main(string[] args)
         {
             Console.WriteLine("Demos for LamestWebServer\n");
-            Master.StartServer(8080, "./web");
+            try
+            {
+                Master.StartServer(8080, "./web");
+            }
+            catch(InvalidOperationException)
+            {
+                Console.ReadLine();
+                return;
+            }
 
             pageBuilderTest.addLamePageBuilderTest();
             new pageFillerTest();
