@@ -1,4 +1,6 @@
-﻿using System;
+﻿//#define PERSISTENT_DATA
+
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Security.Cryptography;
@@ -8,14 +10,25 @@ namespace LamestWebserver
 {
     public static class SessionContainer
     {
+        public static ESessionIdRereferencingMode SessionIdRereferencingMode = ESessionIdRereferencingMode.Keep;
+
+        public enum ESessionIdRereferencingMode
+        {
+            Keep, AlwaysRenew
+        }
+
+#if PERSISTENT_DATA
         private static Mutex persistencyMutex = new Mutex();
         private static List<List<string>> persistentUserDataHashes;
         private static List<List<object>> persistentUserData;
+#endif
 
         private static Mutex mutex = new Mutex();
 
+#if PERSISTENT_DATA
         private static List<string> FileNames = new List<string>();
         private static List<Dictionary<string, object>> FileObjects = new List<Dictionary<string, object>>();
+#endif
 
         private static List<string> UserHashes = new List<string>();
         private static List<string> UserNames = new List<string>();
@@ -46,7 +59,7 @@ namespace LamestWebserver
                 FilePerUserObjects.Add(new List<Dictionary<string, object>>());
                 UserObjects.Add(new Dictionary<string, object>());
 
-
+#if PERSISTENT_DATA
                 persistencyMutex.WaitOne();
 
                 try
@@ -66,15 +79,22 @@ namespace LamestWebserver
                     persistencyMutex.ReleaseMutex();
                     mutex.ReleaseMutex();
 
-                    throw e;
+                    throw new Exception(e.Message, e);
                 }
+#else
+                mutex.ReleaseMutex();
+#endif
             }
 
-            UserHashes[userID.Value] = generateHash();
+            if(SessionIdRereferencingMode == ESessionIdRereferencingMode.AlwaysRenew)
+                UserHashes[userID.Value] = generateHash();
+            else if(SessionIdRereferencingMode == ESessionIdRereferencingMode.Keep && UserHashes[userID.Value] == null)
+                UserHashes[userID.Value] = generateHash();
 
             return UserHashes[userID.Value];
         }
 
+#if PERSISTENT_DATA
         private static void readPersistency()
         {
             try
@@ -146,7 +166,7 @@ namespace LamestWebserver
             {
                 persistencyMutex.ReleaseMutex();
 
-                throw e;
+                throw new Exception(e.Message, e);
             }
         }
 
@@ -174,11 +194,12 @@ namespace LamestWebserver
             {
                 persistencyMutex.ReleaseMutex();
 
-                throw e;
+                throw new Exception(e.Message, e);
             }
 
             return ret;
         }
+#endif
 
         private static byte[] lastHash = new byte[16];
         private static ICryptoTransform enc = null;
@@ -211,8 +232,10 @@ namespace LamestWebserver
 
             // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
 
+#if PERSISTENT_DATA
             if (getIndexFromList(hash, FileNames).HasValue)
                 goto GENERATE_NEW_HASH;
+#endif
 
             if (getIndexFromList(hash, UserHashes).HasValue)
                 goto GENERATE_NEW_HASH;
@@ -249,6 +272,7 @@ namespace LamestWebserver
             return UserNames[userID];
         }
 
+#if PERSISTENT_DATA
         internal static int getFileID(string file)
         {
             int? id = getIndexFromList(file, FileNames);
@@ -271,6 +295,7 @@ namespace LamestWebserver
         {
             return FileObjects[fileID];
         }
+#endif
 
         internal static Dictionary<string, object> getUserDictionary(int userID)
         {
@@ -296,6 +321,7 @@ namespace LamestWebserver
             }
         }
 
+#if PERSISTENT_DATA
         internal static int getFilePerUserID(int userID, int fileID)
         {
             int? ID = getIndexFromList(FileNames[fileID], FilePerUserNames[userID]);
@@ -313,6 +339,7 @@ namespace LamestWebserver
 
             return ID.Value;
         }
+#endif
 
         internal static int? getUserIDFromName(string userName)
         {
@@ -418,7 +445,9 @@ namespace LamestWebserver
             this._remoteEndPoint = _tcpClient.Client.RemoteEndPoint;
             this._localEndPoint = _tcpClient.Client.LocalEndPoint;
 
+#if PERSISTENT_DATA
             fileID = SessionContainer.getFileID(file);
+#endif
 
             this.ssid = getHTTP_POST_Value("ssid");
             this.userID = SessionContainer.getUserIDFromSSID(ssid);
@@ -427,7 +456,9 @@ namespace LamestWebserver
             {
                 knownUser = true;
                 userName = SessionContainer.getUserNameAt(userID.Value);
+#if PERSISTENT_DATA
                 userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
+#endif
             }
             else
             {
@@ -484,7 +515,9 @@ namespace LamestWebserver
             userID = SessionContainer.getUserIDFromSSID(ssid);
 
             userName = SessionContainer.getUserNameAt(userID.Value);
+#if PERSISTENT_DATA
             userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
+#endif
 
             return ssid;
         }
@@ -539,8 +572,10 @@ namespace LamestWebserver
         {
             switch(scope)
             {
+#if PERSISTENT_DATA
                 case EVariableScope.File:
                     return getFileVariable(name);
+#endif
 
                 case EVariableScope.User:
                     return getUserVariable(name);
@@ -580,9 +615,11 @@ namespace LamestWebserver
         {
             switch (scope)
             {
+#if PERSISTENT_DATA
                 case EVariableScope.File:
                     setFileVariable(name, value);
                     break;
+#endif
 
                 case EVariableScope.User:
                     setUserVariable(name, value);
@@ -721,6 +758,7 @@ namespace LamestWebserver
         // ===============================================================================================================================================
         // ===============================================================================================================================================
 
+#if PERSISTENT_DATA
         /// <summary>
         /// set the value of a variable saved globally for the current _FILE_
         /// </summary>
@@ -788,6 +826,7 @@ namespace LamestWebserver
         {
             return (T)getFileVariable(name);
         }
+#endif
 
         /// <summary>
         /// Tells if a user has ever been registered with the given name

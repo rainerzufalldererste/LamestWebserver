@@ -38,7 +38,7 @@ namespace LamestWebserver
             catch(Exception e)
             {
                 obj.Mutex.ReleaseMutex();
-                throw new Exception("Mutex Released around Exception", e);
+                throw new Exception(e.Message, e);
             }
 
             obj.Mutex.ReleaseMutex();
@@ -76,7 +76,7 @@ namespace LamestWebserver
             catch(Exception e)
             {
                 mutex.ReleaseMutex();
-                throw new Exception("Mutex Released around Exception", e);
+                throw new Exception(e.Message, e);
             }
 
             mutex.ReleaseMutex();

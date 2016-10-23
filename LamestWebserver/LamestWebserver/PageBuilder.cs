@@ -983,7 +983,7 @@ namespace LamestWebserver
             catch(Exception e)
             {
                 mutex.ReleaseMutex();
-                throw e;
+                throw new Exception(e.Message, e);
             }
 
             return s;

@@ -28,7 +28,7 @@ namespace LamestWebserver
 
     public abstract class SyncronizedPageResponse : PageResponse
     {
-        private System.Threading.Mutex mutex = new System.Threading.Mutex();
+        private UsableMutex mutex = new UsableMutex();
 
         public SyncronizedPageResponse(string URL, bool register = true) : base(URL, false)
         {
@@ -38,30 +38,73 @@ namespace LamestWebserver
 
         private string getContentSyncronously(SessionData sessionData)
         {
-            string s;
-
-            try
+            using (mutex.Lock())
             {
-                mutex.WaitOne();
-                s = getContents(sessionData);
-                mutex.ReleaseMutex();
+                return getContents(sessionData);
             }
-            catch (Exception e)
-            {
-                mutex.ReleaseMutex();
-                throw (e);
-            }
-
-            return s;
         }
 
         protected override abstract string getContents(SessionData sessionData);
     }
 
+    public abstract class ElementResponse
+    {
+        public string URL { get; protected set; }
+
+        public ElementResponse(string URL, bool register = true)
+        {
+            this.URL = URL;
+
+            if (register)
+                Master.addFuntionToServer(URL, getContents);
+        }
+
+        protected void removeFromServer()
+        {
+            Master.removeFunctionFromServer(URL);
+        }
+
+        private string getContents(SessionData sessionData)
+        {
+            return getElement(sessionData) * sessionData;
+        }
+
+        protected abstract HElement getElement(SessionData sessionData);
+    }
+
+    public abstract class SyncronizedElementResponse
+    {
+        public string URL { get; protected set; }
+        private UsableMutex mutex = new UsableMutex();
+
+        public SyncronizedElementResponse(string URL, bool register = true)
+        {
+            this.URL = URL;
+
+            if (register)
+                Master.addFuntionToServer(URL, getContents);
+        }
+
+        protected void removeFromServer()
+        {
+            Master.removeFunctionFromServer(URL);
+        }
+
+        private string getContents(SessionData sessionData)
+        {
+            using (mutex.Lock())
+            {
+                return getElement(sessionData) * sessionData;
+            }
+        }
+
+        protected abstract HElement getElement(SessionData sessionData);
+    }
+
     public static class InstantPageResponse
     {
         private static System.Threading.Mutex mutex = new System.Threading.Mutex();
-        private static List<string> oneTimePageResponses = new List<string>();
+        private static List<string> oneTimePageResponses = new List<string>(); // TODO: Replace with AVLTree
 
         /// <summary>
         /// the maximum amount of oneTimePageResponses. if the count of them exceeds this number the fist ones will be removed. 0 for no limit.
@@ -201,7 +244,7 @@ namespace LamestWebserver
                 action(sessionData);
                 return generateRedirectCode(destinationURL, sessionData, copyPOST);
             }
-                , instantlyRemove);
+            , instantlyRemove);
         }
 
         /// <summary>
@@ -215,7 +258,7 @@ namespace LamestWebserver
             {
                 return generateRedirectInMillisecondsCode(destinationURL, message, milliseconds, sessionData, copyPOST);
             }
-                , instantlyRemove);
+            , instantlyRemove);
         }
 
         /// <summary>
@@ -249,7 +292,7 @@ namespace LamestWebserver
 
                 return codeIfFALSE(sessionData);
             }
-                , instantlyRemove);
+            , instantlyRemove);
         }
 
         public static string generateRedirectCode(string destinationURL, SessionData sessionData = null, bool copyPOST = false)
