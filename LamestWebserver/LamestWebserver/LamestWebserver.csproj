@@ -104,6 +104,7 @@
     <Compile Include="ScriptCollection.cs" />
     <Compile Include="Serializer.cs" />
     <Compile Include="SessionData.cs" />
+    <Compile Include="UsableLocker.cs" />
     <Compile Include="WebServer.cs" />
     <Compile Include="ServerHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

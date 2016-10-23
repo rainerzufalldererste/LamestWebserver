@@ -322,6 +322,9 @@ namespace LamestWebserver
 
     public class SessionData
     {
+        [ThreadStaticAttribute]
+        public static SessionData currentSessionData = null;
+        
         private int fileID;
         private int userFileID;
 
@@ -431,6 +434,8 @@ namespace LamestWebserver
                 knownUser = false;
                 userName = "";
             }
+
+            currentSessionData = this;
         }
 
         /// <summary>
