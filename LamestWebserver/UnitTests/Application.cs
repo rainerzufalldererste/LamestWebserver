@@ -11,6 +11,8 @@ namespace UnitTests
         public static void Main(string[] args)
         {
             new CollectionUnitTests().testAVLHashMaps();
+            new CollectionUnitTests().testAVLTrees();
+            new PacketUnitTest().TestCookies();
         }
     }
 }
