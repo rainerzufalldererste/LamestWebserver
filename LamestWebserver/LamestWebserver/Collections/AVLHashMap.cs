@@ -403,6 +403,14 @@ namespace LamestWebserver.Collections
             internal TValue value;
             internal bool isLeft = true;
 
+            /// <summary>
+            /// Empty constructor for Deserialisation
+            /// </summary>
+            public AVLNode()
+            {
+
+            }
+
             public AVLNode(TKey key, TValue value)
             {
                 this.key = key;
@@ -888,19 +896,19 @@ namespace LamestWebserver.Collections
                 return 1 + (node.left == null ? 0 : getCount(node.left)) + (node.right == null ? 0 : getCount(node.right));
             }
 
-            internal static bool FindRemoveKey(AVLNode node, object[] HashMap, int hash, TKey key, ref int elementCount)
+            internal static bool FindRemoveKey(AVLNode headNode, object[] HashMap, int hash, TKey key, ref int elementCount)
             {
-                int compare = key.CompareTo(node.key);
+                int compare = key.CompareTo(headNode.key);
 
                 while (true)
                 {
                     if (compare < 0)
                     {
-                        node = node.left;
+                        headNode = headNode.left;
 
-                        if (node != null)
+                        if (headNode != null)
                         {
-                            compare = key.CompareTo(node.key);
+                            compare = key.CompareTo(headNode.key);
                         }
                         else
                         {
@@ -909,11 +917,11 @@ namespace LamestWebserver.Collections
                     }
                     else if (compare > 0)
                     {
-                        node = node.right;
+                        headNode = headNode.right;
 
-                        if (node != null)
+                        if (headNode != null)
                         {
-                            compare = key.CompareTo(node.key);
+                            compare = key.CompareTo(headNode.key);
                         }
                         else
                         {
@@ -922,7 +930,7 @@ namespace LamestWebserver.Collections
                     }
                     else
                     {
-                        AVLNode.RemoveNode(node, HashMap, hash, ref elementCount);
+                        AVLNode.RemoveNode(headNode, HashMap, hash, ref elementCount);
 
                         return true;
                     }
@@ -930,19 +938,19 @@ namespace LamestWebserver.Collections
             }
 
 
-            internal static bool FindRemoveItem(AVLNode node, object[] HashMap, int hash, KeyValuePair<TKey, TValue> item, ref int elementCount)
+            internal static bool FindRemoveItem(AVLNode headNode, object[] HashMap, int hash, KeyValuePair<TKey, TValue> item, ref int elementCount)
             {
-                int compare = item.Key.CompareTo(node.key);
+                int compare = item.Key.CompareTo(headNode.key);
 
                 while (true)
                 {
                     if (compare < 0)
                     {
-                        node = node.left;
+                        headNode = headNode.left;
 
-                        if (node != null)
+                        if (headNode != null)
                         {
-                            compare = item.Key.CompareTo(node.key);
+                            compare = item.Key.CompareTo(headNode.key);
                         }
                         else
                         {
@@ -951,11 +959,11 @@ namespace LamestWebserver.Collections
                     }
                     else if (compare > 0)
                     {
-                        node = node.right;
+                        headNode = headNode.right;
 
-                        if (node != null)
+                        if (headNode != null)
                         {
-                            compare = item.Key.CompareTo(node.key);
+                            compare = item.Key.CompareTo(headNode.key);
                         }
                         else
                         {
@@ -964,9 +972,9 @@ namespace LamestWebserver.Collections
                     }
                     else
                     {
-                        if (node.value.Equals(item.Value))
+                        if (headNode.value.Equals(item.Value))
                         {
-                            AVLNode.RemoveNode(node, HashMap, hash, ref elementCount);
+                            AVLNode.RemoveNode(headNode, HashMap, hash, ref elementCount);
 
                             return true;
                         }
@@ -1039,15 +1047,7 @@ namespace LamestWebserver.Collections
                         child = child.left;
                     }
 
-                    if (childhead == node.head)
-                    {
-                        //if (childhead == node.head) child.right keeps child.right
-                        //childhead.right = child; // childhead is node.head! // @FIXME: this is redundant and can be dropped.
-
-                        //child.left = node.left;// @FIXME: this is redundant and can be dropped.
-                        //child.left.head = child;// @FIXME: this is redundant and can be dropped.
-                    }
-                    else
+                    if (childhead != node.head)
                     {
                         if (child.right != null)
                         {

@@ -11,7 +11,7 @@ using System.Drawing;
 using System.IO.Compression;
 using System.Drawing.Imaging;
 using LamestScriptHook;
-using LamestWebserver;
+using LamestWebserver.Collections;
 
 namespace LamestWebserver
 {
@@ -24,7 +24,7 @@ namespace LamestWebserver
         public string folder = "./web";
         public bool running = true;
         public bool clearing = false;
-        public List<PreloadedFile> cache = new List<PreloadedFile>();
+        public AVLTree<string, PreloadedFile> cache = new AVLTree<string, PreloadedFile>(); // TODO: Change to AVLTree and use FileSystemWatcher
         public int max_cache = 500;
         public bool openPaths = true;
         public System.Diagnostics.Process process = null;
@@ -110,19 +110,15 @@ namespace LamestWebserver
             }
         }
 
-        public int cacheHas(string name)
+        public bool cacheHas(string name, out PreloadedFile file)
         {
             if (!useCache)
-                return -1;
-            
-            for (int i = 0; i < cache.Count; i++)
             {
-                if(cache[i].filename == name)
-                {
-                    return i;
-                }
+                file = default(PreloadedFile);
+                return false;
             }
-                return -1;
+
+            return cache.TryGetValue(name, out file);
         }
 
         public void stopServer()
@@ -383,11 +379,12 @@ namespace LamestWebserver
                             }
                             else if (htp.data[htp.data.Length - 1] == '\\' || htp.data[htp.data.Length - 1] == '/')
                             {
-                                int cachid = cacheHas(folder + htp.data + "index.html");
+                                PreloadedFile cachedFile;
+                                bool cached = cacheHas(folder + htp.data + "index.html", out cachedFile);
 
-                                if (cachid > -1)
+                                if (cached)
                                 {
-                                    HTTP_Packet htp_ = new HTTP_Packet() { data = cache[cachid].contents, contentLength = cache[cachid].size };
+                                    HTTP_Packet htp_ = new HTTP_Packet() { data = cachedFile.contents, contentLength = cachedFile.size };
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
                                 }
@@ -402,7 +399,8 @@ namespace LamestWebserver
 
                                         if (useCache && cache.Count < max_cache)
                                         {
-                                            cache.Add(new PreloadedFile(folder + htp.data + "index.html", s, htp_.contentLength));
+                                            string name = folder + htp.data + "index.html";
+                                            cache.Add(name, new PreloadedFile(name, s, htp_.contentLength));
                                         }
 
                                         buffer = null;
@@ -427,10 +425,12 @@ namespace LamestWebserver
                             }
                             else
                             {
-                                int cachid = this.cacheHas(folder + htp.data);
-                                if (cachid > -1)
+                                PreloadedFile cachedFile;
+                                bool cached = this.cacheHas(folder + htp.data, out cachedFile);
+
+                                if (cached)
                                 {
-                                    HTTP_Packet htp_ = new HTTP_Packet() { data = cache[cachid].contents, contentLength = cache[cachid].size };
+                                    HTTP_Packet htp_ = new HTTP_Packet() { data = cachedFile.contents, contentLength = cachedFile.size };
                                     buffer = enc.GetBytes(htp_.getPackage());
                                     nws.Write(buffer, 0, buffer.Length);
                                 }
@@ -440,7 +440,7 @@ namespace LamestWebserver
                                     {
                                         byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + "/" + htp.data);
 
-                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "img/Bitmap", data = "", short_ = true };
+                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "img/Bitmap", data = "" };
                                         List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
                                         blist.AddRange(b);
                                         blist.AddRange(enc.GetBytes("\r\n"));
@@ -456,7 +456,7 @@ namespace LamestWebserver
                                     {
                                         byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + "/" + htp.data);
 
-                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "image/jpeg", data = "", short_ = true };
+                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "image/jpeg", data = "" };
                                         List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
                                         blist.AddRange(b);
                                         blist.AddRange(enc.GetBytes("\r\n"));
@@ -472,7 +472,7 @@ namespace LamestWebserver
                                     {
                                         byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + "/" + htp.data);
 
-                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "image/png", data = "", short_ = true };
+                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "image/png", data = "" };
                                         List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
                                         blist.AddRange(b);
                                         blist.AddRange(enc.GetBytes("\r\n"));
@@ -496,7 +496,8 @@ namespace LamestWebserver
 
                                         if (useCache && cache.Count < max_cache)
                                         {
-                                            cache.Add(new PreloadedFile(folder + htp.data, s, htp_.contentLength));
+                                            string name = folder + htp.data;
+                                            cache.Add(name, new PreloadedFile(name, s, htp_.contentLength));
                                         }
                                     }
                                     else if (htp.data.Substring(htp.data.Length - 4) == ".js")
@@ -511,7 +512,8 @@ namespace LamestWebserver
 
                                         if (useCache && cache.Count < max_cache)
                                         {
-                                            cache.Add(new PreloadedFile(folder + htp.data, s, htp_.contentLength));
+                                            string name = folder + htp.data;
+                                            cache.Add(name, new PreloadedFile(name, s, htp_.contentLength));
                                         }
                                     }
                                     else if (htp.data.Substring(htp.data.Length - 4) == ".hcs")
@@ -549,7 +551,8 @@ namespace LamestWebserver
 
                                         if (useCache && cache.Count < max_cache)
                                         {
-                                            cache.Add(new PreloadedFile(folder + htp.data, s, htp_.contentLength));
+                                            string name = folder + htp.data;
+                                            cache.Add(name, new PreloadedFile(name, s, htp_.contentLength));
                                         }
                                     }
                                 }
@@ -580,6 +583,12 @@ namespace LamestWebserver
                     ServerHandler.addToStuff("An error occured in the client handler: " + e);
                 }
             }
+        }
+
+        private HTTP_Packet getFile(string URL, out bool found)
+        {
+            // TODO: Support HTTP 304 Not Modified https://tools.ietf.org/html/rfc7232
+            throw new NotImplementedException();
         }
 
         /// <summary>

@@ -10,22 +10,26 @@ namespace LamestWebserver
 {
     public class HTTP_Packet
     {
+        public const string htmldateformat = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
+
         public string[] Months = new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
         public string version = "HTTP/1.1";
         public string status = "200 OK";
         public string date/* = DateTime.Now.DayOfWeek.ToString().Substring(0,3) + ", " + DateTime.Now.Day + " " + Months[DateTime.Now.Month] + " " + DateTime.Now.Year + " " + 
             DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"*/; //Tue, 21 Apr 2015 22:51:19 GMT
-        public string modified = DateTime.Now.ToString();
+        public DateTime? modified = null;
         public int contentLength = 0;
         public string contentType = "text/html";
         public string data = "<body>i am empty :(</body>";
+        public List<KeyValuePair<string, string>> cookie = null;
+        public string host = "localhost";
 
         public List<string> additionalHEAD = new List<string>();
         public List<string> valuesHEAD = new List<string>();
         public List<string> additionalPOST = new List<string>();
         public List<string> valuesPOST = new List<string>();
 
-        public bool short_ = true;
+        public const bool short_ = true;
         public HTTP_Type type;
 
         public static Dictionary<EndPoint, string> unfinishedPackets = new Dictionary<EndPoint, string>();
@@ -35,15 +39,35 @@ namespace LamestWebserver
             string ret = "";
 
             ret += version + " " + status + "\r\n";
-            ret += "Host: localhost\r\n";
+            ret += "Host: " + host + "\r\n";
             ret += "Date: " + date + "\r\n"; //do we need that?!
             ret += "Server: LamestWebserver (LameOS)\r\n";
-            
-            //ret += "Last-Modified: " + modified + "\r\n"; //do we need that?!
-            ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n";//"Content-Length: " + contentLenght + "\r\n";
+
+            if (cookie != null)
+            {
+                ret += "Set-Cookie: ";
+
+                for (int i = 0; i < cookie.Count; i++)
+                {
+                    ret += cookie[i].Key + "= " + cookie[i].Value + "; path=/; secure; HttpOnly";
+
+                    if (i + 1 < cookie.Count)
+                        ret += "\n";
+                    else
+                        ret += "\r\n";
+                }
+            }
+
+            if(modified.HasValue)
+            {
+                ret += "Last-Modified: " + modified.Value.ToString(htmldateformat) + "\r\n";
+            }
+
+            ret += "Connection: Keep-Alive\r\n";
+
+            ret += "Content-Type: " + contentType + "; charset=UTF-16\r\n";//"Content-Length: " + contentLenght + "\r\n";
             ret += "Content-Length: " + contentLength + (short_?"\r\n\r\n":"\r\n\r\n\r\n");
             //ret += "Keep-Alive: timeout=10, max=100\r\n";
-            //ret += "Connection: Keep-Alive\r\n";
             //ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n\r\n";
             ret += data;
 
@@ -53,8 +77,10 @@ namespace LamestWebserver
         public HTTP_Packet()
         {
             //default constructor
-            date = DateTime.Now.DayOfWeek.ToString().Substring(0,3) + ", " + DateTime.Now.Day + " " + Months[DateTime.Now.Month] + " " + DateTime.Now.Year + " " + 
-                DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"; //Tue, 21 Apr 2015 22:51:19 GMT
+            //date = DateTime.Now.DayOfWeek.ToString().Substring(0,3) + ", " + DateTime.Now.Day + " " + Months[DateTime.Now.Month] + " " + DateTime.Now.Year + " " + 
+            //    DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"; //Tue, 21 Apr 2015 22:51:19 GMT
+
+            date = DateTime.Now.ToString(htmldateformat);
         }
 
 
@@ -141,7 +167,7 @@ namespace LamestWebserver
                     h.version = linput[i].Substring(index + 1);
                     found = true;
 
-                    return h;
+                    return getCookiesAndModified(h, linput);
                 }
                 else if(linput[i].Substring(0, "POST ".Length) == "POST ")
                 {
@@ -285,7 +311,7 @@ namespace LamestWebserver
                         }
                     }
 
-                    return h;
+                    return getCookiesAndModified(h, linput);
                 }
             }
 
@@ -308,6 +334,63 @@ namespace LamestWebserver
             }
 
             return h;
+        }
+
+        const string ifmodifiedsince = "If-Modified-Since: ",
+            cookie_ = "Cookie: "/*,
+            ifunmodifiedsince = "If-Unmodified-Since: "*/;
+
+        private static HTTP_Packet getCookiesAndModified(HTTP_Packet packet, string[] linput)
+        {
+            for (int i = 0; i < linput.Length; i++)
+            {
+                if(!packet.modified.HasValue && linput[i].Length > ifmodifiedsince.Length && linput[i].Substring(0, ifmodifiedsince.Length) == ifmodifiedsince)
+                {
+                    DateTime mod;
+
+                    if (DateTime.TryParse(linput[i].Substring(ifmodifiedsince.Length), out mod))
+                        packet.modified = mod;
+                }
+                else if(packet.cookie == null && linput[i].Length > cookie_.Length && linput[i].Substring(0, cookie_.Length) == cookie_)
+                {
+                    List<KeyValuePair<string, string>> cookies = new List<KeyValuePair<string, string>>();
+
+                    string[] pairs = linput[i].Substring(cookie_.Length).Split(';');
+
+                    for (int j = 0; j < pairs.Length; j++)
+                    {
+                        pairs[j] = pairs[j].Trim();
+
+                        if (pairs[j].Contains("="))
+                        {
+                            for (int k = 0; k < pairs[j].Length; k++)
+                            {
+                                if (pairs[j][k] == '=')
+                                {
+                                    if (k < pairs[j].Length - 1)
+                                    {
+                                        cookies.Add(new KeyValuePair<string, string>(pairs[j].Substring(0, k).Trim(), pairs[j].Substring(k + 1).Trim()));
+                                    }
+                                    else
+                                    {
+                                        cookies.Add(new KeyValuePair<string, string>(pairs[j].Substring(0, k).Trim(), ""));
+                                    }
+
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            cookies.Add(new KeyValuePair<string, string>(pairs[j], ""));
+                        }
+                    }
+
+                    packet.cookie = cookies;
+                }
+            }
+
+            return packet;
         }
     }
 
