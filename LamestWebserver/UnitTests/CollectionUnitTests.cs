@@ -62,6 +62,8 @@ namespace UnitTests
                 values.Add(SessionContainer.generateHash());
                 hashmap[hashes[i]] = values[i];
                 Assert.IsTrue(hashmap[hashes[i]] == values[i]);
+                Assert.IsTrue(hashmap.Keys.Contains(hashes[i]));
+                Assert.IsTrue(hashmap.Values.Contains(values[i]));
                 hashmap.Validate();
             }
 
@@ -80,6 +82,8 @@ namespace UnitTests
             for (int i = 0; i < size; i++)
             {
                 Assert.IsTrue(hashmap[hashes[i]] == values[i]);
+                Assert.IsTrue(hashmap.Keys.Contains(hashes[i]));
+                Assert.IsTrue(hashmap.Values.Contains(values[i]));
             }
 
             Console.WriteLine("Validating...");
@@ -94,6 +98,8 @@ namespace UnitTests
                 Assert.IsTrue(hashmap.ContainsKey(hashes[i]));
                 Assert.IsTrue(hashmap[hashes[i]] != default(string));
                 Assert.IsTrue(hashmap.Remove(hashes[i]));
+                Assert.IsFalse(hashmap.Keys.Contains(hashes[i]));
+                Assert.IsFalse(hashmap.Values.Contains(values[i]));
 
                 if (true)
                 {

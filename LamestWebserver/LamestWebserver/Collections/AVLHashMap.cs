@@ -25,7 +25,19 @@ namespace LamestWebserver.Collections
         {
             get
             {
-                throw new InvalidOperationException("This Dictinary does not support getting all Keys");
+                List<TKey> ret = new List<TKey>();
+
+                for (int i = 0; i < HashMap.Length; i++)
+                {
+                    if (HashMap[i] == null)
+                        continue;
+                    else if (HashMap[i] is SerializableKeyValuePair<TKey, TValue>)
+                        ret.Add(((SerializableKeyValuePair<TKey, TValue>)HashMap[i]).Key);
+                    else
+                        ret.AddRange(((AVLNode)HashMap[i]).getSortedKeys());
+                }
+
+                return ret;
             }
         }
 
@@ -33,7 +45,19 @@ namespace LamestWebserver.Collections
         {
             get
             {
-                throw new InvalidOperationException("This Dictinary does not support getting all Values");
+                List<TValue> ret = new List<TValue>();
+
+                for (int i = 0; i < HashMap.Length; i++)
+                {
+                    if (HashMap[i] == null)
+                        continue;
+                    else if (HashMap[i] is SerializableKeyValuePair<TKey, TValue>)
+                        ret.Add(((SerializableKeyValuePair<TKey, TValue>)HashMap[i]).Value);
+                    else
+                        ret.AddRange(((AVLNode)HashMap[i]).getSorted());
+                }
+
+                return ret;
             }
         }
 
@@ -79,29 +103,24 @@ namespace LamestWebserver.Collections
 
                 if (HashMap[hash] == null)
                 {
-                    return default(TValue); // Chris: Should we throw an exception instead?
+                    return default(TValue);
                 }
-                else if (HashMap[hash] is KeyValuePair<TKey, TValue>)
+                else if (HashMap[hash] is SerializableKeyValuePair<TKey, TValue>)
                 {
-                    if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
-                        return ((KeyValuePair<TKey, TValue>)HashMap[hash]).Value;
+                    if (((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
+                        return ((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Value;
                     else
                         return default(TValue);
                 }
                 else // if HashMap[hash] is an AVL Node search for it
                 {
-                    //Console.WriteLine("\n------------\n------------\n------------\n" + "Searching for '" + key + "'");
-                    
                     AVLNode node = (AVLNode)HashMap[hash];
                     int compare = key.CompareTo(node.key);
 
                     while (true)
                     {
-                        //Console.WriteLine(node + "\n------------\n");
-
                         if (compare < 0)
                         {
-                            //Console.WriteLine(key + " < \n" + node.key + " (" + compare + ")");
                             node = node.left;
 
                             if (node != null)
@@ -111,7 +130,6 @@ namespace LamestWebserver.Collections
                         }
                         else if (compare > 0)
                         {
-                            //Console.WriteLine(key + " > \n" + node.key + " (" + compare + ")");
                             node = node.right;
 
                             if (node != null)
@@ -135,13 +153,49 @@ namespace LamestWebserver.Collections
 
         public bool ContainsKey(TKey key)
         {
-            if (this[key] == null || this[key].Equals(default(TValue)))
+            int hash = Math.Abs(key.GetHashCode()) % size;
+
+            if (HashMap[hash] == null)
             {
                 return false;
             }
-            else
+            else if (HashMap[hash] is SerializableKeyValuePair<TKey, TValue>)
             {
-                return true;
+                if (((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
+                    return true;
+                else
+                    return false;
+            }
+            else // if HashMap[hash] is an AVL Node search for it
+            {
+                AVLNode node = (AVLNode)HashMap[hash];
+                int compare = key.CompareTo(node.key);
+
+                while (true)
+                {
+                    if (compare < 0)
+                    {
+                        node = node.left;
+
+                        if (node != null)
+                            compare = key.CompareTo(node.key);
+                        else
+                            return false;
+                    }
+                    else if (compare > 0)
+                    {
+                        node = node.right;
+
+                        if (node != null)
+                            compare = key.CompareTo(node.key);
+                        else
+                            return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
             }
         }
 
@@ -152,8 +206,26 @@ namespace LamestWebserver.Collections
 
         public bool Remove(KeyValuePair<TKey, TValue> item)
         {
-            // TODO: Search for exact finds!
-            return Remove(item.Key);
+            int hash = Math.Abs(item.Key.GetHashCode()) % size;
+
+            if (HashMap[hash] is SerializableKeyValuePair<TKey, TValue>)
+            {
+                if (((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(item.Key) && ((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Value.Equals(item.Value))
+                {
+                    HashMap[hash] = null;
+                    elementCount--;
+                    return true;
+                }
+                else return false;
+            }
+            else if (HashMap[hash] is AVLNode)
+            {
+                AVLNode node = (AVLNode)HashMap[hash];
+
+                return AVLNode.FindRemoveItem(node, HashMap, hash, item, ref elementCount);
+            }
+
+            return false; // Redundant
         }
 
         public bool TryGetValue(TKey key, out TValue value)
@@ -168,20 +240,20 @@ namespace LamestWebserver.Collections
 
             if (HashMap[hash] == null)
             {
-                HashMap[hash] = item;
+                HashMap[hash] = (SerializableKeyValuePair<TKey, TValue>) item;
                 elementCount++;
             }
-            else if (HashMap[hash] is KeyValuePair<TKey, TValue>)
+            else if (HashMap[hash] is SerializableKeyValuePair<TKey, TValue>)
             {
-                if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(item.Key))
+                if (((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(item.Key))
                 {
-                    HashMap[hash] = item;
+                    HashMap[hash] = (SerializableKeyValuePair<TKey, TValue>)item;
                 }
                 else
                 {
-                    AVLNode node = new AVLNode(key: ((KeyValuePair<TKey, TValue>)HashMap[hash]).Key, value: ((KeyValuePair<TKey, TValue>)HashMap[hash]).Value) { head = null };
+                    AVLNode node = new AVLNode(key: ((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Key, value: ((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Value) { head = null };
 
-                    if (item.Key.CompareTo(((KeyValuePair<TKey, TValue>)HashMap[hash]).Key) < 0)
+                    if (item.Key.CompareTo(((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Key) < 0)
                     {
                         node.left = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = true };
                         node._depthL = 1;
@@ -200,61 +272,8 @@ namespace LamestWebserver.Collections
             {
                 // TODO: Add to AVLTree; if exists don't add to elementCount and Dequeue old item if maxSize.HasValue; if !exists add to elementCount
                 AVLNode node = (AVLNode)HashMap[hash];
-                int compare = item.Key.CompareTo(node.key);
 
-                while (true)
-                {
-                    if (compare < 0)
-                    {
-                        if (node.left == null)
-                        {
-                            node.left = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = true };
-                            node._depthL = 1;
-                            /*Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine("\n" + node.ToString() + "\n");
-                            Console.ForegroundColor = ConsoleColor.Gray;*/
-                            AVLNode.balanceBubbleUp(node, HashMap, hash);
-                            /*Console.ForegroundColor = ConsoleColor.Cyan;
-                            Console.WriteLine("\n" + node.ToString() + "\n");
-                            Console.ForegroundColor = ConsoleColor.Gray;*/
-                            elementCount++;
-                            break;
-                        }
-                        else
-                        {
-                            node = node.left;
-                            compare = item.Key.CompareTo(node.key);
-                        }
-                    }
-                    else if (compare > 0)
-                    {
-                        if (node.right == null)
-                        {
-                            node.right = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = false };
-                            node._depthR = 1;
-                            /*Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine("\n" + node.ToString() + "\n");
-                            Console.ForegroundColor = ConsoleColor.Gray;*/
-                            AVLNode.balanceBubbleUp(node, HashMap, hash);
-                            /*Console.ForegroundColor = ConsoleColor.Cyan;
-                            Console.WriteLine("\n" + node.ToString() + "\n");
-                            Console.ForegroundColor = ConsoleColor.Gray;*/
-                            elementCount++;
-                            break;
-                        }
-                        else
-                        {
-                            node = node.right;
-                            compare = item.Key.CompareTo(node.key);
-                        }
-                    }
-                    else
-                    {
-                        node.value = item.Value;
-                        break;
-                    }
-                }
-
+                AVLNode.AddItem(node: node, item: item, HashMap: HashMap, hash: hash, elementCount: ref elementCount);
 #if TEST
                 AVLNode.checkNodes(node);
 #endif
@@ -275,18 +294,49 @@ namespace LamestWebserver.Collections
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
-            try
-            {
-                TValue element = this[item.Key];
+            int hash = Math.Abs(item.Key.GetHashCode()) % size;
 
-                if (element.Equals(item.Value))
+            if (HashMap[hash] == null)
+            {
+                return false;
+            }
+            else if (HashMap[hash] is SerializableKeyValuePair<TKey, TValue>)
+            {
+                if (((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(item.Key) && ((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Value.Equals(item.Value))
                     return true;
                 else
                     return false;
             }
-            catch (Exception)
+            else // if HashMap[hash] is an AVL Node search for it
             {
-                return false;
+                AVLNode node = (AVLNode)HashMap[hash];
+                int compare = item.Key.CompareTo(node.key);
+
+                while (true)
+                {
+                    if (compare < 0)
+                    {
+                        node = node.left;
+
+                        if (node != null)
+                            compare = item.Key.CompareTo(node.key);
+                        else
+                            return false;
+                    }
+                    else if (compare > 0)
+                    {
+                        node = node.right;
+
+                        if (node != null)
+                            compare = item.Key.CompareTo(node.key);
+                        else
+                            return false;
+                    }
+                    else
+                    {
+                        return node.value.Equals(item.Value);
+                    }
+                }
             }
         }
 
@@ -299,9 +349,9 @@ namespace LamestWebserver.Collections
         {
             int hash = Math.Abs(key.GetHashCode()) % size;
             
-            if (HashMap[hash] is KeyValuePair<TKey, TValue>)
+            if (HashMap[hash] is SerializableKeyValuePair<TKey, TValue>)
             {
-                if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
+                if (((SerializableKeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
                 {
                     HashMap[hash] = null;
                     elementCount--;
@@ -312,283 +362,8 @@ namespace LamestWebserver.Collections
             else if (HashMap[hash] is AVLNode)
             {
                 AVLNode node = (AVLNode)HashMap[hash];
-                int compare = key.CompareTo(node.key);
 
-                while(true)
-                {
-                    if(compare < 0)
-                    {
-                        node = node.left;
-
-                        if(node != null)
-                        {
-                            compare = key.CompareTo(node.key);
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-                    else if (compare > 0)
-                    {
-                        node = node.right;
-
-                        if (node != null)
-                        {
-                            compare = key.CompareTo(node.key);
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        if(node.right == null && node.left == null) // no children
-                        {
-                            if (node.head == null) // was the top node
-                            {
-                                HashMap[hash] = null;
-                            }
-                            else
-                            {
-                                if (node.isLeft)
-                                {
-                                    node.head.left = null;
-                                    node.head._depthL = 0;
-                                }
-                                else
-                                {
-                                    node.head.right = null;
-                                    node.head._depthR = 0;
-                                }
-
-                                AVLNode.balanceSelfBubbleUp(node.head, HashMap, hash);
-                            }
-                        }
-                        else if(node.right == null || node.left == null) // one child
-                        {
-                            AVLNode child = node.right != null ? node.right : node.left;
-
-                            if (node.head == null) // was the top node
-                            {
-                                HashMap[hash] = child;
-                                child.head = null;
-                            }
-                            else
-                            {
-                                child.isLeft = node.isLeft;
-
-                                if (node.isLeft)
-                                {
-                                    node.head.left = child;
-                                    child.head = node.head;
-                                    node.head._depthL -= 1;
-                                }
-                                else
-                                {
-                                    node.head.right = child;
-                                    child.head = node.head;
-                                    node.head._depthR -= 1;
-                                }
-
-                                AVLNode.balanceSelfBubbleUp(node.head, HashMap, hash);
-                            }
-                        }
-                        else // two children :O
-                        {
-                            AVLNode child = node.right, childhead = node.head;
-
-                            while(child.left != null)
-                            {
-                                childhead = child;
-                                child = child.left;
-                            }
-
-                            if (childhead == node.head)
-                            {
-                                //if (childhead == node.head) child.right keeps child.right
-                                //childhead.right = child; // childhead is node.head! // @FIXME: this is redundant and can be dropped.
-
-                                //child.left = node.left;// @FIXME: this is redundant and can be dropped.
-                                //child.left.head = child;// @FIXME: this is redundant and can be dropped.
-                            }
-                            else
-                            {
-                                if (child.right != null)
-                                {
-                                    childhead.left = child.right;
-                                    child.right.head = childhead;
-                                    child.right.isLeft = true;
-                                    childhead._depthL--;
-                                }
-                                else
-                                {
-                                    childhead.left = null;
-                                    childhead._depthL = 0;
-                                }
-                                
-                                child.right = node.right;
-                            }
-
-                            child.left = node.left;
-                            child.left.head = child;
-                            child.head = node.head;
-                            child.isLeft = node.isLeft;
-
-                            if(node.head == null)
-                            {
-                                HashMap[hash] = child;
-                            }
-                            else
-                            {
-                                if(node.isLeft)
-                                {
-                                    node.head.left = child;
-                                }
-                                else
-                                {
-                                    node.head.right = child;
-                                }
-                            }
-
-                            if (childhead == node.head)
-                            {
-                                // child.right = null;
-                                // child._depthR = 0;
-                                AVLNode.balanceSelfBubbleUp(child, HashMap, hash);
-                            }
-                            else
-                            {
-                                /*
-                                // we already do that in the line below, right? (child.right.head = child;)
-                                if(childhead.head == node)
-                                {
-                                    childhead.head = child;
-                                }*/
-
-                                child.right.head = child;
-                                AVLNode.balanceSelfBubbleUp(childhead, HashMap, hash);
-                            }
-
-                            // AVLNode.balanceSelfBubbleUp(childhead, HashMap, hash);
-                        }
-#region oldcode
-
-                        /*if(node.isLeft)
-                        {
-                            AVLNode child = node.right;
-
-                            if (node.right == null)
-                            {
-                                if (node.left != null)
-                                {
-                                    if (node.head == null) // is root node
-                                    {
-                                        HashMap[hash] = node.left;
-                                        node.left.head = null;
-                                    }
-                                    else
-                                    {
-                                        node.head._depthL--;
-                                        node.head.left = node.left;
-                                        node.left.head = node.head;
-                                        // node.left.isLeft = true; // Redundant
-                                        AVLNode.balanceBubbleUp(node.head, HashMap, hash);
-                                    }
-                                }
-                                else // else: node has no children
-                                {
-                                    if (node.head == null)
-                                    {
-                                        HashMap[hash] = null;
-                                    }
-                                    else
-                                    {
-                                        node.head.left = null;
-                                        node.head._depthL = 0;
-                                        AVLNode.balanceBubbleUp(node.head, HashMap, hash);
-                                    }
-                                }
-                            }
-                            else if (node.left == null)
-                            {
-                                // We know that node.right can't be null
-                                if (node.head == null) // is root node
-                                {
-                                    HashMap[hash] = node.right;
-                                    node.right.head = null;
-                                }
-                                else
-                                {
-                                    node.head._depthL--;
-                                    node.head.left = node.right;
-                                    node.right.head = node.head;
-                                    node.right.isLeft = false;
-                                    AVLNode.balanceBubbleUp(node.head, HashMap, hash);
-                                }
-                            }
-                            else
-                            {
-                                // Chris: search for highest child
-
-                                while (child.right != null)
-                                {
-                                    child = child.right;
-                                }
-
-                                AVLNode childLeft = child.left;
-
-                                if (childLeft != null)
-                                {
-                                    child.head.right = childLeft;
-                                    child.head._depthL--;
-
-                                }
-                                else
-                                {
-                                    child.head.right = null;
-                                    child.head._depthL--;
-                                }
-
-                                if (node.head == null) // is root node
-                                {
-                                    // TODO: implement
-                                }
-                                else
-                                {
-                                    child.head = node.head;
-                                    node.head.left = child;
-
-                                    child.left = node.left;
-                                    child.right = node.right;
-
-                                    // TODO: balances
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Chris: search for lowest child
-                        }
-
-                        for (int i = right.Count - 1; i >= 0; i--)
-                        {
-                            if(right[i].left == null)
-                                right[i]._depthR++;
-                        }
-
-                        for (int i = left.Count - 1; i >= 0; i--)
-                        {
-                            if (left[i].right == null)
-                                left[i]._depthR--;
-                        }*/
-
-                        #endregion
-                        elementCount--;
-                        return true;
-                    }
-                }
+                return AVLNode.FindRemoveKey(node, HashMap, hash, key, ref elementCount);
             }
 
             return false; // Redundant
@@ -618,7 +393,7 @@ namespace LamestWebserver.Collections
             HashMap = (object[])info.GetValue(nameof(HashMap), typeof(object[]));
         }
 
-        public class AVLNode
+        public class AVLNode : ISerializable
         {
             internal AVLNode head, left, right;
             internal int balance { get { return -_depthL + _depthR ; } }
@@ -1111,6 +886,297 @@ namespace LamestWebserver.Collections
             public static int getCount(AVLNode node)
             {
                 return 1 + (node.left == null ? 0 : getCount(node.left)) + (node.right == null ? 0 : getCount(node.right));
+            }
+
+            internal static bool FindRemoveKey(AVLNode node, object[] HashMap, int hash, TKey key, ref int elementCount)
+            {
+                int compare = key.CompareTo(node.key);
+
+                while (true)
+                {
+                    if (compare < 0)
+                    {
+                        node = node.left;
+
+                        if (node != null)
+                        {
+                            compare = key.CompareTo(node.key);
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else if (compare > 0)
+                    {
+                        node = node.right;
+
+                        if (node != null)
+                        {
+                            compare = key.CompareTo(node.key);
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        AVLNode.RemoveNode(node, HashMap, hash, ref elementCount);
+
+                        return true;
+                    }
+                }
+            }
+
+
+            internal static bool FindRemoveItem(AVLNode node, object[] HashMap, int hash, KeyValuePair<TKey, TValue> item, ref int elementCount)
+            {
+                int compare = item.Key.CompareTo(node.key);
+
+                while (true)
+                {
+                    if (compare < 0)
+                    {
+                        node = node.left;
+
+                        if (node != null)
+                        {
+                            compare = item.Key.CompareTo(node.key);
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else if (compare > 0)
+                    {
+                        node = node.right;
+
+                        if (node != null)
+                        {
+                            compare = item.Key.CompareTo(node.key);
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        if (node.value.Equals(item.Value))
+                        {
+                            AVLNode.RemoveNode(node, HashMap, hash, ref elementCount);
+
+                            return true;
+                        }
+
+                        return false;
+                    }
+                }
+            }
+
+            internal static void RemoveNode(AVLNode node, object[] HashMap, int hash, ref int elementCount)
+            {
+                if (node.right == null && node.left == null) // no children
+                {
+                    if (node.head == null) // was the top node
+                    {
+                        HashMap[hash] = null;
+                    }
+                    else
+                    {
+                        if (node.isLeft)
+                        {
+                            node.head.left = null;
+                            node.head._depthL = 0;
+                        }
+                        else
+                        {
+                            node.head.right = null;
+                            node.head._depthR = 0;
+                        }
+
+                        AVLNode.balanceSelfBubbleUp(node.head, HashMap, hash);
+                    }
+                }
+                else if (node.right == null || node.left == null) // one child
+                {
+                    AVLNode child = node.right != null ? node.right : node.left;
+
+                    if (node.head == null) // was the top node
+                    {
+                        HashMap[hash] = child;
+                        child.head = null;
+                    }
+                    else
+                    {
+                        child.isLeft = node.isLeft;
+
+                        if (node.isLeft)
+                        {
+                            node.head.left = child;
+                            child.head = node.head;
+                            node.head._depthL -= 1;
+                        }
+                        else
+                        {
+                            node.head.right = child;
+                            child.head = node.head;
+                            node.head._depthR -= 1;
+                        }
+
+                        AVLNode.balanceSelfBubbleUp(node.head, HashMap, hash);
+                    }
+                }
+                else // two children :O
+                {
+                    AVLNode child = node.right, childhead = node.head;
+
+                    while (child.left != null)
+                    {
+                        childhead = child;
+                        child = child.left;
+                    }
+
+                    if (childhead == node.head)
+                    {
+                        //if (childhead == node.head) child.right keeps child.right
+                        //childhead.right = child; // childhead is node.head! // @FIXME: this is redundant and can be dropped.
+
+                        //child.left = node.left;// @FIXME: this is redundant and can be dropped.
+                        //child.left.head = child;// @FIXME: this is redundant and can be dropped.
+                    }
+                    else
+                    {
+                        if (child.right != null)
+                        {
+                            childhead.left = child.right;
+                            child.right.head = childhead;
+                            child.right.isLeft = true;
+                            childhead._depthL--;
+                        }
+                        else
+                        {
+                            childhead.left = null;
+                            childhead._depthL = 0;
+                        }
+
+                        child.right = node.right;
+                    }
+
+                    child.left = node.left;
+                    child.left.head = child;
+                    child.head = node.head;
+                    child.isLeft = node.isLeft;
+
+                    if (node.head == null)
+                    {
+                        HashMap[hash] = child;
+                    }
+                    else
+                    {
+                        if (node.isLeft)
+                        {
+                            node.head.left = child;
+                        }
+                        else
+                        {
+                            node.head.right = child;
+                        }
+                    }
+
+                    if (childhead == node.head)
+                    {
+                        // child.right = null;
+                        // child._depthR = 0;
+                        AVLNode.balanceSelfBubbleUp(child, HashMap, hash);
+                    }
+                    else
+                    {
+                        /*
+                        // we already do that in the line below, right? (child.right.head = child;)
+                        if(childhead.head == node)
+                        {
+                            childhead.head = child;
+                        }*/
+
+                        child.right.head = child;
+                        AVLNode.balanceSelfBubbleUp(childhead, HashMap, hash);
+                    }
+
+                    // AVLNode.balanceSelfBubbleUp(childhead, HashMap, hash);
+                }
+
+                elementCount--;
+            }
+
+            internal static void AddItem(AVLNode node, KeyValuePair<TKey, TValue> item, object[] HashMap, int hash, ref int elementCount)
+            {
+                int compare = item.Key.CompareTo(node.key);
+
+                while (true)
+                {
+                    if (compare < 0)
+                    {
+                        if (node.left == null)
+                        {
+                            node.left = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = true };
+                            node._depthL = 1;
+                            AVLNode.balanceBubbleUp(node, HashMap, hash);
+                            elementCount++;
+                            break;
+                        }
+                        else
+                        {
+                            node = node.left;
+                            compare = item.Key.CompareTo(node.key);
+                        }
+                    }
+                    else if (compare > 0)
+                    {
+                        if (node.right == null)
+                        {
+                            node.right = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = false };
+                            node._depthR = 1;
+                            AVLNode.balanceBubbleUp(node, HashMap, hash);
+                            elementCount++;
+                            break;
+                        }
+                        else
+                        {
+                            node = node.right;
+                            compare = item.Key.CompareTo(node.key);
+                        }
+                    }
+                    else
+                    {
+                        node.value = item.Value;
+                        break;
+                    }
+                }
+            }
+
+            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                // info.AddValue(nameof(this.head), this.head); // <- would create cross references...
+                info.AddValue(nameof(this.isLeft), this.isLeft);
+                info.AddValue(nameof(this.key), this.key);
+                info.AddValue(nameof(this.left), this.left);
+                info.AddValue(nameof(this.right), this.right);
+                info.AddValue(nameof(this.value), this.value);
+                info.AddValue(nameof(this._depthL), this._depthL);
+                info.AddValue(nameof(this._depthR), this._depthR);
+            }
+
+            [OnDeserializing]
+            void OnDeserializing(StreamingContext c)
+            {
+                if (right != null)
+                    right.head = this;
+                
+                if (left != null)
+                    left.head = this;
             }
         }
     }
