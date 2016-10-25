@@ -6,7 +6,12 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
-    public abstract class PageResponse
+    public interface IURLIdentifyable
+    {
+        string URL { get; }
+    }
+
+    public abstract class PageResponse : IURLIdentifyable
     {
         public string URL { get; protected set; }
 
@@ -47,7 +52,7 @@ namespace LamestWebserver
         protected override abstract string getContents(SessionData sessionData);
     }
 
-    public abstract class ElementResponse
+    public abstract class ElementResponse : IURLIdentifyable
     {
         public string URL { get; protected set; }
 
@@ -72,22 +77,15 @@ namespace LamestWebserver
         protected abstract HElement getElement(SessionData sessionData);
     }
 
-    public abstract class SyncronizedElementResponse
+    public abstract class SyncronizedElementResponse : ElementResponse
     {
         public string URL { get; protected set; }
         private UsableMutex mutex = new UsableMutex();
 
-        public SyncronizedElementResponse(string URL, bool register = true)
+        public SyncronizedElementResponse(string URL, bool register = true) : base(URL, false)
         {
-            this.URL = URL;
-
             if (register)
                 Master.addFuntionToServer(URL, getContents);
-        }
-
-        protected void removeFromServer()
-        {
-            Master.removeFunctionFromServer(URL);
         }
 
         private string getContents(SessionData sessionData)
@@ -98,7 +96,7 @@ namespace LamestWebserver
             }
         }
 
-        protected abstract HElement getElement(SessionData sessionData);
+        protected override abstract HElement getElement(SessionData sessionData);
     }
 
     public static class InstantPageResponse

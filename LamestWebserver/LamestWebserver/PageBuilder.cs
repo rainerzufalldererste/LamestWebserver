@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
-    public class PageBuilder : HContainer
+    public class PageBuilder : HContainer, IURLIdentifyable
     {
         private Func<SessionData, bool> conditionalCode;
         private bool condition = false;
@@ -25,7 +25,7 @@ namespace LamestWebserver
         /// <summary>
         /// the URL at which this page is / will be available at
         /// </summary>
-        public string URL = "";
+        public string URL { get; protected set; }
 
         /// <summary>
         /// Path to the stylesheets. Prefer strings. Else: toString() will be used

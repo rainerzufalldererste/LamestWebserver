@@ -11,6 +11,7 @@ namespace UnitTests
     {
         AVLHashMap<string, string> hashmap;
         AVLTree<string, string> tree;
+        QueuedAVLTree<string, string> qtree;
 
         [TestMethod]
         public void testAVLHashMaps()
@@ -34,6 +35,56 @@ namespace UnitTests
             tree = new AVLTree<string, string>();
             executeTestTree();
             tree.Clear();
+        }
+
+        [TestMethod]
+        public void testQueuedAVLTrees()
+        {
+            qtree = new QueuedAVLTree<string, string>(1);
+            List<string> hashes = new List<string>();
+            List<string> values = new List<string>();
+
+            Assert.IsTrue(qtree.Count == 0);
+            qtree.Validate();
+            qtree.Add("wolo", "123");
+            Assert.AreEqual(qtree["wolo"], "123");
+            Assert.IsTrue(qtree.Count == 1);
+            Assert.IsTrue(qtree.ContainsKey("wolo"));
+            Assert.IsTrue(qtree.Contains(new KeyValuePair<string, string>("wolo", "123")));
+            Assert.IsFalse(qtree.ContainsKey("wolo1"));
+            Assert.IsFalse(qtree.Contains(new KeyValuePair<string, string>("wolo", "1234")));
+            Assert.IsFalse(qtree.Contains(new KeyValuePair<string, string>("wolo1", "123")));
+            Assert.IsFalse(qtree.Remove(new KeyValuePair<string, string>("wolo", "1234")));
+            Assert.IsFalse(qtree.Remove(new KeyValuePair<string, string>("wolo1", "123")));
+            Assert.IsTrue(qtree.Count == 1);
+            qtree.Validate();
+            qtree.Add("yolo", "0123");
+            Assert.AreEqual(qtree["yolo"], "0123");
+            Assert.IsTrue(qtree.Count == 1);
+            Assert.IsTrue(qtree.ContainsKey("yolo"));
+            Assert.IsTrue(qtree.Contains(new KeyValuePair<string, string>("yolo", "0123")));
+            Assert.IsFalse(qtree.Contains(new KeyValuePair<string, string>("wolo", "123")));
+            Assert.IsFalse(qtree.ContainsKey("wolo"));
+            qtree.Validate();
+            Assert.IsTrue(qtree.Remove(new KeyValuePair<string, string>("yolo", "0123")));
+            Assert.IsTrue(qtree.Count == 0);
+            Assert.IsFalse(qtree.Contains(new KeyValuePair<string, string>("yolo", "0123")));
+            Assert.IsFalse(qtree.ContainsKey("yolo"));
+            qtree.Validate();
+            qtree["wolo"] = "abc";
+            Assert.IsTrue(qtree.Count == 1);
+            Assert.IsTrue(qtree.Remove("wolo"));
+            qtree.Clear();
+            Assert.IsTrue(qtree.Count == 0);
+            qtree.Validate();
+
+            qtree = new QueuedAVLTree<string, string>(10);
+            executeTestQueuedTree(10);
+            qtree.Clear();
+
+            qtree = new QueuedAVLTree<string, string>(1024);
+            executeTestQueuedTree(1024);
+            qtree.Clear();
         }
 
         public void executeTestHashMap()
@@ -253,6 +304,191 @@ namespace UnitTests
 
                 Assert.IsTrue(tree[hashes[i]] == default(string));
                 tree.Validate();
+            }
+        }
+
+        public void executeTestQueuedTree(int size)
+        {
+            List<string> hashes = new List<string>();
+            List<string> values = new List<string>();
+
+            Console.WriteLine("Small Tests...");
+            Assert.IsTrue(qtree.Count == 0);
+            qtree.Add(new KeyValuePair<string, string>("key", "value"));
+            Assert.IsTrue(qtree.ContainsKey("key"));
+            Assert.IsFalse(qtree.ContainsKey("value"));
+            Assert.IsTrue(qtree["key"] == "value");
+            Assert.IsTrue(qtree.Count == 1);
+            qtree.Validate();
+            qtree.Add(new KeyValuePair<string, string>("key", "value2"));
+            Assert.IsTrue(qtree.ContainsKey("key"));
+            Assert.IsFalse(qtree.ContainsKey("value"));
+            Assert.IsTrue(qtree["key"] == "value2");
+            Assert.IsTrue(qtree.Count == 1);
+            qtree.Validate();
+            qtree.Add(new KeyValuePair<string, string>("key", "avalue"));
+            Assert.IsTrue(qtree.ContainsKey("key"));
+            Assert.IsFalse(qtree.ContainsKey("value"));
+            Assert.IsTrue(qtree["key"] == "avalue");
+            Assert.IsTrue(qtree.Count == 1);
+            qtree.Validate();
+            Assert.IsFalse(qtree.Remove("value"));
+            Assert.IsTrue(qtree.Remove("key"));
+            qtree.Validate();
+            Assert.IsTrue(qtree.Count == 0);
+            qtree.Add(new KeyValuePair<string, string>("key", "value2"));
+            Assert.IsTrue(qtree.Count == 1);
+            qtree.Clear();
+            Assert.IsTrue(qtree.Count == 0);
+            qtree.Add(new KeyValuePair<string, string>("key", "value"));
+            Assert.IsTrue(qtree.ContainsKey("key"));
+            Assert.IsFalse(qtree.ContainsKey("value"));
+            Assert.IsTrue(qtree["key"] == "value");
+            Assert.IsTrue(qtree.Count == 1);
+            qtree.Validate();
+            qtree.Clear();
+            Assert.IsFalse(qtree.Remove(""));
+            Assert.IsFalse(qtree.Remove(new KeyValuePair<string, string>("", "")));
+
+            Console.WriteLine("Adding...");
+
+            for (int i = 0; i < size; i++)
+            {
+                Assert.IsTrue(qtree.Count == i);
+                hashes.Add(SessionContainer.generateHash());
+                values.Add(SessionContainer.generateHash());
+                qtree[hashes[i]] = values[i];
+                Assert.IsTrue(qtree[hashes[i]] == values[i]);
+                Assert.IsTrue(qtree.Keys.Contains(hashes[i]));
+                Assert.IsTrue(qtree.Values.Contains(values[i]));
+                qtree.Validate();
+            }
+
+            Console.WriteLine("Overriding...");
+
+            for (int i = 0; i < size; i++)
+            {
+                Assert.IsTrue(qtree[hashes[i]] == values[i]);
+                values[i] = SessionContainer.generateHash();
+                qtree[hashes[i]] = values[i];
+                Assert.IsTrue(qtree.Count == size);
+            }
+
+            Console.WriteLine("Checking...");
+
+            for (int i = 0; i < size; i++)
+            {
+                Assert.IsTrue(qtree[hashes[i]] == values[i]);
+                Assert.IsTrue(qtree.Keys.Contains(hashes[i]));
+                Assert.IsTrue(qtree.Values.Contains(values[i]));
+            }
+
+            Console.WriteLine("Validating...");
+
+            qtree.Validate();
+
+            Console.WriteLine("Deleting...");
+            
+            for (int i = 0; i < size; i++)
+            {
+                Assert.IsTrue(qtree.Count == size - i);
+                Assert.IsTrue(qtree.ContainsKey(hashes[i]));
+                Assert.IsTrue(qtree[hashes[i]] != default(string));
+                Assert.IsTrue(qtree.Remove(hashes[i]));
+                Assert.IsFalse(qtree.Keys.Contains(hashes[i]));
+                Assert.IsFalse(qtree.Values.Contains(values[i]));
+
+                if (true)
+                {
+                    for (int j = i + 1; j < size; j++)
+                    {
+                        Assert.IsFalse(qtree[hashes[j]].Contains(hashes[j]));
+                    }
+
+                    for (int j = 0; j < i; j++)
+                    {
+                        Assert.IsFalse(qtree.Remove(hashes[j]));
+                    }
+                }
+
+                Assert.IsTrue(qtree[hashes[i]] == default(string));
+                qtree.Validate();
+            }
+
+            hashes.Clear();
+            values.Clear();
+
+            Console.WriteLine("Adding...");
+
+            for (int i = 0; i < size; i++)
+            {
+                Assert.IsTrue(qtree.Count == i);
+                hashes.Add(SessionContainer.generateHash());
+                values.Add(SessionContainer.generateHash());
+                qtree[hashes[i]] = values[i];
+                Assert.IsTrue(qtree[hashes[i]] == values[i]);
+                Assert.IsTrue(qtree.Keys.Contains(hashes[i]));
+                Assert.IsTrue(qtree.Values.Contains(values[i]));
+                qtree.Validate();
+            }
+
+            Console.WriteLine("Overflowing...");
+
+            for (int i = 0; i < size; i++)
+            {
+                Assert.IsTrue(qtree.Count == size);
+                hashes.Add(SessionContainer.generateHash());
+                values.Add(SessionContainer.generateHash());
+                qtree[hashes[size + i]] = values[size + i];
+                Assert.IsTrue(qtree[hashes[size + i]] == values[size + i]);
+                Assert.IsTrue(qtree.Keys.Contains(hashes[size + i]));
+                Assert.IsTrue(qtree.Values.Contains(values[size + i]));
+                qtree.Validate();
+            }
+
+            Console.WriteLine("Overriding...");
+
+            for (int i = 0; i < size; i++)
+            {
+                values[i] = SessionContainer.generateHash();
+                qtree[hashes[size + i]] = values[size + i];
+                Assert.IsTrue(qtree[hashes[size + i]] == values[size + i]);
+                Assert.IsTrue(qtree.Keys.Contains(hashes[size + i]));
+                Assert.IsTrue(qtree.Values.Contains(values[size + i]));
+                Assert.IsTrue(qtree.Count == size);
+                qtree.Validate();
+            }
+
+            Console.WriteLine("Validating...");
+
+            qtree.Validate();
+
+            Console.WriteLine("Deleting...");
+
+            for (int i = 0; i < size; i++)
+            {
+                Assert.IsTrue(qtree.Count == size - i);
+                Assert.IsTrue(qtree.ContainsKey(hashes[size + i]));
+                Assert.IsTrue(qtree[hashes[size + i]] != default(string));
+                Assert.IsTrue(qtree.Remove(hashes[size + i]));
+                Assert.IsFalse(qtree.Keys.Contains(hashes[size + i]));
+                Assert.IsFalse(qtree.Values.Contains(values[size + i]));
+
+                if (true)
+                {
+                    for (int j = i + 1; j < size; j++)
+                    {
+                        Assert.IsFalse(qtree[hashes[size + j]].Contains(hashes[size + j]));
+                    }
+
+                    for (int j = 0; j < i; j++)
+                    {
+                        Assert.IsFalse(qtree.Remove(hashes[size + j]));
+                    }
+                }
+
+                Assert.IsTrue(qtree[hashes[size + i]] == default(string));
+                qtree.Validate();
             }
         }
     }

@@ -12,6 +12,7 @@ namespace UnitTests
         {
             new CollectionUnitTests().testAVLHashMaps();
             new CollectionUnitTests().testAVLTrees();
+            new CollectionUnitTests().testQueuedAVLTrees();
             new PacketUnitTest().TestCookies();
         }
     }

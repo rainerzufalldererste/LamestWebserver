@@ -8,10 +8,24 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.Collections
 {
-    public class AVLTree<TKey, TValue> : IDictionary<TKey, TValue>, ISerializable where TKey : IComparable, IEquatable<TKey>
+    public class QueuedAVLTree<TKey, TValue> : IDictionary<TKey, TValue> where TKey : IEquatable<TKey>, IComparable
     {
         internal AVLNode head;
         private int count = 0;
+        private int maxCount;
+        internal Queue queue;
+
+        public QueuedAVLTree()
+        {
+            maxCount = 4096;
+            queue = new Queue(maxCount);
+        }
+
+        public QueuedAVLTree(int maxSize)
+        {
+            maxCount = maxSize;
+            queue = new Queue(maxCount);
+        }
 
         public TValue this[TKey key]
         {
@@ -101,7 +115,7 @@ namespace LamestWebserver.Collections
         {
             if (head == null)
             {
-                head = new AVLNode(key, value);
+                head = new AVLNode(key, value, this);
                 count++;
             }
             else
@@ -112,6 +126,8 @@ namespace LamestWebserver.Collections
         {
             head = null;
             count = 0;
+
+            queue.Clear();
         }
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
@@ -237,15 +253,21 @@ namespace LamestWebserver.Collections
                 AVLNode.checkNodes(head);
                 int size = AVLNode.getCount(head);
 
+                System.Diagnostics.Debug.Assert(size == queue.validateCount(), "The queue and tree sizes are not equal.");
+
                 System.Diagnostics.Debug.Assert(size == count, "The elementCount is " + count + " but should be " + size);
+                System.Diagnostics.Debug.Assert(size == queue.size, "The queue size is " + queue.size + " but should be " + size);
             }
             else
             {
+                System.Diagnostics.Debug.Assert(count == queue.validateCount(), "The queue and tree sizes are not equal.");
+
                 System.Diagnostics.Debug.Assert(count == 0, "The elementCount is " + count + " but should be 0");
+                System.Diagnostics.Debug.Assert(queue.size == 0, "The queue size is " + queue.size + " but should be 0");
             }
         }
 
-        public class AVLNode : ISerializable
+        public class AVLNode
         {
             internal AVLNode head, left, right;
             internal int balance { get { return -_depthL + _depthR; } }
@@ -255,21 +277,16 @@ namespace LamestWebserver.Collections
             internal TValue value;
             internal bool isLeft = true;
 
-            /// <summary>
-            /// Empty constructor for Deserialisation
-            /// </summary>
-            public AVLNode()
-            {
-
-            }
-
-            public AVLNode(TKey key, TValue value)
+            internal QueueElement linkedElement;
+            
+            public AVLNode(TKey key, TValue value, QueuedAVLTree<TKey, TValue> tree)
             {
                 this.key = key;
                 this.value = value;
+                this.linkedElement = tree.queue.Enqueue(this, tree);
             }
 
-            private void rebalance(AVLTree<TKey, TValue> tree)
+            private void rebalance(QueuedAVLTree<TKey, TValue> tree)
             {
                 if (Math.Abs(balance) > 2)
                 {
@@ -420,7 +437,7 @@ namespace LamestWebserver.Collections
                 return Math.Max(r, l);
             }
 
-            private static void rotl(AVLNode node, AVLTree<TKey, TValue> tree)
+            private static void rotl(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
                 // swap head
                 AVLNode oldhead = node.head;
@@ -465,7 +482,7 @@ namespace LamestWebserver.Collections
                 updateDepth(node);
             }
 
-            private static void rotr(AVLNode node, AVLTree<TKey, TValue> tree)
+            private static void rotr(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
                 // swap head
                 AVLNode oldhead = node.head;
@@ -541,7 +558,7 @@ namespace LamestWebserver.Collections
             /// <summary>
             /// Called after adding a node
             /// </summary>
-            internal static void balanceBubbleUp(AVLNode node, AVLTree<TKey, TValue> tree)
+            internal static void balanceBubbleUp(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
                 while (node.head != null)
                 {
@@ -570,7 +587,7 @@ namespace LamestWebserver.Collections
             /// <summary>
             /// Called after removing a node - can handle more than 2 or -2 balances on self
             /// </summary>
-            internal static void balanceSelfBubbleUp(AVLNode node, AVLTree<TKey, TValue> tree)
+            internal static void balanceSelfBubbleUp(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
                 while (node != null)
                 {
@@ -619,7 +636,7 @@ namespace LamestWebserver.Collections
                 return 1 + (node.left == null ? 0 : getCount(node.left)) + (node.right == null ? 0 : getCount(node.right));
             }
 
-            internal static bool FindRemoveKey(AVLNode node, AVLTree<TKey, TValue> tree, TKey key, ref int elementCount)
+            internal static bool FindRemoveKey(AVLNode node, QueuedAVLTree<TKey, TValue> tree, TKey key, ref int elementCount)
             {
                 int compare = key.CompareTo(node.key);
 
@@ -661,7 +678,7 @@ namespace LamestWebserver.Collections
             }
 
 
-            internal static bool FindRemoveItem(AVLNode node, AVLTree<TKey, TValue> tree, KeyValuePair<TKey, TValue> item, ref int elementCount)
+            internal static bool FindRemoveItem(AVLNode node, QueuedAVLTree<TKey, TValue> tree, KeyValuePair<TKey, TValue> item, ref int elementCount)
             {
                 int compare = item.Key.CompareTo(node.key);
 
@@ -707,8 +724,11 @@ namespace LamestWebserver.Collections
                 }
             }
 
-            internal static void RemoveNode(AVLNode node, AVLTree<TKey, TValue> tree)
+            internal static void RemoveNode(AVLNode node, QueuedAVLTree<TKey, TValue> tree, bool callFromQueue = false)
             {
+                if(!callFromQueue)
+                    tree.queue.Dequeue(node.linkedElement, tree);
+
                 if (node.right == null && node.left == null) // no children
                 {
                     if (node.head == null) // was the top node
@@ -769,7 +789,7 @@ namespace LamestWebserver.Collections
                         childhead = child;
                         child = child.left;
                     }
-                    
+
                     if (childhead != node.head)
                     {
                         if (child.right != null)
@@ -823,17 +843,29 @@ namespace LamestWebserver.Collections
                 tree.count--;
             }
 
-            internal static void AddItem(AVLNode headNode, TKey key, TValue value, AVLTree<TKey, TValue> tree, ref int elementCount)
+            internal static void AddItem(AVLNode headNode, TKey key, TValue value, QueuedAVLTree<TKey, TValue> tree, ref int elementCount)
             {
                 int compare = key.CompareTo(headNode.key);
 
+                if(!tree.ContainsKey(key))
+                {
+                    tree.queue.checkRoom(tree);
+
+                    if (tree.head == null)
+                    {
+                        tree.head = new AVLNode(key, value, tree);
+                        elementCount++;
+                        goto LukeIDeletedYourFather;
+                    }
+                }
+                
                 while (true)
                 {
                     if (compare < 0)
                     {
                         if (headNode.left == null)
                         {
-                            headNode.left = new AVLNode(key: key, value: value) { head = headNode, isLeft = true };
+                            headNode.left = new AVLNode(key: key, value: value, tree: tree) { head = headNode, isLeft = true };
                             headNode._depthL = 1;
                             AVLNode.balanceBubbleUp(headNode, tree);
                             elementCount++;
@@ -849,7 +881,7 @@ namespace LamestWebserver.Collections
                     {
                         if (headNode.right == null)
                         {
-                            headNode.right = new AVLNode(key: key, value: value) { head = headNode, isLeft = false };
+                            headNode.right = new AVLNode(key: key, value: value, tree: tree) { head = headNode, isLeft = false };
                             headNode._depthR = 1;
                             AVLNode.balanceBubbleUp(headNode, tree);
                             elementCount++;
@@ -867,28 +899,107 @@ namespace LamestWebserver.Collections
                         break;
                     }
                 }
+
+                LukeIDeletedYourFather:;
+            }
+        }
+
+        public class QueueElement
+        {
+            internal QueueElement next, previous;
+            private AVLNode linkedNode;
+
+            public QueueElement(QueueElement head, AVLNode linkedNode)
+            {
+                this.linkedNode = linkedNode;
+
+                next = head.next;
+                head.next.previous = this;
+                previous = head;
+                head.next = this;
             }
 
-            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            internal QueueElement() { }
+
+            internal static void Remove(QueueElement element, QueuedAVLTree<TKey, TValue> tree, bool callFromQueue = false)
             {
-                // info.AddValue(nameof(this.head), this.head); // <- would create cross references...
-                info.AddValue(nameof(this.isLeft), this.isLeft);
-                info.AddValue(nameof(this.key), this.key);
-                info.AddValue(nameof(this.left), this.left);
-                info.AddValue(nameof(this.right), this.right);
-                info.AddValue(nameof(this.value), this.value);
-                info.AddValue(nameof(this._depthL), this._depthL);
-                info.AddValue(nameof(this._depthR), this._depthR);
+                element.next.previous = element.previous;
+                element.previous.next = element.next;
+
+                if (callFromQueue && element.linkedNode != null)
+                    AVLNode.RemoveNode(element.linkedNode, tree, true);
+            }
+        }
+
+        public class Queue
+        {
+            QueueElement first, last;
+            internal int size = 0;
+            int maxSize;
+
+            public Queue(int maxSize)
+            {
+                if (maxSize <= 0)
+                    throw new InvalidOperationException(maxSize + " is an invalid Size for a Queue");
+
+                this.maxSize = maxSize;
+
+                first = new QueueElement();
+                last = new QueueElement();
+
+                first.next = last;
+                last.previous = first;
             }
 
-            [OnDeserializing]
-            void OnDeserializing(StreamingContext c)
+            public QueueElement Enqueue(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
-                if (right != null)
-                    right.head = this;
+                if (size > maxSize)
+                    Dequeue(last.previous, tree, true);
 
-                if (left != null)
-                    left.head = this;
+                QueueElement element = new QueueElement(first, node);
+                size++;
+
+                return element;
+            }
+
+            public void Dequeue(QueueElement element, QueuedAVLTree<TKey, TValue> tree, bool callFromEnqueue = false)
+            {
+                QueueElement.Remove(element, tree, callFromEnqueue);
+                size--;
+            }
+
+            internal int validateCount()
+            {
+                int count = 0;
+
+                QueueElement qe = first.next;
+
+                while (qe.next != null)
+                {
+                    qe = qe.next;
+                    count++;
+                }
+
+                System.Diagnostics.Debug.Assert(count == size, "Queue size is " + size + " but should be " + count);
+
+                return count;
+            }
+
+            internal void Clear()
+            {
+                first = new QueueElement();
+                last = new QueueElement();
+
+                first.next = last;
+                last.previous = first;
+
+                size = 0;
+            }
+
+            internal void checkRoom(QueuedAVLTree<TKey, TValue> tree)
+            {
+                if (size + 1 > maxSize)
+                    Dequeue(last.previous, tree, true);
             }
         }
     }

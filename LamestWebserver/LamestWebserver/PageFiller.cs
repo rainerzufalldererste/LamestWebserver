@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
-    public abstract class PageFiller
+    public abstract class PageFiller : IURLIdentifyable
     {
         /// <summary>
         /// the URL, this page reads from before parsing into
         /// </summary>
-        public readonly string URL;
+        public string URL { get; protected set; }
 
         /// <summary>
         /// Replace the HREFs on this Page to include the sessionID
