@@ -12,16 +12,18 @@ namespace LamestWebserver
     {
         public const string htmldateformat = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
 
-        public string[] Months = new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        public static readonly string[] Months = new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
         public string version = "HTTP/1.1";
         public string status = "200 OK";
         public string date/* = DateTime.Now.DayOfWeek.ToString().Substring(0,3) + ", " + DateTime.Now.Day + " " + Months[DateTime.Now.Month] + " " + DateTime.Now.Year + " " + 
             DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"*/; //Tue, 21 Apr 2015 22:51:19 GMT
         public DateTime? modified = null;
-        public int contentLength = 0;
+        private int contentLength = 0;
         public string contentType = "text/html";
-        public string data = "<body>i am empty :(</body>";
-        public List<KeyValuePair<string, string>> cookie = null;
+        public byte[] binaryData { get { return _binaryData; } set { _binaryData = value; contentLength = _binaryData.Length; } }
+        private byte[] _binaryData;
+        public string requestData;
+        public List<KeyValuePair<string, string>> cookies = null;
         public string host = "localhost";
 
         public List<string> additionalHEAD = new List<string>();
@@ -34,42 +36,49 @@ namespace LamestWebserver
 
         public static Dictionary<EndPoint, string> unfinishedPackets = new Dictionary<EndPoint, string>();
 
-        public string getPackage()
+        public byte[] getPackage(UTF8Encoding enc)
         {
-            string ret = "";
+            string rets = "";
 
-            ret += version + " " + status + "\r\n";
-            ret += "Host: " + host + "\r\n";
-            ret += "Date: " + date + "\r\n"; //do we need that?!
-            ret += "Server: LamestWebserver (LameOS)\r\n";
+            rets += version + " " + status + "\r\n";
+            rets += "Host: " + host + "\r\n";
+            rets += "Date: " + date + "\r\n"; //do we need that?!
+            rets += "Server: LamestWebserver (LameOS)\r\n";
 
-            if (cookie != null)
+            if (cookies != null)
             {
-                ret += "Set-Cookie: ";
+                rets += "Set-Cookie: ";
 
-                for (int i = 0; i < cookie.Count; i++)
+                for (int i = 0; i < cookies.Count; i++)
                 {
-                    ret += cookie[i].Key + "= " + cookie[i].Value + "; path=/; secure; HttpOnly";
+                    rets += cookies[i].Key + "= " + cookies[i].Value + "; path=/; secure; HttpOnly";
 
-                    if (i + 1 < cookie.Count)
-                        ret += "\n";
+                    if (i + 1 < cookies.Count)
+                        rets += "\n";
                     else
-                        ret += "\r\n";
+                        rets += "\r\n";
                 }
             }
 
             if(modified.HasValue)
             {
-                ret += "Last-Modified: " + modified.Value.ToString(htmldateformat) + "\r\n";
+                rets += "Last-Modified: " + modified.Value.ToString(htmldateformat) + "\r\n";
             }
 
-            ret += "Connection: Keep-Alive\r\n";
+            rets += "Connection: Keep-Alive\r\n";
 
-            ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n";//"Content-Length: " + contentLenght + "\r\n";
-            ret += "Content-Length: " + contentLength + (short_?"\r\n\r\n":"\r\n\r\n\r\n");
+            if(contentType != null)
+                rets += "Content-Type: " + contentType + "; charset=UTF-8\r\n";
+
+            rets += "Content-Length: " + contentLength + (short_?"\r\n\r\n":"\r\n\r\n\r\n");
             //ret += "Keep-Alive: timeout=10, max=100\r\n";
             //ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n\r\n";
-            ret += data;
+
+            byte[] ret0 = enc.GetBytes(rets);
+            byte[] ret = new byte[ret0.Length + binaryData.Length];
+
+            Array.Copy(ret0, ret, ret0.Length);
+            Array.Copy(binaryData, 0, ret, ret0.Length, binaryData.Length);
 
             return ret;
         }
@@ -77,9 +86,6 @@ namespace LamestWebserver
         public HTTP_Packet()
         {
             //default constructor
-            //date = DateTime.Now.DayOfWeek.ToString().Substring(0,3) + ", " + DateTime.Now.Day + " " + Months[DateTime.Now.Month] + " " + DateTime.Now.Year + " " + 
-            //    DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"; //Tue, 21 Apr 2015 22:51:19 GMT
-
             date = DateTime.Now.ToString(htmldateformat);
         }
 
@@ -111,18 +117,18 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.data = linput[i].Substring(4, index - 4);
+                    h.requestData = linput[i].Substring(4, index - 4);
 
-                    for (int k = 0; k < h.data.Length - 1; k++)
+                    for (int k = 0; k < h.requestData.Length - 1; k++)
                     {
-                        if (h.data[k] == '?')
+                        if (h.requestData[k] == '?')
                         {
-                            string add = h.data.Substring(k + 1);
+                            string add = h.requestData.Substring(k + 1);
 
                             if (add[add.Length - 1] == ' ')
                                 add = add.Remove(add.Length - 1);
 
-                            h.data = h.data.Remove(k);
+                            h.requestData = h.requestData.Remove(k);
                             add = add.Replace('+', ' '); // HttpUtility.HtmlDecode(linput[k]);
 
                             for (int it = 0; it < add.Length - 1; it++)
@@ -183,18 +189,18 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.data = linput[i].Substring(4, index - 4);
+                    h.requestData = linput[i].Substring(4, index - 4);
 
-                    for (int k = 0; k < h.data.Length - 1; k++)
+                    for (int k = 0; k < h.requestData.Length - 1; k++)
                     {
-                        if (h.data[k] == '?')
+                        if (h.requestData[k] == '?')
                         {
-                            string add = h.data.Substring(k + 1);
+                            string add = h.requestData.Substring(k + 1);
 
                             if (add[add.Length - 1] == ' ')
                                 add = add.Remove(add.Length - 1);
 
-                            h.data = h.data.Remove(k);
+                            h.requestData = h.requestData.Remove(k);
                             add = add.Replace('+', ' '); //HttpUtility.HtmlDecode(linput[k]);
 
                             for (int it = 0; it < add.Length - 1; it++)
@@ -351,7 +357,7 @@ namespace LamestWebserver
                     if (DateTime.TryParse(linput[i].Substring(ifmodifiedsince.Length), out mod))
                         packet.modified = mod;
                 }
-                else if(packet.cookie == null && linput[i].Length > cookie_.Length && linput[i].Substring(0, cookie_.Length) == cookie_)
+                else if(packet.cookies == null && linput[i].Length > cookie_.Length && linput[i].Substring(0, cookie_.Length) == cookie_)
                 {
                     List<KeyValuePair<string, string>> cookies = new List<KeyValuePair<string, string>>();
 
@@ -386,7 +392,7 @@ namespace LamestWebserver
                         }
                     }
 
-                    packet.cookie = cookies;
+                    packet.cookies = cookies;
                 }
             }
 

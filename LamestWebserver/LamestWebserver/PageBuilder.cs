@@ -38,9 +38,14 @@ namespace LamestWebserver
         public List<string> scripts = new List<string>();
 
         /// <summary>
+        /// path to javascript code files
+        /// </summary>
+        public List<string> scriptLinks = new List<string>();
+
+        /// <summary>
         /// additional lines added to the "<head>" segment of the page
         /// </summary>
-        public string additionalHeadLines;
+        public string additionalHeadArguments;
 
         /// <summary>
         /// The icon to display
@@ -98,7 +103,7 @@ namespace LamestWebserver
             string ret = "<html>\n<head>\n<title>" + title + "</title>\n";
 
             if (!string.IsNullOrWhiteSpace(favicon))
-                ret += "<link rel=\"shortcut icon\" href='" + favicon + "'>\n";
+                ret += "<link rel=\"shortcut icon\" href='" + favicon + "'>\n<link rel=\"icon\" sizes=\"any\" mask=\"\" href=" + favicon + ">\n";
 
             for (int i = 0; i < stylesheetLinks.Count; i++)
             {
@@ -110,13 +115,27 @@ namespace LamestWebserver
                 ret += "<script type=\"text/javascript\">" + scripts[i] + "</script>\n";
             }
 
-            if (!string.IsNullOrWhiteSpace(stylesheetCode))
-                ret += "<style type=\"text/css\">" + stylesheetCode + "</style>";
+            for (int i = 0; i < scriptLinks.Count; i++)
+            {
+                ret += "<script type=\"text/javascript\" src=\"" + scriptLinks[i] + "\"></script>\n";
+            }
 
-            if (!string.IsNullOrWhiteSpace(additionalHeadLines))
-                ret += additionalHeadLines;
+            if (!string.IsNullOrWhiteSpace(stylesheetCode))
+                ret += "<style type=\"text/css\">" + stylesheetCode + "</style>\n";
+
+            if (!string.IsNullOrWhiteSpace(additionalHeadArguments))
+                ret += additionalHeadArguments + "\n";
 
             ret += "</head>\n<body ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -165,8 +184,9 @@ namespace LamestWebserver
 
     public abstract class HElement
     {
-        public string id = "";
-        public string name = "";
+        public string ID = "";
+        public string Name = "";
+        public string Class = "";
 
         public abstract string getContent(SessionData sessionData);
 
@@ -269,11 +289,14 @@ namespace LamestWebserver
                     ret += "onclick='" + onclick + "' ";
             }
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -306,11 +329,14 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(source))
                 ret += "src='" + source + "' ";
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -334,11 +360,14 @@ namespace LamestWebserver
         {
             string ret = "<p ";
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -366,11 +395,14 @@ namespace LamestWebserver
         {
             string ret = "<h" + level + " ";
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -390,7 +422,7 @@ namespace LamestWebserver
         public HInput(EInputType inputType, string name, string value = "")
         {
             this.inputType = inputType;
-            this.name = name;
+            this.Name = name;
             this.value = value;
         }
 
@@ -400,11 +432,14 @@ namespace LamestWebserver
 
             ret += "type='" + (inputType != EInputType.datetime_local ? inputType.ToString() : "datetime-local") + "' ";
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
 
             if (!string.IsNullOrWhiteSpace(value))
                 ret += "value='" + value + "' ";
@@ -460,11 +495,14 @@ namespace LamestWebserver
         {
             string ret = "<div ";
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -556,11 +594,14 @@ namespace LamestWebserver
                 ret += "action='" + InstantPageResponse.addOneTimeConditionalRedirect(redirectTRUE, redirectFALSE, true, conditionalCode) + "' ";
             }
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags + " ";
@@ -625,11 +666,14 @@ namespace LamestWebserver
             if (type != EButtonType.button)
                 ret += "type='" + type + "' ";
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (href.Length > 0 && type != EButtonType.submit)
             {
@@ -718,11 +762,14 @@ namespace LamestWebserver
         {
             string ret = "<" + (listType == EListType.OrderedList ? "ol" : "ul") + " ";
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -768,11 +815,14 @@ namespace LamestWebserver
         {
             string ret = "<table ";
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -836,11 +886,14 @@ namespace LamestWebserver
         {
             string ret = "<" + tagName + " ";
 
-            if (!string.IsNullOrWhiteSpace(id))
-                ret += "id='" + id + "' ";
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                ret += "name='" + name + "' ";
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -870,6 +923,7 @@ namespace LamestWebserver
         private bool dynamic;
         private string script;
         private ScriptCollection.scriptFuction scriptFunction;
+        
         /// <summary>
         /// generates a static script (not the ones that need SessionData or the SSID)
         /// </summary>
@@ -892,6 +946,82 @@ namespace LamestWebserver
         public override string getContent(SessionData sessionData)
         {
             return "<script type\"text/javascript\">\n" + (dynamic ? scriptFunction(sessionData, arguments) : script) + "\n</script>\n";
+        }
+    }
+
+    public class HScriptLink : HElement
+    {
+        public string URL;
+
+        public HScriptLink(string URL)
+        {
+            this.URL = URL;
+        }
+
+        public override string getContent(SessionData sessionData)
+        {
+            return "<script type\"text/javascript\" src=\"" + URL + "\"></script>\n";
+        }
+    }
+
+    public class HCanvas : HElement
+    {
+        public override string getContent(SessionData sessionData)
+        {
+            string ret = "<canvas ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            return ret + "></canvas>";
+        }
+    }
+
+    public class HTextArea : HElement
+    {
+        public uint? cols, rows;
+        public string value;
+        public string descriptionTags;
+
+        public HTextArea(string value = "", uint? cols = null, uint? rows = null)
+        {
+            this.value = value;
+            this.cols = cols;
+            this.rows = rows;
+        }
+
+        public override string getContent(SessionData sessionData)
+        {
+            string ret = "<textarea ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(value))
+                ret += "value='" + value + "' ";
+
+            if (cols.HasValue)
+                ret += "cols=\"" + cols.Value + "\" ";
+            
+            if (rows.HasValue)
+                ret += "rows=\"" + rows.Value + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            return ret + "></textarea>";
         }
     }
 

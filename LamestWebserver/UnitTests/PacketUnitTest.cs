@@ -16,14 +16,14 @@ namespace UnitTests
 
             HTTP_Packet p = HTTP_Packet.Constructor(ref packet, new IPEndPoint(1, 1337));
 
-            Assert.IsTrue(p.cookie.Count == 10);
+            Assert.IsTrue(p.cookies.Count == 10);
 
             string[] cookieNames = { "SRCHD", "SRCHUID", "SRCHUSR", "_SS", "_EDGE_S", "_EDGE_V", "MUID", "MUIDB", "SRCHHPGUSR", "WLS" };
             string[] cookieValues = { "AF=NOFORM", "V=2&GUID=CA60C8BCDD883D55ABC6A3FD52", "DOB=20160000", "SID=3614F82F6F05A0F4B8&bIm=4254", "F=1&SID=3614F7636664B8", "1", "39415A1EAC6C76", "3941EAC6C76", "CW=12&CH=19&DPR=1&UTC=10", "TS=63651" };
 
             for (int i = 0; i < 10; i++)
             {
-                Assert.AreEqual(p.cookie[i], new KeyValuePair<string, string>(cookieNames[i], cookieValues[i]));
+                Assert.AreEqual(p.cookies[i], new KeyValuePair<string, string>(cookieNames[i], cookieValues[i]));
             }
 
         }

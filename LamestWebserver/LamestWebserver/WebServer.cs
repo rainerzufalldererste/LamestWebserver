@@ -12,6 +12,7 @@ using System.IO.Compression;
 using System.Drawing.Imaging;
 using LamestScriptHook;
 using LamestWebserver.Collections;
+using System.IO;
 
 namespace LamestWebserver
 {
@@ -23,21 +24,21 @@ namespace LamestWebserver
         public int port;
         public string folder = "./web";
         public bool running = true;
-        public bool clearing = false;
         public AVLTree<string, PreloadedFile> cache = new AVLTree<string, PreloadedFile>(); // TODO: Change to AVLTree and use FileSystemWatcher
-        public int max_cache = 500;
-        public bool openPaths = true;
-        public System.Diagnostics.Process process = null;
-        public bool processIsInit = false;
-        public string lastCmdOut = "";
 
-        private List<string> hashes = new List<string>();
-        private List<Master.getContents> functions = new List<Master.getContents>();
+        private AVLHashMap<string, Master.getContents> pageResponses = new AVLHashMap<string, Master.getContents>(4096);
+        //private List<string> hashes = new List<string>();
+        //private List<Master.getContents> functions = new List<Master.getContents>();
         private bool csharp_bridge = true;
-        internal bool useCache = false;
+        internal bool useCache = true;
 
         Mutex cleanMutex = new Mutex();
         private bool silent;
+
+        private FileSystemWatcher fileSystemWatcher = null;
+        private UsableMutex cacheMutex = new UsableMutex();
+
+        private readonly byte[] crlf = new UTF8Encoding().GetBytes("\r\n");
 
         public WebServer(int port, string folder, bool silent = false)
         {
@@ -60,8 +61,16 @@ namespace LamestWebserver
             mThread.Start();
             this.silent = silent;
 
+            if (useCache)
+                setupFileSystemWatcher();
+
             if (!silent)
                 Console.WriteLine("WebServer started on port " + port + ".");
+
+            while (folder.EndsWith("\\") || folder.EndsWith("/"))
+            {
+                folder.Remove(folder.Length - 1);
+            }
         }
 
         internal WebServer(int port, string folder, bool cs_bridge, bool silent = false)
@@ -108,17 +117,6 @@ namespace LamestWebserver
                     catch (Exception) { }
                 }
             }
-        }
-
-        public bool cacheHas(string name, out PreloadedFile file)
-        {
-            if (!useCache)
-            {
-                file = default(PreloadedFile);
-                return false;
-            }
-
-            return cache.TryGetValue(name, out file);
         }
 
         public void stopServer()
@@ -203,39 +201,12 @@ namespace LamestWebserver
 
         public void addFunction(string hash, Master.getContents getc)
         {
-            int id = -1;
-
-            for (int i = 0; i < hashes.Count; i++)
-            {
-                if (hashes[i] == hash)
-                {
-                    id = i;
-                    break;
-                }
-            }
-
-            if(id > -1)
-            {
-                functions[id] = getc;
-            }
-            else
-            {
-                hashes.Add(hash);
-                functions.Add(getc);
-            }
+            pageResponses.Add(hash, getc);
         }
 
         public void removeFunction(string hash)
         {
-            for (int i = 0; i < hashes.Count; i++)
-            {
-                if(hashes[i] == hash)
-                {
-                    hashes.RemoveAt(i);
-                    functions.RemoveAt(i);
-                    return;
-                }
-            }
+            pageResponses.Remove(hash);
         }
 
         private void ListenAndStuff()
@@ -324,252 +295,82 @@ namespace LamestWebserver
                         {
                             continue;
                         }
-                        else if (htp.data == "")
+                        else if (htp.requestData == "")
                         {
                             HTTP_Packet htp_ = new HTTP_Packet()
                             {
                                 status = "501 Not Implemented",
-                                data = Master.getErrorMsg(
+                                binaryData = enc.GetBytes(Master.getErrorMsg(
                                     "Error 501: Not Implemented",
-                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
+                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
                             };
-
-                            htp_.contentLength = enc.GetByteCount(htp_.data);
-                            buffer = enc.GetBytes(htp_.getPackage());
+                            
+                            buffer = htp_.getPackage(enc);
                             nws.Write(buffer, 0, buffer.Length);
                         }
                         else
                         {
-                            int hashNUM = 0;
-                            bool found = false;
-
-                            while(htp.data.Length >= 2 && (htp.data[0] == ' ' || htp.data[0] == '/'))
+                            while(htp.requestData.Length >= 2 && (htp.requestData[0] == ' ' || htp.requestData[0] == '/'))
                             {
-                                htp.data = htp.data.Remove(0, 1);
+                                htp.requestData = htp.requestData.Remove(0, 1);
                             }
 
-                            for (; hashNUM < hashes.Count; hashNUM++)
-                            {
-                                if (hashes[hashNUM] == htp.data)
-                                {
-                                    found = true;
-                                    break;
-                                }
-                            }
+                            Master.getContents currentRequest = pageResponses[htp.requestData];
 
-                            if (found)
+                            if (currentRequest != null)
                             {
                                 HTTP_Packet htp_ = new HTTP_Packet();
 
                                 try
                                 {
-                                    htp_.data = functions[hashNUM].Invoke(new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder, htp.data, msg_, client, nws));
+                                    SessionData sessionData = new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, htp.cookies, folder, htp.requestData, msg_, client, nws);
+                                    htp_.binaryData = enc.GetBytes(currentRequest.Invoke(sessionData));
+
+                                    if(sessionData.Cookies.Count > 0)
+                                    {
+                                        htp_.cookies = sessionData.Cookies;
+                                    }
                                 }
-                                catch(Exception e)
+                                catch (Exception e)
                                 {
-                                    htp_.data = Master.getErrorMsg("Exception in Page Response for '"
-                                        + htp.data + "'", "<b>An Error occured while processing the output</b><br>"
+                                    htp_.binaryData = enc.GetBytes(Master.getErrorMsg("Exception in Page Response for '"
+                                        + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
+                                        + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + msg_.Replace("\r\n", "<br>") + "</div></p>"));
+                                }
+                                
+                                buffer = htp_.getPackage(enc);
+                                nws.Write(buffer, 0, buffer.Length);
+                            }
+                            else if (htp.requestData.Length > 3 && htp.requestData.Substring(htp.requestData.Length - 4).ToLower() == ".hcs" && File.Exists((folder != "/" ? folder : "") + "/" + htp.requestData))
+                            {
+                                string result = "";
+
+                                try
+                                {
+                                    result = Hook.resolveScriptFromFile(folder + htp.requestData, new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, htp.cookies, folder, htp.requestData, msg_, client, nws));
+                                }
+                                catch (Exception e)
+                                {
+                                    result = Master.getErrorMsg("Exception in C# Script for '"
+                                        + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
                                         + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                         + msg_.Replace("\r\n", "<br>") + "</div></p>");
                                 }
-                                
-                                htp_.contentLength = enc.GetByteCount(htp_.data);
-                                buffer = enc.GetBytes(htp_.getPackage());
+
+                                HTTP_Packet htp_ = new HTTP_Packet() { binaryData = enc.GetBytes(result) };
+                                buffer = htp_.getPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
-                            }
-                            else if (htp.data[htp.data.Length - 1] == '\\' || htp.data[htp.data.Length - 1] == '/')
-                            {
-                                PreloadedFile cachedFile;
-                                bool cached = cacheHas(folder + htp.data + "index.html", out cachedFile);
 
-                                if (cached)
-                                {
-                                    HTTP_Packet htp_ = new HTTP_Packet() { data = cachedFile.contents, contentLength = cachedFile.size };
-                                    buffer = enc.GetBytes(htp_.getPackage());
-                                    nws.Write(buffer, 0, buffer.Length);
-                                }
-                                else
-                                {
-                                    if (System.IO.File.Exists(folder + htp.data + "index.html"))
-                                    {
-                                        string s = System.IO.File.ReadAllText(folder + htp.data + "index.html");
-                                        HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length };
-                                        buffer = enc.GetBytes(htp_.getPackage());
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        if (useCache && cache.Count < max_cache)
-                                        {
-                                            string name = folder + htp.data + "index.html";
-                                            cache.Add(name, new PreloadedFile(name, s, htp_.contentLength));
-                                        }
-
-                                        buffer = null;
-                                    }
-                                    else
-                                    {
-                                        HTTP_Packet htp_ = new HTTP_Packet()
-                                        {
-                                            status = "403 Forbidden",
-                                            data = Master.getErrorMsg(
-                                                "Error 403: Forbidden",
-                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
-                                        };
-
-                                        htp_.contentLength = enc.GetBytes(htp_.data).Length;
-                                        buffer = enc.GetBytes(htp_.getPackage());
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        buffer = null;
-                                    }
-                                }
+                                buffer = null;
+                                result = null;
                             }
                             else
                             {
-                                PreloadedFile cachedFile;
-                                bool cached = this.cacheHas(folder + htp.data, out cachedFile);
+                                buffer = getFile(htp.requestData, htp, enc, msg_).getPackage(enc);
+                                nws.Write(buffer, 0, buffer.Length);
 
-                                if (cached)
-                                {
-                                    HTTP_Packet htp_ = new HTTP_Packet() { data = cachedFile.contents, contentLength = cachedFile.size };
-                                    buffer = enc.GetBytes(htp_.getPackage());
-                                    nws.Write(buffer, 0, buffer.Length);
-                                }
-                                else if (System.IO.File.Exists((folder != "/" ? folder : "") + "/" + htp.data))
-                                {
-                                    if (htp.data.Substring(htp.data.Length - 4) == ".bmp")
-                                    {
-                                        byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + "/" + htp.data);
-
-                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "img/Bitmap", data = "" };
-                                        List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
-                                        blist.AddRange(b);
-                                        blist.AddRange(enc.GetBytes("\r\n"));
-                                        buffer = blist.ToArray();
-                                        blist = null;
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        blist = null;
-                                        buffer = null;
-                                        b = null;
-                                    }
-                                    else if (htp.data.Substring(htp.data.Length - 4) == ".jpg" || htp.data.Substring(htp.data.Length - 5) == ".jpeg")
-                                    {
-                                        byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + "/" + htp.data);
-
-                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "image/jpeg", data = "" };
-                                        List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
-                                        blist.AddRange(b);
-                                        blist.AddRange(enc.GetBytes("\r\n"));
-                                        buffer = blist.ToArray();
-                                        blist = null;
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        blist = null;
-                                        buffer = null;
-                                        b = null;
-                                    }
-                                    else if (htp.data.Substring(htp.data.Length - 4) == ".png")
-                                    {
-                                        byte[] b = System.IO.File.ReadAllBytes((folder != "/" ? folder : "") + "/" + htp.data);
-
-                                        HTTP_Packet htp_ = new HTTP_Packet() { contentLength = b.Length, contentType = "image/png", data = "" };
-                                        List<byte> blist = enc.GetBytes(htp_.getPackage()).ToList();
-                                        blist.AddRange(b);
-                                        blist.AddRange(enc.GetBytes("\r\n"));
-                                        buffer = blist.ToArray();
-                                        blist = null;
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        blist = null;
-                                        buffer = null;
-                                        b = null;
-                                    }
-                                    else if (htp.data.Substring(htp.data.Length - 4) == ".css")
-                                    {
-                                        string s = System.IO.File.ReadAllText(folder + "/" + htp.data);
-                                        HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length, contentType = "text/css" };
-                                        buffer = enc.GetBytes(htp_.getPackage());
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        buffer = null;
-                                        s = null;
-
-                                        if (useCache && cache.Count < max_cache)
-                                        {
-                                            string name = folder + htp.data;
-                                            cache.Add(name, new PreloadedFile(name, s, htp_.contentLength));
-                                        }
-                                    }
-                                    else if (htp.data.Substring(htp.data.Length - 4) == ".js")
-                                    {
-                                        string s = System.IO.File.ReadAllText(folder + "/" + htp.data);
-                                        HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length, contentType = "text/javascript" };
-                                        buffer = enc.GetBytes(htp_.getPackage());
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        buffer = null;
-                                        s = null;
-
-                                        if (useCache && cache.Count < max_cache)
-                                        {
-                                            string name = folder + htp.data;
-                                            cache.Add(name, new PreloadedFile(name, s, htp_.contentLength));
-                                        }
-                                    }
-                                    else if (htp.data.Substring(htp.data.Length - 4) == ".hcs")
-                                    {
-                                        string result = "";
-
-                                        try
-                                        {
-                                            result = Hook.resolveScriptFromFile(folder + "/" + htp.data, new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, folder, htp.data, msg_, client, nws));
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            result = Master.getErrorMsg("Exception in C# Script for '"
-                                                + htp.data + "'", "<b>An Error occured while processing the output</b><br>"
-                                                + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                + msg_.Replace("\r\n", "<br>") + "</div></p>");
-                                        }
-
-                                        HTTP_Packet htp_ = new HTTP_Packet() { data = result, contentLength = enc.GetBytes(result).Length };
-                                        buffer = enc.GetBytes(htp_.getPackage());
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        buffer = null;
-                                        result = null;
-                                    }
-                                    else
-                                    {
-                                        string s = System.IO.File.ReadAllText(folder + "/" + htp.data);
-                                        HTTP_Packet htp_ = new HTTP_Packet() { data = s, contentLength = enc.GetBytes(s).Length };
-                                        buffer = enc.GetBytes(htp_.getPackage());
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        buffer = null;
-                                        s = null;
-
-                                        if (useCache && cache.Count < max_cache)
-                                        {
-                                            string name = folder + htp.data;
-                                            cache.Add(name, new PreloadedFile(name, s, htp_.contentLength));
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    HTTP_Packet htp_ = new HTTP_Packet()
-                                    {
-                                        status = "404 File Not Found",
-                                        data = Master.getErrorMsg(
-                                            "Error 404: Page Not Found",
-                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>")
-                                    };
-
-                                    htp_.contentLength = enc.GetBytes(htp_.data).Length;
-                                    buffer = enc.GetBytes(htp_.getPackage());
-                                    nws.Write(buffer, 0, buffer.Length);
-                                }
+                                buffer = null;
                             }
                         }
                     }
@@ -585,10 +386,353 @@ namespace LamestWebserver
             }
         }
 
-        private HTTP_Packet getFile(string URL, out bool found)
+        private HTTP_Packet getFile(string URL, HTTP_Packet requestPacket, UTF8Encoding enc, string fullPacketString)
         {
-            // TODO: Support HTTP 304 Not Modified https://tools.ietf.org/html/rfc7232
-            throw new NotImplementedException();
+            string fileName = URL;
+            byte[] contents = null;
+            DateTime? lastModified = null;
+            PreloadedFile file;
+            bool notModified = false;
+            string extention = null;
+
+            try
+            {
+                if (fileName.Length == 0 || fileName[0] != '/')
+                    fileName = fileName.Insert(0, "/");
+
+                if (fileName[fileName.Length - 1] == '/') // is directory?
+                {
+                    fileName += "index.html";
+                    extention = "html";
+
+                    if (useCache && getFromCache(fileName, out file))
+                    {
+                        lastModified = file.lastModified;
+
+                        if (requestPacket.modified != null && requestPacket.modified.Value < lastModified)
+                        {
+                            contents = file.contents;
+
+                            extention = getExtention(fileName);
+                        }
+                        else
+                        {
+                            contents = file.contents;
+
+                            notModified = requestPacket.modified != null;
+                        }
+                    }
+                    else if (File.Exists(folder + fileName))
+                    {
+                        contents = readFile(fileName, enc, false);
+                        lastModified = File.GetLastWriteTime(folder + fileName);
+
+                        if (useCache)
+                        {
+                            using (cacheMutex.Lock())
+                            {
+                                cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, false));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return new HTTP_Packet()
+                        {
+                            status = "403 Forbidden",
+                            binaryData = enc.GetBytes(Master.getErrorMsg(
+                                "Error 403: Forbidden",
+                                "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
+                        };
+                    }
+                }
+                else if (useCache && getFromCache(fileName, out file))
+                {
+                    extention = getExtention(fileName);
+                    lastModified = file.lastModified;
+                    
+                    if (requestPacket.modified != null && requestPacket.modified.Value < lastModified)
+                    {
+                        contents = file.contents;
+
+                        extention = getExtention(fileName);
+                    }
+                    else
+                    {
+                        contents = file.contents;
+
+                        notModified = requestPacket.modified != null;
+                    }
+                }
+                else if (File.Exists(folder + fileName))
+                {
+                    extention = getExtention(fileName);
+                    bool isBinary = fileIsBinary(fileName, ref extention);
+                    contents = readFile(fileName, enc, isBinary);
+                    lastModified = File.GetLastWriteTime(folder + fileName);
+
+                    if (useCache)
+                    {
+                        using (cacheMutex.Lock())
+                        {
+                            cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, isBinary));
+                        }
+                    }
+                }
+                else
+                {
+                    return new HTTP_Packet()
+                    {
+                        status = "404 File Not Found",
+                        binaryData = enc.GetBytes(Master.getErrorMsg(
+                            "Error 404: Page Not Found",
+                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
+                    };
+                }
+
+                if (notModified)
+                {
+                    return new HTTP_Packet() { status = "304 Not Modified", contentType = null, modified = lastModified, binaryData = crlf };
+                }
+                else
+                {
+                    return new HTTP_Packet() { contentType = getMimeType(extention), binaryData = contents, modified = lastModified };
+                }
+            }
+            catch(Exception e)
+            {
+                return new HTTP_Packet()
+                {
+                    status = "500 Internal Server Error",
+                    binaryData = enc.GetBytes(Master.getErrorMsg(
+                        "Error 500: Internal Server Error",
+                        "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + e.ToString().Replace("\r\n","<br>") + "</div><br><hr><br><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
+                };
+            }
+        }
+
+        public bool fileIsBinary(string fileName, ref string extention)
+        {
+            if (fileName.Length < 2)
+                return true;
+
+            extention = getExtention(fileName);
+
+            switch(fileName)
+            {
+                case "html":
+                case "css":
+                case "js":
+                case "txt":
+                case "htm":
+                case "xml":
+                case "json":
+                case "rtf":
+                case "xhtml":
+                case "shtml":
+                case "csv":
+                    return false;
+                default: return true;
+            }
+        }
+
+        private string getExtention(string fileName)
+        {
+            if (fileName.Length < 2)
+                return "";
+
+            for (int i = fileName.Length - 2; i >= 0; i--)
+            {
+                if (fileName[i] == '.')
+                {
+                    fileName = fileName.Substring(i + 1).ToLower();
+                    return fileName;
+                }
+            }
+
+            return "";
+        }
+
+        public bool getFromCache(string name, out PreloadedFile file)
+        {
+            using (cacheMutex.Lock())
+            {
+                if (cache.TryGetValue(name, out file))
+                {
+                    file.loadCount++;
+                    file = file.Clone();
+                }
+                else
+                    return false;
+            }
+
+            return true;
+        }
+
+        public string getMimeType(string extention)
+        {
+            switch(extention)
+            {
+                case "html":
+                    return "text/html";
+                case "css":
+                    return "text/css";
+                case "js":
+                    return "text/javascript";
+                case "htm":
+                case "xhtml":
+                case "shtml":
+                    return "text/html";
+                case "txt":
+                    return "text/plain";
+                case "png":
+                    return "image/png";
+                case "jpeg":
+                case "jpg":
+                case "jpe":
+                    return "image/jpeg";
+                case "pdf":
+                    return "application/pdf";
+                case "zip":
+                    return "application/zip";
+                case "ico":
+                    return "image/x-icon";
+                case "xml":
+                    return "text/xml";
+                case "json":
+                    return "application/json";
+                case "rtf":
+                    return "text/rtf";
+                case "csv":
+                    return "text/comma-separated-values";
+                case "doc":
+                case "dot":
+                    return "application/msword";
+                case "docx":
+                    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                case "xls":
+                case "xla":
+                    return "application/msexcel";
+                case "xlsx":
+                    return "application/vnd.openxmlformats-officedocument. spreadsheetml.sheet";
+                case "ppt":
+                case "ppz":
+                case "pps":
+                case "pot":
+                    return "application/mspowerpoint";
+                case "gif":
+                    return "image/gif";
+                case "bmp":
+                    return "image";
+                case "wav":
+                    return "audio/x-wav";
+                case "mp2":
+                case "mp3":
+                case "aac":
+                    return "audio/x-mpeg";
+                case "aif":
+                case "aiff":
+                case "aifc":
+                    return "audio/x-aiff";
+                case "mpeg":
+                case "mpg":
+                case "mpe":
+                    return "video/mpeg";
+                case "qt":
+                case "mov":
+                    return "video/quicktime";
+                case "avi":
+                    return "video/x-msvideo";
+                case "tiff":
+                case "tif":
+                    return "image/tiff";
+                case "swf":
+                case "cab":
+                    return "application/x-shockwave-flash";
+                case "hlp":
+                case "chm":
+                    return "application/mshelp";
+                case "midi":
+                case "mid":
+                    return "audio/x-midi";
+                default:
+                    return "application/octet-stream";
+            }
+        }
+
+        public bool cacheHas(string name)
+        {
+            using (cacheMutex.Lock())
+            {
+                return cache.ContainsKey(name);
+            }
+        }
+
+        public void setupFileSystemWatcher()
+        {
+            fileSystemWatcher = new FileSystemWatcher(folder);
+
+            fileSystemWatcher.Renamed += (object sender, RenamedEventArgs e) => 
+            {
+                using (cacheMutex.Lock())
+                {
+                    PreloadedFile file;
+
+                    if (cache.TryGetValue(e.OldName, out file))
+                    {
+                        cache.Remove(e.OldName);
+                        file.filename = e.Name;
+                        file.contents = readFile(file.filename, new UTF8Encoding(), file.isBinary);
+                        file.size = file.contents.Length;
+                        file.lastModified = File.GetLastWriteTime(folder + e.Name);
+                        cache.Add(e.Name, file);
+                    }
+                }
+            };
+
+            fileSystemWatcher.Deleted += (object sender, FileSystemEventArgs e) => 
+            {
+                using (cacheMutex.Lock())
+                {
+                    cache.Remove(e.Name);
+                }
+            };
+
+            fileSystemWatcher.Changed += (object sender, FileSystemEventArgs e) => 
+            {
+                using (cacheMutex.Lock())
+                {
+                    PreloadedFile file = cache[e.Name];
+
+                    if(file != null)
+                    {
+                        file.contents = readFile(file.filename, new UTF8Encoding(), file.isBinary);
+                        file.size = file.contents.Length;
+                        file.lastModified = DateTime.Now;
+                    }
+                }
+            };
+        }
+
+        public byte[] readFile(string filename, UTF8Encoding enc, bool isBinary = false)
+        {
+            if (isBinary)
+            {
+                return File.ReadAllBytes(folder + filename);
+            }
+            else
+            {
+                if(GetEncoding(folder, filename) == Encoding.UTF8)
+                {
+                    return File.ReadAllBytes(folder + filename);
+                }
+                else
+                {
+                    string content = File.ReadAllText(folder + filename);
+                    UTF8Encoding utf8Encoding = new UTF8Encoding();
+                    return utf8Encoding.GetBytes(content);
+                }
+            }
         }
 
         /// <summary>
@@ -615,19 +759,46 @@ namespace LamestWebserver
 
             return true;
         }
+
+        /// <summary>
+        /// Source: http://stackoverflow.com/questions/3825390/effective-way-to-find-any-files-encoding
+        /// Determines a text file's encoding by analyzing its byte order mark (BOM).
+        /// Defaults to ASCII when detection of the text file's endianness fails.
+        /// </summary>
+        /// <param name="filename">The text file to analyze.</param>
+        /// <returns>The detected encoding.</returns>
+        public static Encoding GetEncoding(string folder, string filename)
+        {
+            using (StreamReader reader = new StreamReader(folder + filename, Encoding.ASCII, true))
+            {
+                reader.Peek(); // you need this!
+                return reader.CurrentEncoding;
+            }
+        }
     }
 
-    public struct PreloadedFile
+    public class PreloadedFile
     {
         public string filename;
-        public string contents;
+        public byte[] contents;
         public int size;
+        public DateTime lastModified;
+        public bool isBinary;
+        public int loadCount;
 
-        public PreloadedFile(string name, string contents, int size)
+        public PreloadedFile(string filename, byte[] contents, int size, DateTime lastModified, bool isBinary)
         {
-            this.filename = name;
+            this.filename = filename;
             this.contents = contents;
             this.size = size;
+            this.lastModified = lastModified;
+            this.isBinary = isBinary;
+            this.loadCount = 1;
+        }
+
+        internal PreloadedFile Clone()
+        {
+            return new PreloadedFile((string)filename.Clone(), contents.ToArray(), size, lastModified, isBinary);
         }
     }
 }

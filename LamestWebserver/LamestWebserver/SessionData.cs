@@ -44,7 +44,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="user"></param>
         /// <returns></returns>
-        internal static string getSSIDforUser(string user)
+        internal static string getSSIDforUser(string user, out bool isNewSSID)
         {
             int? userID = getIndexFromList(user, UserNames);
             
@@ -86,10 +86,65 @@ namespace LamestWebserver
 #endif
             }
 
-            if(SessionIdRereferencingMode == ESessionIdRereferencingMode.AlwaysRenew)
+            isNewSSID = false;
+
+            if (SessionIdRereferencingMode == ESessionIdRereferencingMode.AlwaysRenew)
+            {
                 UserHashes[userID.Value] = generateHash();
-            else if(SessionIdRereferencingMode == ESessionIdRereferencingMode.Keep && UserHashes[userID.Value] == null)
+                isNewSSID = true;
+            }
+            else if (SessionIdRereferencingMode == ESessionIdRereferencingMode.Keep && UserHashes[userID.Value] == null)
+            {
+                isNewSSID = true;
                 UserHashes[userID.Value] = generateHash();
+            }
+
+            return UserHashes[userID.Value];
+        }
+
+        internal static string forceGetNextSSID(string user)
+        {
+            int? userID = getIndexFromList(user, UserNames);
+
+            if (!userID.HasValue)
+            {
+                mutex.WaitOne();
+
+                UserNames.Add(user);
+                userID = UserNames.Count - 1;
+                UserHashes.Add(null);
+                FilePerUserNames.Add(new List<string>());
+                FilePerUserObjects.Add(new List<Dictionary<string, object>>());
+                UserObjects.Add(new Dictionary<string, object>());
+
+#if PERSISTENT_DATA
+                persistencyMutex.WaitOne();
+
+                try
+                {
+                    if (persistentUserData == null)
+                        readPersistency();
+
+                    persistentUserDataHashes.Add(new List<string>());
+                    persistentUserData.Add(new List<object>());
+                    writePersistency();
+
+                    persistencyMutex.ReleaseMutex();
+                    mutex.ReleaseMutex();
+                }
+                catch (Exception e)
+                {
+                    persistencyMutex.ReleaseMutex();
+                    mutex.ReleaseMutex();
+
+                    throw new Exception(e.Message, e);
+                }
+#else
+                mutex.ReleaseMutex();
+#endif
+            }
+
+            UserHashes[userID.Value] = generateHash();
 
             return UserHashes[userID.Value];
         }
@@ -381,6 +436,11 @@ namespace LamestWebserver
         public List<string> varsHEAD;
 
         /// <summary>
+        /// Cookies to set in the client browser
+        /// </summary>
+        public List<KeyValuePair<string, string>> Cookies = new List<KeyValuePair<string, string>>();
+
+        /// <summary>
         /// The Variables mentinoed in the HTTP POST packet
         /// </summary>
         public List<string> varsPOST;
@@ -428,9 +488,14 @@ namespace LamestWebserver
         /// <summary>
         /// The EndPoint of the server
         /// </summary>
-        private System.Net.EndPoint _localEndPoint;
+        public System.Net.EndPoint _localEndPoint;
 
-        public SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws)
+        /// <summary>
+        /// The cookies sent by the client to the server
+        /// </summary>
+        public List<KeyValuePair<string, string>> receivedCookies;
+
+        public SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, List<KeyValuePair<string, string>> Cookies, string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws)
         {
             this.varsHEAD = additionalHEAD;
             this.varsPOST = additionalPOST;
@@ -438,6 +503,7 @@ namespace LamestWebserver
             this.valuesPOST = valuesPOST;
             this.path = path;
             this.file = file;
+            this.receivedCookies = Cookies;
 
             this._rawPacket = packet;
             this._tcpClient = client;
@@ -511,7 +577,9 @@ namespace LamestWebserver
             this.userName = userName;
             knownUser = true;
 
-            ssid = SessionContainer.getSSIDforUser(userName);
+            bool isNewSSID;
+
+            ssid = SessionContainer.getSSIDforUser(userName, out isNewSSID);
             userID = SessionContainer.getUserIDFromSSID(ssid);
 
             userName = SessionContainer.getUserNameAt(userID.Value);
@@ -519,20 +587,37 @@ namespace LamestWebserver
             userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
 #endif
 
+            // TODO: if cookies implemented && isNewSSID: setCookie ssid
+
             return ssid;
         }
 
         /// <summary>
-        /// gets a new SSID for the current user needed for higher security variants (multiple tabs are not possible!)
+        /// gets a new SSID for the current user needed for higher level security
         /// </summary>
         /// <returns>the new ssid</returns>
-        public string getNextSSID()
+        public string getNextSSID(out bool isNewSSID)
         {
             if(!knownUser)
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
 
-            return ssid = SessionContainer.getSSIDforUser(userName);
+            return ssid = SessionContainer.getSSIDforUser(userName, out isNewSSID);
         }
+
+        /// <summary>
+        /// _FORCES_ to get a new SSID for the current user needed for higher level security
+        /// </summary>
+        /// <returns>the new ssid</returns>
+        public string forceGetNextSSID()
+        {
+            if (!knownUser)
+                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
+
+            // TODO: if cookies implemented && isNewSSID: setCookie ssid
+
+            return ssid = SessionContainer.forceGetNextSSID(userName);
+        }
+
 
         // ===============================================================================================================================================
         // ===============================================================================================================================================
@@ -856,7 +941,7 @@ namespace LamestWebserver
             if (!knownUser)
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
             
-            getNextSSID();
+            SessionContainer.forceGetNextSSID(userName);
             ssid = "";
         }
     }

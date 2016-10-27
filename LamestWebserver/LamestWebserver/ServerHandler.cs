@@ -253,7 +253,8 @@ namespace LamestWebserver
                             };
                             readme = true_;
                             break;
-
+                            
+                            /*
                         case "cachesz":
                             {
                                 readme = false_;
@@ -276,6 +277,7 @@ namespace LamestWebserver
                             };
                             readme = true_;
                             break;
+                            */
 
                         case "cache":
                             {
