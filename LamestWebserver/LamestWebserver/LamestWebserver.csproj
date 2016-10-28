@@ -99,6 +99,7 @@
     <Compile Include="Collections\SerializableKeyValuePair.cs" />
     <Compile Include="Hook.cs" />
     <Compile Include="HTTP_Packet.cs" />
+    <Compile Include="JSBuilder.cs" />
     <Compile Include="Master.cs" />
     <Compile Include="PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />

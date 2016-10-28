@@ -39,6 +39,7 @@ namespace LamestWebserver
         private UsableMutex cacheMutex = new UsableMutex();
 
         private readonly byte[] crlf = new UTF8Encoding().GetBytes("\r\n");
+        private Task<TcpClient> tcpRcvTask;
 
         public WebServer(int port, string folder, bool silent = false)
         {
@@ -97,6 +98,9 @@ namespace LamestWebserver
             mThread.Start();
             this.silent = silent;
 
+            if (useCache)
+                setupFileSystemWatcher();
+
             if (!silent)
                 Console.WriteLine("WebServer started on port " + port + ".");
         }
@@ -131,9 +135,15 @@ namespace LamestWebserver
 
             try
             {
-                mThread.Abort();
+                mThread.Suspend();//.Abort();
             }
             catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
+
+            try
+            {
+                tcpRcvTask.Dispose();
+            }
+            catch (Exception) { }
 
             Console.WriteLine("Main Thread stopped! - port: " + port + " - folder: " + folder);
 
@@ -143,7 +153,7 @@ namespace LamestWebserver
             {
                 try
                 {
-                    threads[0].Abort();
+                    threads[0].Suspend();//.Abort();
                 }
                 catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
                 threads.RemoveAt(0);
@@ -225,29 +235,33 @@ namespace LamestWebserver
                 {
                     //if (tcpListener.Pending())
                     //{
-                        // TcpClient tcpClient = tcpListener.AcceptTcpClient();
-                        Task<TcpClient> tcpRcvTask = tcpListener.AcceptTcpClientAsync();
-                        tcpRcvTask.Wait();
-                        TcpClient tcpClient = tcpRcvTask.Result;
-                        Thread t = new Thread(new ParameterizedThreadStart(DoStuff));
-                        threads.Add(t);
-                        t.Start((object)tcpClient);
-                        ServerHandler.addToStuff("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
+                    // TcpClient tcpClient = tcpListener.AcceptTcpClient();
+                    tcpRcvTask = tcpListener.AcceptTcpClientAsync();
+                    tcpRcvTask.Wait();
+                    TcpClient tcpClient = tcpRcvTask.Result;
+                    Thread t = new Thread(new ParameterizedThreadStart(DoStuff));
+                    threads.Add(t);
+                    t.Start((object)tcpClient);
+                    ServerHandler.addToStuff("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
-                        if (threads.Count % 25 == 0)
-                        {
-                            threads.Add(new Thread(new ThreadStart(cleanThreads)));
-                            threads[threads.Count - 1].Start();
-                        }
+                    if (threads.Count % 25 == 0)
+                    {
+                        threads.Add(new Thread(new ThreadStart(cleanThreads)));
+                        threads[threads.Count - 1].Start();
+                    }
                     /*}
                     else
                     {
                         Thread.Sleep(1);
                     }*/
                 }
+                catch(ThreadAbortException)
+                {
+                    break;
+                }
                 catch (Exception e)
                 {
-                    if(!silent)
+                    if (!silent)
                         Console.WriteLine("The TcpListener failed.\n" + e + "\n");
                 }
             }
@@ -291,7 +305,7 @@ namespace LamestWebserver
 
                     try
                     {
-                        if(htp.version == "POST_PACKET_INCOMING")
+                        if (htp.version == "POST_PACKET_INCOMING")
                         {
                             continue;
                         }
@@ -304,13 +318,13 @@ namespace LamestWebserver
                                     "Error 501: Not Implemented",
                                             "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
                             };
-                            
+
                             buffer = htp_.getPackage(enc);
                             nws.Write(buffer, 0, buffer.Length);
                         }
                         else
                         {
-                            while(htp.requestData.Length >= 2 && (htp.requestData[0] == ' ' || htp.requestData[0] == '/'))
+                            while (htp.requestData.Length >= 2 && (htp.requestData[0] == ' ' || htp.requestData[0] == '/'))
                             {
                                 htp.requestData = htp.requestData.Remove(0, 1);
                             }
@@ -326,7 +340,7 @@ namespace LamestWebserver
                                     SessionData sessionData = new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, htp.cookies, folder, htp.requestData, msg_, client, nws);
                                     htp_.binaryData = enc.GetBytes(currentRequest.Invoke(sessionData));
 
-                                    if(sessionData.Cookies.Count > 0)
+                                    if (sessionData.Cookies.Count > 0)
                                     {
                                         htp_.cookies = sessionData.Cookies;
                                     }
@@ -338,7 +352,7 @@ namespace LamestWebserver
                                         + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                         + msg_.Replace("\r\n", "<br>") + "</div></p>"));
                                 }
-                                
+
                                 buffer = htp_.getPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
                             }
@@ -425,7 +439,7 @@ namespace LamestWebserver
                     else if (File.Exists(folder + fileName))
                     {
                         contents = readFile(fileName, enc, false);
-                        lastModified = File.GetLastWriteTime(folder + fileName);
+                        lastModified = File.GetLastWriteTimeUtc(folder + fileName);
 
                         if (useCache)
                         {
@@ -450,7 +464,7 @@ namespace LamestWebserver
                 {
                     extention = getExtention(fileName);
                     lastModified = file.lastModified;
-                    
+
                     if (requestPacket.modified != null && requestPacket.modified.Value < lastModified)
                     {
                         contents = file.contents;
@@ -467,9 +481,9 @@ namespace LamestWebserver
                 else if (File.Exists(folder + fileName))
                 {
                     extention = getExtention(fileName);
-                    bool isBinary = fileIsBinary(fileName, ref extention);
+                    bool isBinary = fileIsBinary(fileName, extention);
                     contents = readFile(fileName, enc, isBinary);
-                    lastModified = File.GetLastWriteTime(folder + fileName);
+                    lastModified = File.GetLastWriteTimeUtc(folder + fileName);
 
                     if (useCache)
                     {
@@ -499,26 +513,24 @@ namespace LamestWebserver
                     return new HTTP_Packet() { contentType = getMimeType(extention), binaryData = contents, modified = lastModified };
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return new HTTP_Packet()
                 {
                     status = "500 Internal Server Error",
                     binaryData = enc.GetBytes(Master.getErrorMsg(
                         "Error 500: Internal Server Error",
-                        "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + e.ToString().Replace("\r\n","<br>") + "</div><br><hr><br><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
+                        "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + e.ToString().Replace("\r\n", "<br>") + "</div><br><hr><br><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
                 };
             }
         }
 
-        public bool fileIsBinary(string fileName, ref string extention)
+        public bool fileIsBinary(string fileName, string extention)
         {
             if (fileName.Length < 2)
                 return true;
 
-            extention = getExtention(fileName);
-
-            switch(fileName)
+            switch (extention)
             {
                 case "html":
                 case "css":
@@ -571,7 +583,7 @@ namespace LamestWebserver
 
         public string getMimeType(string extention)
         {
-            switch(extention)
+            switch (extention)
             {
                 case "html":
                     return "text/html";
@@ -672,75 +684,103 @@ namespace LamestWebserver
         {
             fileSystemWatcher = new FileSystemWatcher(folder);
 
-            fileSystemWatcher.Renamed += (object sender, RenamedEventArgs e) => 
+            fileSystemWatcher.Renamed += (object sender, RenamedEventArgs e) =>
             {
                 using (cacheMutex.Lock())
                 {
-                    PreloadedFile file;
+                    PreloadedFile file, oldfile = cache["/" + e.OldName];
 
-                    if (cache.TryGetValue(e.OldName, out file))
+                    try
                     {
-                        cache.Remove(e.OldName);
-                        file.filename = e.Name;
-                        file.contents = readFile(file.filename, new UTF8Encoding(), file.isBinary);
-                        file.size = file.contents.Length;
-                        file.lastModified = File.GetLastWriteTime(folder + e.Name);
-                        cache.Add(e.Name, file);
+                        if (cache.TryGetValue(e.OldName, out file))
+                        {
+                            cache.Remove("/" + e.OldName);
+                            file.filename = "/" + e.Name;
+                            file.contents = readFile(file.filename, new UTF8Encoding(), file.isBinary);
+                            file.size = file.contents.Length;
+                            file.lastModified = File.GetLastWriteTimeUtc(folder + e.Name);
+                            cache.Add(e.Name, file);
+                        }
+                    }
+                    catch(Exception)
+                    {
+                        oldfile.filename = "/" + e.Name;
+                        cache["/" + e.Name] = oldfile;
                     }
                 }
             };
 
-            fileSystemWatcher.Deleted += (object sender, FileSystemEventArgs e) => 
+            fileSystemWatcher.Deleted += (object sender, FileSystemEventArgs e) =>
             {
                 using (cacheMutex.Lock())
                 {
-                    cache.Remove(e.Name);
+                    cache.Remove("/" + e.Name);
                 }
             };
 
-            fileSystemWatcher.Changed += (object sender, FileSystemEventArgs e) => 
+            fileSystemWatcher.Changed += (object sender, FileSystemEventArgs e) =>
             {
                 using (cacheMutex.Lock())
                 {
-                    PreloadedFile file = cache[e.Name];
+                    PreloadedFile file = cache["/" + e.Name];
 
-                    if(file != null)
+                    try
                     {
-                        file.contents = readFile(file.filename, new UTF8Encoding(), file.isBinary);
-                        file.size = file.contents.Length;
-                        file.lastModified = DateTime.Now;
+                        if (file != null)
+                        {
+                            file.contents = readFile(file.filename, new UTF8Encoding(), file.isBinary);
+                            file.size = file.contents.Length;
+                            file.lastModified = DateTime.Now;
+                        }
                     }
+                    catch (Exception) { };
                 }
             };
+
+            fileSystemWatcher.EnableRaisingEvents = true;
         }
 
         public byte[] readFile(string filename, UTF8Encoding enc, bool isBinary = false)
         {
-            if (isBinary)
+            int i = 10;
+
+            while (i-- > 0) // Chris: if the file has currently been changed you probably have to wait until the writing process has finished
             {
-                return File.ReadAllBytes(folder + filename);
-            }
-            else
-            {
-                if(GetEncoding(folder, filename) == Encoding.UTF8)
+                try
                 {
-                    return File.ReadAllBytes(folder + filename);
+                    if (isBinary)
+                    {
+                        return File.ReadAllBytes(folder + filename);
+                    }
+                    else
+                    {
+                        if (GetEncoding(folder, filename) == Encoding.UTF8)
+                        {
+                            return File.ReadAllBytes(folder + filename);
+                        }
+                        else
+                        {
+                            string content = File.ReadAllText(folder + filename);
+                            UTF8Encoding utf8Encoding = new UTF8Encoding();
+                            return utf8Encoding.GetBytes(content);
+                        }
+                    }
                 }
-                else
+                catch (IOException)
                 {
-                    string content = File.ReadAllText(folder + filename);
-                    UTF8Encoding utf8Encoding = new UTF8Encoding();
-                    return utf8Encoding.GetBytes(content);
+                    System.Threading.Thread.Sleep(2);
                 }
             }
+
+            throw new Exception("Failed to read from '" + filename + "'.");
         }
 
-        /// <summary>
-        /// Source: http://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
-        /// </summary>
-        /// <param name="port">The TCP-Port to check for</param>
-        /// <returns>true if unused</returns>
-        public static bool tcpPortIsUnused(int port)
+    /// <summary>
+    /// Source: http://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
+    /// </summary>
+    /// <param name="port">The TCP-Port to check for</param>
+    /// <returns>true if unused</returns>
+    public static bool tcpPortIsUnused(int port)
         {
             // Evaluate current system tcp connections. This is the same information provided
             // by the netstat command line application, just in .Net strongly-typed object
