@@ -5,16 +5,53 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Security.Cryptography;
 using System.Runtime.Serialization;
+using LamestWebserver.Collections;
 
 namespace LamestWebserver
 {
+    /// <summary>
+    /// Here you can find all the Global SessionID related methods and fields
+    /// </summary>
     public static class SessionContainer
     {
+        /// <summary>
+        /// The mode for SessionID recreation.
+        /// </summary>
         public static ESessionIdRereferencingMode SessionIdRereferencingMode = ESessionIdRereferencingMode.Keep;
 
+        /// <summary>
+        /// Contains the available SessionID recreation modes
+        /// </summary>
         public enum ESessionIdRereferencingMode
         {
-            Keep, AlwaysRenew
+            /// <summary>
+            /// Keeps the SessionID for a specific session.
+            /// </summary>
+            Keep,
+            /// <summary>
+            /// always renews the sessionID during every newly processed page
+            /// </summary>
+            AlwaysRenew
+        }
+
+        /// <summary>
+        /// The mode for sessionId transmission
+        /// </summary>
+        public static ESessionIdTransmissionType SessionIdTransmissionType = ESessionIdTransmissionType.Cookie;
+
+        /// <summary>
+        /// Contains all available modes for sessionId transmission
+        /// </summary>
+        public enum ESessionIdTransmissionType
+        {
+            /// <summary>
+            /// Transmitts the SessionIDs via HTTP POST
+            /// </summary>
+            POST,
+            /// <summary>
+            /// Transmitts the SessionID via Cookie
+            /// </summary>
+            Cookie
         }
 
 #if PERSISTENT_DATA
@@ -24,11 +61,9 @@ namespace LamestWebserver
 #endif
 
         private static Mutex mutex = new Mutex();
-
-#if PERSISTENT_DATA
+        
         private static List<string> FileNames = new List<string>();
         private static List<Dictionary<string, object>> FileObjects = new List<Dictionary<string, object>>();
-#endif
 
         private static List<string> UserHashes = new List<string>();
         private static List<string> UserNames = new List<string>();
@@ -42,7 +77,8 @@ namespace LamestWebserver
         /// <summary>
         /// This method also creates a user if none exists!
         /// </summary>
-        /// <param name="user"></param>
+        /// <param name="user">the current user</param>
+        /// <param name="isNewSSID">has a new ssid been created or are we reusing the old one</param>
         /// <returns></returns>
         internal static string getSSIDforUser(string user, out bool isNewSSID)
         {
@@ -262,6 +298,10 @@ namespace LamestWebserver
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
         };
 
+        /// <summary>
+        /// generates a 128 bit AES hash
+        /// </summary>
+        /// <returns></returns>
         public static string generateHash()
         {
             GENERATE_NEW_HASH:
@@ -286,11 +326,9 @@ namespace LamestWebserver
             }
 
             // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
-
-#if PERSISTENT_DATA
+            
             if (getIndexFromList(hash, FileNames).HasValue)
                 goto GENERATE_NEW_HASH;
-#endif
 
             if (getIndexFromList(hash, UserHashes).HasValue)
                 goto GENERATE_NEW_HASH;
@@ -326,8 +364,7 @@ namespace LamestWebserver
 
             return UserNames[userID];
         }
-
-#if PERSISTENT_DATA
+        
         internal static int getFileID(string file)
         {
             int? id = getIndexFromList(file, FileNames);
@@ -350,7 +387,6 @@ namespace LamestWebserver
         {
             return FileObjects[fileID];
         }
-#endif
 
         internal static Dictionary<string, object> getUserDictionary(int userID)
         {
@@ -375,8 +411,7 @@ namespace LamestWebserver
                 throw new IndexOutOfRangeException("There are not even " + (userID + 1) + " users.");
             }
         }
-
-#if PERSISTENT_DATA
+        
         internal static int getFilePerUserID(int userID, int fileID)
         {
             int? ID = getIndexFromList(FileNames[fileID], FilePerUserNames[userID]);
@@ -394,7 +429,6 @@ namespace LamestWebserver
 
             return ID.Value;
         }
-#endif
 
         internal static int? getUserIDFromName(string userName)
         {
@@ -402,8 +436,14 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// Contains all Session dependent Information
+    /// </summary>
     public class SessionData
     {
+        /// <summary>
+        /// contains the current session data of this thread
+        /// </summary>
         [ThreadStaticAttribute]
         public static SessionData currentSessionData = null;
         
@@ -493,9 +533,14 @@ namespace LamestWebserver
         /// <summary>
         /// The cookies sent by the client to the server
         /// </summary>
-        public List<KeyValuePair<string, string>> receivedCookies;
+        private List<KeyValuePair<string, string>> receivedCookies;
 
-        public SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, List<KeyValuePair<string, string>> Cookies, string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws)
+        /// <summary>
+        /// The cookies sent by the client to the server
+        /// </summary>
+        public AVLTree<string, string> receivedCookiesTree;
+
+        internal SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, List<KeyValuePair<string, string>> Cookies, string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws)
         {
             this.varsHEAD = additionalHEAD;
             this.varsPOST = additionalPOST;
@@ -504,27 +549,40 @@ namespace LamestWebserver
             this.path = path;
             this.file = file;
             this.receivedCookies = Cookies;
+            this.receivedCookiesTree = new AVLTree<string, string>();
+
+            if (Cookies != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in Cookies)
+                {
+                    receivedCookiesTree.Add(kvp);
+                }
+            }
 
             this._rawPacket = packet;
             this._tcpClient = client;
             this._networkStream = nws;
             this._remoteEndPoint = _tcpClient.Client.RemoteEndPoint;
             this._localEndPoint = _tcpClient.Client.LocalEndPoint;
-
-#if PERSISTENT_DATA
+            
             fileID = SessionContainer.getFileID(file);
-#endif
 
-            this.ssid = getHTTP_POST_Value("ssid");
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
+            {
+                this.ssid = getHTTP_POST_Value("ssid");
+            }
+            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+            {
+                this.ssid = receivedCookiesTree["ssid"];
+            }
+
             this.userID = SessionContainer.getUserIDFromSSID(ssid);
 
             if (userID.HasValue)
             {
                 knownUser = true;
                 userName = SessionContainer.getUserNameAt(userID.Value);
-#if PERSISTENT_DATA
                 userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
-#endif
             }
             else
             {
@@ -583,15 +641,15 @@ namespace LamestWebserver
             userID = SessionContainer.getUserIDFromSSID(ssid);
 
             userName = SessionContainer.getUserNameAt(userID.Value);
-#if PERSISTENT_DATA
             userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
-#endif
-
-            // TODO: if cookies implemented && isNewSSID: setCookie ssid
+            
+            if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+                Cookies.Add(new KeyValuePair<string, string>("ssid", ssid));
 
             return ssid;
         }
 
+#if OLD_IMPLEMENTATION
         /// <summary>
         /// gets a new SSID for the current user needed for higher level security
         /// </summary>
@@ -601,10 +659,17 @@ namespace LamestWebserver
             if(!knownUser)
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
 
-            return ssid = SessionContainer.getSSIDforUser(userName, out isNewSSID);
+            ssid = SessionContainer.getSSIDforUser(userName, out isNewSSID);
+
+            if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+                Cookies.Add(new KeyValuePair<string, string>("ssid", ssid));
+            
+            return ssid;
         }
+#endif
 
         /// <summary>
+        /// PLEASE CALL THIS BEFORE BUILDING THE SITE!
         /// _FORCES_ to get a new SSID for the current user needed for higher level security
         /// </summary>
         /// <returns>the new ssid</returns>
@@ -613,9 +678,12 @@ namespace LamestWebserver
             if (!knownUser)
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
 
-            // TODO: if cookies implemented && isNewSSID: setCookie ssid
+            ssid = SessionContainer.forceGetNextSSID(userName);
 
-            return ssid = SessionContainer.forceGetNextSSID(userName);
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+                Cookies.Add(new KeyValuePair<string, string>("ssid", ssid));
+
+            return ssid;
         }
 
 
@@ -642,9 +710,27 @@ namespace LamestWebserver
         // ===============================================================================================================================================
         // ===============================================================================================================================================
 
+        /// <summary>
+        /// contains all available scopes for variables
+        /// </summary>
         public enum EVariableScope : byte
         {
-            File, User, FileAndUser, Global
+            /// <summary>
+            /// available for all visitors of this page
+            /// </summary>
+            File,
+            /// <summary>
+            /// Available globally for this USER
+            /// </summary>
+            User,
+            /// <summary>
+            /// Available for the current User on only this page
+            /// </summary>
+            FileAndUser,
+            /// <summary>
+            /// Available for all Users on any page
+            /// </summary>
+            Global
         }
 
         /// <summary>
@@ -657,10 +743,8 @@ namespace LamestWebserver
         {
             switch(scope)
             {
-#if PERSISTENT_DATA
                 case EVariableScope.File:
                     return getFileVariable(name);
-#endif
 
                 case EVariableScope.User:
                     return getUserVariable(name);
@@ -695,16 +779,15 @@ namespace LamestWebserver
         /// </summary>
         /// <typeparam name="T">The type of the value</typeparam>
         /// <param name="name">name of the variable</param>
+        /// <param name="value">the value to set to the variable</param>
         /// <param name="scope">scope at which the variable is/will be defined</param>
         public void setVariable<T>(string name, T value, EVariableScope scope)
         {
             switch (scope)
             {
-#if PERSISTENT_DATA
                 case EVariableScope.File:
                     setFileVariable(name, value);
                     break;
-#endif
 
                 case EVariableScope.User:
                     setUserVariable(name, value);
@@ -843,7 +926,6 @@ namespace LamestWebserver
         // ===============================================================================================================================================
         // ===============================================================================================================================================
 
-#if PERSISTENT_DATA
         /// <summary>
         /// set the value of a variable saved globally for the current _FILE_
         /// </summary>
@@ -865,6 +947,18 @@ namespace LamestWebserver
             return getObjectFromDictionary(name, SessionContainer.getFileDictionary(fileID));
         }
 
+        /// <summary>
+        /// get the value (or null if not existent) from the variables saved globally for the current _FILE_ and casts it to a specified Type T
+        /// </summary>
+        /// <typeparam name="T">The type T to cast the value to</typeparam>
+        /// <param name="name">the name of the variable</param>
+        /// <returns>the value of the variable (or null if not existent)</returns>
+        public T getFileVariable<T>(string name)
+        {
+            return (T)getFileVariable(name);
+        }
+
+#if PERSISTENT_DATA
         /// <summary>
         /// get the value of a persistently saved variable
         /// </summary>
@@ -899,17 +993,6 @@ namespace LamestWebserver
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
 
             SessionContainer.setPersistentUserVariable(userID.Value, hash, value);
-        }
-
-        /// <summary>
-        /// get the value (or null if not existent) from the variables saved globally for the current _FILE_ and casts it to a specified Type T
-        /// </summary>
-        /// <typeparam name="T">The type T to cast the value to</typeparam>
-        /// <param name="name">the name of the variable</param>
-        /// <returns>the value of the variable (or null if not existent)</returns>
-        public T getFileVariable<T>(string name)
-        {
-            return (T)getFileVariable(name);
         }
 #endif
 

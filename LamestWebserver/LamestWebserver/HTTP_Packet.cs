@@ -51,7 +51,7 @@ namespace LamestWebserver
 
                 for (int i = 0; i < cookies.Count; i++)
                 {
-                    rets += cookies[i].Key + "= " + cookies[i].Value + "; path=/; secure; HttpOnly";
+                    rets += cookies[i].Key + "=" + cookies[i].Value + "; Path=/";
 
                     if (i + 1 < cookies.Count)
                         rets += "\n";

@@ -23,8 +23,8 @@ namespace LamestWebserver
         Thread mThread;
         public int port;
         public string folder = "./web";
-        public bool running = true;
-        public AVLTree<string, PreloadedFile> cache = new AVLTree<string, PreloadedFile>(); // TODO: Change to AVLTree and use FileSystemWatcher
+        internal bool running = true;
+        internal AVLTree<string, PreloadedFile> cache = new AVLTree<string, PreloadedFile>();
 
         private AVLHashMap<string, Master.getContents> pageResponses = new AVLHashMap<string, Master.getContents>(4096);
         //private List<string> hashes = new List<string>();
@@ -58,7 +58,7 @@ namespace LamestWebserver
 
             this.port = port;
             tcpListener = new TcpListener(IPAddress.Any, port);
-            mThread = new Thread(new ThreadStart(ListenAndStuff));
+            mThread = new Thread(new ThreadStart(handleTcpListener));
             mThread.Start();
             this.silent = silent;
 
@@ -94,7 +94,7 @@ namespace LamestWebserver
 
             this.port = port;
             this.tcpListener = new TcpListener(IPAddress.Any, port);
-            mThread = new Thread(new ThreadStart(ListenAndStuff));
+            mThread = new Thread(new ThreadStart(handleTcpListener));
             mThread.Start();
             this.silent = silent;
 
@@ -135,7 +135,7 @@ namespace LamestWebserver
 
             try
             {
-                mThread.Suspend();//.Abort();
+                mThread.Abort();
             }
             catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
 
@@ -153,7 +153,7 @@ namespace LamestWebserver
             {
                 try
                 {
-                    threads[0].Suspend();//.Abort();
+                    threads[0].Abort();
                 }
                 catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
                 threads.RemoveAt(0);
@@ -219,7 +219,7 @@ namespace LamestWebserver
             pageResponses.Remove(hash);
         }
 
-        private void ListenAndStuff()
+        private void handleTcpListener()
         {
             try
             {
@@ -233,13 +233,10 @@ namespace LamestWebserver
             {
                 try
                 {
-                    //if (tcpListener.Pending())
-                    //{
-                    // TcpClient tcpClient = tcpListener.AcceptTcpClient();
                     tcpRcvTask = tcpListener.AcceptTcpClientAsync();
                     tcpRcvTask.Wait();
                     TcpClient tcpClient = tcpRcvTask.Result;
-                    Thread t = new Thread(new ParameterizedThreadStart(DoStuff));
+                    Thread t = new Thread(new ParameterizedThreadStart(handleClient));
                     threads.Add(t);
                     t.Start((object)tcpClient);
                     ServerHandler.addToStuff("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
@@ -249,11 +246,6 @@ namespace LamestWebserver
                         threads.Add(new Thread(new ThreadStart(cleanThreads)));
                         threads[threads.Count - 1].Start();
                     }
-                    /*}
-                    else
-                    {
-                        Thread.Sleep(1);
-                    }*/
                 }
                 catch(ThreadAbortException)
                 {
@@ -267,7 +259,7 @@ namespace LamestWebserver
             }
         }
 
-        private void DoStuff(object obj)
+        private void handleClient(object obj)
         {
             TcpClient client = (TcpClient)obj;
             NetworkStream nws = client.GetStream();
@@ -525,7 +517,7 @@ namespace LamestWebserver
             }
         }
 
-        public bool fileIsBinary(string fileName, string extention)
+        internal bool fileIsBinary(string fileName, string extention)
         {
             if (fileName.Length < 2)
                 return true;
@@ -565,7 +557,7 @@ namespace LamestWebserver
             return "";
         }
 
-        public bool getFromCache(string name, out PreloadedFile file)
+        internal bool getFromCache(string name, out PreloadedFile file)
         {
             using (cacheMutex.Lock())
             {
@@ -581,7 +573,7 @@ namespace LamestWebserver
             return true;
         }
 
-        public string getMimeType(string extention)
+        internal string getMimeType(string extention)
         {
             switch (extention)
             {
@@ -672,7 +664,7 @@ namespace LamestWebserver
             }
         }
 
-        public bool cacheHas(string name)
+        internal bool cacheHas(string name)
         {
             using (cacheMutex.Lock())
             {
@@ -680,7 +672,7 @@ namespace LamestWebserver
             }
         }
 
-        public void setupFileSystemWatcher()
+        internal void setupFileSystemWatcher()
         {
             fileSystemWatcher = new FileSystemWatcher(folder);
 
@@ -740,7 +732,7 @@ namespace LamestWebserver
             fileSystemWatcher.EnableRaisingEvents = true;
         }
 
-        public byte[] readFile(string filename, UTF8Encoding enc, bool isBinary = false)
+        internal byte[] readFile(string filename, UTF8Encoding enc, bool isBinary = false)
         {
             int i = 10;
 
@@ -754,7 +746,7 @@ namespace LamestWebserver
                     }
                     else
                     {
-                        if (GetEncoding(folder, filename) == Encoding.UTF8)
+                        if (GetEncoding(folder + filename) == Encoding.UTF8)
                         {
                             return File.ReadAllBytes(folder + filename);
                         }
@@ -775,12 +767,12 @@ namespace LamestWebserver
             throw new Exception("Failed to read from '" + filename + "'.");
         }
 
-    /// <summary>
-    /// Source: http://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
-    /// </summary>
-    /// <param name="port">The TCP-Port to check for</param>
-    /// <returns>true if unused</returns>
-    public static bool tcpPortIsUnused(int port)
+        /// <summary>
+        /// Source: http://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
+        /// </summary>
+        /// <param name="port">The TCP-Port to check for</param>
+        /// <returns>true if unused</returns>
+        public static bool tcpPortIsUnused(int port)
         {
             // Evaluate current system tcp connections. This is the same information provided
             // by the netstat command line application, just in .Net strongly-typed object
@@ -807,9 +799,9 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="filename">The text file to analyze.</param>
         /// <returns>The detected encoding.</returns>
-        public static Encoding GetEncoding(string folder, string filename)
+        public static Encoding GetEncoding(string filename)
         {
-            using (StreamReader reader = new StreamReader(folder + filename, Encoding.ASCII, true))
+            using (StreamReader reader = new StreamReader(filename, Encoding.ASCII, true))
             {
                 reader.Peek(); // you need this!
                 return reader.CurrentEncoding;
@@ -817,7 +809,7 @@ namespace LamestWebserver
         }
     }
 
-    public class PreloadedFile
+    internal class PreloadedFile
     {
         public string filename;
         public byte[] contents;

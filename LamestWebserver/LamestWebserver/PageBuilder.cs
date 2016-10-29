@@ -256,37 +256,54 @@ namespace LamestWebserver
         {
             string ret = "<a ";
 
-            if (href.Length > 0)
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
             {
-                if (href[0] == '#')
-                    ret += "href='" + href + "' ";
+                if (href.Length > 0)
+                {
+                    if (href[0] == '#')
+                        ret += "href='" + href + "' ";
+                    else
+                    {
+                        ret += "href='#' ";
+
+                        string hash = SessionContainer.generateHash();
+                        string add = ";var f_"
+                            + hash + "=document.createElement('form');f_"
+                            + hash + ".setAttribute('method','POST');f_"
+                            + hash + ".setAttribute('action','"
+                                + href + "');f_"
+                            + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
+                            + hash + "=document.createElement('input');i_"
+                            + hash + ".setAttribute('type','hidden');i_"
+                            + hash + ".setAttribute('name','ssid');i_"
+                            + hash + ".setAttribute('value','"
+                                + sessionData.ssid + "');f_"
+                            + hash + ".appendChild(i_"
+                            + hash + ");document.body.appendChild(f_"
+                            + hash + ");f_"
+                            + hash + ".submit();document.body.remove(f_"
+                            + hash + ");";
+
+                        ret += " onclick=\"" + onclick + add + "\" ";
+                    }
+                }
                 else
-                    ret += "href='#' ";
+                {
+                    if (!string.IsNullOrWhiteSpace(onclick))
+                        ret += "onclick='" + onclick + "' ";
+                }
+            }
+            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+            {
+                if (!string.IsNullOrWhiteSpace(href))
+                    ret += "href='" + href + "' ";
 
-                string hash = SessionContainer.generateHash();
-                string add = ";var f_"
-                    + hash + "=document.createElement('form');f_"
-                    + hash + ".setAttribute('method','POST');f_"
-                    + hash + ".setAttribute('action','"
-                        + href + "');f_"
-                    + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
-                    + hash + "=document.createElement('input');i_"
-                    + hash + ".setAttribute('type','hidden');i_"
-                    + hash + ".setAttribute('name','ssid');i_"
-                    + hash + ".setAttribute('value','"
-                        + sessionData.ssid + "');f_"
-                    + hash + ".appendChild(i_"
-                    + hash + ");document.body.appendChild(f_"
-                    + hash + ");f_"
-                    + hash + ".submit();document.body.remove(f_"
-                    + hash + ");";
-
-                ret += " onclick=\"" + onclick + add + "\"";
+                if (!string.IsNullOrWhiteSpace(onclick))
+                    ret += "onclick='" + onclick + "' ";
             }
             else
             {
-                if (!string.IsNullOrWhiteSpace(onclick))
-                    ret += "onclick='" + onclick + "' ";
+                System.Diagnostics.Debug.Assert(false, "SessionIdTransmissionType is invalid or not supported in " + this.GetType().ToString() + ".");
             }
 
             if (!string.IsNullOrWhiteSpace(ID))
@@ -675,37 +692,52 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
 
-            if (href.Length > 0 && type != EButtonType.submit)
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
             {
-                if (href[0] == '#')
-                    ret += "href='" + href + "' ";
+                if (href.Length > 0 && type != EButtonType.submit)
+                {
+                    if (href[0] == '#')
+                        ret += "href='" + href + "' ";
+                    else
+                        ret += "href='#' ";
+
+                    string hash = SessionContainer.generateHash();
+                    string add = ";var f_"
+                        + hash + "=document.createElement('form');f_"
+                        + hash + ".setAttribute('method','POST');f_"
+                        + hash + ".setAttribute('action','"
+                            + href + "');f_"
+                        + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
+                        + hash + "=document.createElement('input');i_"
+                        + hash + ".setAttribute('type','hidden');i_"
+                        + hash + ".setAttribute('name','ssid');i_"
+                        + hash + ".setAttribute('value','"
+                            + sessionData.ssid + "');f_"
+                        + hash + ".appendChild(i_"
+                        + hash + ");document.body.appendChild(f_"
+                        + hash + ");f_"
+                        + hash + ".submit();document.body.remove(f_"
+                        + hash + ");";
+
+                    ret += " onclick=\"" + onclick + add + "\"";
+                }
                 else
-                    ret += "href='#' ";
+                {
+                    if (!string.IsNullOrWhiteSpace(onclick))
+                        ret += "onclick='" + onclick + "' ";
+                }
+            }
+            else if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+            {
+                if (!string.IsNullOrWhiteSpace(href) && type != EButtonType.submit)
+                    ret += "href='" + href + "' ";
 
-                string hash = SessionContainer.generateHash();
-                string add = ";var f_"
-                    + hash + "=document.createElement('form');f_"
-                    + hash + ".setAttribute('method','POST');f_"
-                    + hash + ".setAttribute('action','"
-                        + href + "');f_"
-                    + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
-                    + hash + "=document.createElement('input');i_"
-                    + hash + ".setAttribute('type','hidden');i_"
-                    + hash + ".setAttribute('name','ssid');i_"
-                    + hash + ".setAttribute('value','"
-                        + sessionData.ssid + "');f_"
-                    + hash + ".appendChild(i_"
-                    + hash + ");document.body.appendChild(f_"
-                    + hash + ");f_"
-                    + hash + ".submit();document.body.remove(f_"
-                    + hash + ");";
-
-                ret += " onclick=\"" + onclick + add + "\"";
+                if (!string.IsNullOrWhiteSpace(onclick))
+                    ret += "onclick='" + onclick + "' ";
             }
             else
             {
-                if (!string.IsNullOrWhiteSpace(onclick))
-                    ret += "onclick='" + onclick + "' ";
+                System.Diagnostics.Debug.Assert(false, "SessionIdTransmissionType is invalid or not supported in " + this.GetType().ToString() + ".");
             }
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
