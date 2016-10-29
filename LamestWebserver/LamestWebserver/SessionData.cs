@@ -768,7 +768,12 @@ namespace LamestWebserver
         /// <returns>returns the value of the variable (or null if not existent or exception if you really want to mess things up, dude!)</returns>
         public T getVariable<T>(string name, EVariableScope scope)
         {
-            return (T)getVariable(name, scope);
+            object o = getVariable(name, scope);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
         }
 
         // ===============================================================================================================================================
@@ -838,7 +843,12 @@ namespace LamestWebserver
         /// <returns>the value of the variable (or null if not existent)</returns>
         public T getGlobalVariable<T>(string name)
         {
-            return (T)getGlobalVariable(name);
+            object o = getGlobalVariable(name);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
         }
 
         // ===============================================================================================================================================
@@ -879,7 +889,12 @@ namespace LamestWebserver
         /// <returns>the value of the variable (or null if not existent)</returns>
         public T getUserFileVariable<T>(string name)
         {
-            return (T)getUserFileVariable(name);
+            object o = getUserFileVariable(name);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
         }
 
         // ===============================================================================================================================================
@@ -920,7 +935,12 @@ namespace LamestWebserver
         /// <returns>the value of the variable (or null if not existent)</returns>
         public T getUserVariable<T>(string name)
         {
-            return (T)getUserVariable(name);
+            object o = getUserVariable(name);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
         }
 
         // ===============================================================================================================================================
@@ -955,7 +975,12 @@ namespace LamestWebserver
         /// <returns>the value of the variable (or null if not existent)</returns>
         public T getFileVariable<T>(string name)
         {
-            return (T)getFileVariable(name);
+            object o = getFileVariable(name);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
         }
 
 #if PERSISTENT_DATA
@@ -979,7 +1004,12 @@ namespace LamestWebserver
         /// <returns>the value of the variable</returns>
         public T getPersistentUserVariable<T>(string hash) 
         {
-            return (T)getPersistentUserVariable(hash);
+            object o = getPersistentUserVariable(hash);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
         }
 
         /// <summary>

@@ -182,12 +182,31 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A HTML Element
+    /// </summary>
     public abstract class HElement
     {
+        /// <summary>
+        /// the ID of this element
+        /// </summary>
         public string ID = "";
+
+        /// <summary>
+        /// the Name of this element
+        /// </summary>
         public string Name = "";
+
+        /// <summary>
+        /// the class of this element
+        /// </summary>
         public string Class = "";
 
+        /// <summary>
+        /// the method used to parse the element to string correctly
+        /// </summary>
+        /// <param name="sessionData">sessionData of the currentUser</param>
+        /// <returns></returns>
         public abstract string getContent(SessionData sessionData);
 
         /// <summary>
@@ -198,15 +217,32 @@ namespace LamestWebserver
         {
             return element.getContent(sessionData);
         }
-
+        
+        /// <summary>
+        /// Parses this element to string
+        /// </summary>
+        /// <returns>this element as string</returns>
         public override string ToString()
         {
-            throw new Exception("No, ToString is not the Method you should be using. Use getContent(SessionData sessionData).");
+            return this.getContent(SessionData.currentSessionData);
         }
 
+        /// <summary>
+        /// casts a string to a HPlainText element
+        /// </summary>
+        /// <param name="s"></param>
         public static implicit operator HElement(string s)
         {
             return new HPlainText(s);
+        }
+
+        /// <summary>
+        /// Parses an element to string
+        /// </summary>
+        /// <param name="e">the element</param>
+        public static explicit operator string(HElement e)
+        {
+            return e.ToString();
         }
     }
 
@@ -623,9 +659,12 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags + " ";
 
-            ret += "method='POST' ";
+            ret += "method='POST' >\n";
 
-            ret += ">\n<input type='hidden' name='ssid' value='" + sessionData.ssid + "'>\n";
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
+            {
+                ret += "<input type='hidden' name='ssid' value='" + sessionData.ssid + "'>\n";
+            }
 
             if (!string.IsNullOrWhiteSpace(text))
                 ret += text.Replace("\n", "<br>");
@@ -680,8 +719,7 @@ namespace LamestWebserver
         {
             string ret = "<button ";
 
-            if (type != EButtonType.button)
-                ret += "type='" + type + "' ";
+            ret += "type='" + type + "' ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -729,11 +767,19 @@ namespace LamestWebserver
             }
             else if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
             {
-                if (!string.IsNullOrWhiteSpace(href) && type != EButtonType.submit)
-                    ret += "href='" + href + "' ";
-
                 if (!string.IsNullOrWhiteSpace(onclick))
-                    ret += "onclick='" + onclick + "' ";
+                {
+                    ret += "onclick=\"" + onclick + ";";
+
+                    if (!string.IsNullOrWhiteSpace(href) && type != EButtonType.submit)
+                        ret += "location.href='" + href + "'\" ";
+                    else
+                        ret += "\" ";
+                }
+                else if (!string.IsNullOrWhiteSpace(href) && type != EButtonType.submit)
+                {
+                    ret += "onclick=\"location.href='" + href + "'\" ";
+                }
             }
             else
             {
@@ -757,10 +803,24 @@ namespace LamestWebserver
 
             return ret;
         }
-
+        
+        /// <summary>
+        /// The type of a button
+        /// </summary>
         public enum EButtonType : byte
         {
-            button, reset, submit
+            /// <summary>
+            /// A button which is only a button
+            /// </summary>
+            button,
+            /// <summary>
+            /// A button which resets the form it lives in
+            /// </summary>
+            reset,
+            /// <summary>
+            /// A button which submits the form it lives in
+            /// </summary>
+            submit
         }
     }
 
@@ -821,9 +881,19 @@ namespace LamestWebserver
             return ret;
         }
 
+        /// <summary>
+        /// The type of the list
+        /// </summary>
         public enum EListType : byte
         {
-            OrderedList, UnorderedList
+            /// <summary>
+            /// A numerically ordered list
+            /// </summary>
+            OrderedList,
+            /// <summary>
+            /// A unordered list
+            /// </summary>
+            UnorderedList
         }
     }
 
@@ -893,11 +963,6 @@ namespace LamestWebserver
             ret += "</table>\n";
 
             return ret;
-        }
-
-        public enum EListType : byte
-        {
-            OrderedList, UnorderedList
         }
     }
 
