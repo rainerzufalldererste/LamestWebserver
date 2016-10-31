@@ -258,12 +258,16 @@ namespace LamestWebserver.Collections
         {
             count = reader.ReadElement<int>(nameof(count));
             head = reader.ReadElement<AVLNode>(nameof(head));
+            reader.ReadToEndElement("AVLTree");
+            reader.ReadEndElement();
         }
 
         public void WriteXml(XmlWriter writer)
         {
+            writer.WriteStartElement("AVLTree");
             writer.WriteElement(nameof(count), count);
             writer.WriteElement(nameof(head), head);
+            writer.WriteEndElement();
         }
 
         [Serializable]

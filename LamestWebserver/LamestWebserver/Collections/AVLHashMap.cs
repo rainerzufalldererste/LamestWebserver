@@ -444,6 +444,7 @@ namespace LamestWebserver.Collections
             }
 
             reader.ReadToEndElement("AVLNode");
+            reader.ReadEndElement();
         }
 
         public void WriteXml(XmlWriter writer)

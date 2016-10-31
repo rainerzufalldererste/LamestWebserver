@@ -29,6 +29,11 @@ namespace LamestWebserver
 
         public static void writeData<T>(T data, string filename)
         {
+            if(!File.Exists(filename))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(filename));
+            }
+
             StringBuilder output = new StringBuilder();
 
             using (StringWriter textWriter = new StringWriter(output))
@@ -53,6 +58,11 @@ namespace LamestWebserver
 
         public static void writeBinaryData<T>(T data, string filename)
         {
+            if (!File.Exists(filename))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(filename));
+            }
+
             using (FileStream fs = new FileStream(filename, FileMode.Create))
             {
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -209,10 +219,15 @@ namespace LamestWebserver
         public static void ReadToEndElement(this XmlReader reader, string endElement)
         {
             if (reader.Name != null && reader.NodeType == XmlNodeType.EndElement && reader.Name == endElement)
+            {
+                reader.ReadEndElement();
                 return;
+            }
 
             while (reader.Read() && !(reader.NodeType == XmlNodeType.EndElement && reader.Name == endElement))
                 /*Console.WriteLine("Searching for EndElement '" + endElement + "' only found '" + reader.Name + "' (" + reader.NodeType + ")")*/;
+
+            reader.ReadEndElement();
         }
 
         /*
