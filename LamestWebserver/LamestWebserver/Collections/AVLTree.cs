@@ -5,10 +5,13 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
 
 namespace LamestWebserver.Collections
 {
-    public class AVLTree<TKey, TValue> : IDictionary<TKey, TValue>, ISerializable where TKey : IComparable, IEquatable<TKey>
+    public class AVLTree<TKey, TValue> : IDictionary<TKey, TValue>, ISerializable, IXmlSerializable where TKey : IComparable, IEquatable<TKey>
     {
         internal AVLNode head;
         private int count = 0;
@@ -194,7 +197,7 @@ namespace LamestWebserver.Collections
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            throw new NotImplementedException();
+            return head?.getAllData().GetEnumerator();
         }
 
         public bool Remove(KeyValuePair<TKey, TValue> item)
@@ -224,6 +227,7 @@ namespace LamestWebserver.Collections
             throw new NotImplementedException();
         }
 
+        [OnSerializing]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(count), count);
@@ -245,9 +249,30 @@ namespace LamestWebserver.Collections
             }
         }
 
-        public class AVLNode : ISerializable
+        public XmlSchema GetSchema()
         {
-            internal AVLNode head, left, right;
+            return null;
+        }
+
+        public void ReadXml(XmlReader reader)
+        {
+            count = reader.ReadElement<int>(nameof(count));
+            head = reader.ReadElement<AVLNode>(nameof(head));
+        }
+
+        public void WriteXml(XmlWriter writer)
+        {
+            writer.WriteElement(nameof(count), count);
+            writer.WriteElement(nameof(head), head);
+        }
+
+        [Serializable]
+        public class AVLNode : ISerializable, IXmlSerializable
+        {
+            [XmlIgnore]
+            internal AVLNode head;
+
+            internal AVLNode left, right;
             internal int balance { get { return -_depthL + _depthR; } }
             internal int _depthL = 0;
             internal int _depthR = 0;
@@ -868,10 +893,10 @@ namespace LamestWebserver.Collections
                     }
                 }
             }
-
+            
             public void GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                // info.AddValue(nameof(this.head), this.head); // <- would create cross references...
+                // !NOT! info.AddValue(nameof(this.head), this.head); // <- would create cross references...
                 info.AddValue(nameof(this.isLeft), this.isLeft);
                 info.AddValue(nameof(this.key), this.key);
                 info.AddValue(nameof(this.left), this.left);
@@ -889,6 +914,72 @@ namespace LamestWebserver.Collections
 
                 if (left != null)
                     left.head = this;
+            }
+
+            public XmlSchema GetSchema()
+            {
+                return null;
+            }
+
+            public void ReadXml(XmlReader reader)
+            {
+                reader.Read();
+
+                isLeft = reader.ReadElement<bool>(nameof(isLeft));
+                key = reader.ReadElement<TKey>(nameof(key));
+                left = reader.ReadElement<AVLNode>(nameof(left), "AVLNode");
+                right = reader.ReadElement<AVLNode>(nameof(right), "AVLNode");
+                value = reader.ReadElement<TValue>(nameof(value));
+                _depthL = reader.ReadElement<int>(nameof(_depthL));
+                _depthR = reader.ReadElement<int>(nameof(_depthR));
+
+                if (right != null)
+                    right.head = this;
+
+                if (left != null)
+                    left.head = this;
+
+                reader.Read();
+            }
+
+            public void WriteXml(XmlWriter writer)
+            {
+                writer.WriteStartElement("AVLNode");
+
+                // !NOT! writer.WriteElement(nameof(head), head); // <- would create cross references...
+                writer.WriteElement(nameof(isLeft), isLeft);
+                writer.WriteElement(nameof(key), key);
+                writer.WriteElement(nameof(left), left);
+                writer.WriteElement(nameof(right), right);
+                writer.WriteElement(nameof(value), value);
+                writer.WriteElement(nameof(_depthL), _depthL);
+                writer.WriteElement(nameof(_depthR), _depthR);
+
+                writer.WriteEndElement();
+            }
+
+            public List<KeyValuePair<TKey, TValue>> getAllData()
+            {
+                List<KeyValuePair<TKey, TValue>> ret = new List<KeyValuePair<TKey, TValue>>();
+
+                ret.Add(new KeyValuePair<TKey, TValue>(key, value));
+
+                if (right != null)
+                    ret.AddRange(right.getAllData());
+
+                if (left != null)
+                    ret.AddRange(left.getAllData());
+
+                return ret;
+            }
+
+            internal static AVLNode CreateFromXML(XmlReader reader)
+            {
+                AVLNode ret = new AVLNode();
+
+                ret.ReadXml(reader);
+
+                return ret;
             }
         }
     }

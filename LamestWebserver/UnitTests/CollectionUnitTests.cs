@@ -168,6 +168,11 @@ namespace UnitTests
 
             hashmap.Validate();
 
+            Serializer.writeData(hashmap, nameof(hashmap));
+            hashmap = Serializer.getData<AVLHashMap<string, string>>(nameof(hashmap));
+
+            hashmap.Validate();
+
             Console.WriteLine("Deleting...");
             
             for (int i = 0; i < size; i++)
@@ -195,6 +200,11 @@ namespace UnitTests
                 Assert.IsTrue(hashmap[hashes[i]] == default(string));
                 hashmap.Validate();
             }
+
+            Serializer.writeData(hashmap, nameof(hashmap));
+            hashmap = Serializer.getData<AVLHashMap<string, string>>(nameof(hashmap));
+
+            hashmap.Validate();
         }
 
         public void executeTestTree()
@@ -305,6 +315,11 @@ namespace UnitTests
                 Assert.IsTrue(tree[hashes[i]] == default(string));
                 tree.Validate();
             }
+
+            Serializer.writeData(tree, nameof(tree));
+            tree = Serializer.getData<AVLTree<string, string>>(nameof(tree));
+
+            tree.Validate();
         }
 
         public void executeTestQueuedTree(int size)

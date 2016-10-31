@@ -4,11 +4,14 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
 
 namespace LamestWebserver.Collections
 {
     [Serializable]
-    public struct SerializableKeyValuePair<TKey, TValue> : ISerializable
+    public struct SerializableKeyValuePair<TKey, TValue> : ISerializable, IXmlSerializable
     {
         public TKey Key;
         public TValue Value;
@@ -33,6 +36,26 @@ namespace LamestWebserver.Collections
         {
             info.AddValue(nameof(Key), Key);
             info.AddValue(nameof(Value), Value);
+        }
+
+        public XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(XmlReader reader)
+        {
+            Key = reader.ReadElement<TKey>(nameof(Key));
+            Value = reader.ReadElement<TValue>(nameof(Value));
+            reader.Read();
+        }
+
+        public void WriteXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("SerializableKeyValuePair");
+            writer.WriteElement(nameof(Key), Key);
+            writer.WriteElement(nameof(Value), Value);
+            writer.WriteEndElement();
         }
     }
 }
