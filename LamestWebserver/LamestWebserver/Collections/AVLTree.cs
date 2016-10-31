@@ -927,9 +927,9 @@ namespace LamestWebserver.Collections
 
                 isLeft = reader.ReadElement<bool>(nameof(isLeft));
                 key = reader.ReadElement<TKey>(nameof(key));
-                left = reader.ReadElement<AVLNode>(nameof(left), "AVLNode");
-                right = reader.ReadElement<AVLNode>(nameof(right), "AVLNode");
                 value = reader.ReadElement<TValue>(nameof(value));
+                left = reader.ReadElement<AVLNode>(nameof(left));
+                right = reader.ReadElement<AVLNode>(nameof(right));
                 _depthL = reader.ReadElement<int>(nameof(_depthL));
                 _depthR = reader.ReadElement<int>(nameof(_depthR));
 
@@ -939,7 +939,7 @@ namespace LamestWebserver.Collections
                 if (left != null)
                     left.head = this;
 
-                reader.Read();
+                reader.ReadToEndElement("AVLNode");
             }
 
             public void WriteXml(XmlWriter writer)
@@ -949,9 +949,9 @@ namespace LamestWebserver.Collections
                 // !NOT! writer.WriteElement(nameof(head), head); // <- would create cross references...
                 writer.WriteElement(nameof(isLeft), isLeft);
                 writer.WriteElement(nameof(key), key);
+                writer.WriteElement(nameof(value), value);
                 writer.WriteElement(nameof(left), left);
                 writer.WriteElement(nameof(right), right);
-                writer.WriteElement(nameof(value), value);
                 writer.WriteElement(nameof(_depthL), _depthL);
                 writer.WriteElement(nameof(_depthR), _depthR);
 

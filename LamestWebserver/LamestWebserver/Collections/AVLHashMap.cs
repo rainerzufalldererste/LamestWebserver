@@ -435,8 +435,6 @@ namespace LamestWebserver.Collections
 
                 if (name == "NULL")
                 {
-                    reader.Read();
-                    reader.Read();
                     continue;
                 }
                 else if (name == "AVLNode")
@@ -445,7 +443,7 @@ namespace LamestWebserver.Collections
                     HashMap[i] = InnerSerializableKeyValuePair.CreateFromXML(reader);
             }
 
-            reader.Read();
+            reader.ReadToEndElement("AVLNode");
         }
 
         public void WriteXml(XmlWriter writer)
@@ -458,7 +456,10 @@ namespace LamestWebserver.Collections
             for (int i = 0; i < HashMap.Length; i++)
             {
                 if (HashMap[i] == null)
-                    writer.WriteElementString("NULL", "null");
+                {
+                    writer.WriteStartElement("NULL");
+                    writer.WriteEndElement();
+                }
                 else if (HashMap[i] is InnerSerializableKeyValuePair)
                     ((InnerSerializableKeyValuePair)HashMap[i]).WriteXml(writer);
                 else
@@ -1273,13 +1274,11 @@ namespace LamestWebserver.Collections
 
             public void ReadXml(XmlReader reader)
             {
-                reader.Read();
-
                 isLeft = reader.ReadElement<bool>(nameof(isLeft));
                 key = reader.ReadElement<TKey>(nameof(key));
-                left = reader.ReadElement<AVLNode>(nameof(left), "AVLNode");
-                right = reader.ReadElement<AVLNode>(nameof(right), "AVLNode");
                 value = reader.ReadElement<TValue>(nameof(value));
+                left = reader.ReadElement<AVLNode>(nameof(left));
+                right = reader.ReadElement<AVLNode>(nameof(right));
                 _depthL = reader.ReadElement<int>(nameof(_depthL));
                 _depthR = reader.ReadElement<int>(nameof(_depthR));
 
@@ -1289,7 +1288,7 @@ namespace LamestWebserver.Collections
                 if (left != null)
                     left.head = this;
 
-                reader.Read();
+                reader.ReadToEndElement("AVLNode");
             }
 
             public void WriteXml(XmlWriter writer)
@@ -1299,9 +1298,9 @@ namespace LamestWebserver.Collections
                 // !NOT! writer.WriteElement(nameof(head), head); // <- would create cross references...
                 writer.WriteElement(nameof(isLeft), isLeft);
                 writer.WriteElement(nameof(key), key);
+                writer.WriteElement(nameof(value), value);
                 writer.WriteElement(nameof(left), left);
                 writer.WriteElement(nameof(right), right);
-                writer.WriteElement(nameof(value), value);
                 writer.WriteElement(nameof(_depthL), _depthL);
                 writer.WriteElement(nameof(_depthR), _depthR);
 
@@ -1374,7 +1373,8 @@ namespace LamestWebserver.Collections
             {
                 Key = reader.ReadElement<TKey>(nameof(Key));
                 Value = reader.ReadElement<TValue>(nameof(Value));
-                reader.Read();
+
+                reader.ReadToEndElement("InnerSerializableKeyValuePair");
             }
 
             public void WriteXml(XmlWriter writer)

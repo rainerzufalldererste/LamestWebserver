@@ -13,6 +13,90 @@ namespace UnitTests
         AVLTree<string, string> tree;
         QueuedAVLTree<string, string> qtree;
 
+        [Serializable]
+        public class Person : IComparable, IEquatable<Person>
+        {
+            public int age;
+            public string name;
+            public int CompareTo(object obj) { if (!(obj is Person)) throw new NotImplementedException(); return this.age.CompareTo(((Person)obj).age); }
+            public bool Equals(Person other) { return (other.name == name && other.age == age); }
+            public override int GetHashCode()
+            {
+                return (age + name).GetHashCode();
+            }
+        };
+
+        [Serializable]
+        public class Couple { public Person man, woman; };
+
+        [TestMethod]
+        public void testSerializeClassAVLTree()
+        {
+            Console.WriteLine("Building Class AVLTree...");
+
+            AVLTree<Person, Couple> tree = new AVLTree<Person, Couple>();
+            int count = 1000;
+
+            for (int i = 0; i < count; i++)
+            {
+                Person a = new Person() { age = i, name = "a" + i };
+                Person b = new Person() { age = i, name = "b" + i };
+                Couple c = new Couple() { man = a, woman = b };
+
+                tree.Add(a, c);
+                tree.Add(b, c);
+            }
+
+            Console.WriteLine("Serializing...");
+            Serializer.writeData(tree, "tree");
+
+            Console.WriteLine("Deserializing...");
+            tree = Serializer.getData<AVLTree<Person, Couple>>("tree");
+
+            Console.WriteLine("Validating...");
+            for (int i = 0; i < count; i++)
+            {
+                Assert.IsTrue(tree[new Person() { age = i, name = "a" + i }].woman.Equals(new Person() { age = i, name = "b" + i }));
+                Assert.IsTrue(tree[new Person() { age = i, name = "b" + i }].woman.Equals(new Person() { age = i, name = "b" + i }));
+                Assert.IsTrue(tree[new Person() { age = i, name = "a" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
+                Assert.IsTrue(tree[new Person() { age = i, name = "b" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
+            }
+        }
+
+        [TestMethod]
+        public void testSerializeClassAVLHashMap()
+        {
+            Console.WriteLine("Building Class AVLHashMap...");
+
+            AVLHashMap<Person, Couple> hashmap = new AVLHashMap<Person, Couple>();
+            int count = 1000;
+
+            for (int i = 0; i < count; i++)
+            {
+                Person a = new Person() { age = i, name = "a" + i };
+                Person b = new Person() { age = i, name = "b" + i };
+                Couple c = new Couple() { man = a, woman = b };
+
+                hashmap.Add(a, c);
+                hashmap.Add(b, c);
+            }
+
+            Console.WriteLine("Serializing...");
+            Serializer.writeData(hashmap, "hashmap");
+
+            Console.WriteLine("Deserializing...");
+            hashmap = Serializer.getData<AVLHashMap<Person, Couple>>("hashmap");
+
+            Console.WriteLine("Validating...");
+            for (int i = 0; i < count; i++)
+            {
+                Assert.IsTrue(hashmap[new Person() { age = i, name = "a" + i }].woman.Equals(new Person() { age = i, name = "b" + i }));
+                Assert.IsTrue(hashmap[new Person() { age = i, name = "b" + i }].woman.Equals(new Person() { age = i, name = "b" + i }));
+                Assert.IsTrue(hashmap[new Person() { age = i, name = "a" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
+                Assert.IsTrue(hashmap[new Person() { age = i, name = "b" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
+            }
+        }
+
         [TestMethod]
         public void testAVLHashMaps()
         {

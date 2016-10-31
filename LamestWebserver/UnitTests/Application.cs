@@ -10,6 +10,8 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new CollectionUnitTests().testSerializeClassAVLTree();
+            new CollectionUnitTests().testSerializeClassAVLHashMap();
             new CollectionUnitTests().testAVLHashMaps();
             new CollectionUnitTests().testAVLTrees();
             new CollectionUnitTests().testQueuedAVLTrees();

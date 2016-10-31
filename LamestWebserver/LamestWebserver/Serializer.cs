@@ -132,16 +132,49 @@ namespace LamestWebserver
         /// <typeparam name="T">The type of the element</typeparam>
         /// <param name="reader">the current reader</param>
         /// <param name="name">the name of the object</param>
-        /// <param name="innerName">the selfdescription of the object</param>
-        public static T ReadElement<T>(this XmlReader reader, string name = null, string innerName = null)
+        public static T ReadElement<T>(this XmlReader reader, string name = null)
         {
             while (name != null && reader.Name != name)
+            {
+                /*
+                Console.Write("Searching for '" + name + "' at " + reader.Name + " (" + reader.NodeType + ") ");
+
+                for (int attInd = 0; attInd < reader.AttributeCount; attInd++)
+                {
+                    reader.MoveToAttribute(attInd);
+                    Console.Write("(" + reader.Name + " | ");
+                    Console.Write(reader.Value + "),");
+                }
+
+                Console.WriteLine();
+
+                reader.MoveToElement();*/
+                
                 if (!reader.Read())
                     return default(T);
+            }
 
-            reader.Read();
+            /*
+            Console.Write("Found '" + name + "' at " + reader.Name + " (" + reader.NodeType + ") ");
 
-            return ReadLowerElement<T>(reader, innerName);
+            for (int attInd = 0; attInd < reader.AttributeCount; attInd++)
+            {
+                reader.MoveToAttribute(attInd);
+                Console.Write("(" + reader.Name + " | ");
+                Console.Write(reader.Value + "),");
+            }
+
+            Console.WriteLine();
+
+            reader.MoveToElement();*/
+
+            if (reader.GetAttribute("xsi:nil") == "true")
+            {
+                // Console.WriteLine("Was NULL.");
+                return default(T);
+            }
+
+            return ReadLowerElement<T>(reader);
         }
 
         /// <summary>
@@ -149,27 +182,37 @@ namespace LamestWebserver
         /// </summary>
         /// <typeparam name="T">The type of the element</typeparam>
         /// <param name="reader">the current reader</param>
-        /// <param name="innerName">the selfdescription of the object</param>
-        public static T ReadLowerElement<T>(this XmlReader reader, string innerName = null)
+        public static T ReadLowerElement<T>(this XmlReader reader)
         {
-            if (innerName != null && reader.Name != innerName)
-                return default(T);
-
             if (reader.NodeType == XmlNodeType.Element)
             {
                 XmlSerializer serializer;
 
-                if (innerName != null)
-                    serializer = new XmlSerializer(typeof(T), new XmlRootAttribute(innerName));
-                else
-                    serializer = new XmlSerializer(typeof(T), new XmlRootAttribute(reader.Name));
+                serializer = new XmlSerializer(typeof(T), new XmlRootAttribute(reader.Name));
 
                 T ret = (T)serializer.Deserialize(reader);
 
                 return ret;
             }
             else
-                return (T)reader.ReadContentAs(typeof(T), null);
+            {
+                reader.Read();
+                
+                T ret = (T)reader.ReadContentAs(typeof(T), null);
+
+                reader.Read();
+
+                return ret;
+            }
+        }
+
+        public static void ReadToEndElement(this XmlReader reader, string endElement)
+        {
+            if (reader.Name != null && reader.NodeType == XmlNodeType.EndElement && reader.Name == endElement)
+                return;
+
+            while (reader.Read() && !(reader.NodeType == XmlNodeType.EndElement && reader.Name == endElement))
+                /*Console.WriteLine("Searching for EndElement '" + endElement + "' only found '" + reader.Name + "' (" + reader.NodeType + ")")*/;
         }
 
         /*
