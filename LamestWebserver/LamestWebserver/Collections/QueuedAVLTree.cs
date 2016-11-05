@@ -31,6 +31,8 @@ namespace LamestWebserver.Collections
         {
             get
             {
+                if (key == null)
+                    return default(TValue);
                 if (head == null)
                     return default(TValue);
                 else

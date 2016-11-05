@@ -112,6 +112,9 @@ namespace LamestWebserver.Collections
         {
             get
             {
+                if (key == null)
+                    return default(TValue);
+
                 int hash = Math.Abs(key.GetHashCode()) % size;
 
                 if (HashMap[hash] == null)

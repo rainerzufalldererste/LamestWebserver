@@ -137,6 +137,12 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
 
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style='" + Style + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
@@ -203,6 +209,16 @@ namespace LamestWebserver
         public string Class = "";
 
         /// <summary>
+        /// the style attribute of this element
+        /// </summary>
+        public string Style = "";
+
+        /// <summary>
+        /// the mouseover text and title attribute of this element
+        /// </summary>
+        public string Title = "";
+
+        /// <summary>
         /// the method used to parse the element to string correctly
         /// </summary>
         /// <param name="sessionData">sessionData of the currentUser</param>
@@ -258,7 +274,12 @@ namespace LamestWebserver
     {
         public override string getContent(SessionData sessionData)
         {
-            return "\n<hr>\n";
+            string ret = "\n<hr ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            return ret + ">\n";
         }
     }
 
@@ -351,6 +372,12 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
 
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
@@ -391,6 +418,12 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
 
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
@@ -421,6 +454,12 @@ namespace LamestWebserver
 
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -457,6 +496,12 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
 
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
@@ -491,11 +536,17 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
 
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
             if (!string.IsNullOrWhiteSpace(Name))
                 ret += "name='" + Name + "' ";
 
             if (!string.IsNullOrWhiteSpace(value))
                 ret += "value='" + value + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -556,6 +607,12 @@ namespace LamestWebserver
 
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -656,6 +713,12 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
 
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags + " ";
 
@@ -717,9 +780,7 @@ namespace LamestWebserver
 
         public override string getContent(SessionData sessionData)
         {
-            string ret = "<button ";
-
-            ret += "type='" + type + "' ";
+            string ret = "<button type='" + type + "' ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -729,6 +790,12 @@ namespace LamestWebserver
 
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
 
             if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
             {
@@ -863,6 +930,12 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
 
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
@@ -925,6 +998,12 @@ namespace LamestWebserver
 
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -991,6 +1070,12 @@ namespace LamestWebserver
 
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
@@ -1076,6 +1161,12 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
 
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
             return ret + "></canvas>";
         }
     }
@@ -1102,6 +1193,12 @@ namespace LamestWebserver
 
             if (!string.IsNullOrWhiteSpace(Class))
                 ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(Name))
                 ret += "name='" + Name + "' ";
