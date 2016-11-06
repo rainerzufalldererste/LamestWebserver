@@ -38,6 +38,16 @@ namespace LamestWebserver.JScriptBuilder
         {
             return HttpUtility.HtmlEncode(input).Replace("&lt;", "<").Replace("&gt;", ">");
         }
+
+        public static string base64Encode(this string input)
+        {
+            return "window.atob(\"" + Convert.ToBase64String(new ASCIIEncoding().GetBytes(input)) + "\")";
+        }
+
+        public static string evalBase64(this string input)
+        {
+            return "eval(" + input.base64Encode() + ")";
+        }
     }
 
     public enum CallingContext
@@ -258,7 +268,7 @@ namespace LamestWebserver.JScriptBuilder
                 if (i > 0)
                     ret += ", ";
 
-                ret += parameters[i].getCode(sessionData, CallingContext.Default);
+                ret += parameters[i].getCode(sessionData, CallingContext.Inner);
             }
 
             return ret + ")" + (context == CallingContext.Default ? ";" : " ");
@@ -272,9 +282,14 @@ namespace LamestWebserver.JScriptBuilder
             }
         }
 
-        public static JSValue SetInnerHTMLAsync(IJSValue value, string href)
+        public static JSValue SetInnerHTMLAsync(IJSValue value, string URL)
         {
-            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + href + "\",true);xmlhttp.send();");
+            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\",true);xmlhttp.send();");
+        }
+
+        public static JSValue NotifyAsync(string URL)
+        {
+            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\",true);xmlhttp.send();");
         }
 
         public static IJSPiece HideElementByID(string id)
@@ -284,7 +299,9 @@ namespace LamestWebserver.JScriptBuilder
 
         public static IJSPiece RemoveElementByID(string id)
         {
-            return new JSValue("document.removeChild(document.getElementById(\"" + id + "\"));");
+            string varName = "_var" + SessionContainer.generateHash();
+
+            return new JSValue(varName + "=document.getElementById(\"" + id + "\");" + varName + ".remove();");
         }
     }
 
@@ -292,9 +309,19 @@ namespace LamestWebserver.JScriptBuilder
     {
         public string descriptionTags = "";
 
+        public JSElement()
+        {
+            ID = SessionContainer.generateHash();
+        }
+
         public IJSValue CreateNew(CallingContext context = CallingContext.Default)
         {
-            return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + getCode(SessionData.currentSessionData, CallingContext.Inner) + ");")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + getContent(SessionData.currentSessionData, CallingContext.Inner).base64Encode() + ");")).DefineAndCall();
+        }
+
+        public IJSValue CreateNew(string intoID, CallingContext context = CallingContext.Default)
+        {
+            return new JSInstantFunction(new JSValue("document.getElementById(\"" + intoID + "\").insertAdjacentHTML(\"beforeend\", " + getContent(SessionData.currentSessionData, CallingContext.Inner).base64Encode() + ");")).DefineAndCall();
         }
 
         public string getCode(SessionData sessionData, CallingContext context)
@@ -358,20 +385,25 @@ namespace LamestWebserver.JScriptBuilder
 
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            string ret = "<div id=\"_lws_jsbuilder_msgbox_outer\" class=\"_lws_jsbuilder_msgbox_outer\" style=\"display: block;position: fixed;top: 0;right: 0;left: 0;bottom: 0;width: 100%;height: 100%;z-index: 100;background-color: rgba(33, 33, 33, 0.75);\"><div class=\"_lws_jsbuilder_msgbox_inner\" style=\"display: block;position: relative;margin: auto;background-color: #fff;max-width: 600px;overflow: auto;margin-top: 8em;\">";
-
-            if (hasExitButton)
-                ret += "<button onclick=\"javascript: { document.getElementById('_lws_jsbuilder_msgbox_outer').style.display = 'none'; }\" class=\"_lws_jsbuilder_msgbox_exitbutton\">Exit</button>";
+            string _content = "";
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += elements[i].getContent(sessionData, CallingContext.Default).jsEncode();
+                _content += elements[i].getContent(sessionData, CallingContext.Default).jsEncode();
             }
+
+            string ret = "<div id=\"" + GlobalID + "\" class=\"" + GlobalID + "\" style=\"display: block;position: fixed;top: 0;right: 0;left: 0;bottom: 0;width: 100%;height: 100%;z-index: 100;background-color: rgba(33, 33, 33, 0.75);margin: 0px\"><div class=\"" + GlobalInnerID + "\" id=\"" + GlobalInnerID + "\" style=\"display: block;position: relative;margin: auto;background-color: #fff;max-width: 600px;overflow: auto;margin-top: 8em;\">";
+
+            if (hasExitButton)
+                ret += "<button onclick=\"javascript: { document.body.removeChild(document.getElementById('_lws_jsbuilder_msgbox_outer')); }\" class=\"_lws_jsbuilder_msgbox_exitbutton\"></button>";
+
+            ret += _content;
 
             return ret + "</div></div>";
         }
 
-        public static string GlobalID = "_lws_jsbuilder_msgbox_outer";
+        public const string GlobalID = "_lws_jsbuilder_msgbox_outer";
+        public const string GlobalInnerID = "_lws_jsbuilder_msgbox_inner";
     }
 
     public class JSButton : JSInteractableElement
@@ -379,7 +411,7 @@ namespace LamestWebserver.JScriptBuilder
         public HButton.EButtonType buttonType = HButton.EButtonType.button;
         public string buttonText = "";
         
-        public JSButton(string buttonText, HButton.EButtonType buttonType = HButton.EButtonType.button)
+        public JSButton(string buttonText, HButton.EButtonType buttonType = HButton.EButtonType.button) : base()
         {
             this.buttonText = buttonText;
             this.buttonType = buttonType;
@@ -387,7 +419,110 @@ namespace LamestWebserver.JScriptBuilder
 
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            return "<button type='" + buttonType + "' " + getDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + buttonText.jsEncode() + "</button>";
+            return "<button type='" + buttonType + "' " + getDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + buttonText + "</button>";
+        }
+    }
+
+    public class JSText : JSInteractableElement
+    {
+        private string content;
+
+        public JSText(string content) : base() { this.content = content; }
+
+        public override string getContent(SessionData sessionData, CallingContext context)
+        {
+            return "<p " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + content + "</p>";
+        }
+    }
+
+    public class JSInput : JSInteractableElement
+    {
+        public HInput.EInputType inputType = HInput.EInputType.text;
+        public string Value = "";
+
+        public JSInput(HInput.EInputType type, string name, string value = "") : base()
+        {
+            inputType = type;
+            Name = name;
+            this.Value = value;
+        }
+
+        public override string getContent(SessionData sessionData, CallingContext context)
+        {
+            return "<input type='" + inputType + "' " + getDefaultAttributes() + " value='" + Value + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
+        }
+
+        /// <summary>
+        /// Sends this elements name and value to a remote server.
+        /// </summary>
+        /// <param name="URL">the event to reach</param>
+        public virtual JSDirectFunctionCall SendNameValueAsync(string URL)
+        {
+            if (URL.Contains('?') && URL[URL.Length - 1] != '?')
+            {
+                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+            else if (URL[URL.Length - 1] != '?')
+            {
+                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+            else
+            {
+                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+
+            return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value, true);xmlhttp.send();")).DefineAndCall();
+        }
+
+        /// <summary>
+        /// Sends this elements name and value to a remote server and sets the response as InnerHtml of a HTML element.
+        /// </summary>
+        /// <param name="element">the element which innerHTML you want to override</param>
+        /// <param name="URL">the event to reach</param>
+        public virtual JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL)
+        {
+            if (URL.Contains('?') && URL[URL.Length - 1] != '?')
+            {
+                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+            else if (URL[URL.Length - 1] != '?')
+            {
+                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+            else
+            {
+                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+
+            return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value,true);xmlhttp.send();")).DefineAndCall();
+        }
+    }
+
+    public class JSTextArea : JSInput
+    {
+        public uint? cols, rows;
+
+        public JSTextArea(string name, string value = "", uint? cols = null, uint? rows = null) : base(HInput.EInputType.text, name, value)
+        {
+            this.Value = value;
+            this.Name = name;
+            this.cols = cols;
+            this.rows = rows;
+        }
+
+        public override string getContent(SessionData sessionData, CallingContext context)
+        {
+            string ret = "<textarea " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
+
+            if (cols.HasValue)
+                ret += "cols='" + cols.Value + "' ";
+
+            if (rows.HasValue)
+                ret += "rows='" + rows.Value + "' ";
+
+            ret += ">" + HttpUtility.HtmlEncode(Value)  + "</textarea>";
+
+            return ret;
         }
     }
 
@@ -399,6 +534,8 @@ namespace LamestWebserver.JScriptBuilder
     public abstract class JSInteractableElement : JSElement
     {
         public abstract override string getContent(SessionData sessionData, CallingContext context);
+
+        public JSInteractableElement() : base() { }
 
         // #AREYOUREADYFORTHEWEB?
 
@@ -838,244 +975,244 @@ namespace LamestWebserver.JScriptBuilder
             string ret = " ";
 
             if (onabort != null)
-                ret += "onabort=\"" + onabort.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onabort=" + onabort.getCode(sessionData, context).evalBase64() + "";
 
             if (onafterprint != null)
-                ret += "onafterprint=\"" + onafterprint.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onafterprint=" + onafterprint.getCode(sessionData, context).evalBase64() + "";
 
             if (onbeforeprint != null)
-                ret += "onbeforeprint=\"" + onbeforeprint.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onbeforeprint=" + onbeforeprint.getCode(sessionData, context).evalBase64() + "";
 
             if (onbeforeunload != null)
-                ret += "onbeforeunload=\"" + onbeforeunload.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onbeforeunload=" + onbeforeunload.getCode(sessionData, context).evalBase64() + "";
 
             if (onblur != null)
-                ret += "onblur=\"" + onblur.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onblur=" + onblur.getCode(sessionData, context).evalBase64() + "";
 
             if (oncanplay != null)
-                ret += "oncanplay=\"" + oncanplay.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "oncanplay=" + oncanplay.getCode(sessionData, context).evalBase64() + "";
 
             if (oncanplaythrough != null)
-                ret += "oncanplaythrough=\"" + oncanplaythrough.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "oncanplaythrough=" + oncanplaythrough.getCode(sessionData, context).evalBase64() + "";
 
             if (onchange != null)
-                ret += "onchange=\"" + onchange.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onchange=" + onchange.getCode(sessionData, context).evalBase64() + "";
 
             if (onclick != null)
-                ret += "onclick=\"" + onclick.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onclick=" + onclick.getCode(sessionData, context).evalBase64() + "";
 
             if (oncontextmenu != null)
-                ret += "oncontextmenu=\"" + oncontextmenu.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "oncontextmenu=" + oncontextmenu.getCode(sessionData, context).evalBase64() + "";
 
             if (oncopy != null)
-                ret += "oncopy=\"" + oncopy.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "oncopy=" + oncopy.getCode(sessionData, context).evalBase64() + "";
 
             if (oncut != null)
-                ret += "oncut=\"" + oncut.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "oncut=" + oncut.getCode(sessionData, context).evalBase64() + "";
 
             if (ondblclick != null)
-                ret += "ondblclick=\"" + ondblclick.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ondblclick=" + ondblclick.getCode(sessionData, context).evalBase64() + "";
 
             if (ondrag != null)
-                ret += "ondrag=\"" + ondrag.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ondrag=" + ondrag.getCode(sessionData, context).evalBase64() + "";
 
             if (ondragend != null)
-                ret += "ondragend=\"" + ondragend.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ondragend=" + ondragend.getCode(sessionData, context).evalBase64() + "";
 
             if (ondragenter != null)
-                ret += "ondragenter=\"" + ondragenter.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ondragenter=" + ondragenter.getCode(sessionData, context).evalBase64() + "";
 
             if (ondragleave != null)
-                ret += "ondragleave=\"" + ondragleave.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ondragleave=" + ondragleave.getCode(sessionData, context).evalBase64() + "";
 
             if (ondragover != null)
-                ret += "ondragover=\"" + ondragover.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ondragover=" + ondragover.getCode(sessionData, context).evalBase64() + "";
 
             if (ondragstart != null)
-                ret += "ondragstart=\"" + ondragstart.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ondragstart=" + ondragstart.getCode(sessionData, context).evalBase64() + "";
 
             if (ondrop != null)
-                ret += "ondrop=\"" + ondrop.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ondrop=" + ondrop.getCode(sessionData, context).evalBase64() + "";
 
             if (ondurationchange != null)
-                ret += "ondurationchange=\"" + ondurationchange.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ondurationchange=" + ondurationchange.getCode(sessionData, context).evalBase64() + "";
 
             if (onemptied != null)
-                ret += "onemptied=\"" + onemptied.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onemptied=" + onemptied.getCode(sessionData, context).evalBase64() + "";
 
             if (onended != null)
-                ret += "onended=\"" + onended.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onended=" + onended.getCode(sessionData, context).evalBase64() + "";
 
             if (onerror != null)
-                ret += "onerror=\"" + onerror.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onerror=" + onerror.getCode(sessionData, context).evalBase64() + "";
 
             if (onfocus != null)
-                ret += "onfocus=\"" + onfocus.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onfocus=" + onfocus.getCode(sessionData, context).evalBase64() + "";
 
             if (onfocusin != null)
-                ret += "onfocusin=\"" + onfocusin.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onfocusin=" + onfocusin.getCode(sessionData, context).evalBase64() + "";
 
             if (onfocusout != null)
-                ret += "onfocusout=\"" + onfocusout.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onfocusout=" + onfocusout.getCode(sessionData, context).evalBase64() + "";
 
             if (onhashchange != null)
-                ret += "onhashchange=\"" + onhashchange.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onhashchange=" + onhashchange.getCode(sessionData, context).evalBase64() + "";
 
             if (oninput != null)
-                ret += "oninput=\"" + oninput.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "oninput=" + oninput.getCode(sessionData, context).evalBase64() + "";
 
             if (oninvalid != null)
-                ret += "oninvalid=\"" + oninvalid.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "oninvalid=" + oninvalid.getCode(sessionData, context).evalBase64() + "";
 
             if (onkeydown != null)
-                ret += "onkeydown=\"" + onkeydown.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onkeydown=" + onkeydown.getCode(sessionData, context).evalBase64() + "";
 
             if (onkeypress != null)
-                ret += "onkeypress=\"" + onkeypress.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onkeypress=" + onkeypress.getCode(sessionData, context).evalBase64() + "";
 
             if (onkeyup != null)
-                ret += "onkeyup=\"" + onkeyup.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onkeyup=" + onkeyup.getCode(sessionData, context).evalBase64() + "";
 
             if (onload != null)
-                ret += "onload=\"" + onload.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onload=" + onload.getCode(sessionData, context).evalBase64() + "";
 
             if (onloadeddata != null)
-                ret += "onloadeddata=\"" + onloadeddata.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onloadeddata=" + onloadeddata.getCode(sessionData, context).evalBase64() + "";
 
             if (onloadedmetadata != null)
-                ret += "onloadedmetadata=\"" + onloadedmetadata.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onloadedmetadata=" + onloadedmetadata.getCode(sessionData, context).evalBase64() + "";
 
             if (onloadstart != null)
-                ret += "onloadstart=\"" + onloadstart.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onloadstart=" + onloadstart.getCode(sessionData, context).evalBase64() + "";
 
             if (onmessage != null)
-                ret += "onmessage=\"" + onmessage.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onmessage=" + onmessage.getCode(sessionData, context).evalBase64() + "";
 
             if (onmousedown != null)
-                ret += "onmousedown=\"" + onmousedown.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onmousedown=" + onmousedown.getCode(sessionData, context).evalBase64() + "";
 
             if (onmouseenter != null)
-                ret += "onmouseenter=\"" + onmouseenter.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onmouseenter=" + onmouseenter.getCode(sessionData, context).evalBase64() + "";
 
             if (onmouseleave != null)
-                ret += "onmouseleave=\"" + onmouseleave.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onmouseleave=" + onmouseleave.getCode(sessionData, context).evalBase64() + "";
 
             if (onmousemove != null)
-                ret += "onmousemove=\"" + onmousemove.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onmousemove=" + onmousemove.getCode(sessionData, context).evalBase64() + "";
 
             if (onmouseout != null)
-                ret += "onmouseout=\"" + onmouseout.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onmouseout=" + onmouseout.getCode(sessionData, context).evalBase64() + "";
 
             if (onmouseover != null)
-                ret += "onmouseover=\"" + onmouseover.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onmouseover=" + onmouseover.getCode(sessionData, context).evalBase64() + "";
 
             if (onmouseup != null)
-                ret += "onmouseup=\"" + onmouseup.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onmouseup=" + onmouseup.getCode(sessionData, context).evalBase64() + "";
 
             if (onmousewheel != null)
-                ret += "onmousewheel=\"" + onmousewheel.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onmousewheel=" + onmousewheel.getCode(sessionData, context).evalBase64() + "";
 
             if (onoffline != null)
-                ret += "onoffline=\"" + onoffline.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onoffline=" + onoffline.getCode(sessionData, context).evalBase64() + "";
 
             if (ononline != null)
-                ret += "ononline=\"" + ononline.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ononline=" + ononline.getCode(sessionData, context).evalBase64() + "";
 
             if (onopen != null)
-                ret += "onopen=\"" + onopen.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onopen=" + onopen.getCode(sessionData, context).evalBase64() + "";
 
             if (onpagehide != null)
-                ret += "onpagehide=\"" + onpagehide.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onpagehide=" + onpagehide.getCode(sessionData, context).evalBase64() + "";
 
             if (onpageshow != null)
-                ret += "onpageshow=\"" + onpageshow.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onpageshow=" + onpageshow.getCode(sessionData, context).evalBase64() + "";
 
             if (onpaste != null)
-                ret += "onpaste=\"" + onpaste.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onpaste=" + onpaste.getCode(sessionData, context).evalBase64() + "";
 
             if (onpause != null)
-                ret += "onpause=\"" + onpause.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onpause=" + onpause.getCode(sessionData, context).evalBase64() + "";
 
             if (onplay != null)
-                ret += "onplay=\"" + onplay.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onplay=" + onplay.getCode(sessionData, context).evalBase64() + "";
 
             if (onplaying != null)
-                ret += "onplaying=\"" + onplaying.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onplaying=" + onplaying.getCode(sessionData, context).evalBase64() + "";
 
             if (onpopstate != null)
-                ret += "onpopstate=\"" + onpopstate.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onpopstate=" + onpopstate.getCode(sessionData, context).evalBase64() + "";
 
             if (onprogress != null)
-                ret += "onprogress=\"" + onprogress.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onprogress=" + onprogress.getCode(sessionData, context).evalBase64() + "";
 
             if (onratechange != null)
-                ret += "onratechange=\"" + onratechange.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onratechange=" + onratechange.getCode(sessionData, context).evalBase64() + "";
 
             if (onreset != null)
-                ret += "onreset=\"" + onreset.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onreset=" + onreset.getCode(sessionData, context).evalBase64() + "";
 
             if (onresize != null)
-                ret += "onresize=\"" + onresize.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onresize=" + onresize.getCode(sessionData, context).evalBase64() + "";
 
             if (onscroll != null)
-                ret += "onscroll=\"" + onscroll.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onscroll=" + onscroll.getCode(sessionData, context).evalBase64() + "";
 
             if (onsearch != null)
-                ret += "onsearch=\"" + onsearch.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onsearch=" + onsearch.getCode(sessionData, context).evalBase64() + "";
 
             if (onseeked != null)
-                ret += "onseeked=\"" + onseeked.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onseeked=" + onseeked.getCode(sessionData, context).evalBase64() + "";
 
             if (onseeking != null)
-                ret += "onseeking=\"" + onseeking.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onseeking=" + onseeking.getCode(sessionData, context).evalBase64() + "";
 
             if (onselect != null)
-                ret += "onselect=\"" + onselect.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onselect=" + onselect.getCode(sessionData, context).evalBase64() + "";
 
             if (onshow != null)
-                ret += "onshow=\"" + onshow.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onshow=" + onshow.getCode(sessionData, context).evalBase64() + "";
 
             if (onstalled != null)
-                ret += "onstalled=\"" + onstalled.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onstalled=" + onstalled.getCode(sessionData, context).evalBase64() + "";
 
             if (onstorage != null)
-                ret += "onstorage=\"" + onstorage.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onstorage=" + onstorage.getCode(sessionData, context).evalBase64() + "";
 
             if (onsubmit != null)
-                ret += "onsubmit=\"" + onsubmit.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onsubmit=" + onsubmit.getCode(sessionData, context).evalBase64() + "";
 
             if (onsuspend != null)
-                ret += "onsuspend=\"" + onsuspend.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onsuspend=" + onsuspend.getCode(sessionData, context).evalBase64() + "";
 
             if (ontimeupdate != null)
-                ret += "ontimeupdate=\"" + ontimeupdate.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ontimeupdate=" + ontimeupdate.getCode(sessionData, context).evalBase64() + "";
 
             if (ontoggle != null)
-                ret += "ontoggle=\"" + ontoggle.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ontoggle=" + ontoggle.getCode(sessionData, context).evalBase64() + "";
 
             if (ontouchcancel != null)
-                ret += "ontouchcancel=\"" + ontouchcancel.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ontouchcancel=" + ontouchcancel.getCode(sessionData, context).evalBase64() + "";
 
             if (ontouchend != null)
-                ret += "ontouchend=\"" + ontouchend.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ontouchend=" + ontouchend.getCode(sessionData, context).evalBase64() + "";
 
             if (ontouchmove != null)
-                ret += "ontouchmove=\"" + ontouchmove.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ontouchmove=" + ontouchmove.getCode(sessionData, context).evalBase64() + "";
 
             if (ontouchstart != null)
-                ret += "ontouchstart=\"" + ontouchstart.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "ontouchstart=" + ontouchstart.getCode(sessionData, context).evalBase64() + "";
 
             if (onunload != null)
-                ret += "onunload=\"" + onunload.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onunload=" + onunload.getCode(sessionData, context).evalBase64() + "";
 
             if (onvolumechange != null)
-                ret += "onvolumechange=\"" + onvolumechange.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onvolumechange=" + onvolumechange.getCode(sessionData, context).evalBase64() + "";
 
             if (onwaiting != null)
-                ret += "onwaiting=\"" + onwaiting.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onwaiting=" + onwaiting.getCode(sessionData, context).evalBase64() + "";
 
             if (onwheel != null)
-                ret += "onwheel=\"" + onwheel.getCode(sessionData, context).jsEncode() + "\"";
+                ret += "onwheel=" + onwheel.getCode(sessionData, context).evalBase64() + "";
 
             return ret;
         }

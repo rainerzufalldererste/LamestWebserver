@@ -464,7 +464,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n" + text.Replace("\n","<br>") + "\n</p>\n";
+            ret += ">\n" + System.Web.HttpUtility.HtmlEncode(text) + "\n</p>\n";
 
             return ret;
         }
@@ -1203,9 +1203,6 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(Name))
                 ret += "name='" + Name + "' ";
 
-            if (!string.IsNullOrWhiteSpace(value))
-                ret += "value='" + value + "' ";
-
             if (cols.HasValue)
                 ret += "cols=\"" + cols.Value + "\" ";
             
@@ -1215,7 +1212,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            return ret + "></textarea>";
+            return ret + ">" + System.Web.HttpUtility.HtmlEncode(value) + "</textarea>";
         }
     }
 
