@@ -12,8 +12,17 @@ using LamestWebserver;
 
 namespace LamestScriptHook
 {
+    /// <summary>
+    /// The main container for C#-Scripting support
+    /// </summary>
     public static class Hook
     {
+        /// <summary>
+        /// Reads a script from local storage, executes it and replaces the definded parts of the document with the results
+        /// </summary>
+        /// <param name="fileName">the file to read</param>
+        /// <param name="sessionData">current SessionData</param>
+        /// <returns></returns>
         public static string resolveScriptFromFile(string fileName, SessionData sessionData)
         {
             try

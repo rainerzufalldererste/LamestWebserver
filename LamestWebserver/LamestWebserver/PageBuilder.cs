@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
+    /// <summary>
+    /// A Container for a complete WebPage with html, head and body tags.
+    /// Can also be used as direct response if inherited well.
+    /// </summary>
     public class PageBuilder : HContainer, IURLIdentifyable
     {
         private Func<SessionData, bool> conditionalCode;
@@ -43,7 +47,7 @@ namespace LamestWebserver
         public List<string> scriptLinks = new List<string>();
 
         /// <summary>
-        /// additional lines added to the "<head>" segment of the page
+        /// additional lines added to the "head" segment of the page
         /// </summary>
         public string additionalHeadArguments;
 
@@ -95,6 +99,11 @@ namespace LamestWebserver
             getContentMethod = buildContent;
         }
 
+        /// <summary>
+        /// The method which is called to parse this element to string
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the contents as string</returns>
         protected string buildContent(SessionData sessionData)
         {
             if (condition && !conditionalCode(sessionData))
@@ -161,6 +170,11 @@ namespace LamestWebserver
             return ret;
         }
 
+        /// <summary>
+        /// The method used to grab contents as string to be registered as page for the server.
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the contents as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret;
@@ -182,6 +196,9 @@ namespace LamestWebserver
             Master.addFuntionToServer(URL, getContent);
         }
 
+        /// <summary>
+        /// via this method you can "unregister" this pages url (if this pageBuilder is registered) at the server.
+        /// </summary>
         protected void removeFromServer()
         {
             Master.removeFunctionFromServer(URL);
@@ -262,16 +279,32 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A br element used for line breaks in HTML
+    /// </summary>
     public class HNewLine : HElement
     {
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             return "\n<br>\n";
         }
     }
 
+    /// <summary>
+    /// A hr element used to display a hoizontal line
+    /// </summary>
     public class HLine : HElement
     {
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "\n<hr ";
@@ -283,25 +316,54 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// The contents of this element will directly be copied into the final html document.
+    /// </summary>
     public class HPlainText : HElement
     {
+        /// <summary>
+        /// The text to copy to the HTML document
+        /// </summary>
         public string text;
 
+        /// <summary>
+        /// Constructs a new By-Copy-Element. The contents will only be copied into the final HTML code.
+        /// </summary>
+        /// <param name="text">the text to copy into the final HTML code</param>
         public HPlainText(string text = "")
         {
             this.text = text;
         }
 
+        /// <summary>
+        /// returns the given text
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             return text;
         }
     }
 
+    /// <summary>
+    /// Represents a "a" element used for links
+    /// </summary>
     public class HLink : HElement
     {
-        string href, onclick, text, descriptionTags;
+        string href, onclick, text;
 
+        /// <summary>
+        /// Additional attributes added to this tag
+        /// </summary>
+        public string descriptionTags;
+
+        /// <summary>
+        /// Creates a new Link Element
+        /// </summary>
+        /// <param name="text">The Text of the Link</param>
+        /// <param name="href">The URL this link points to</param>
+        /// <param name="onclick">the Javasctipt action executed when clicking on this link</param>
         public HLink(string text = "", string href = "", string onclick = "")
         {
             this.text = text;
@@ -309,6 +371,11 @@ namespace LamestWebserver
             this.onclick = onclick;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<a ";
@@ -392,16 +459,28 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A img element representing an image in html
+    /// </summary>
     public class HImage : HElement
     {
         string source;
         public string descriptionTags;
 
+        /// <summary>
+        /// Creates an Image
+        /// </summary>
+        /// <param name="source">the URL where the image is located at</param>
         public HImage(string source = "")
         {
             this.source = source;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<img ";
@@ -433,15 +512,35 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A "p" tag, representing a textblock
+    /// </summary>
     public class HText : HElement
     {
-        public string text, descriptionTags;
+        /// <summary>
+        /// The Text displayed in this textblock
+        /// </summary>
+        public string text;
 
+        /// <summary>
+        /// Additional attributes mentioned in the "p" tag
+        /// </summary>
+        public string descriptionTags;
+
+        /// <summary>
+        /// Constructs a TextBlock
+        /// </summary>
+        /// <param name="text">the Text displayed</param>
         public HText(string text = "")
         {
             this.text = text;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<p ";
@@ -469,11 +568,32 @@ namespace LamestWebserver
             return ret;
         }
     }
+
+    /// <summary>
+    /// A h(1-6) tag in html (h1 by default) representing a Headline
+    /// </summary>
     public class HHeadline : HElement
     {
-        string text, descriptionTags;
-        int level;
+        /// <summary>
+        /// The Text displayed in this Headline
+        /// </summary>
+        public string text;
 
+        /// <summary>
+        /// Additional attributes added to this element
+        /// </summary>
+        public string descriptionTags;
+
+        /// <summary>
+        /// The level of this headline (1-6)
+        /// </summary>
+        private int level;
+
+        /// <summary>
+        /// Constructs a new Headline
+        /// </summary>
+        /// <param name="text">the text of this headline</param>
+        /// <param name="level">the level of this headline</param>
         public HHeadline(string text = "", int level = 1)
         {
             this.text = text;
@@ -483,6 +603,11 @@ namespace LamestWebserver
                 throw new Exception("the level has to be between 1 and 6!");
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<h" + level + " ";
@@ -511,12 +636,32 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A input tag representing all kinds of Input Elements
+    /// </summary>
     public class HInput : HElement
     {
+        /// <summary>
+        /// The Type of the input element
+        /// </summary>
         public EInputType inputType;
+
+        /// <summary>
+        /// The Value of the input element
+        /// </summary>
         public string value;
+
+        /// <summary>
+        /// Additional attributes added to the tag
+        /// </summary>
         public string descriptionTags;
 
+        /// <summary>
+        /// Constructs a new Input Element
+        /// </summary>
+        /// <param name="inputType">the type of the input element</param>
+        /// <param name="name">the Name of the HTML element</param>
+        /// <param name="value">the predefined value of this input element</param>
         public HInput(EInputType inputType, string name, string value = "")
         {
             this.inputType = inputType;
@@ -524,6 +669,11 @@ namespace LamestWebserver
             this.value = value;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<input ";
@@ -556,45 +706,162 @@ namespace LamestWebserver
             return ret;
         }
 
+        /// <summary>
+        /// Contains all kinds of valid HTML Input Elements
+        /// </summary>
         public enum EInputType : byte
         {
+            /// <summary>
+            /// A button
+            /// </summary>
             button,
+            
+            /// <summary>
+            /// A checkbox
+            /// </summary>
             checkbox,
+            
+            /// <summary>
+            /// A ColorPicker
+            /// </summary>
             color,
+            
+            /// <summary>
+            /// A Date Input
+            /// </summary>
             date,
+            
+            /// <summary>
+            /// A date and time input
+            /// </summary>
             datetime,
+            
+            /// <summary>
+            /// A date and time input for local time
+            /// </summary>
             datetime_local,
+            
+            /// <summary>
+            /// An Email Input
+            /// </summary>
             email,
+            
+            /// <summary>
+            /// A file selector
+            /// </summary>
             file,
+            
+            /// <summary>
+            /// A hidden name-value-pair
+            /// </summary>
             hidden,
+            
+            /// <summary>
+            /// An image
+            /// </summary>
             image,
+            
+            /// <summary>
+            /// A month selector
+            /// </summary>
             month,
+            
+            /// <summary>
+            /// A numeric input
+            /// </summary>
             number,
+            
+            /// <summary>
+            /// a password input (not displaying the contents entered as text)
+            /// </summary>
             password,
+            
+            /// <summary>
+            /// A radio button
+            /// </summary>
             radio,
+            
+            /// <summary>
+            /// An input for values within a given range
+            /// </summary>
             range,
+            
+            /// <summary>
+            /// A reset button
+            /// </summary>
             reset,
+            
+            /// <summary>
+            /// A search element
+            /// </summary>
             search,
+            
+            /// <summary>
+            /// A submit button
+            /// </summary>
             submit,
+            
+            /// <summary>
+            /// A tel input
+            /// </summary>
             tel,
+            
+            /// <summary>
+            /// A single line textfield (use HTextArea or JSTextArea for multiline Textfields)
+            /// </summary>
             text,
+            
+            /// <summary>
+            /// A Time input
+            /// </summary>
             time,
+            
+            /// <summary>
+            /// A url input
+            /// </summary>
             url,
+
+            /// <summary>
+            /// A week input
+            /// </summary>
             week,
         }
     }
 
+    /// <summary>
+    /// A div element representing a container
+    /// </summary>
     public class HContainer : HElement
     {
+        /// <summary>
+        /// A list of all contained elements
+        /// </summary>
         public List<HElement> elements = new List<HElement>();
+
+        /// <summary>
+        /// The text contained in this element
+        /// </summary>
         public string text;
+
+        /// <summary>
+        /// Additional attributes added to the tag
+        /// </summary>
         public string descriptionTags;
 
+        /// <summary>
+        /// Adds an element to the element list
+        /// </summary>
+        /// <param name="element">the element</param>
         public void addElement(HElement element)
         {
             elements.Add(element);
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<div ";
@@ -632,6 +899,10 @@ namespace LamestWebserver
             return ret;
         }
 
+        /// <summary>
+        /// Adds a bunch of elements to the element list
+        /// </summary>
+        /// <param name="list">a list of elements</param>
         public void addElements(List<HElement> list)
         {
             for(int i = 0; i < list.Count; i++)
@@ -640,6 +911,10 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// adds a bunch of elements to the elementlist
+        /// </summary>
+        /// <param name="list">a few elements</param>
         public void addElements(params HElement[] list)
         {
             for (int i = 0; i < list.Length; i++)
@@ -649,13 +924,23 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A form element used for sending contents via POST to the server
+    /// </summary>
     public class HForm : HContainer
     {
+        /// <summary>
+        /// The URL which will be called when submitting this form
+        /// </summary>
         public string action;
         private bool fixedAction;
         private string redirectTRUE, redirectFALSE;
         Func<SessionData, bool> conditionalCode;
 
+        /// <summary>
+        /// Constructs a new Form pointing to the given action when submitted
+        /// </summary>
+        /// <param name="action">the URL to load when submitted</param>
         public HForm(string action)
         {
             this.action = action;
@@ -690,6 +975,11 @@ namespace LamestWebserver
                 elements.Add(new HButton(buttontext, HButton.EButtonType.submit));
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<form ";
@@ -743,6 +1033,9 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A button tag representing a button
+    /// </summary>
     public class HButton : HContainer
     {
         string href, onclick;
@@ -778,6 +1071,11 @@ namespace LamestWebserver
         }
 
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<button type='" + type + "' ";
@@ -891,15 +1189,27 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A ol or ul tag representing an ordered or unordered list
+    /// </summary>
     public class HList : HContainer
     {
         private EListType listType;
 
+        /// <summary>
+        /// Constructs a new List Element
+        /// </summary>
+        /// <param name="listType">the type of the list</param>
         public HList(EListType listType)
         {
             this.listType = listType;
         }
 
+        /// <summary>
+        /// Constructs a new List Element
+        /// </summary>
+        /// <param name="listType">the type of the list</param>
+        /// <param name="input">the contents of the list</param>
         public HList(EListType listType, IEnumerable<string> input) : this(listType)
         {
             List<HElement> data = new List<HElement>();
@@ -912,11 +1222,21 @@ namespace LamestWebserver
             this.elements = data;
         }
 
+        /// <summary>
+        /// Constructs a new List Element
+        /// </summary>
+        /// <param name="listType">the type of the list</param>
+        /// <param name="elements">the contents of the list</param>
         public HList(EListType listType, params HElement[] elements) : this(listType)
         {
             this.elements = elements.ToList();
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<" + (listType == EListType.OrderedList ? "ol" : "ul") + " ";
@@ -970,22 +1290,42 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A table Element representing a table
+    /// </summary>
     public class HTable : HElement
     {
         private List<List<HElement>> elements;
         private IEnumerable<object>[] data;
+
+        /// <summary>
+        /// Additional attributes to be added to this node
+        /// </summary>
         public string descriptionTags;
 
+        /// <summary>
+        /// Constructs a new Table containing the given elements
+        /// </summary>
+        /// <param name="elements">the contained elements</param>
         public HTable(List<List<HElement>> elements)
         {
             this.elements = elements;
         }
 
+        /// <summary>
+        /// Constructs a new Table containing the given data
+        /// </summary>
+        /// <param name="data">the contents of this table</param>
         public HTable(params IEnumerable<object>[] data)
         {
             this.data = data;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<table ";
@@ -1045,11 +1385,28 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// Represents a custom tag
+    /// </summary>
     public class HTag : HContainer
     {
+        /// <summary>
+        /// if false, the element won't have a start and end tag but will only consist of a single tag (like img)
+        /// </summary>
         public bool hasContent;
+
+        /// <summary>
+        /// the name of the tag
+        /// </summary>
         public string tagName;
 
+        /// <summary>
+        /// Constructs a new custom tag
+        /// </summary>
+        /// <param name="tagName">the name of the custom tag</param>
+        /// <param name="descriptionTags">Additional attributs</param>
+        /// <param name="hasContent">if false, the element won't have a start and end tag but will only consist of a single tag (like img)</param>
+        /// <param name="text">the text displayed in the content of this element</param>
         public HTag(string tagName, string descriptionTags, bool hasContent = false, string text = "")
         {
             this.tagName = tagName;
@@ -1058,6 +1415,11 @@ namespace LamestWebserver
             this.text = text;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<" + tagName + " ";
@@ -1099,6 +1461,9 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A script element representing embedded JavaScript-Code
+    /// </summary>
     public class HScript : HElement
     {
         private object[] arguments;
@@ -1125,29 +1490,57 @@ namespace LamestWebserver
             this.arguments = arguments;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             return "<script type\"text/javascript\">\n" + (dynamic ? scriptFunction(sessionData, arguments) : script) + "\n</script>\n";
         }
     }
 
+    /// <summary>
+    /// Represents a script element pointing to a script-file which has to be loaded as well
+    /// </summary>
     public class HScriptLink : HElement
     {
+        /// <summary>
+        /// The URL of the script file
+        /// </summary>
         public string URL;
 
+        /// <summary>
+        /// Constructs a new linking Script element
+        /// </summary>
+        /// <param name="URL">the url of the script to load</param>
         public HScriptLink(string URL)
         {
             this.URL = URL;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             return "<script type\"text/javascript\" src=\"" + URL + "\"></script>\n";
         }
     }
 
+    /// <summary>
+    /// A canvas element used for complex rendering
+    /// </summary>
     public class HCanvas : HElement
     {
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<canvas ";
@@ -1171,12 +1564,37 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A textarea element - basically a multiline textbox
+    /// </summary>
     public class HTextArea : HElement
     {
-        public uint? cols, rows;
+        /// <summary>
+        /// The amount columns dispalyed
+        /// </summary>
+        public uint? cols;
+
+        /// <summary>
+        /// The amount rows dispalyed
+        /// </summary>
+        public uint? rows;
+
+        /// <summary>
+        /// The predefined value
+        /// </summary>
         public string value;
+
+        /// <summary>
+        /// Additional attributes added to this tag
+        /// </summary>
         public string descriptionTags;
 
+        /// <summary>
+        /// Constructs a new textarea element
+        /// </summary>
+        /// <param name="value">the default value of this textarea</param>
+        /// <param name="cols">the amount of columns displayed</param>
+        /// <param name="rows">the amount of rows displayed</param>
         public HTextArea(string value = "", uint? cols = null, uint? rows = null)
         {
             this.value = value;
@@ -1184,6 +1602,11 @@ namespace LamestWebserver
             this.rows = rows;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string ret = "<textarea ";
@@ -1221,6 +1644,9 @@ namespace LamestWebserver
     /// </summary>
     public class HRuntimeCode : HElement
     {
+        /// <summary>
+        /// the code to execute
+        /// </summary>
         public Master.getContents runtimeCode;
 
         /// <summary>
@@ -1232,6 +1658,11 @@ namespace LamestWebserver
             this.runtimeCode = runtimeCode;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             return runtimeCode.Invoke(sessionData);
@@ -1279,8 +1710,12 @@ namespace LamestWebserver
     /// </summary>
     public class HSyncronizedRuntimeCode : HElement
     {
+        /// <summary>
+        /// the code to execute
+        /// </summary>
         public Master.getContents runtimeCode;
-        public System.Threading.Mutex mutex = new System.Threading.Mutex();
+
+        private System.Threading.Mutex mutex = new System.Threading.Mutex();
 
         /// <summary>
         /// Creates non-static content, which is computed every request AND SYNCRONIZED
@@ -1291,6 +1726,11 @@ namespace LamestWebserver
             this.runtimeCode = runtimeCode;
         }
 
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
             string s = "";

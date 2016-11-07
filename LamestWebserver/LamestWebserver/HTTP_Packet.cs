@@ -8,34 +8,102 @@ using System.Web;
 
 namespace LamestWebserver
 {
+    /// <summary>
+    /// Represents a decoded HTTP Packet or is used for packing data into a HTTP Packet for sending
+    /// </summary>
     public class HTTP_Packet
     {
+        /// <summary>
+        /// An expression used for DateTime.ToString to parse into correct HTTP DateFormat
+        /// </summary>
         public const string htmldateformat = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
-
-        public static readonly string[] Months = new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        
+        /// <summary>
+        /// The HTTP Version of the Response
+        /// </summary>
         public string version = "HTTP/1.1";
+
+        /// <summary>
+        /// The HTTP Status Code and Status of the Response
+        /// </summary>
         public string status = "200 OK";
-        public string date/* = DateTime.Now.DayOfWeek.ToString().Substring(0,3) + ", " + DateTime.Now.Day + " " + Months[DateTime.Now.Month] + " " + DateTime.Now.Year + " " + 
-            DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + " GMT"*/; //Tue, 21 Apr 2015 22:51:19 GMT
+
+        /// <summary>
+        /// The current date in HTTP DateFormat
+        /// </summary>
+        public string date; //Tue, 21 Apr 2015 22:51:19 GMT
+
+        /// <summary>
+        /// if the request packet contains a modified date it is contained in here
+        /// </summary>
         public DateTime? modified = null;
+
         private int contentLength = 0;
+
+        /// <summary>
+        /// The content-type of the response
+        /// </summary>
         public string contentType = "text/html";
+
+        /// <summary>
+        /// the binary data contained in the request
+        /// Also sets the contentLength.
+        /// </summary>
         public byte[] binaryData { get { return _binaryData; } set { _binaryData = value; contentLength = _binaryData.Length; } }
         private byte[] _binaryData;
+
+        /// <summary>
+        /// The contents of the request package
+        /// </summary>
         public string requestData;
+
+        /// <summary>
+        /// The cookies, that were set in the request or shall be set in the response
+        /// </summary>
         public List<KeyValuePair<string, string>> cookies = null;
+
+        /// <summary>
+        /// the host attribute of the http package
+        /// </summary>
         public string host = "localhost";
 
+        /// <summary>
+        /// HEAD variables set or mentioned in the request
+        /// </summary>
         public List<string> additionalHEAD = new List<string>();
+
+        /// <summary>
+        /// the values of the set HEAD values
+        /// </summary>
         public List<string> valuesHEAD = new List<string>();
+        
+        /// <summary>
+        /// POST variables set or mentioned in the request
+        /// </summary>
         public List<string> additionalPOST = new List<string>();
+        
+        /// <summary>
+        /// the values of the set HEAD values
+        /// </summary>
         public List<string> valuesPOST = new List<string>();
 
-        public const bool short_ = true;
+        private const bool isShortPackageLineFeeds = true;
+
+        /// <summary>
+        /// the HTTP type of the request (GET, POST)
+        /// </summary>
         public HTTP_Type type;
 
-        public static Dictionary<EndPoint, string> unfinishedPackets = new Dictionary<EndPoint, string>();
+        /// <summary>
+        /// Due to chromes strange post package.
+        /// </summary>
+        internal static Dictionary<EndPoint, string> unfinishedPackets = new Dictionary<EndPoint, string>();
 
+        /// <summary>
+        /// returns the contents of the complete package to be sent via tcp to the client 
+        /// </summary>
+        /// <param name="enc">a UTF8Encoding</param>
+        /// <returns>the contents as byte array</returns>
         public byte[] getPackage(UTF8Encoding enc)
         {
             string rets = "";
@@ -70,7 +138,7 @@ namespace LamestWebserver
             if(contentType != null)
                 rets += "Content-Type: " + contentType + "; charset=UTF-8\r\n";
 
-            rets += "Content-Length: " + contentLength + (short_?"\r\n\r\n":"\r\n\r\n\r\n");
+            rets += "Content-Length: " + contentLength + (isShortPackageLineFeeds?"\r\n\r\n":"\r\n\r\n\r\n");
             //ret += "Keep-Alive: timeout=10, max=100\r\n";
             //ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n\r\n";
 
@@ -83,13 +151,22 @@ namespace LamestWebserver
             return ret;
         }
 
+        /// <summary>
+        /// the default constructor for a HTTP Response
+        /// </summary>
         public HTTP_Packet()
         {
             //default constructor
             date = DateTime.Now.ToString(htmldateformat);
         }
 
-
+        /// <summary>
+        /// The default constructor for a HTTP Request from string.
+        /// if the version is "POST_PACKET_INCOMING" then please ignore the packet and wait for the next one to contain the POST values. this method will automatically stitch these packets together.
+        /// </summary>
+        /// <param name="input">the packet from the client decoded to string</param>
+        /// <param name="endp">the ipendpoint of the client for strange chrome POST hacks</param>
+        /// <returns>the corresponding HTTP Packet</returns>
         public static HTTP_Packet Constructor(ref string input, EndPoint endp)
         {
             HTTP_Packet h = new HTTP_Packet();
@@ -400,8 +477,19 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// The different kinds of HTTP Requests we allow
+    /// </summary>
     public enum HTTP_Type
     {
-        GET, POST
+        /// <summary>
+        /// A GET Request
+        /// </summary>
+        GET,
+
+        /// <summary>
+        /// A POST Request containing values
+        /// </summary>
+        POST
     }
 }
