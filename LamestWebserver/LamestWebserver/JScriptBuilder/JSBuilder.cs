@@ -475,6 +475,7 @@ namespace LamestWebserver.JScriptBuilder
             {
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
+                    URL += HttpUtility.UrlEncode(Value) + "&checked=";
                     return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".checked, true);xmlhttp.send();")).DefineAndCall();
 
                 default:
@@ -506,6 +507,7 @@ namespace LamestWebserver.JScriptBuilder
             {
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
+                    URL += HttpUtility.UrlEncode(Value) + "&checked=";
                     return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
 
                 default:
