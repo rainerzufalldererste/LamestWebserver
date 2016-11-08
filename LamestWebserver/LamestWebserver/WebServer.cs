@@ -26,9 +26,9 @@ namespace LamestWebserver
         internal bool running = true;
         internal AVLTree<string, PreloadedFile> cache = new AVLTree<string, PreloadedFile>();
 
-        private AVLHashMap<string, Master.getContents> pageResponses = new AVLHashMap<string, Master.getContents>(4096);
-        //private List<string> hashes = new List<string>();
-        //private List<Master.getContents> functions = new List<Master.getContents>();
+        private AVLHashMap<string, Master.getContents> pageResponses = new AVLHashMap<string, Master.getContents>(256);
+        private QueuedAVLTree<string, Master.getContents> oneTimePageResponses = new QueuedAVLTree<string, Master.getContents>(4096);
+
         private bool csharp_bridge = true;
         internal bool useCache = true;
 
@@ -55,6 +55,7 @@ namespace LamestWebserver
 
             Master.addFunctionEvent += addFunction;
             Master.removeFunctionEvent += removeFunction;
+            Master.addOneTimeFunctionEvent += addOneTimeFunction;
 
             this.port = port;
             tcpListener = new TcpListener(IPAddress.Any, port);
@@ -90,6 +91,7 @@ namespace LamestWebserver
             {
                 Master.addFunctionEvent += addFunction;
                 Master.removeFunctionEvent += removeFunction;
+                Master.addOneTimeFunctionEvent += addOneTimeFunction;
             }
 
             this.port = port;
@@ -214,6 +216,11 @@ namespace LamestWebserver
             pageResponses.Add(hash, getc);
         }
 
+        public void addOneTimeFunction(string hash, Master.getContents getc)
+        {
+            oneTimePageResponses.Add(hash, getc);
+        }
+
         public void removeFunction(string hash)
         {
             pageResponses.Remove(hash);
@@ -322,6 +329,14 @@ namespace LamestWebserver
                             }
 
                             Master.getContents currentRequest = pageResponses[htp.requestData];
+
+                            if (currentRequest == null)
+                            {
+                                currentRequest = oneTimePageResponses[htp.requestData];
+
+                                if (currentRequest != null)
+                                    oneTimePageResponses.Remove(htp.requestData);
+                            }
 
                             if (currentRequest != null)
                             {

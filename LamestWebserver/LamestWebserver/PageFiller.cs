@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
+    /// <summary>
+    /// A page response on the basis of a special formatted html document
+    /// </summary>
     public abstract class PageFiller : IURLIdentifyable
     {
         /// <summary>
@@ -18,6 +21,10 @@ namespace LamestWebserver
         /// </summary>
         protected bool replaceHREFs = true;
 
+        /// <summary>
+        /// The constructor for a PageFiller
+        /// </summary>
+        /// <param name="URL">the url this page will be available at</param>
         public PageFiller(string URL)
         {
             this.URL = URL;
@@ -29,6 +36,9 @@ namespace LamestWebserver
             Master.addFuntionToServer(URL, this.getContents);
         }
 
+        /// <summary>
+        /// A Method to remove this page from the server
+        /// </summary>
         protected void removeFromServer()
         {
             Master.removeFunctionFromServer(URL);
@@ -233,8 +243,19 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// the method which is called when the response is requested for this page
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <param name="output">the page to return</param>
         public abstract void processData(SessionData sessionData, ref string output);
 
+        /// <summary>
+        /// sets a value in the document
+        /// </summary>
+        /// <param name="key">the key of the value</param>
+        /// <param name="value">the value to set</param>
+        /// <param name="output">the current page input</param>
         public void setValue(string key, string value, ref string output)
         {
             if (key == null)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LamestWebserver.Collections;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,15 +7,32 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
+    /// <summary>
+    /// A Page referencable by URL
+    /// </summary>
     public interface IURLIdentifyable
     {
+        /// <summary>
+        /// The URL of this Page
+        /// </summary>
         string URL { get; }
     }
 
+    /// <summary>
+    /// A abstract class for directly responding with a string to the client request
+    /// </summary>
     public abstract class PageResponse : IURLIdentifyable
     {
+        /// <summary>
+        /// The URL of this Page
+        /// </summary>
         public string URL { get; protected set; }
 
+        /// <summary>
+        /// Constructs (and also registers if you want to) a new Page Response
+        /// </summary>
+        /// <param name="URL">the URL of this page</param>
+        /// <param name="register">shall this page automatically be registered?</param>
         public PageResponse(string URL, bool register = true)
         {
             this.URL = URL;
@@ -23,18 +41,34 @@ namespace LamestWebserver
                 Master.addFuntionToServer(URL, getContents);
         }
 
+        /// <summary>
+        /// This method removes the current page from the server (as URL identifyable object)
+        /// </summary>
         protected void removeFromServer()
         {
             Master.removeFunctionFromServer(URL);
         }
 
+        /// <summary>
+        /// A direct answer to the client as string
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the response</returns>
         protected abstract string getContents(SessionData sessionData);
     }
 
+    /// <summary>
+    /// A syncronized direct response as string to the client request
+    /// </summary>
     public abstract class SyncronizedPageResponse : PageResponse
     {
         private UsableMutex mutex = new UsableMutex();
 
+        /// <summary>
+        /// Constructs a new SyncronizedPageResponse and registers it if specified at the given URL
+        /// </summary>
+        /// <param name="URL">the URL of this Page</param>
+        /// <param name="register">shall this page be automatically registered?</param>
         public SyncronizedPageResponse(string URL, bool register = true) : base(URL, false)
         {
             if (register)
@@ -49,13 +83,29 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// A direct answer to the client as string
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the response</returns>
         protected override abstract string getContents(SessionData sessionData);
     }
 
+    /// <summary>
+    /// A direct response as HElement to the client request
+    /// </summary>
     public abstract class ElementResponse : IURLIdentifyable
     {
+        /// <summary>
+        /// the specified URL of this page
+        /// </summary>
         public string URL { get; protected set; }
 
+        /// <summary>
+        /// Constructs a new ElementResponse and registers it if specified at the given URL
+        /// </summary>
+        /// <param name="URL">the URL of this page</param>
+        /// <param name="register">shall this page be automatically registered?</param>
         public ElementResponse(string URL, bool register = true)
         {
             this.URL = URL;
@@ -64,6 +114,9 @@ namespace LamestWebserver
                 Master.addFuntionToServer(URL, getContents);
         }
 
+        /// <summary>
+        /// This method is used to remove the current page from the server (as URL identifyable object)
+        /// </summary>
         protected void removeFromServer()
         {
             Master.removeFunctionFromServer(URL);
@@ -74,14 +127,26 @@ namespace LamestWebserver
             return getElement(sessionData) * sessionData;
         }
 
+        /// <summary>
+        /// A direct answer to the clients request as HElement
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the response</returns>
         protected abstract HElement getElement(SessionData sessionData);
     }
 
+    /// <summary>
+    /// A syncronized direct response as HElement to the clients request
+    /// </summary>
     public abstract class SyncronizedElementResponse : ElementResponse
     {
-        public string URL { get; protected set; }
         private UsableMutex mutex = new UsableMutex();
 
+        /// <summary>
+        /// Constructs a new SyncronizedElementResponse and registers it if specified at the given URL
+        /// </summary>
+        /// <param name="URL">the URL of this page</param>
+        /// <param name="register">shall this page be automatically registered at the server?</param>
         public SyncronizedElementResponse(string URL, bool register = true) : base(URL, false)
         {
             if (register)
@@ -96,19 +161,19 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// The direct pre-syncronized response to the clients request as HElement
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the response</returns>
         protected override abstract HElement getElement(SessionData sessionData);
     }
 
+    /// <summary>
+    /// This Helper-Class is Used to quickly define new pages at the server
+    /// </summary>
     public static class InstantPageResponse
     {
-        private static System.Threading.Mutex mutex = new System.Threading.Mutex();
-        private static List<string> oneTimePageResponses = new List<string>(); // TODO: Replace with AVLTree
-
-        /// <summary>
-        /// the maximum amount of oneTimePageResponses. if the count of them exceeds this number the fist ones will be removed. 0 for no limit.
-        /// </summary>
-        public static int maximumOneTimePageResponses = 2048;
-
         /// <summary>
         /// adds a page to the server, that executes the given code
         /// </summary>
@@ -129,28 +194,13 @@ namespace LamestWebserver
 
             if (instantlyRemove)
             {
-                mutex.WaitOne();
-
-                if (maximumOneTimePageResponses > 0)
-                {
-                    if (oneTimePageResponses.Count + 1 > maximumOneTimePageResponses)
-                    {
-                        Master.removeFunctionFromServer(oneTimePageResponses[0]);
-                        oneTimePageResponses.RemoveAt(0);
-                    }
-                }
-
-                oneTimePageResponses.Add(hash);
-
-                mutex.ReleaseMutex();
+                Master.addOneTimeFuntionToServer(hash, code);
             }
+            else
+            {
+                Master.addFuntionToServer(hash, code);
 
-            Master.addFuntionToServer(hash, (SessionData sessionData) => 
-                {
-                    if(instantlyRemove)
-                        Master.removeFunctionFromServer(hash);
-                    return code.Invoke(sessionData);
-                });
+            }
 
             return "/" + hash;
         }
@@ -220,7 +270,9 @@ namespace LamestWebserver
         /// <summary>
         /// adds a temporary page to the server, that redirects to "destinationURL" (only available for ONE request)
         /// </summary>
+        /// <param name="destinationURL">the desired URL to reach</param>
         /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
+        /// <param name="copyPOST">specifies whether all POST values given should be copied throughout the whole redirecting process</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
         public static string addOneTimeRedirect(string destinationURL, bool instantlyRemove, bool copyPOST = false)
         {
@@ -233,8 +285,11 @@ namespace LamestWebserver
 
         /// <summary>
         /// adds a temporary page to the server, that redirects to "destinationURL" and executes the given code (only available for ONE request)
-        /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
         /// </summary>
+        /// <param name="destinationURL">the desired URL to reach</param>
+        /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
+        /// <param name="action">the code to execute</param>
+        /// <param name="copyPOST">specifies whether all POST values given should be copied throughout the whole redirecting process</param>
         public static string addOneTimeRedirectWithCode(string destinationURL, bool instantlyRemove, Action<SessionData> action, bool copyPOST = false)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) =>
@@ -248,7 +303,11 @@ namespace LamestWebserver
         /// <summary>
         /// adds a temporary page to the server, that redirects to "destinationURL" in X milliseconds (only available for ONE request)
         /// </summary>
+        /// <param name="destinationURL">the desired URL to reach</param>
+        /// <param name="message">the message to display</param>
+        /// <param name="milliseconds">the amount of milliseconds to wait before redirecting</param>
         /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
+        /// <param name="copyPOST">specifies whether all POST values given should be copied throughout the whole redirecting process</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
         public static string addOneTimeTimedRedirect(string destinationURL, string message, int milliseconds, bool instantlyRemove, bool copyPOST = false)
         {
@@ -262,7 +321,11 @@ namespace LamestWebserver
         /// <summary>
         /// adds a temporary page to the server, that redirects to "destinationURLifTRUE" if the conditional code returns true and redirects to "destinationURLifFALSE" if the conditional code returns false (only available for ONE request)
         /// </summary>
+        /// <param name="destinationURLifTRUE">the desired URL to reach if the code returns true</param>
+        /// <param name="destinationURLifFALSE">the desired URL to reach if the code returns false</param>
         /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
+        /// <param name="conditionalCode">the conditional code to execute</param>
+        /// <param name="copyPOST">specifies whether all POST values given should be copied throughout the whole redirecting process</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
         public static string addOneTimeConditionalRedirect(string destinationURLifTRUE, string destinationURLifFALSE, bool instantlyRemove, Func<SessionData, bool> conditionalCode, bool copyPOST = false)
         {
@@ -279,7 +342,11 @@ namespace LamestWebserver
         /// <summary>
         /// adds a temporary page to the server, that redirects if the conditional code returns true and executes other code if the conditional code returns false (only available for ONE request)
         /// </summary>
+        /// <param name="destinationURLifTRUE">the desired URL to reach if the conditional code returns true</param>
+        /// <param name="codeIfFALSE">the code to be executed if the conditional code returns false</param>
         /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
+        /// <param name="conditionalCode">the conditional code to execute</param>
+        /// <param name="copyPOST">specifies whether all POST values given should be copied throughout the whole redirecting process</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
         public static string addOneTimeRedirectOrCode(string destinationURLifTRUE, Master.getContents codeIfFALSE, bool instantlyRemove, Func<SessionData, bool> conditionalCode, bool copyPOST = false)
         {
@@ -293,6 +360,13 @@ namespace LamestWebserver
             , instantlyRemove);
         }
 
+        /// <summary>
+        /// quickly generates a redirecting html page
+        /// </summary>
+        /// <param name="destinationURL">the desired url to reach</param>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <param name="copyPOST">shall the POST-Values be copied?</param>
+        /// <returns>the page as string</returns>
         public static string generateRedirectCode(string destinationURL, SessionData sessionData = null, bool copyPOST = false)
         {
             if(!copyPOST)
@@ -337,6 +411,15 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// quickly generates a redirecting html page that waits a few milliseconds and displays a message
+        /// </summary>
+        /// <param name="destinationURL">the desired url to reach</param>
+        /// <param name="message">the message to display</param>
+        /// <param name="milliseconds">the amount of milliseconds to wait</param>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <param name="copyPOST">shall the POST-Values be copied?</param>
+        /// <returns>the page as string</returns>
         public static string generateRedirectInMillisecondsCode(string destinationURL, string message, int milliseconds, SessionData sessionData = null, bool copyPOST = false)
         {
             if (!copyPOST)
