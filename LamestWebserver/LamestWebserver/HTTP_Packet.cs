@@ -95,11 +95,6 @@ namespace LamestWebserver
         public HTTP_Type type;
 
         /// <summary>
-        /// Due to chromes strange post package.
-        /// </summary>
-        internal static Dictionary<EndPoint, string> unfinishedPackets = new Dictionary<EndPoint, string>();
-
-        /// <summary>
         /// returns the contents of the complete package to be sent via tcp to the client 
         /// </summary>
         /// <param name="enc">a UTF8Encoding</param>
@@ -162,12 +157,13 @@ namespace LamestWebserver
 
         /// <summary>
         /// The default constructor for a HTTP Request from string.
-        /// if the version is "POST_PACKET_INCOMING" then please ignore the packet and wait for the next one to contain the POST values. this method will automatically stitch these packets together.
+        /// if the version is null then please ignore the packet and wait for the next one to contain the POST values. this method will automatically stitch these packets together.
         /// </summary>
         /// <param name="input">the packet from the client decoded to string</param>
         /// <param name="endp">the ipendpoint of the client for strange chrome POST hacks</param>
+        /// <param name="lastPacket">the string contents of the last packet (Chrome POST packets are split in two packets)</param>
         /// <returns>the corresponding HTTP Packet</returns>
-        public static HTTP_Packet Constructor(ref string input, EndPoint endp)
+        public static HTTP_Packet Constructor(ref string input, EndPoint endp, string lastPacket)
         {
             HTTP_Packet h = new HTTP_Packet();
             
@@ -389,8 +385,7 @@ namespace LamestWebserver
 
                         if(contlfound && h.contentLength > 0 && linput[linput.Length - 1] == "" && linput[linput.Length - 2] == "")
                         {
-                            unfinishedPackets.Add(endp, input);
-                            return new HTTP_Packet() { version = "POST_PACKET_INCOMING" };
+                            return new HTTP_Packet() { version = null };
                         }
                     }
 
@@ -403,17 +398,12 @@ namespace LamestWebserver
                 // Chris: Crazy chrome POST hack
                 // Chris: Resolve Endpoint and append input to that input, then delete
 
-                System.Threading.Thread.Sleep(2);
+                if (lastPacket != null)
+                    input = lastPacket + input;
+                else
+                    return getCookiesAndModified(h, linput);
 
-                string oldinput = unfinishedPackets[endp];
-
-                if (oldinput != null)
-                {
-                    unfinishedPackets.Remove(endp);
-                    input = oldinput + input;
-                }
-
-                return Constructor(ref input, endp);
+                return Constructor(ref input, endp, null);
             }
 
             return h;

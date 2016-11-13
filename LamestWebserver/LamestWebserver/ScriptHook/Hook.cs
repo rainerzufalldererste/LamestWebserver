@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Scripting.Hosting;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using LamestWebserver;
 
-namespace LamestScriptHook
+namespace LamestWebserver.ScriptHook
 {
     /// <summary>
     /// The main container for C#-Scripting support

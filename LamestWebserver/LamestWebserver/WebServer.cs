@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.IO.Compression;
 using System.Drawing.Imaging;
-using LamestScriptHook;
+using LamestWebserver.ScriptHook;
 using LamestWebserver.Collections;
 using System.IO;
 
@@ -271,6 +271,7 @@ namespace LamestWebserver
             TcpClient client = (TcpClient)obj;
             NetworkStream nws = client.GetStream();
             UTF8Encoding enc = new UTF8Encoding();
+            string lastmsg = null;
 
             byte[] msg;
             int bytes = 0;
@@ -298,24 +299,26 @@ namespace LamestWebserver
                 try
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
-                    HTTP_Packet htp = HTTP_Packet.Constructor(ref msg_, client.Client.RemoteEndPoint);
+                    HTTP_Packet htp = HTTP_Packet.Constructor(ref msg_, client.Client.RemoteEndPoint, lastmsg);
 
                     byte[] buffer;
 
                     try
                     {
-                        if (htp.version == "POST_PACKET_INCOMING")
+                        if (htp.version == null)
                         {
-                            continue;
+                            lastmsg = msg_;
                         }
                         else if (htp.requestData == "")
                         {
+                            lastmsg = null;
+
                             HTTP_Packet htp_ = new HTTP_Packet()
                             {
                                 status = "501 Not Implemented",
                                 binaryData = enc.GetBytes(Master.getErrorMsg(
                                     "Error 501: Not Implemented",
-                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
+                                            "<p>The Feature that you were trying to use is not yet implemented.</p><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p>"))
                             };
 
                             buffer = htp_.getPackage(enc);
@@ -323,6 +326,8 @@ namespace LamestWebserver
                         }
                         else
                         {
+                            lastmsg = null;
+
                             while (htp.requestData.Length >= 2 && (htp.requestData[0] == ' ' || htp.requestData[0] == '/'))
                             {
                                 htp.requestData = htp.requestData.Remove(0, 1);
@@ -463,7 +468,7 @@ namespace LamestWebserver
                             status = "403 Forbidden",
                             binaryData = enc.GetBytes(Master.getErrorMsg(
                                 "Error 403: Forbidden",
-                                "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
+                                "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p>"))
                         };
                     }
                 }
@@ -507,7 +512,7 @@ namespace LamestWebserver
                         status = "404 File Not Found",
                         binaryData = enc.GetBytes(Master.getErrorMsg(
                             "Error 404: Page Not Found",
-                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
+                            "<p>The URL you requested did not match any page or file on the server.</p><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p>"))
                     };
                 }
 
@@ -527,7 +532,7 @@ namespace LamestWebserver
                     status = "500 Internal Server Error",
                     binaryData = enc.GetBytes(Master.getErrorMsg(
                         "Error 500: Internal Server Error",
-                        "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + e.ToString().Replace("\r\n", "<br>") + "</div><br><hr><br><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p><hr><p>I guess you don't know what that means. You're welcome! I'm done here!</p>"))
+                        "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + e.ToString().Replace("\r\n", "<br>") + "</div><br><hr><br><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div>"))
                 };
             }
         }

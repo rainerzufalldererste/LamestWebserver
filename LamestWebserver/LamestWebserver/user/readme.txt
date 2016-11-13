@@ -1,1 +1,0 @@
-﻿This folder is primarily used for saving persistent User-Data.
