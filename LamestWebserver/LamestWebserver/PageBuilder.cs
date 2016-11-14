@@ -465,6 +465,10 @@ namespace LamestWebserver
     public class HImage : HElement
     {
         string source;
+
+        /// <summary>
+        /// Additional attributes added to this tag
+        /// </summary>
         public string descriptionTags;
 
         /// <summary>
@@ -1070,7 +1074,6 @@ namespace LamestWebserver
             this.type = EButtonType.button;
         }
 
-
         /// <summary>
         /// This Method parses the current element to string
         /// </summary>
@@ -1186,6 +1189,165 @@ namespace LamestWebserver
             /// A button which submits the form it lives in
             /// </summary>
             submit
+        }
+    }
+
+    /// <summary>
+    /// a select element representing a DropDownMenu
+    /// </summary>
+    public class HDropDownMenu : HElement
+    {
+        /// <summary>
+        /// Additional attributes added to the tag
+        /// </summary>
+        public string descriptionTags;
+
+        private Tuple<string, string>[] options;
+
+        /// <summary>
+        /// The amount of entries displayed if not expanded
+        /// </summary>
+        public int size = 1;
+
+        /// <summary>
+        /// does the dropdownmenu allow multiple selections?
+        /// </summary>
+        public bool multipleSelectable = false;
+
+        /// <summary>
+        /// is the dropdownmenu disabled for the user?
+        /// </summary>
+        public bool disabled = false;
+
+        /// <summary>
+        /// the selectedIndexes
+        /// </summary>
+        public List<int> selectedIndexes = new List<int>() { 0 };
+
+        /// <summary>
+        /// Constructs a new DropDownMenu element
+        /// </summary>
+        /// <param name="name">the name of the element (for forms)</param>
+        /// <param name="size">The amount of entries displayed if not expanded</param>
+        /// <param name="multipleSelectable">does the dropdownmenu allow multiple selections?</param>
+        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
+        public HDropDownMenu(string name, int size, bool multipleSelectable, params Tuple<string, string>[] TextValuePairsToDisplay)
+        {
+            this.Name = name;
+            this.size = size;
+            this.multipleSelectable = multipleSelectable;
+            this.options = TextValuePairsToDisplay;
+        }
+
+        /// <summary>
+        /// Constructs a new DropDownMenu element
+        /// </summary>
+        /// <param name="name">the name of the element (for forms)</param>
+        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
+        public HDropDownMenu(string name, params Tuple<string, string>[] TextValuePairsToDisplay)
+        {
+            this.Name = name;
+            this.options = TextValuePairsToDisplay;
+        }
+
+        /// <summary>
+        /// Selects an item based on the value given to it.
+        /// Unselects everything else if !multipleSelectable.
+        /// DOES NOT THROW AN EXCEPTION IF NO MATCHING INDEX HAS BEEN FOUND!
+        /// </summary>
+        /// <param name="value">the value to look for</param>
+        /// <returns>this element for inline use.</returns>
+        public HDropDownMenu SelectByValue(string value)
+        {
+            if (!multipleSelectable)
+                selectedIndexes.Clear();
+
+            for (int i = 0; i < options.Length; i++)
+            {
+                if(options[i].Item2 == value)
+                {
+                    this.selectedIndexes.Add(i);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Selects an item based on the text given to it.
+        /// Unselects everything else if !multipleSelectable.
+        /// DOES NOT THROW AN EXCEPTION IF NO MATCHING INDEX HAS BEEN FOUND!
+        /// </summary>
+        /// <param name="text">the text to look for</param>
+        /// <returns>this element for inline use.</returns>
+        public HDropDownMenu SelectByText(string text)
+        {
+            if (!multipleSelectable)
+                selectedIndexes.Clear();
+
+            for (int i = 0; i < options.Length; i++)
+            {
+                if (options[i].Item1 == text)
+                {
+                    this.selectedIndexes.Add(i);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <returns>the element as string</returns>
+        public override string getContent(SessionData sessionData)
+        {
+            string ret = "<select ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            ret += "size=\"" + size + "\" ";
+
+            ret += "multiple=\"" + multipleSelectable + "\" ";
+
+            if(disabled)
+                ret += "disabled=\"" + disabled + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(descriptionTags))
+                ret += descriptionTags;
+
+            ret += ">\n";
+
+            if(options != null)
+            {
+                for (int i = 0; i < options.Length; i++)
+                {
+                    ret += "<option value=\"" + System.Web.HttpUtility.UrlEncode(options[i].Item2) + "\" ";
+
+                    if (selectedIndexes.Contains(i))
+                        ret += "selected=\"selected\" ";
+
+                    ret += ">" + System.Web.HttpUtility.HtmlEncode(options[i].Item1) + "</option>";
+                }
+            }
+
+            ret += "\n</select>\n";
+
+            return ret;
         }
     }
 

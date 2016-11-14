@@ -389,7 +389,7 @@ namespace LamestWebserver.JScriptBuilder
 
             for (int i = 0; i < elements.Count; i++)
             {
-                _content += elements[i].getContent(sessionData, CallingContext.Default).jsEncode();
+                _content += elements[i].getContent(sessionData, CallingContext.Default);
             }
 
             string ret = "<div id=\"" + GlobalID + "\" class=\"" + GlobalID + "\" style=\"display: block;position: fixed;top: 0;right: 0;left: 0;bottom: 0;width: 100%;height: 100%;z-index: 100;background-color: rgba(33, 33, 33, 0.75);margin: 0px\"><div class=\"" + GlobalInnerID + "\" id=\"" + GlobalInnerID + "\" style=\"display: block;position: relative;margin: auto;background-color: #fff;max-width: 600px;overflow: auto;margin-top: 8em;\">";
@@ -419,7 +419,7 @@ namespace LamestWebserver.JScriptBuilder
 
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            return "<button type='" + buttonType + "' " + getDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + buttonText + "</button>";
+            return "<button type='" + buttonType + "' " + getDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText) + "</button>";
         }
     }
 
@@ -431,13 +431,13 @@ namespace LamestWebserver.JScriptBuilder
 
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            return "<p " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + content + "</p>";
+            return "<p " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(content) + "</p>";
         }
     }
 
     public class JSInput : JSInteractableElement
     {
-        public HInput.EInputType inputType = HInput.EInputType.text;
+        protected HInput.EInputType inputType = HInput.EInputType.text;
         public string Value = "";
 
         public JSInput(HInput.EInputType type, string name, string value = "") : base()
@@ -449,7 +449,7 @@ namespace LamestWebserver.JScriptBuilder
 
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            return "<input type='" + inputType + "' " + getDefaultAttributes() + " value='" + Value + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
+            return "<input type='" + inputType + "' " + getDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value) + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
         }
 
         /// <summary>
@@ -541,6 +541,187 @@ namespace LamestWebserver.JScriptBuilder
             ret += ">" + HttpUtility.HtmlEncode(Value)  + "</textarea>";
 
             return ret;
+        }
+    }
+
+    public class JSDropDownMenu : JSInput
+    {
+        private Tuple<string, string>[] options;
+
+        /// <summary>
+        /// The amount of entries displayed if not expanded
+        /// </summary>
+        public int size = 1;
+
+        /// <summary>
+        /// does the dropdownmenu allow multiple selections?
+        /// </summary>
+        public bool multipleSelectable = false;
+
+        /// <summary>
+        /// is the dropdownmenu disabled for the user?
+        /// </summary>
+        public bool disabled = false;
+
+        /// <summary>
+        /// the selectedIndexes
+        /// </summary>
+        public List<int> selectedIndexes = new List<int>() { 0 };
+
+        /// <summary>
+        /// Constructs a new DropDownMenu element
+        /// </summary>
+        /// <param name="name">the name of the element (for forms)</param>
+        /// <param name="size">The amount of entries displayed if not expanded</param>
+        /// <param name="multipleSelectable">does the dropdownmenu allow multiple selections?</param>
+        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
+        public JSDropDownMenu(string name, int size, bool multipleSelectable, params Tuple<string, string>[] TextValuePairsToDisplay) : base(HInput.EInputType.text, name, "")
+        {
+            this.Name = name;
+            this.size = size;
+            this.multipleSelectable = multipleSelectable;
+            this.options = TextValuePairsToDisplay;
+        }
+
+        /// <summary>
+        /// Constructs a new DropDownMenu element
+        /// </summary>
+        /// <param name="name">the name of the element (for forms)</param>
+        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
+        public JSDropDownMenu(string name, params Tuple<string, string>[] TextValuePairsToDisplay) : base(HInput.EInputType.text, name, "")
+        {
+            this.Name = name;
+            this.options = TextValuePairsToDisplay;
+        }
+
+        /// <summary>
+        /// Selects an item based on the value given to it.
+        /// Unselects everything else if !multipleSelectable.
+        /// DOES NOT THROW AN EXCEPTION IF NO MATCHING INDEX HAS BEEN FOUND!
+        /// </summary>
+        /// <param name="value">the value to look for</param>
+        /// <returns>this element for inline use.</returns>
+        public JSDropDownMenu SelectByValue(string value)
+        {
+            if (!multipleSelectable)
+                selectedIndexes.Clear();
+
+            for (int i = 0; i < options.Length; i++)
+            {
+                if (options[i].Item2 == value)
+                {
+                    this.selectedIndexes.Add(i);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Selects an item based on the text given to it.
+        /// Unselects everything else if !multipleSelectable.
+        /// DOES NOT THROW AN EXCEPTION IF NO MATCHING INDEX HAS BEEN FOUND!
+        /// </summary>
+        /// <param name="text">the text to look for</param>
+        /// <returns>this element for inline use.</returns>
+        public JSDropDownMenu SelectByText(string text)
+        {
+            if (!multipleSelectable)
+                selectedIndexes.Clear();
+
+            for (int i = 0; i < options.Length; i++)
+            {
+                if (options[i].Item1 == text)
+                {
+                    this.selectedIndexes.Add(i);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <param name="context">the current callingContext</param>
+        /// <returns>the element as string</returns>
+        public override string getContent(SessionData sessionData, CallingContext context)
+        {
+            string ret = "<select " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
+
+            ret += "size=\"" + size + "\" ";
+
+            ret += "multiple=\"" + multipleSelectable + "\" ";
+
+            if (disabled)
+                ret += "disabled=\"" + disabled + "\" ";
+
+            ret += ">\n";
+
+            if (options != null)
+            {
+                for (int i = 0; i < options.Length; i++)
+                {
+                    ret += "<option value=\"" + HttpUtility.UrlEncode(options[i].Item2) + "\" ";
+
+                    if (selectedIndexes.Contains(i))
+                        ret += "selected=\"selected\" ";
+
+                    ret += ">" + HttpUtility.HtmlEncode(options[i].Item1) + "</option>";
+                }
+            }
+
+            ret += "\n</select>\n";
+
+            return ret;
+        }
+
+
+
+        /// <summary>
+        /// Sends this elements name and value to a remote server.
+        /// </summary>
+        /// <param name="URL">the event to reach</param>
+        public override JSDirectFunctionCall SendNameValueAsync(string URL)
+        {
+            if (URL.Contains('?') && URL[URL.Length - 1] != '?')
+            {
+                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+            else if (URL[URL.Length - 1] != '?')
+            {
+                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+            else
+            {
+                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+
+            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
+        }
+
+        /// <summary>
+        /// Sends this elements name and value to a remote server and sets the response as InnerHtml of a HTML element.
+        /// </summary>
+        /// <param name="element">the element which innerHTML you want to override</param>
+        /// <param name="URL">the event to reach</param>
+        public override JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL)
+        {
+            if (URL.Contains('?') && URL[URL.Length - 1] != '?')
+            {
+                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+            else if (URL[URL.Length - 1] != '?')
+            {
+                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+            else
+            {
+                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
+            }
+
+            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
         }
     }
 

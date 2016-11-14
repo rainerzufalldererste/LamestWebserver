@@ -99,6 +99,7 @@
     <Compile Include="Collections\AVLTree.cs" />
     <Compile Include="Collections\QueuedAVLTree.cs" />
     <Compile Include="Collections\SerializableKeyValuePair.cs" />
+    <Compile Include="NotificationService\NotificationHandler.cs" />
     <Compile Include="ScriptHook\Hook.cs" />
     <Compile Include="HTTP_Packet.cs" />
     <Compile Include="JScriptBuilder\JSAnimation.cs" />
