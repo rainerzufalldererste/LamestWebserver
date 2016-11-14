@@ -390,7 +390,7 @@ namespace LamestWebserver
                     {
                         ret += "href='#' ";
 
-                        string hash = SessionContainer.generateHash();
+                        string hash = SessionContainer.generateUnusedHash();
                         string add = ";var f_"
                             + hash + "=document.createElement('form');f_"
                             + hash + ".setAttribute('method','POST');f_"
@@ -1104,7 +1104,7 @@ namespace LamestWebserver
                     else
                         ret += "href='#' ";
 
-                    string hash = SessionContainer.generateHash();
+                    string hash = SessionContainer.generateUnusedHash();
                     string add = ";var f_"
                         + hash + "=document.createElement('form');f_"
                         + hash + ".setAttribute('method','POST');f_"

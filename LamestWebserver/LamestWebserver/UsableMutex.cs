@@ -19,9 +19,14 @@ using System.Threading.Tasks;
 /// </summary>
 namespace LamestWebserver
 {
+    /// <summary>
+    /// Wrapper for a Mutex.
+    /// Supports Lock(), an operation to help using mutexes throug "using" statements and UsableMutex.Lock() for sorted locking to prevent deadlocks.
+    /// </summary>
     public class UsableMutex
     {
         private Mutex innerMutex;
+        private readonly string ID = SessionContainer.generateHash();
 
         public UsableMutex()
         {
@@ -78,9 +83,76 @@ namespace LamestWebserver
             innerMutex.ReleaseMutex();
         }
 
+        /// <summary>
+        /// Locks the innerMutex in a way, so that it can be used through a using statement (IDisposable)
+        /// </summary>
+        /// <returns></returns>
         public UsableMutexLocker Lock()
         {
             return new UsableMutexLocker(innerMutex);
+        }
+
+        /// <summary>
+        /// Is used to lock especially multiple mutexes in sorted order to prevent deadlocks
+        /// </summary>
+        /// <param name="mutexes">the usablemutexes to lock</param>
+        /// <returns>a UsableMutliMutexLocker, that already locked the given mutexes</returns>
+        public static UsableMultiMutexLocker Lock(params UsableMutex[] mutexes)
+        {
+            Mutex[] mut = new Mutex[mutexes.Length];
+
+            for (int i = 0; i < mutexes.Length; i++)
+            {
+                int currentIndex = -1;
+
+                for (int j = 0; j < mutexes.Length; j++)
+                {
+                    if (mut.Contains(mutexes[j].innerMutex))
+                        continue;
+
+                    if (mut[i] == null)
+                        currentIndex = j;
+                    else if(mutexes[currentIndex].ID.CompareTo(mutexes[j].ID) < 0)
+                        currentIndex = j;
+                }
+
+                mut[i] = mutexes[currentIndex].innerMutex;
+            }
+
+            return new UsableMultiMutexLocker(mut.ToArray());
+        }
+    }
+
+    /// <summary>
+    /// A MutexLocker for multiple Mutexes
+    /// </summary>
+    public class UsableMultiMutexLocker : IDisposable
+    {
+        private Mutex[] mutexes;
+
+        /// <summary>
+        /// constructs a new UsableMultiMutexLocker and already locks all given mutexes.
+        /// </summary>
+        /// <param name="mutexes">the mutexes to lock</param>
+        public UsableMultiMutexLocker(params Mutex[] mutexes)
+        {
+            this.mutexes = mutexes;
+
+            for (int i = 0; i < mutexes.Length; i++)
+            {
+                mutexes[i].WaitOne();
+            }
+        }
+
+        /// <summary>
+        /// Releases all locked mutexes in opposite locking order.
+        /// </summary>
+        public void Dispose()
+        {
+            for (int i = mutexes.Length - 1; i >= 0; i--)
+            {
+                mutexes[i].ReleaseMutex();
+            }
         }
     }
 }

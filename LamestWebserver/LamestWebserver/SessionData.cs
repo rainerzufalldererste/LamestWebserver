@@ -126,13 +126,13 @@ namespace LamestWebserver
 
             if (SessionIdRereferencingMode == ESessionIdRereferencingMode.AlwaysRenew)
             {
-                UserHashes[userID.Value] = generateHash();
+                UserHashes[userID.Value] = generateUnusedHash();
                 isNewSSID = true;
             }
             else if (SessionIdRereferencingMode == ESessionIdRereferencingMode.Keep && UserHashes[userID.Value] == null)
             {
                 isNewSSID = true;
-                UserHashes[userID.Value] = generateHash();
+                UserHashes[userID.Value] = generateUnusedHash();
             }
 
             return UserHashes[userID.Value];
@@ -180,7 +180,7 @@ namespace LamestWebserver
 #endif
             }
 
-            UserHashes[userID.Value] = generateHash();
+            UserHashes[userID.Value] = generateUnusedHash();
 
             return UserHashes[userID.Value];
         }
@@ -299,12 +299,31 @@ namespace LamestWebserver
         };
 
         /// <summary>
+        /// generates a 128 bit AES hash that is not used in pagenames
+        /// </summary>
+        /// <returns></returns>
+        public static string generateUnusedHash()
+        {
+            GENERATE_NEW_HASH:
+            string hash = generateHash();
+
+            // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
+            
+            if (getIndexFromList(hash, FileNames).HasValue)
+                goto GENERATE_NEW_HASH;
+
+            if (getIndexFromList(hash, UserHashes).HasValue)
+                goto GENERATE_NEW_HASH;
+
+            return hash;
+        }
+
+        /// <summary>
         /// generates a 128 bit AES hash
         /// </summary>
         /// <returns></returns>
         public static string generateHash()
         {
-            GENERATE_NEW_HASH:
             string hash = "";
 
             // Chris: generate hash
@@ -324,14 +343,6 @@ namespace LamestWebserver
                 hash += hashChars[(lastHash[i] & 0xf0) >> 4];
                 hash += hashChars[lastHash[i] & 0x0f];
             }
-
-            // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
-            
-            if (getIndexFromList(hash, FileNames).HasValue)
-                goto GENERATE_NEW_HASH;
-
-            if (getIndexFromList(hash, UserHashes).HasValue)
-                goto GENERATE_NEW_HASH;
 
             return hash;
         }

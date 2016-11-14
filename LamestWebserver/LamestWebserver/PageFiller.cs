@@ -182,7 +182,7 @@ namespace LamestWebserver
                                     ret = ret.Remove(onclickEndPos + 1, 1);
                                     ret = ret.Insert(onclickEndPos + 1, "\"");
 
-                                    string hash = SessionContainer.generateHash();
+                                    string hash = SessionContainer.generateUnusedHash();
                                     string add = ";var f_"
                                         + hash + "=document.createElement('form');f_"
                                         + hash + ".setAttribute('method','POST');f_"

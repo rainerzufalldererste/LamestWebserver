@@ -203,7 +203,7 @@ namespace Demos
 
             private void registerNextGame()
             {
-                nextGameHash = SessionContainer.generateHash(); // generates a new hash
+                nextGameHash = SessionContainer.generateUnusedHash(); // generates a new hash
                 currentGame = new GameHandler(nextGameHash);
                 nextGameHash = "/" + nextGameHash;
             }
