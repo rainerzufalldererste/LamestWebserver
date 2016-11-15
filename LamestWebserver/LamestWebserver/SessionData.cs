@@ -6,6 +6,7 @@ using System.Threading;
 using System.Security.Cryptography;
 using System.Runtime.Serialization;
 using LamestWebserver.Collections;
+using System.Text;
 
 namespace LamestWebserver
 {
@@ -54,25 +55,32 @@ namespace LamestWebserver
             Cookie
         }
 
-#if PERSISTENT_DATA
-        private static Mutex persistencyMutex = new Mutex();
-        private static List<List<string>> persistentUserDataHashes;
-        private static List<List<object>> persistentUserData;
-#endif
+        /// <summary>
+        /// The default size of the HashMaps for UserGlobal-Variables
+        /// </summary>
+        public static int UserVariableHashMapSize = 512;
 
-        private static Mutex mutex = new Mutex();
+        /// <summary>
+        /// The default size of the HashMap containing the User
+        /// </summary>
+        public static int UserHashMapSize = 128;
+
+        private static UsableMutex mutex = new UsableMutex();
+
+        private static AVLTree<string, AVLTree<string, object>> PerFileObjects = new AVLTree<string, AVLTree<string, object>>();
         
-        private static List<string> FileNames = new List<string>();
-        private static List<Dictionary<string, object>> FileObjects = new List<Dictionary<string, object>>();
+        private static AVLHashMap<string, UserInfo> UserInfos = new AVLHashMap<string, UserInfo>(UserHashMapSize);
+        private static AVLHashMap<string, UserInfo> UserInfosByName = new AVLHashMap<string, UserInfo>(UserHashMapSize);
 
-        private static List<string> UserHashes = new List<string>();
-        private static List<string> UserNames = new List<string>();
-        private static List<Dictionary<string, object>> UserObjects = new List<Dictionary<string, object>>();
+        internal static AVLTree<string, object> globalVariables = new AVLTree<string, object>();
 
-        private static List<List<string>> FilePerUserNames = new List<List<string>>();
-        private static List<List<Dictionary<string, object>>> FilePerUserObjects = new List<List<Dictionary<string, object>>>();
-
-        internal static Dictionary<string, object> globalVariables = new Dictionary<string, object>();
+        internal class UserInfo
+        {
+            internal string ID;
+            internal string UserName;
+            internal AVLHashMap<string, object> UserGlobalVariables = new AVLHashMap<string, object>(512);
+            internal AVLTree<string, AVLTree<string, object>> PerFileVariables = new AVLTree<string, AVLTree<string, object>>();
+        }
 
         /// <summary>
         /// This method also creates a user if none exists!
@@ -80,223 +88,106 @@ namespace LamestWebserver
         /// <param name="user">the current user</param>
         /// <param name="isNewSSID">has a new ssid been created or are we reusing the old one</param>
         /// <returns></returns>
-        internal static string getSSIDforUser(string user, out bool isNewSSID)
+        internal static string getSSIDforUser(string user, out bool isNewSSID, out UserInfo userInfo)
         {
-            int? userID = getIndexFromList(user, UserNames);
-            
-            if(!userID.HasValue)
+            string hash = UserInfosByName[user]?.ID;
+
+            if (hash == null)
             {
+                userInfo = new UserInfo();
+                userInfo.ID = generateUnusedHash();
+                hash = userInfo.ID;
+                userInfo.UserName = user;
+
                 mutex.WaitOne();
 
-                UserNames.Add(user);
-                userID = UserNames.Count - 1;
-                UserHashes.Add(null);
-                FilePerUserNames.Add(new List<string>());
-                FilePerUserObjects.Add(new List<Dictionary<string, object>>());
-                UserObjects.Add(new Dictionary<string, object>());
+                UserInfos.Add(userInfo.ID, userInfo);
+                UserInfosByName.Add(userInfo.UserName, userInfo);
 
-#if PERSISTENT_DATA
-                persistencyMutex.WaitOne();
-
-                try
-                {
-                    if (persistentUserData == null)
-                        readPersistency();
-
-                    persistentUserDataHashes.Add(new List<string>());
-                    persistentUserData.Add(new List<object>());
-                    writePersistency();
-
-                    persistencyMutex.ReleaseMutex();
-                    mutex.ReleaseMutex();
-                }
-                catch (Exception e)
-                {
-                    persistencyMutex.ReleaseMutex();
-                    mutex.ReleaseMutex();
-
-                    throw new Exception(e.Message, e);
-                }
-#else
                 mutex.ReleaseMutex();
-#endif
-            }
 
-            isNewSSID = false;
-
-            if (SessionIdRereferencingMode == ESessionIdRereferencingMode.AlwaysRenew)
-            {
-                UserHashes[userID.Value] = generateUnusedHash();
                 isNewSSID = true;
             }
-            else if (SessionIdRereferencingMode == ESessionIdRereferencingMode.Keep && UserHashes[userID.Value] == null)
+            else
             {
-                isNewSSID = true;
-                UserHashes[userID.Value] = generateUnusedHash();
+                isNewSSID = false;
+
+                if (SessionIdRereferencingMode == ESessionIdRereferencingMode.AlwaysRenew)
+                {
+                    mutex.WaitOne();
+
+                    userInfo = UserInfosByName[user];
+                    UserInfos.Remove(userInfo.ID);
+                    userInfo.ID = generateUnusedHash();
+                    UserInfos[userInfo.ID] = userInfo;
+
+                    mutex.ReleaseMutex();
+
+                    isNewSSID = true;
+                    hash = userInfo.ID;
+                }
+                else if (SessionIdRereferencingMode == ESessionIdRereferencingMode.Keep && UserInfosByName[user].ID == null)
+                {
+                    mutex.WaitOne();
+
+                    userInfo = UserInfosByName[user];
+                    UserInfos.Remove(userInfo.ID);
+                    userInfo.ID = generateUnusedHash();
+                    UserInfos[userInfo.ID] = userInfo;
+
+                    mutex.ReleaseMutex();
+
+                    isNewSSID = true;
+                    hash = userInfo.ID;
+                }
+                else
+                {
+                    userInfo = UserInfosByName[user];
+                }
             }
 
-            return UserHashes[userID.Value];
+            return hash;
         }
 
         internal static string forceGetNextSSID(string user)
         {
-            int? userID = getIndexFromList(user, UserNames);
+            string hash = UserInfosByName[user]?.ID;
 
-            if (!userID.HasValue)
+            if (hash == null)
+            {
+                UserInfo info = new UserInfo();
+                info.ID = generateUnusedHash();
+                hash = info.ID;
+                info.UserName = user;
+
+                mutex.WaitOne();
+
+                UserInfos.Add(info.ID, info);
+                UserInfosByName.Add(info.UserName, info);
+
+                mutex.ReleaseMutex();
+            }
+            else
             {
                 mutex.WaitOne();
 
-                UserNames.Add(user);
-                userID = UserNames.Count - 1;
-                UserHashes.Add(null);
-                FilePerUserNames.Add(new List<string>());
-                FilePerUserObjects.Add(new List<Dictionary<string, object>>());
-                UserObjects.Add(new Dictionary<string, object>());
+                UserInfo info = UserInfosByName[user];
+                UserInfos.Remove(info.ID);
+                info.ID = generateUnusedHash();
+                UserInfos[info.ID] = info;
 
-#if PERSISTENT_DATA
-                persistencyMutex.WaitOne();
-
-                try
-                {
-                    if (persistentUserData == null)
-                        readPersistency();
-
-                    persistentUserDataHashes.Add(new List<string>());
-                    persistentUserData.Add(new List<object>());
-                    writePersistency();
-
-                    persistencyMutex.ReleaseMutex();
-                    mutex.ReleaseMutex();
-                }
-                catch (Exception e)
-                {
-                    persistencyMutex.ReleaseMutex();
-                    mutex.ReleaseMutex();
-
-                    throw new Exception(e.Message, e);
-                }
-#else
                 mutex.ReleaseMutex();
-#endif
+                
+                hash = info.ID;
             }
 
-            UserHashes[userID.Value] = generateUnusedHash();
-
-            return UserHashes[userID.Value];
+            return hash;
         }
-
-#if PERSISTENT_DATA
-        private static void readPersistency()
-        {
-            try
-            {
-                persistentUserData = Serializer.getData<List<List<object>>>("./user/userdata.xml");
-                persistentUserDataHashes = Serializer.getData<List<List<string>>>("./user/userhashes.xml");
-            }
-            catch(Exception)
-            {
-                persistentUserData = new List<List<object>>();
-                persistentUserDataHashes = new List<List<string>>();
-            }
-        }
-
-        private static void writePersistency()
-        {
-            try
-            {
-                Serializer.writeData(persistentUserData, "./user/usersdata.xml");
-                Serializer.writeData(persistentUserDataHashes, "./user/userhashes.xml");
-            }
-            catch(Exception)
-            {
-                if(!System.IO.Directory.Exists("./user/"))
-                {
-                    System.IO.Directory.CreateDirectory("./user/");
-                }
-
-                Serializer.writeData(persistentUserData, "./user/usersdata.xml");
-                Serializer.writeData(persistentUserDataHashes, "./user/userhashes.xml");
-            }
-        }
-
-        internal static void setPersistentUserVariable(int UserID, string hash, object value)
-        {
-            persistencyMutex.WaitOne();
-
-            try
-            {
-                int? id = getIndexFromList(hash, persistentUserData[UserID]);
-
-                if (value == null)
-                {
-                    if (id.HasValue)
-                    {
-                        persistentUserDataHashes[UserID].RemoveAt(id.Value);
-                        persistentUserData[UserID].RemoveAt(id.Value);
-                        writePersistency();
-                    }
-                }
-                else
-                {
-                    if(id.HasValue)
-                    {
-                        persistentUserData[UserID][id.Value] = value;
-                    }
-                    else
-                    {
-                        persistentUserDataHashes[UserID].Add(hash);
-                        persistentUserData[UserID].Add(value);
-                    }
-
-                    writePersistency();
-                }
-
-                persistencyMutex.ReleaseMutex();
-            }
-            catch(Exception e)
-            {
-                persistencyMutex.ReleaseMutex();
-
-                throw new Exception(e.Message, e);
-            }
-        }
-
-        internal static object getPersistentUserVariable(int UserID, string hash)
-        {
-            object ret;
-            persistencyMutex.WaitOne();
-
-            try
-            {
-                int? id = getIndexFromList(hash, persistentUserData[UserID]);
-
-                if (id.HasValue)
-                {
-                    ret = persistentUserData[UserID][id.Value];
-                }
-                else
-                {
-                    ret = null;
-                }
-
-                persistencyMutex.ReleaseMutex();
-            }
-            catch (Exception e)
-            {
-                persistencyMutex.ReleaseMutex();
-
-                throw new Exception(e.Message, e);
-            }
-
-            return ret;
-        }
-#endif
-
-        private static byte[] lastHash = new byte[16];
+        
+        private static byte[] lastHash = null;
         private static ICryptoTransform enc = null;
-        private static char[] hashChars = {
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-        };
+
+        private static Mutex hashMutex = new Mutex();
 
         /// <summary>
         /// generates a 128 bit AES hash that is not used in pagenames
@@ -309,10 +200,10 @@ namespace LamestWebserver
 
             // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
             
-            if (getIndexFromList(hash, FileNames).HasValue)
+            if (UserInfos.ContainsKey(hash))
                 goto GENERATE_NEW_HASH;
 
-            if (getIndexFromList(hash, UserHashes).HasValue)
+            if (PerFileObjects.ContainsKey(hash))
                 goto GENERATE_NEW_HASH;
 
             return hash;
@@ -326,6 +217,11 @@ namespace LamestWebserver
         {
             string hash = "";
 
+            if (hashMutex == null)
+                hashMutex = new Mutex();
+
+            hashMutex.WaitOne();
+
             // Chris: generate hash
 
             if (enc == null)
@@ -334,116 +230,90 @@ namespace LamestWebserver
                 aes.GenerateIV();
                 aes.GenerateKey();
                 enc = aes.CreateEncryptor();
+
+                if (lastHash == null)
+                    lastHash = new byte[16];
             }
 
             enc.TransformBlock(lastHash, 0, 16, lastHash, 0);
 
             for (int i = 0; i < lastHash.Length; i++)
             {
-                hash += hashChars[(lastHash[i] & 0xf0) >> 4];
-                hash += hashChars[lastHash[i] & 0x0f];
+                hash += Master.hexLut[(lastHash[i] & 0xf0) >> 4];
+                hash += Master.hexLut[lastHash[i] & 0x0f];
             }
+
+            hashMutex.ReleaseMutex();
 
             return hash;
         }
 
-        private static int? getIndexFromList<T>(T value, List<T> list)
-        {
-            if (value == null)
-                return null;
+        private static SHA3Managed sha3;
+        private static UnicodeEncoding sha3UnicodeEncoding = new UnicodeEncoding();
+        private static Mutex sha3HashMutex = new Mutex();
 
-            for (int i = 0; i < list.Count; i++)
+        /// <summary>
+        /// Generates a SHA3 512 bit Hash of the given input
+        /// </summary>
+        /// <param name="input">the text to hash</param>
+        /// <returns>the hash as hex string</returns>
+        public static string getComplexHash(string input)
+        {
+            return getComplexHash(sha3UnicodeEncoding.GetBytes(input)).ToHexString();
+        }
+
+        /// <summary>
+        /// Generates a SHA3 512 bit Hash of the given input
+        /// </summary>
+        /// <param name="input">the byte[] to hash</param>
+        /// <returns>the hash as byte[]</returns>
+        public static byte[] getComplexHash(byte[] input)
+        {
+            // Chris: Preparation if sha3 hasn't been initialized
+            if (sha3 == null)
             {
-                if(list[i] != null && list[i].Equals(value))
-                {
-                    return i;
-                }
+                sha3 = new SHA3Managed(512);
             }
 
-            return null;
+            sha3HashMutex.WaitOne();
+
+            byte[] bytes = sha3.ComputeHash(input);
+
+            sha3HashMutex.ReleaseMutex();
+
+            return bytes;
         }
 
-        internal static int? getUserIDFromSSID(string ssid)
+        /// <summary>
+        /// Generates a SHA3 512bit hash of a random piece of code
+        /// </summary>
+        /// <returns>the hash as hex string</returns>
+        public static string generateComplexHash()
         {
-            return getIndexFromList(ssid, UserHashes);
+            return getComplexHash(generateHash());
         }
 
-        internal static string getUserNameAt(int userID)
+        internal static UserInfo getUserInfoFromSSID(string ssid)
         {
-            if (userID >= UserNames.Count || userID < 0)
-                return null;
-
-            return UserNames[userID];
-        }
-        
-        internal static int getFileID(string file)
-        {
-            int? id = getIndexFromList(file, FileNames);
-
-            if (id.HasValue)
-                return id.Value;
-
-            mutex.WaitOne();
-
-            FileNames.Add(file);
-            FileObjects.Add(new Dictionary<string, object>());
-            id = FileNames.Count - 1;
-
-            mutex.ReleaseMutex();
-
-            return id.Value;
+            return UserInfos[ssid];
         }
 
-        internal static Dictionary<string, object> getFileDictionary(int fileID)
+        internal static AVLTree<string, object> getFileDictionary(string fileName)
         {
-            return FileObjects[fileID];
-        }
+            AVLTree<string, object> ret = PerFileObjects[fileName];
 
-        internal static Dictionary<string, object> getUserDictionary(int userID)
-        {
-            return UserObjects[userID];
-        }
-
-        internal static Dictionary<string, object> getUserFileDictionary(int userID, int fileID)
-        {
-            if(FilePerUserNames.Count > userID && userID >= 0)
+            if(ret == null)
             {
-                if(FilePerUserNames[userID].Count > fileID && fileID >= 0)
-                {
-                    return FilePerUserObjects[userID][fileID];
-                }
-                else
-                {
-                    throw new IndexOutOfRangeException("There is no file for the User \"" + UserNames[userID] + "\" at position " + fileID + ".");
-                }
+                ret = new AVLTree<string, object>();
+                PerFileObjects[fileName] = ret;
             }
-            else
-            {
-                throw new IndexOutOfRangeException("There are not even " + (userID + 1) + " users.");
-            }
-        }
-        
-        internal static int getFilePerUserID(int userID, int fileID)
-        {
-            int? ID = getIndexFromList(FileNames[fileID], FilePerUserNames[userID]);
 
-            if (ID.HasValue)
-                return ID.Value;
-
-            mutex.WaitOne();
-
-            FilePerUserNames[userID].Add(FileNames[fileID]);
-            FilePerUserObjects[userID].Add(new Dictionary<string, object>());
-            ID = FilePerUserNames.Count - 1;
-
-            mutex.ReleaseMutex();
-
-            return ID.Value;
+            return ret;
         }
 
-        internal static int? getUserIDFromName(string userName)
+        internal static object getUserInfoFromName(string userName)
         {
-            return getIndexFromList(userName, UserNames);
+            return UserInfosByName[userName];
         }
     }
 
@@ -457,14 +327,9 @@ namespace LamestWebserver
         /// </summary>
         [ThreadStaticAttribute]
         public static SessionData currentSessionData = null;
-        
-        private int fileID;
-        private int userFileID;
 
-        /// <summary>
-        /// The index of the current User in the database
-        /// </summary>
-        public int? userID { get; private set; }
+        private IDictionary<string, object> PerFileVariables;
+        private SessionContainer.UserInfo userInfo;
 
         /// <summary>
         /// The SSID of the current Request
@@ -474,17 +339,20 @@ namespace LamestWebserver
         /// <summary>
         /// The name of the current user (the sessionID handles this!) (the current user could by incognito due to a missing sessionID)
         /// </summary>
-        public string userName;
+        public string userName
+        {
+            get { return userInfo?.UserName; }
+        }
 
         /// <summary>
         /// Represents the state of the current viewer of the page - true if this user has a special hash
         /// </summary>
-        public bool knownUser { get; private set; }
+        public bool knownUser { get { return userInfo != null; } }
 
         /// <summary>
         /// The Variables mentinoed in the HTTP head (http://www.link.com/?IamAHeadVariable)
         /// </summary>
-        public List<string> varsHEAD;
+        public List<string> varsHEAD { get; private set; }
 
         /// <summary>
         /// Cookies to set in the client browser
@@ -494,62 +362,57 @@ namespace LamestWebserver
         /// <summary>
         /// The Variables mentinoed in the HTTP POST packet
         /// </summary>
-        public List<string> varsPOST;
+        public List<string> varsPOST { get; private set; }
 
         /// <summary>
         /// The Values of the Variables mentinoed in the HTTP head (they don't have to have values!) (http://www.link.com/?IamAHeadVariable=IamAHeadValue)
         /// </summary>
-        public List<string> valuesHEAD;
+        public List<string> valuesHEAD { get; private set; }
 
         /// <summary>
         /// The Values of the Variables mentinoed in the HTTP POST packet (they don't have to have values!)
         /// </summary>
-        public List<string> valuesPOST;
+        public List<string> valuesPOST { get; private set; }
 
         /// <summary>
         /// the workingpath of the current server
         /// </summary>
-        public string path;
+        public string path { get; private set; }
 
         /// <summary>
         /// the currently requested file
         /// </summary>
-        public string file;
+        public string file { get; private set; }
 
         /// <summary>
         /// the raw packet sent to the server
         /// </summary>
-        public string _rawPacket;
+        public string _rawPacket { get; private set; }
 
         /// <summary>
         /// The original tcpClient of the server. Handle with care.
         /// </summary>
-        public System.Net.Sockets.TcpClient _tcpClient;
+        public System.Net.Sockets.TcpClient _tcpClient { get; private set; }
 
         /// <summary>
         /// The original networkStream of the server. Handle with care.
         /// </summary>
-        public System.Net.Sockets.NetworkStream _networkStream;
+        public System.Net.Sockets.NetworkStream _networkStream { get; private set; }
 
         /// <summary>
         /// The EndPoint of the connected client
         /// </summary>
-        public System.Net.EndPoint _remoteEndPoint;
+        public System.Net.EndPoint _remoteEndPoint { get; private set; }
 
         /// <summary>
         /// The EndPoint of the server
         /// </summary>
-        public System.Net.EndPoint _localEndPoint;
+        public System.Net.EndPoint _localEndPoint { get; private set; }
 
         /// <summary>
         /// The cookies sent by the client to the server
         /// </summary>
-        private List<KeyValuePair<string, string>> receivedCookies;
-
-        /// <summary>
-        /// The cookies sent by the client to the server
-        /// </summary>
-        public AVLTree<string, string> receivedCookiesTree;
+        public AVLTree<string, string> receivedCookiesTree { get; private set; }
 
         internal SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, List<KeyValuePair<string, string>> Cookies, string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws)
         {
@@ -559,7 +422,6 @@ namespace LamestWebserver
             this.valuesPOST = valuesPOST;
             this.path = path;
             this.file = file;
-            this.receivedCookies = Cookies;
             this.receivedCookiesTree = new AVLTree<string, string>();
 
             if (Cookies != null)
@@ -575,8 +437,6 @@ namespace LamestWebserver
             this._networkStream = nws;
             this._remoteEndPoint = _tcpClient.Client.RemoteEndPoint;
             this._localEndPoint = _tcpClient.Client.LocalEndPoint;
-            
-            fileID = SessionContainer.getFileID(file);
 
             if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
             {
@@ -587,19 +447,8 @@ namespace LamestWebserver
                 this.ssid = receivedCookiesTree["ssid"];
             }
 
-            this.userID = SessionContainer.getUserIDFromSSID(ssid);
-
-            if (userID.HasValue)
-            {
-                knownUser = true;
-                userName = SessionContainer.getUserNameAt(userID.Value);
-                userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
-            }
-            else
-            {
-                knownUser = false;
-                userName = "";
-            }
+            this.PerFileVariables = SessionContainer.getFileDictionary(file);
+            this.userInfo = SessionContainer.getUserInfoFromSSID(ssid);
 
             currentSessionData = this;
         }
@@ -643,41 +492,15 @@ namespace LamestWebserver
         /// <returns>the SSID for the user</returns>
         public string registerUser(string userName)
         {
-            this.userName = userName;
-            knownUser = true;
-
             bool isNewSSID;
 
-            ssid = SessionContainer.getSSIDforUser(userName, out isNewSSID);
-            userID = SessionContainer.getUserIDFromSSID(ssid);
-
-            userName = SessionContainer.getUserNameAt(userID.Value);
-            userFileID = SessionContainer.getFilePerUserID(userID.Value, fileID);
+            ssid = SessionContainer.getSSIDforUser(userName, out isNewSSID, out userInfo);
             
             if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
                 Cookies.Add(new KeyValuePair<string, string>("ssid", ssid));
 
             return ssid;
         }
-
-#if OLD_IMPLEMENTATION
-        /// <summary>
-        /// gets a new SSID for the current user needed for higher level security
-        /// </summary>
-        /// <returns>the new ssid</returns>
-        public string getNextSSID(out bool isNewSSID)
-        {
-            if(!knownUser)
-                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
-
-            ssid = SessionContainer.getSSIDforUser(userName, out isNewSSID);
-
-            if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
-                Cookies.Add(new KeyValuePair<string, string>("ssid", ssid));
-            
-            return ssid;
-        }
-#endif
 
         /// <summary>
         /// PLEASE CALL THIS BEFORE BUILDING THE SITE!
@@ -701,20 +524,20 @@ namespace LamestWebserver
         // ===============================================================================================================================================
         // ===============================================================================================================================================
 
-        private T2 getObjectFromDictionary<T, T2>(T key, Dictionary<T, T2> dictionary)
+        private T2 getObjectFromDictionary<T, T2>(T key, IDictionary<T, T2> IDictionary)
         {
-            return dictionary.ContainsKey(key) ? dictionary[key] : default(T2);
+            return IDictionary.ContainsKey(key) ? IDictionary[key] : default(T2);
         }
 
-        private void setValueToDictionary<T, T2>(T key, T2 value, Dictionary<T, T2> dictionary)
+        private void setValueToDictionary<T, T2>(T key, T2 value, IDictionary<T, T2> IDictionary)
         {
             if (value == null)
             {
-                dictionary.Remove(key);
+                IDictionary.Remove(key);
             }
             else
             {
-                dictionary[key] = value;
+                IDictionary[key] = value;
             }
         }
 
@@ -876,7 +699,7 @@ namespace LamestWebserver
             if (!knownUser)
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
 
-            setValueToDictionary(name, value, SessionContainer.getUserFileDictionary(userID.Value, userFileID));
+            setValueToDictionary(name, value, userInfo.PerFileVariables[file]);
         }
 
         /// <summary>
@@ -889,7 +712,7 @@ namespace LamestWebserver
             if (!knownUser)
                 return null;
 
-            return getObjectFromDictionary(name, SessionContainer.getUserFileDictionary(userID.Value, userFileID));
+            return getObjectFromDictionary(name, userInfo.PerFileVariables[file]);
         }
 
         /// <summary>
@@ -922,7 +745,7 @@ namespace LamestWebserver
             if (!knownUser)
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
 
-            setValueToDictionary(name, value, SessionContainer.getUserDictionary(userID.Value));
+            setValueToDictionary(name, value, userInfo.UserGlobalVariables);
         }
 
         /// <summary>
@@ -935,7 +758,7 @@ namespace LamestWebserver
             if (!knownUser)
                 return null;
 
-            return getObjectFromDictionary(name, SessionContainer.getUserDictionary(userID.Value));
+            return getObjectFromDictionary(name, userInfo.UserGlobalVariables);
         }
 
         /// <summary>
@@ -965,7 +788,7 @@ namespace LamestWebserver
         /// <param name="value">The value of the variable</param>
         public void setFileVariable<T>(string name, T value)
         {
-            setValueToDictionary(name, value, SessionContainer.getFileDictionary(fileID));
+            setValueToDictionary(name, value, PerFileVariables);
         }
 
         /// <summary>
@@ -975,7 +798,7 @@ namespace LamestWebserver
         /// <returns>the value of the variable (or null if not existent)</returns>
         public object getFileVariable(string name)
         {
-            return getObjectFromDictionary(name, SessionContainer.getFileDictionary(fileID));
+            return getObjectFromDictionary(name, PerFileVariables);
         }
 
         /// <summary>
@@ -994,49 +817,6 @@ namespace LamestWebserver
             return (T)o;
         }
 
-#if PERSISTENT_DATA
-        /// <summary>
-        /// get the value of a persistently saved variable
-        /// </summary>
-        /// <param name="hash">the name of the variable</param>
-        /// <returns>the value of the variable</returns>
-        public object getPersistentUserVariable(string hash)
-        {
-            if (!knownUser)
-                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
-
-            return SessionContainer.getPersistentUserVariable(userID.Value, hash);
-        }
-
-        /// <summary>
-        /// get the value of a persistently saved variable and cast it to T
-        /// </summary>
-        /// <param name="hash">the name of the variable</param>
-        /// <returns>the value of the variable</returns>
-        public T getPersistentUserVariable<T>(string hash) 
-        {
-            object o = getPersistentUserVariable(hash);
-
-            if (o == null)
-                return default(T);
-
-            return (T)o;
-        }
-
-        /// <summary>
-        /// set the value of a persistently saved variable
-        /// </summary>
-        /// <param name="hash">the name of the variable</param>
-        /// <param name="value">the value of the variable</param>
-        public void setPersistentUserVariable<T>(string hash, T value)
-        {
-            if (!knownUser)
-                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
-
-            SessionContainer.setPersistentUserVariable(userID.Value, hash, value);
-        }
-#endif
-
         /// <summary>
         /// Tells if a user has ever been registered with the given name
         /// </summary>
@@ -1044,17 +824,7 @@ namespace LamestWebserver
         /// <returns>true if the user has ever existed</returns>
         public bool userExists(string userName)
         {
-            return getUserIndex(userName).HasValue;
-        }
-
-        /// <summary>
-        /// Tells the Index of a user if he has ever been registered
-        /// </summary>
-        /// <param name="userName">the name of the user</param>
-        /// <returns>the index or null - as close as an int? can get to null</returns>
-        public int? getUserIndex(string userName)
-        {
-            return SessionContainer.getUserIDFromName(userName);
+            return SessionContainer.getUserInfoFromName(userName) != null;
         }
 
         /// <summary>
@@ -1063,10 +833,13 @@ namespace LamestWebserver
         public void unregiserUser()
         {
             if (!knownUser)
-                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
-            
-            SessionContainer.forceGetNextSSID(userName);
-            ssid = "";
+            {
+                SessionContainer.forceGetNextSSID(userName);
+                ssid = "";
+
+                if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+                    Cookies.Add(new KeyValuePair<string, string>("ssid", ""));
+            }
         }
     }
 }

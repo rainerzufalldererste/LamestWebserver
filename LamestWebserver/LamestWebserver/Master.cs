@@ -179,5 +179,48 @@ namespace LamestWebserver
         {
             return new System.Web.HtmlString(text).ToHtmlString();
         }
+
+        /// <summary>
+        /// Gets the index of an Element from a List
+        /// </summary>
+        /// <typeparam name="T">The Type of the List-Elements</typeparam>
+        /// <param name="list">The List</param>
+        /// <param name="value">The Value</param>
+        /// <returns>Index or null if not contained or value is null</returns>
+        public static int? GetIndex<T>(this List<T> list, T value)
+        {
+            if (value == null)
+                return null;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] != null && list[i].Equals(value))
+                {
+                    return i;
+                }
+            }
+
+            return null;
+        }
+
+        internal static char[] hexLut = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
+        /// <summary>
+        /// Converts a byte[] to a hex string
+        /// </summary>
+        /// <param name="bytes">the byte[]</param>
+        /// <returns>the byte[] as hex string</returns>
+        public static string ToHexString(this byte[] bytes)
+        {
+            char[] s = new char[bytes.Length * 2];
+
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                s[i * 2] = hexLut[bytes[i] & 0x0F];
+                s[i * 2 + 1] = hexLut[(bytes[i] & 0xF0) >> 4];
+            }
+
+            return new string(s);
+        }
     }
 }
