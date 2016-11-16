@@ -5,10 +5,13 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
 
 namespace LamestWebserver.Collections
 {
-    public class QueuedAVLTree<TKey, TValue> : IDictionary<TKey, TValue> where TKey : IEquatable<TKey>, IComparable
+    public class QueuedAVLTree<TKey, TValue> : IDictionary<TKey, TValue>, IXmlSerializable where TKey : IEquatable<TKey>, IComparable
     {
         internal AVLNode head;
         private int count = 0;
@@ -212,7 +215,12 @@ namespace LamestWebserver.Collections
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            throw new NotImplementedException();
+            var ret = head?.getAllData().GetEnumerator();
+
+            if (ret == null)
+                return new List<KeyValuePair<TKey, TValue>>().GetEnumerator();
+
+            return ret;
         }
 
         public bool Remove(KeyValuePair<TKey, TValue> item)
@@ -239,7 +247,12 @@ namespace LamestWebserver.Collections
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException();
+            var ret = head?.getAllData().GetEnumerator();
+
+            if (ret == null)
+                return new List<KeyValuePair<TKey, TValue>>().GetEnumerator();
+
+            return ret;
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -266,6 +279,76 @@ namespace LamestWebserver.Collections
 
                 System.Diagnostics.Debug.Assert(count == 0, "The elementCount is " + count + " but should be 0");
                 System.Diagnostics.Debug.Assert(queue.size == 0, "The queue size is " + queue.size + " but should be 0");
+            }
+        }
+
+        public XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(XmlReader reader)
+        {
+            reader.ReadStartElement();
+            reader.ReadStartElement();
+
+
+            List<Entry> entries = reader.ReadElement<List<Entry>>();
+
+            foreach (Entry e in entries)
+                this[e.key] = e.value;
+
+            /*
+            reader.ReadStartElement();
+
+            while (reader.Name.StartsWith("Entry"))
+            {
+                var key = reader.ReadElement<TKey>("key");
+                var value = reader.ReadElement<TValue>("value");
+                reader.ReadEndElement();
+
+                this[key] = value;
+            }
+
+            if (Count > 0)
+                reader.ReadToEndElement("Elements");
+            */
+            reader.ReadToEndElement("QueuedAVLTree");
+            reader.ReadEndElement();
+        }
+
+        public void WriteXml(XmlWriter writer)
+        {
+            writer.WriteStartElement("QueuedAVLTree");
+
+            Entry[] elements = new Entry[this.count];
+            int index = 0;
+
+            if (head != null)
+                foreach (var element in head.getAllData())
+                    elements[index++] = element;
+
+            writer.WriteElement("Elements", elements);
+
+            writer.WriteEndElement();
+        }
+
+        [Serializable]
+        public struct Entry
+        {
+            public TKey key { get; set; }
+
+            public TValue value { get; set; }
+
+            public Entry(TKey key, TValue value)
+            {
+                this.key = key;
+                this.value = value;
+            }
+
+            public static implicit operator Entry(KeyValuePair<TKey, TValue> input)
+            {
+                return new Entry(input.Key, input.Value);
             }
         }
 
@@ -903,6 +986,21 @@ namespace LamestWebserver.Collections
                 }
 
                 LukeIDeletedYourFather:;
+            }
+
+            public List<KeyValuePair<TKey, TValue>> getAllData()
+            {
+                List<KeyValuePair<TKey, TValue>> ret = new List<KeyValuePair<TKey, TValue>>();
+
+                ret.Add(new KeyValuePair<TKey, TValue>(key, value));
+
+                if (right != null)
+                    ret.AddRange(right.getAllData());
+
+                if (left != null)
+                    ret.AddRange(left.getAllData());
+
+                return ret;
             }
         }
 

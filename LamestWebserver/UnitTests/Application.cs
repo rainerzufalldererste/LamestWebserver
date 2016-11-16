@@ -12,6 +12,7 @@ namespace UnitTests
         {
             new CollectionUnitTests().testSerializeClassAVLTree();
             new CollectionUnitTests().testSerializeClassAVLHashMap();
+            new CollectionUnitTests().testSerializeClassQueuedAVLTree();
             new CollectionUnitTests().testAVLHashMaps();
             new CollectionUnitTests().testAVLTrees();
             new CollectionUnitTests().testQueuedAVLTrees();

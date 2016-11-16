@@ -113,16 +113,14 @@ namespace LamestWebserver
             {
                 Master.addFunctionEvent -= addFunction;
                 Master.removeFunctionEvent -= removeFunction;
-
-                for (int i = 0; i < threads.Count; i++)
-                {
-                    try
-                    {
-                        threads[i].Abort();
-                    }
-                    catch (Exception) { }
-                }
+                Master.addOneTimeFunctionEvent -= addOneTimeFunction;
             }
+
+            try
+            {
+                stopServer();
+            }
+            catch (Exception) { }
         }
 
         public void stopServer()

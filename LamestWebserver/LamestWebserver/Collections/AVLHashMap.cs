@@ -402,7 +402,17 @@ namespace LamestWebserver.Collections
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException();
+            List<TValue> list = new List<TValue>();
+
+            for (int i = 0; i < HashMap.Length; i++)
+            {
+                if (HashMap[i] is InnerSerializableKeyValuePair)
+                    list.Add((((InnerSerializableKeyValuePair)HashMap[i]).Value));
+                else if (HashMap[i] is AVLNode)
+                    list.AddRange(((AVLNode)HashMap[i]).getSorted());
+            }
+
+            return list.GetEnumerator();
         }
 
         [OnSerializing]
@@ -421,57 +431,67 @@ namespace LamestWebserver.Collections
 
         public void ReadXml(XmlReader reader)
         {
-            reader.Read();
-            reader.Read();
-            reader.Read();
-            size = reader.ReadContentAsInt();
-            reader.Read();
-            reader.Read();
-            elementCount = reader.ReadContentAsInt();
-            reader.Read();
-            HashMap = new AbstractUselessClass[size];
+            reader.ReadStartElement();
+            reader.ReadStartElement();
+            
+            List<Entry> entries = reader.ReadElement<List<Entry>>();
 
-            for (int i = 0; i < HashMap.Length; i++)
+            foreach (Entry e in entries)
+                this[e.key] = e.value;
+
+            /*
+            reader.ReadStartElement();
+
+            while (reader.Name.StartsWith("Entry"))
             {
-                reader.Read();
-                string name = reader.Name;
+                var key = reader.ReadElement<TKey>("key");
+                var value = reader.ReadElement<TValue>("value");
+                reader.ReadEndElement();
 
-                if (name == "NULL")
-                {
-                    continue;
-                }
-                else if (name == "AVLNode")
-                    HashMap[i] = AVLNode.CreateFromXML(reader);
-                else
-                    HashMap[i] = InnerSerializableKeyValuePair.CreateFromXML(reader);
+                this[key] = value;
             }
 
-            reader.ReadToEndElement("AVLNode");
+            if (Count > 0)
+                reader.ReadToEndElement("Elements");
+                */
+            reader.ReadToEndElement("AVLHashMap");
             reader.ReadEndElement();
         }
 
         public void WriteXml(XmlWriter writer)
         {
             writer.WriteStartElement("AVLHashMap");
-            writer.WriteElement(nameof(size), size);
-            writer.WriteElement(nameof(elementCount), elementCount);
-            writer.WriteStartElement(nameof(HashMap));
 
-            for (int i = 0; i < HashMap.Length; i++)
+            Entry[] elements = new Entry[this.Count];
+            int index = 0;
+
+            foreach (var element in this)
             {
-                if (HashMap[i] == null)
-                {
-                    writer.WriteStartElement("NULL");
-                    writer.WriteEndElement();
-                }
-                else if (HashMap[i] is InnerSerializableKeyValuePair)
-                    ((InnerSerializableKeyValuePair)HashMap[i]).WriteXml(writer);
-                else
-                    ((AVLNode)HashMap[i]).WriteXml(writer);
+                elements[index++] = element;
             }
 
+            writer.WriteElement("Elements", elements);
+
             writer.WriteEndElement();
-            writer.WriteEndElement();
+        }
+
+        [Serializable]
+        public struct Entry
+        {
+            public TKey key { get; set; }
+
+            public TValue value { get; set; }
+
+            public Entry(TKey key, TValue value)
+            {
+                this.key = key;
+                this.value = value;
+            }
+
+            public static implicit operator Entry(KeyValuePair<TKey, TValue> input)
+            {
+                return new Entry(input.Key, input.Value);
+            }
         }
 
         public AVLHashMap(SerializationInfo info, StreamingContext context)

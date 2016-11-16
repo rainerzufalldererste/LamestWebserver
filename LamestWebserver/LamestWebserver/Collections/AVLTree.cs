@@ -104,6 +104,9 @@ namespace LamestWebserver.Collections
 
         public void Add(TKey key, TValue value)
         {
+            if (key == null || value == null)
+                return;
+
             if (head == null)
             {
                 head = new AVLNode(key, value);
@@ -199,7 +202,12 @@ namespace LamestWebserver.Collections
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            return head?.getAllData().GetEnumerator();
+            var ret = head?.getAllData().GetEnumerator();
+
+            if (ret == null)
+                return new List<KeyValuePair<TKey, TValue>>().GetEnumerator();
+
+            return ret;
         }
 
         public bool Remove(KeyValuePair<TKey, TValue> item)
@@ -226,7 +234,12 @@ namespace LamestWebserver.Collections
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException();
+            var ret = head?.getSorted().GetEnumerator();
+
+            if (ret == null)
+                return new List<KeyValuePair<TKey, TValue>>().GetEnumerator();
+
+            return ret;
         }
 
         [OnSerializing]
@@ -258,18 +271,64 @@ namespace LamestWebserver.Collections
 
         public void ReadXml(XmlReader reader)
         {
-            count = reader.ReadElement<int>(nameof(count));
-            head = reader.ReadElement<AVLNode>(nameof(head));
-            reader.ReadToEndElement("AVLTree");
+            reader.ReadStartElement();
+            reader.ReadStartElement();
+            //reader.ReadStartElement();
+
+            List<Entry> entries = reader.ReadElement<List<Entry>>();
+
+            foreach (Entry e in entries)
+                this[e.key] = e.value;
+
+            /*while (reader.Name.StartsWith("Entry"))
+            {
+                var key = reader.ReadElement<TKey>("key");
+                var value = reader.ReadElement<TValue>("value");
+                reader.ReadEndElement();
+
+                this[key] = value;
+            }
+
+            if(Count > 0)
+                reader.ReadToEndElement("Elements");*/
+
+            //reader.ReadToEndElement("AVLTree");
             reader.ReadEndElement();
         }
 
         public void WriteXml(XmlWriter writer)
         {
             writer.WriteStartElement("AVLTree");
-            writer.WriteElement(nameof(count), count);
-            writer.WriteElement(nameof(head), head);
+
+            Entry[] elements = new Entry[this.count];
+            int index = 0;
+
+            if (head != null)
+                foreach (var element in head.getAllData())
+                    elements[index++] = element;
+
+            writer.WriteElement("Elements", elements);
+
             writer.WriteEndElement();
+        }
+
+        [Serializable]
+        public struct Entry
+        {
+            public TKey key { get; set; }
+
+            public TValue value { get; set; }
+
+            public Entry(TKey key, TValue value)
+            {
+                this.key = key;
+                this.value = value;
+            }
+
+            public static implicit operator Entry (KeyValuePair<TKey, TValue> input)
+            {
+                return new Entry(input.Key, input.Value);
+            }
         }
 
         [Serializable]

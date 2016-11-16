@@ -98,6 +98,40 @@ namespace UnitTests
         }
 
         [TestMethod]
+        public void testSerializeClassQueuedAVLTree()
+        {
+            Console.WriteLine("Building Class QueuedAVLTree...");
+
+            QueuedAVLTree<Person, Couple> qtree = new QueuedAVLTree<Person, Couple>();
+            int count = 1000;
+
+            for (int i = 0; i < count; i++)
+            {
+                Person a = new Person() { age = i, name = "a" + i };
+                Person b = new Person() { age = i, name = "b" + i };
+                Couple c = new Couple() { man = a, woman = b };
+
+                qtree.Add(a, c);
+                qtree.Add(b, c);
+            }
+
+            Console.WriteLine("Serializing...");
+            Serializer.writeData(qtree, "qtree");
+
+            Console.WriteLine("Deserializing...");
+            qtree = Serializer.getData<QueuedAVLTree<Person, Couple>>("qtree");
+
+            Console.WriteLine("Validating...");
+            for (int i = 0; i < count; i++)
+            {
+                Assert.IsTrue(qtree[new Person() { age = i, name = "a" + i }].woman.Equals(new Person() { age = i, name = "b" + i }));
+                Assert.IsTrue(qtree[new Person() { age = i, name = "b" + i }].woman.Equals(new Person() { age = i, name = "b" + i }));
+                Assert.IsTrue(qtree[new Person() { age = i, name = "a" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
+                Assert.IsTrue(qtree[new Person() { age = i, name = "b" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
+            }
+        }
+
+        [TestMethod]
         public void testAVLHashMaps()
         {
             hashmap = new AVLHashMap<string, string>(1);
