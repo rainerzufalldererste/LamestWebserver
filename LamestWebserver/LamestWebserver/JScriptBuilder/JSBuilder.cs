@@ -652,7 +652,8 @@ namespace LamestWebserver.JScriptBuilder
 
             ret += "size=\"" + size + "\" ";
 
-            ret += "multiple=\"" + multipleSelectable + "\" ";
+            if (multipleSelectable)
+                ret += "multiple=\"multiple\" ";
 
             if (disabled)
                 ret += "disabled=\"" + disabled + "\" ";
@@ -1174,244 +1175,244 @@ namespace LamestWebserver.JScriptBuilder
             string ret = " ";
 
             if (onabort != null)
-                ret += "onabort=" + onabort.getCode(sessionData, context).evalBase64() + "";
+                ret += "onabort=" + onabort.getCode(sessionData, context).evalBase64() + " ";
 
             if (onafterprint != null)
-                ret += "onafterprint=" + onafterprint.getCode(sessionData, context).evalBase64() + "";
+                ret += "onafterprint=" + onafterprint.getCode(sessionData, context).evalBase64() + " ";
 
             if (onbeforeprint != null)
-                ret += "onbeforeprint=" + onbeforeprint.getCode(sessionData, context).evalBase64() + "";
+                ret += "onbeforeprint=" + onbeforeprint.getCode(sessionData, context).evalBase64() + " ";
 
             if (onbeforeunload != null)
-                ret += "onbeforeunload=" + onbeforeunload.getCode(sessionData, context).evalBase64() + "";
+                ret += "onbeforeunload=" + onbeforeunload.getCode(sessionData, context).evalBase64() + " ";
 
             if (onblur != null)
-                ret += "onblur=" + onblur.getCode(sessionData, context).evalBase64() + "";
+                ret += "onblur=" + onblur.getCode(sessionData, context).evalBase64() + " ";
 
             if (oncanplay != null)
-                ret += "oncanplay=" + oncanplay.getCode(sessionData, context).evalBase64() + "";
+                ret += "oncanplay=" + oncanplay.getCode(sessionData, context).evalBase64() + " ";
 
             if (oncanplaythrough != null)
-                ret += "oncanplaythrough=" + oncanplaythrough.getCode(sessionData, context).evalBase64() + "";
+                ret += "oncanplaythrough=" + oncanplaythrough.getCode(sessionData, context).evalBase64() + " ";
 
             if (onchange != null)
-                ret += "onchange=" + onchange.getCode(sessionData, context).evalBase64() + "";
+                ret += "onchange=" + onchange.getCode(sessionData, context).evalBase64() + " ";
 
             if (onclick != null)
-                ret += "onclick=" + onclick.getCode(sessionData, context).evalBase64() + "";
+                ret += "onclick=" + onclick.getCode(sessionData, context).evalBase64() + " ";
 
             if (oncontextmenu != null)
-                ret += "oncontextmenu=" + oncontextmenu.getCode(sessionData, context).evalBase64() + "";
+                ret += "oncontextmenu=" + oncontextmenu.getCode(sessionData, context).evalBase64() + " ";
 
             if (oncopy != null)
-                ret += "oncopy=" + oncopy.getCode(sessionData, context).evalBase64() + "";
+                ret += "oncopy=" + oncopy.getCode(sessionData, context).evalBase64() + " ";
 
             if (oncut != null)
-                ret += "oncut=" + oncut.getCode(sessionData, context).evalBase64() + "";
+                ret += "oncut=" + oncut.getCode(sessionData, context).evalBase64() + " ";
 
             if (ondblclick != null)
-                ret += "ondblclick=" + ondblclick.getCode(sessionData, context).evalBase64() + "";
+                ret += "ondblclick=" + ondblclick.getCode(sessionData, context).evalBase64() + " ";
 
             if (ondrag != null)
-                ret += "ondrag=" + ondrag.getCode(sessionData, context).evalBase64() + "";
+                ret += "ondrag=" + ondrag.getCode(sessionData, context).evalBase64() + " ";
 
             if (ondragend != null)
-                ret += "ondragend=" + ondragend.getCode(sessionData, context).evalBase64() + "";
+                ret += "ondragend=" + ondragend.getCode(sessionData, context).evalBase64() + " ";
 
             if (ondragenter != null)
-                ret += "ondragenter=" + ondragenter.getCode(sessionData, context).evalBase64() + "";
+                ret += "ondragenter=" + ondragenter.getCode(sessionData, context).evalBase64() + " ";
 
             if (ondragleave != null)
-                ret += "ondragleave=" + ondragleave.getCode(sessionData, context).evalBase64() + "";
+                ret += "ondragleave=" + ondragleave.getCode(sessionData, context).evalBase64() + " ";
 
             if (ondragover != null)
-                ret += "ondragover=" + ondragover.getCode(sessionData, context).evalBase64() + "";
+                ret += "ondragover=" + ondragover.getCode(sessionData, context).evalBase64() + " ";
 
             if (ondragstart != null)
-                ret += "ondragstart=" + ondragstart.getCode(sessionData, context).evalBase64() + "";
+                ret += "ondragstart=" + ondragstart.getCode(sessionData, context).evalBase64() + " ";
 
             if (ondrop != null)
-                ret += "ondrop=" + ondrop.getCode(sessionData, context).evalBase64() + "";
+                ret += "ondrop=" + ondrop.getCode(sessionData, context).evalBase64() + " ";
 
             if (ondurationchange != null)
-                ret += "ondurationchange=" + ondurationchange.getCode(sessionData, context).evalBase64() + "";
+                ret += "ondurationchange=" + ondurationchange.getCode(sessionData, context).evalBase64() + " ";
 
             if (onemptied != null)
-                ret += "onemptied=" + onemptied.getCode(sessionData, context).evalBase64() + "";
+                ret += "onemptied=" + onemptied.getCode(sessionData, context).evalBase64() + " ";
 
             if (onended != null)
-                ret += "onended=" + onended.getCode(sessionData, context).evalBase64() + "";
+                ret += "onended=" + onended.getCode(sessionData, context).evalBase64() + " ";
 
             if (onerror != null)
-                ret += "onerror=" + onerror.getCode(sessionData, context).evalBase64() + "";
+                ret += "onerror=" + onerror.getCode(sessionData, context).evalBase64() + " ";
 
             if (onfocus != null)
-                ret += "onfocus=" + onfocus.getCode(sessionData, context).evalBase64() + "";
+                ret += "onfocus=" + onfocus.getCode(sessionData, context).evalBase64() + " ";
 
             if (onfocusin != null)
-                ret += "onfocusin=" + onfocusin.getCode(sessionData, context).evalBase64() + "";
+                ret += "onfocusin=" + onfocusin.getCode(sessionData, context).evalBase64() + " ";
 
             if (onfocusout != null)
-                ret += "onfocusout=" + onfocusout.getCode(sessionData, context).evalBase64() + "";
+                ret += "onfocusout=" + onfocusout.getCode(sessionData, context).evalBase64() + " ";
 
             if (onhashchange != null)
-                ret += "onhashchange=" + onhashchange.getCode(sessionData, context).evalBase64() + "";
+                ret += "onhashchange=" + onhashchange.getCode(sessionData, context).evalBase64() + " ";
 
             if (oninput != null)
-                ret += "oninput=" + oninput.getCode(sessionData, context).evalBase64() + "";
+                ret += "oninput=" + oninput.getCode(sessionData, context).evalBase64() + " ";
 
             if (oninvalid != null)
-                ret += "oninvalid=" + oninvalid.getCode(sessionData, context).evalBase64() + "";
+                ret += "oninvalid=" + oninvalid.getCode(sessionData, context).evalBase64() + " ";
 
             if (onkeydown != null)
-                ret += "onkeydown=" + onkeydown.getCode(sessionData, context).evalBase64() + "";
+                ret += "onkeydown=" + onkeydown.getCode(sessionData, context).evalBase64() + " ";
 
             if (onkeypress != null)
-                ret += "onkeypress=" + onkeypress.getCode(sessionData, context).evalBase64() + "";
+                ret += "onkeypress=" + onkeypress.getCode(sessionData, context).evalBase64() + " ";
 
             if (onkeyup != null)
-                ret += "onkeyup=" + onkeyup.getCode(sessionData, context).evalBase64() + "";
+                ret += "onkeyup=" + onkeyup.getCode(sessionData, context).evalBase64() + " ";
 
             if (onload != null)
-                ret += "onload=" + onload.getCode(sessionData, context).evalBase64() + "";
+                ret += "onload=" + onload.getCode(sessionData, context).evalBase64() + " ";
 
             if (onloadeddata != null)
-                ret += "onloadeddata=" + onloadeddata.getCode(sessionData, context).evalBase64() + "";
+                ret += "onloadeddata=" + onloadeddata.getCode(sessionData, context).evalBase64() + " ";
 
             if (onloadedmetadata != null)
-                ret += "onloadedmetadata=" + onloadedmetadata.getCode(sessionData, context).evalBase64() + "";
+                ret += "onloadedmetadata=" + onloadedmetadata.getCode(sessionData, context).evalBase64() + " ";
 
             if (onloadstart != null)
-                ret += "onloadstart=" + onloadstart.getCode(sessionData, context).evalBase64() + "";
+                ret += "onloadstart=" + onloadstart.getCode(sessionData, context).evalBase64() + " ";
 
             if (onmessage != null)
-                ret += "onmessage=" + onmessage.getCode(sessionData, context).evalBase64() + "";
+                ret += "onmessage=" + onmessage.getCode(sessionData, context).evalBase64() + " ";
 
             if (onmousedown != null)
-                ret += "onmousedown=" + onmousedown.getCode(sessionData, context).evalBase64() + "";
+                ret += "onmousedown=" + onmousedown.getCode(sessionData, context).evalBase64() + " ";
 
             if (onmouseenter != null)
-                ret += "onmouseenter=" + onmouseenter.getCode(sessionData, context).evalBase64() + "";
+                ret += "onmouseenter=" + onmouseenter.getCode(sessionData, context).evalBase64() + " ";
 
             if (onmouseleave != null)
-                ret += "onmouseleave=" + onmouseleave.getCode(sessionData, context).evalBase64() + "";
+                ret += "onmouseleave=" + onmouseleave.getCode(sessionData, context).evalBase64() + " ";
 
             if (onmousemove != null)
-                ret += "onmousemove=" + onmousemove.getCode(sessionData, context).evalBase64() + "";
+                ret += "onmousemove=" + onmousemove.getCode(sessionData, context).evalBase64() + " ";
 
             if (onmouseout != null)
-                ret += "onmouseout=" + onmouseout.getCode(sessionData, context).evalBase64() + "";
+                ret += "onmouseout=" + onmouseout.getCode(sessionData, context).evalBase64() + " ";
 
             if (onmouseover != null)
-                ret += "onmouseover=" + onmouseover.getCode(sessionData, context).evalBase64() + "";
+                ret += "onmouseover=" + onmouseover.getCode(sessionData, context).evalBase64() + " ";
 
             if (onmouseup != null)
-                ret += "onmouseup=" + onmouseup.getCode(sessionData, context).evalBase64() + "";
+                ret += "onmouseup=" + onmouseup.getCode(sessionData, context).evalBase64() + " ";
 
             if (onmousewheel != null)
-                ret += "onmousewheel=" + onmousewheel.getCode(sessionData, context).evalBase64() + "";
+                ret += "onmousewheel=" + onmousewheel.getCode(sessionData, context).evalBase64() + " ";
 
             if (onoffline != null)
-                ret += "onoffline=" + onoffline.getCode(sessionData, context).evalBase64() + "";
+                ret += "onoffline=" + onoffline.getCode(sessionData, context).evalBase64() + " ";
 
             if (ononline != null)
-                ret += "ononline=" + ononline.getCode(sessionData, context).evalBase64() + "";
+                ret += "ononline=" + ononline.getCode(sessionData, context).evalBase64() + " ";
 
             if (onopen != null)
-                ret += "onopen=" + onopen.getCode(sessionData, context).evalBase64() + "";
+                ret += "onopen=" + onopen.getCode(sessionData, context).evalBase64() + " ";
 
             if (onpagehide != null)
-                ret += "onpagehide=" + onpagehide.getCode(sessionData, context).evalBase64() + "";
+                ret += "onpagehide=" + onpagehide.getCode(sessionData, context).evalBase64() + " ";
 
             if (onpageshow != null)
-                ret += "onpageshow=" + onpageshow.getCode(sessionData, context).evalBase64() + "";
+                ret += "onpageshow=" + onpageshow.getCode(sessionData, context).evalBase64() + " ";
 
             if (onpaste != null)
-                ret += "onpaste=" + onpaste.getCode(sessionData, context).evalBase64() + "";
+                ret += "onpaste=" + onpaste.getCode(sessionData, context).evalBase64() + " ";
 
             if (onpause != null)
-                ret += "onpause=" + onpause.getCode(sessionData, context).evalBase64() + "";
+                ret += "onpause=" + onpause.getCode(sessionData, context).evalBase64() + " ";
 
             if (onplay != null)
-                ret += "onplay=" + onplay.getCode(sessionData, context).evalBase64() + "";
+                ret += "onplay=" + onplay.getCode(sessionData, context).evalBase64() + " ";
 
             if (onplaying != null)
-                ret += "onplaying=" + onplaying.getCode(sessionData, context).evalBase64() + "";
+                ret += "onplaying=" + onplaying.getCode(sessionData, context).evalBase64() + " ";
 
             if (onpopstate != null)
-                ret += "onpopstate=" + onpopstate.getCode(sessionData, context).evalBase64() + "";
+                ret += "onpopstate=" + onpopstate.getCode(sessionData, context).evalBase64() + " ";
 
             if (onprogress != null)
-                ret += "onprogress=" + onprogress.getCode(sessionData, context).evalBase64() + "";
+                ret += "onprogress=" + onprogress.getCode(sessionData, context).evalBase64() + " ";
 
             if (onratechange != null)
-                ret += "onratechange=" + onratechange.getCode(sessionData, context).evalBase64() + "";
+                ret += "onratechange=" + onratechange.getCode(sessionData, context).evalBase64() + " ";
 
             if (onreset != null)
-                ret += "onreset=" + onreset.getCode(sessionData, context).evalBase64() + "";
+                ret += "onreset=" + onreset.getCode(sessionData, context).evalBase64() + " ";
 
             if (onresize != null)
-                ret += "onresize=" + onresize.getCode(sessionData, context).evalBase64() + "";
+                ret += "onresize=" + onresize.getCode(sessionData, context).evalBase64() + " ";
 
             if (onscroll != null)
-                ret += "onscroll=" + onscroll.getCode(sessionData, context).evalBase64() + "";
+                ret += "onscroll=" + onscroll.getCode(sessionData, context).evalBase64() + " ";
 
             if (onsearch != null)
-                ret += "onsearch=" + onsearch.getCode(sessionData, context).evalBase64() + "";
+                ret += "onsearch=" + onsearch.getCode(sessionData, context).evalBase64() + " ";
 
             if (onseeked != null)
-                ret += "onseeked=" + onseeked.getCode(sessionData, context).evalBase64() + "";
+                ret += "onseeked=" + onseeked.getCode(sessionData, context).evalBase64() + " ";
 
             if (onseeking != null)
-                ret += "onseeking=" + onseeking.getCode(sessionData, context).evalBase64() + "";
+                ret += "onseeking=" + onseeking.getCode(sessionData, context).evalBase64() + " ";
 
             if (onselect != null)
-                ret += "onselect=" + onselect.getCode(sessionData, context).evalBase64() + "";
+                ret += "onselect=" + onselect.getCode(sessionData, context).evalBase64() + " ";
 
             if (onshow != null)
-                ret += "onshow=" + onshow.getCode(sessionData, context).evalBase64() + "";
+                ret += "onshow=" + onshow.getCode(sessionData, context).evalBase64() + " ";
 
             if (onstalled != null)
-                ret += "onstalled=" + onstalled.getCode(sessionData, context).evalBase64() + "";
+                ret += "onstalled=" + onstalled.getCode(sessionData, context).evalBase64() + " ";
 
             if (onstorage != null)
-                ret += "onstorage=" + onstorage.getCode(sessionData, context).evalBase64() + "";
+                ret += "onstorage=" + onstorage.getCode(sessionData, context).evalBase64() + " ";
 
             if (onsubmit != null)
-                ret += "onsubmit=" + onsubmit.getCode(sessionData, context).evalBase64() + "";
+                ret += "onsubmit=" + onsubmit.getCode(sessionData, context).evalBase64() + " ";
 
             if (onsuspend != null)
-                ret += "onsuspend=" + onsuspend.getCode(sessionData, context).evalBase64() + "";
+                ret += "onsuspend=" + onsuspend.getCode(sessionData, context).evalBase64() + " ";
 
             if (ontimeupdate != null)
-                ret += "ontimeupdate=" + ontimeupdate.getCode(sessionData, context).evalBase64() + "";
+                ret += "ontimeupdate=" + ontimeupdate.getCode(sessionData, context).evalBase64() + " ";
 
             if (ontoggle != null)
-                ret += "ontoggle=" + ontoggle.getCode(sessionData, context).evalBase64() + "";
+                ret += "ontoggle=" + ontoggle.getCode(sessionData, context).evalBase64() + " ";
 
             if (ontouchcancel != null)
-                ret += "ontouchcancel=" + ontouchcancel.getCode(sessionData, context).evalBase64() + "";
+                ret += "ontouchcancel=" + ontouchcancel.getCode(sessionData, context).evalBase64() + " ";
 
             if (ontouchend != null)
-                ret += "ontouchend=" + ontouchend.getCode(sessionData, context).evalBase64() + "";
+                ret += "ontouchend=" + ontouchend.getCode(sessionData, context).evalBase64() + " ";
 
             if (ontouchmove != null)
-                ret += "ontouchmove=" + ontouchmove.getCode(sessionData, context).evalBase64() + "";
+                ret += "ontouchmove=" + ontouchmove.getCode(sessionData, context).evalBase64() + " ";
 
             if (ontouchstart != null)
-                ret += "ontouchstart=" + ontouchstart.getCode(sessionData, context).evalBase64() + "";
+                ret += "ontouchstart=" + ontouchstart.getCode(sessionData, context).evalBase64() + " ";
 
             if (onunload != null)
-                ret += "onunload=" + onunload.getCode(sessionData, context).evalBase64() + "";
+                ret += "onunload=" + onunload.getCode(sessionData, context).evalBase64() + " ";
 
             if (onvolumechange != null)
-                ret += "onvolumechange=" + onvolumechange.getCode(sessionData, context).evalBase64() + "";
+                ret += "onvolumechange=" + onvolumechange.getCode(sessionData, context).evalBase64() + " ";
 
             if (onwaiting != null)
-                ret += "onwaiting=" + onwaiting.getCode(sessionData, context).evalBase64() + "";
+                ret += "onwaiting=" + onwaiting.getCode(sessionData, context).evalBase64() + " ";
 
             if (onwheel != null)
-                ret += "onwheel=" + onwheel.getCode(sessionData, context).evalBase64() + "";
+                ret += "onwheel=" + onwheel.getCode(sessionData, context).evalBase64() + " ";
 
             return ret;
         }

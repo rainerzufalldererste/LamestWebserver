@@ -1322,9 +1322,10 @@ namespace LamestWebserver
 
             ret += "size=\"" + size + "\" ";
 
-            ret += "multiple=\"" + multipleSelectable + "\" ";
+            if (multipleSelectable)
+                ret += "multiple=\"multiple\" ";
 
-            if(disabled)
+            if (disabled)
                 ret += "disabled=\"" + disabled + "\" ";
 
             if (!string.IsNullOrWhiteSpace(descriptionTags))
