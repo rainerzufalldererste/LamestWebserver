@@ -27,7 +27,7 @@ namespace UnitTests
         };
 
         [Serializable]
-        public class Couple { public Person man, woman; };
+        public class Couple : IEquatable<Couple> { public Person man, woman; public bool Equals(Couple other) { return man.Equals(other.man) && woman.Equals(other.woman); } };
 
         [TestMethod]
         public void testSerializeClassAVLTree()
@@ -129,6 +129,66 @@ namespace UnitTests
                 Assert.IsTrue(qtree[new Person() { age = i, name = "a" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
                 Assert.IsTrue(qtree[new Person() { age = i, name = "b" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
             }
+        }
+
+        public class ContainerClass
+        {
+            public string one = "1";
+            public AVLTree<Person, Couple> tree = new AVLTree<Person, Couple>();
+            public string two = "2";
+            public AVLHashMap<Person, Couple> hashmap = new AVLHashMap<Person, Couple>();
+            public string three = "3";
+            public QueuedAVLTree<Person, Couple> qtree = new QueuedAVLTree<Person, Couple>(100);
+            public string four = "4";
+        }
+
+        [TestMethod]
+        public void testSerializeMultiple()
+        {
+            Console.WriteLine("Testing embedded behaviour of AVLTree, AVLHashmap, QueuedAVLTree");
+
+            Person anna = new Person() { name = "Anna", age = 30 };
+            Person berta = new Person() { name = "Berta", age = 23 };
+            Person carla = new Person() { name = "Carla", age = 26 };
+            Person diane = new Person() { name = "Diane", age = 27 };
+
+            ContainerClass container = new ContainerClass();
+
+            container.tree.Add(anna, new Couple() { man = anna, woman = berta });
+
+            container.hashmap.Add(anna, new Couple() { man = anna, woman = berta });
+            container.hashmap.Add(berta, new Couple() { man = berta, woman = carla });
+            container.hashmap.Add(carla, new Couple() { man = carla, woman = anna });
+
+            container.qtree.Add(anna, new Couple() { man = diane, woman = anna });
+            container.qtree.Add(diane, new Couple() { man = diane, woman = anna });
+
+            Console.WriteLine("Serializing...");
+            Serializer.writeData(container, "container");
+
+            Console.WriteLine("Deserializing...");
+            container = null;
+            container = Serializer.getData<ContainerClass>("container");
+
+            Console.WriteLine("Validating...");
+
+            Assert.IsTrue(container.tree.Count == 1);
+            Assert.IsTrue(container.hashmap.Count == 3);
+            Assert.IsTrue(container.qtree.Count == 2);
+
+            Assert.IsTrue(container.one == "1");
+            Assert.IsTrue(container.two == "2");
+            Assert.IsTrue(container.three == "3");
+            Assert.IsTrue(container.four == "4");
+
+            Assert.IsTrue(container.tree[anna].Equals(new Couple() { man = anna, woman = berta }));
+
+            Assert.IsTrue(container.hashmap[anna].Equals(new Couple() { man = anna, woman = berta }));
+            Assert.IsTrue(container.hashmap[berta].Equals(new Couple() { man = berta, woman = carla }));
+            Assert.IsTrue(container.hashmap[carla].Equals(new Couple() { man = carla, woman = anna }));
+
+            Assert.IsTrue(container.qtree[anna].Equals(new Couple() { man = diane, woman = anna }));
+            Assert.IsTrue(container.qtree[diane].Equals(new Couple() { man = diane, woman = anna }));
         }
 
         [TestMethod]

@@ -58,7 +58,7 @@ namespace LamestWebserver
 
         public static void writeBinaryData<T>(T data, string filename)
         {
-            if (!File.Exists(filename))
+            if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(filename));
             }

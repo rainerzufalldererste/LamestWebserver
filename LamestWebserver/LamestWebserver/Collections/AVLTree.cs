@@ -292,7 +292,7 @@ namespace LamestWebserver.Collections
             if(Count > 0)
                 reader.ReadToEndElement("Elements");*/
 
-            //reader.ReadToEndElement("AVLTree");
+            reader.ReadToEndElement("AVLTree");
             reader.ReadEndElement();
         }
 
