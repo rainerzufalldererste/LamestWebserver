@@ -215,8 +215,6 @@ namespace LamestWebserver
         /// <returns></returns>
         public static string generateHash()
         {
-            string hash = "";
-
             if (hashMutex == null)
                 hashMutex = new Mutex();
 
@@ -237,11 +235,7 @@ namespace LamestWebserver
 
             enc.TransformBlock(lastHash, 0, 16, lastHash, 0);
 
-            for (int i = 0; i < lastHash.Length; i++)
-            {
-                hash += Master.hexLut[(lastHash[i] & 0xf0) >> 4];
-                hash += Master.hexLut[lastHash[i] & 0x0f];
-            }
+            string hash = lastHash.ToHexString();
 
             hashMutex.ReleaseMutex();
 
@@ -284,13 +278,15 @@ namespace LamestWebserver
             return bytes;
         }
 
+        private static string lastSHA3Hash = generateHash() + generateHash() + generateHash() + generateHash();
+
         /// <summary>
         /// Generates a SHA3 512bit hash of a random piece of code
         /// </summary>
         /// <returns>the hash as hex string</returns>
         public static string generateComplexHash()
         {
-            return getComplexHash(generateHash());
+            return lastSHA3Hash = getComplexHash(lastHash + generateHash());
         }
 
         internal static UserInfo getUserInfoFromSSID(string ssid)

@@ -27,10 +27,37 @@ namespace LamestWebserver.NotificationService
 
     public abstract class Notification
     {
+        protected static ASCIIEncoding encoding = new ASCIIEncoding();
+
         public readonly NotificationType NotificationType;
+        protected bool NoReply = false;
+
         protected Notification(NotificationType type)
         {
             NotificationType = type;
+        }
+
+        public override string ToString()
+        {
+            string ret = NotificationType.ToString();
+
+            if (NoReply)
+                ret += "\r\n" + NotificationOption.NoReply;
+
+            return ret;
+        }
+
+        public string ToString(string msg)
+        {
+            string ret = NotificationType.ToString();
+
+            if (NoReply)
+                ret += "\n\r" + NotificationOption.NoReply;
+
+            if (!string.IsNullOrWhiteSpace(msg))
+                ret += "\n\n" + Convert.ToBase64String(encoding.GetBytes(System.Web.HttpUtility.HtmlEncode(msg)));
+
+            return ret;
         }
     }
 
@@ -43,6 +70,11 @@ namespace LamestWebserver.NotificationService
 
     public enum NotificationType : byte
     {
-        KeepAlive, ExecuteScript, Redirect, ReloadPage, ReplacePageContent, ReplacePageBody, ReplaceDivContent, ExpandPageBodyWith, ExpandDivContentWith
+        Acknowledge, KeepAlive, Message, Invalid, ExecuteScript, Redirect, ReloadPage, ReplacePageContent, ReplacePageBody, ReplaceDivContent, ExpandPageBodyWith, ExpandDivContentWith
+    }
+
+    public enum NotificationOption : byte
+    {
+        NoReply
     }
 }
