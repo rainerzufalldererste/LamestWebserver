@@ -17,18 +17,18 @@ namespace LamestWebserver.Collections
         protected int elementCount = 0;
 
         [XmlArray("HashMap")]
-        internal AbstractUselessClass[] HashMap { get; private set; }
+        internal object[] HashMap { get; private set; }
 
         public AVLHashMap(int size)
         {
             this.size = size;
-            HashMap = new AbstractUselessClass[size];
+            HashMap = new object[size];
         }
 
         public AVLHashMap()
         {
             this.size = 1024;
-            HashMap = new AbstractUselessClass[size];
+            HashMap = new object[size];
         }
 
         public ICollection<TKey> Keys
@@ -305,7 +305,7 @@ namespace LamestWebserver.Collections
         public void Clear()
         {
             elementCount = 0;
-            HashMap = new AbstractUselessClass[size];
+            HashMap = new object[size];
         }
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
@@ -498,11 +498,11 @@ namespace LamestWebserver.Collections
         {
             size = info.GetInt32(nameof(size));
             elementCount = info.GetInt32(nameof(elementCount));
-            HashMap = (AbstractUselessClass[])info.GetValue(nameof(HashMap), typeof(AbstractUselessClass[]));
+            HashMap = (object[])info.GetValue(nameof(HashMap), typeof(object[]));
         }
 
         [Serializable, XmlRoot("AVLNode")]
-        public class AVLNode : AbstractUselessClass, ISerializable, IXmlSerializable
+        public class AVLNode : ISerializable, IXmlSerializable
         {
             [XmlIgnore]
             internal AVLNode head;
@@ -529,7 +529,7 @@ namespace LamestWebserver.Collections
                 this.value = value;
             }
 
-            private void rebalance(AbstractUselessClass[] HashMap, int index)
+            private void rebalance(object[] HashMap, int index)
             {
                 /*AVLNode displayNode = this;
 
@@ -763,7 +763,7 @@ namespace LamestWebserver.Collections
                 return Math.Max(r, l);
             }
 
-            private static void rotl(AVLNode node, AbstractUselessClass[] HashMap, int index)
+            private static void rotl(AVLNode node, object[] HashMap, int index)
             {
                 /*Console.ForegroundColor = ConsoleColor.DarkGreen;
                 if(node.head != null)
@@ -831,7 +831,7 @@ namespace LamestWebserver.Collections
                 //checkNodes(node);
             }
 
-            private static void rotr(AVLNode node, AbstractUselessClass[] HashMap, int index)
+            private static void rotr(AVLNode node, object[] HashMap, int index)
             {
                 /*Console.ForegroundColor = ConsoleColor.DarkCyan;
                 if (node.head != null)
@@ -930,7 +930,7 @@ namespace LamestWebserver.Collections
             /// <summary>
             /// Called after adding a node
             /// </summary>
-            internal static void balanceBubbleUp(AVLNode node, AbstractUselessClass[] HashMap, int index)
+            internal static void balanceBubbleUp(AVLNode node, object[] HashMap, int index)
             {
                 while (node.head != null)
                 {
@@ -959,7 +959,7 @@ namespace LamestWebserver.Collections
             /// <summary>
             /// Called after removing a node - can handle more than 2 or -2 balances on self
             /// </summary>
-            internal static void balanceSelfBubbleUp(AVLNode node, AbstractUselessClass[] HashMap, int index)
+            internal static void balanceSelfBubbleUp(AVLNode node, object[] HashMap, int index)
             {
                 while (node != null)
                 {
@@ -1008,7 +1008,7 @@ namespace LamestWebserver.Collections
                 return 1 + (node.left == null ? 0 : getCount(node.left)) + (node.right == null ? 0 : getCount(node.right));
             }
 
-            internal static bool FindRemoveKey(AVLNode headNode, AbstractUselessClass[] HashMap, int hash, TKey key, ref int elementCount)
+            internal static bool FindRemoveKey(AVLNode headNode, object[] HashMap, int hash, TKey key, ref int elementCount)
             {
                 int compare = key.CompareTo(headNode.key);
 
@@ -1050,7 +1050,7 @@ namespace LamestWebserver.Collections
             }
 
 
-            internal static bool FindRemoveItem(AVLNode headNode, AbstractUselessClass[] HashMap, int hash, KeyValuePair<TKey, TValue> item, ref int elementCount)
+            internal static bool FindRemoveItem(AVLNode headNode, object[] HashMap, int hash, KeyValuePair<TKey, TValue> item, ref int elementCount)
             {
                 int compare = item.Key.CompareTo(headNode.key);
 
@@ -1096,7 +1096,7 @@ namespace LamestWebserver.Collections
                 }
             }
 
-            internal static void RemoveNode(AVLNode node, AbstractUselessClass[] HashMap, int hash, ref int elementCount)
+            internal static void RemoveNode(AVLNode node, object[] HashMap, int hash, ref int elementCount)
             {
                 if (node.right == null && node.left == null) // no children
                 {
@@ -1223,7 +1223,7 @@ namespace LamestWebserver.Collections
                 elementCount--;
             }
 
-            internal static void AddItem(AVLNode node, KeyValuePair<TKey, TValue> item, AbstractUselessClass[] HashMap, int hash, ref int elementCount)
+            internal static void AddItem(AVLNode node, KeyValuePair<TKey, TValue> item, object[] HashMap, int hash, ref int elementCount)
             {
                 int compare = item.Key.CompareTo(node.key);
 
@@ -1358,7 +1358,7 @@ namespace LamestWebserver.Collections
 
 
         [Serializable, XmlRoot("InnerSerializableKeyValuePair")]
-        public class InnerSerializableKeyValuePair : AbstractUselessClass, ISerializable, IXmlSerializable
+        public class InnerSerializableKeyValuePair : ISerializable, IXmlSerializable
         {
             public TKey Key;
             public TValue Value;
@@ -1417,11 +1417,6 @@ namespace LamestWebserver.Collections
 
                 return ret;
             }
-        }
-
-        public abstract class AbstractUselessClass
-        {
-
         }
     }
 }

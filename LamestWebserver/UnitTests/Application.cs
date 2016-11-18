@@ -18,6 +18,8 @@ namespace UnitTests
             new CollectionUnitTests().testAVLTrees();
             new CollectionUnitTests().testQueuedAVLTrees();
             new PacketUnitTest().TestCookies();
+            new PasswordTest().testPassword();
+            new PasswordTest().testSerializePassword();
         }
     }
 }

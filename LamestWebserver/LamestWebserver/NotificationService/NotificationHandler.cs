@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LamestWebserver.JScriptBuilder;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
@@ -10,8 +11,6 @@ namespace LamestWebserver.NotificationService
     public interface INotificationHandler
     {
         string URL { get; }
-
-        ICollection<WebSocket> Sockets { get; }
 
         void Unsubscribe();
 
@@ -76,5 +75,33 @@ namespace LamestWebserver.NotificationService
     public enum NotificationOption : byte
     {
         NoReply
+    }
+
+    public class NotificationHandler : INotificationHandler
+    {
+        public JSMethodCall SendingFunction;
+        public string ID = SessionContainer.generateHash();
+
+        public JSElement getJSElement()
+        {
+            string methodName;
+            var elemeent = new JSPlainText("<script type='text/javascript'>" + JSNotificationClient.NotificationCode(SessionData.currentSessionData, URL, out methodName, ID)  + "</script>");
+
+            SendingFunction = new JSMethodCall(methodName);
+
+            return elemeent;
+        }
+
+        public string URL { get; set; }
+
+        public void Notify(Notification notification)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Unsubscribe()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LamestWebserver.JScriptBuilder;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.NotificationService
 {
-    public static class JSNotificationClient
+    internal static class JSNotificationClient
     {
         internal static string NotificationCode(SessionData sessionData, string destinationURL, out string sendMsgMethodName, string NotificationHandlerID)
         {

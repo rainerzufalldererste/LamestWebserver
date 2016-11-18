@@ -126,9 +126,9 @@ namespace LamestWebserver.JScriptBuilder
             return ret + "}";
         }
 
-        public JSPMethodCall callFunction(params IJSValue[] values)
+        public JSMethodCall callFunction(params IJSValue[] values)
         {
-            return new JSPMethodCall(this.content, values);
+            return new JSMethodCall(this.content, values);
         }
 
         public JSDirectFunctionCall DefineAndCall()
@@ -240,7 +240,7 @@ namespace LamestWebserver.JScriptBuilder
         }
     }
 
-    public class JSPMethodCall : IJSValue
+    public class JSMethodCall : IJSValue
     {
         private IJSValue[] parameters;
         private string methodName;
@@ -253,7 +253,7 @@ namespace LamestWebserver.JScriptBuilder
             }
         }
 
-        public JSPMethodCall(string methodName, params IJSValue[] parameters)
+        public JSMethodCall(string methodName, params IJSValue[] parameters)
         {
             this.methodName = methodName;
             this.parameters = parameters;
@@ -276,9 +276,9 @@ namespace LamestWebserver.JScriptBuilder
 
         public static class window
         {
-            public static JSPMethodCall requestAnimationFrame(JSFunction function)
+            public static JSMethodCall requestAnimationFrame(JSFunction function)
             {
-                return new JSPMethodCall("window.requestAnimationFrame", function.FunctionPointer);
+                return new JSMethodCall("window.requestAnimationFrame", function.FunctionPointer);
             }
         }
 
@@ -363,7 +363,22 @@ namespace LamestWebserver.JScriptBuilder
 
         public static IJSValue getByID(string id)
         {
-            return new JSPMethodCall("document.getElementById", new JSStringValue(id));
+            return new JSMethodCall("document.getElementById", new JSStringValue(id));
+        }
+    }
+
+    public class JSPlainText : JSElement
+    {
+        public string Contents;
+
+        public JSPlainText(string Contents)
+        {
+            this.Contents = Contents;
+        }
+
+        public override string getContent(SessionData sessionData, CallingContext context)
+        {
+            return Contents;
         }
     }
 

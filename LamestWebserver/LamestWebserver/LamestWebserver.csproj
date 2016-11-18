@@ -114,6 +114,7 @@
     <Compile Include="PageFiller.cs" />
     <Compile Include="PageResponse.cs" />
     <Compile Include="ScriptCollection.cs" />
+    <Compile Include="Security\Password.cs" />
     <Compile Include="Serializer.cs" />
     <Compile Include="SessionData.cs" />
     <Compile Include="UsableLocker.cs" />
