@@ -75,9 +75,9 @@ namespace UnitTests
                     Assert.IsFalse(pws[1].IsValid(SessionContainer.generateComplexHash()));
                     Assert.IsFalse(pws[2].IsValid(SessionContainer.generateComplexHash()));
                 }
-
-                Console.WriteLine();
             }
+
+            Console.WriteLine();
         }
     }
 }

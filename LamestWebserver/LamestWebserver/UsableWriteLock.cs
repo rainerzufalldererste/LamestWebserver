@@ -14,7 +14,7 @@ namespace LamestWebserver
     {
         private uint readCounter = 0;
         private Mutex readMutex = new Mutex();
-        private Mutex writeMutex = new Mutex();
+        private SemaphoreSlim writeSemaphore = new SemaphoreSlim(0, 1024);
         private readonly string ID = SessionContainer.generateHash();
 
         /// <summary>
@@ -29,7 +29,7 @@ namespace LamestWebserver
             {
                 readMutex.ReleaseMutex();
 
-                writeMutex.WaitOne();
+                writeSemaphore.Wait();
 
                 readMutex.WaitOne();
             }
@@ -47,9 +47,9 @@ namespace LamestWebserver
         /// <returns>An IDisposable Object to be used in a using statement</returns>
         public UsableWriteLockDisposable_write LockWrite()
         {
-            writeMutex.WaitOne();
+            writeSemaphore.Wait();
 
-            return new UsableWriteLockDisposable_write(writeMutex);
+            return new UsableWriteLockDisposable_write(writeSemaphore);
         }
 
         /// <summary>
@@ -121,19 +121,19 @@ namespace LamestWebserver
         /// </summary>
         public class UsableWriteLockDisposable_write : IDisposable
         {
-            private Mutex mutex;
+            private SemaphoreSlim semaphore;
 
-            internal UsableWriteLockDisposable_write(Mutex mutex)
+            internal UsableWriteLockDisposable_write(SemaphoreSlim semaphore)
             {
-                this.mutex = mutex;
+                this.semaphore = semaphore;
             }
 
             /// <summary>
-            /// Releases the mutex
+            /// Releases the Semaphore
             /// </summary>
             public void Dispose()
             {
-                mutex.ReleaseMutex();
+                semaphore.Release();
             }
         }
 
@@ -158,10 +158,43 @@ namespace LamestWebserver
                 writeLock.readCounter--;
 
                 if (writeLock.readCounter == 0)
-                    writeLock.writeMutex.ReleaseMutex();
+                    writeLock.writeSemaphore.Release();
 
                 writeLock.readMutex.ReleaseMutex();
             }
+        }
+    }
+
+    /// <summary>
+    /// A wrapper class for a semaphore to be used in a using statement
+    /// </summary>
+    public class UsableSemaphore : IDisposable
+    {
+        private SemaphoreSlim semaphore;
+
+        /// <summary>
+        /// Constructs a new UsableSemaphore. The Semaphore is not locked and will not be locked until you call Lock().
+        /// </summary>
+        /// <param name="semaphore">the semaphore</param>
+        public UsableSemaphore(SemaphoreSlim semaphore)
+        {
+            this.semaphore = semaphore;
+        }
+
+        /// <summary>
+        /// Locks this Semaphore.
+        /// </summary>
+        public void Lock()
+        {
+            this.semaphore.Wait();
+        }
+
+        /// <summary>
+        /// Releases this Semaphore.
+        /// </summary>
+        public void Dispose()
+        {
+            semaphore.Release();
         }
     }
 
