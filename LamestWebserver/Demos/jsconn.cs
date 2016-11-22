@@ -13,16 +13,18 @@ namespace Demos
     {
         public jsconn() : base("jsconn")
         {
+            handler.OnResponse +=
+                    (NotificationResponse response) =>
+                    {
+                        Console.WriteLine(response.message);
+                        response.Reply(Notification.ExecuteScript("alert(\"" + response.message.Replace("\n", "\\n") + "\")"));
+                    };
         }
+
+        NotificationHandler handler = new NotificationHandler("jsconn");
 
         protected override HElement getElement(SessionData sessionData)
         {
-            NotificationHandler handler = new NotificationHandler("jsconn");
-            handler.onResponse += 
-                (NotificationResponse response) => 
-                {
-                    response.Reply(Notification.ExecuteScript("alert(\"" + response.message + "\")"));
-                };
 
             PageBuilder _pb = new PageBuilder("jsconn");
 

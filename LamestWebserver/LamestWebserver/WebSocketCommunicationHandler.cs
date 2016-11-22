@@ -1,6 +1,9 @@
-﻿using System;
+﻿using Fleck;
+using Fleck.Handlers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,27 +16,20 @@ namespace LamestWebserver
         public WebSocketCommunicationHandler(string URL)
         {
             this.URL = URL;
+            _OnMessage = message => callOnMessage(message, WebSocketHandlerProxy.currentProxy);
+            _OnMessage = message => callOnMessage(message, WebSocketHandlerProxy.currentProxy);
 
             register();
         }
 
-        public WebSocketCommunicationHandler(string URL, Action<string> onMessage, Action onClose, Action<byte[]> onBinary, Action<byte[]> onPing, Action<byte[]> onPong) : this(URL)
-        {
-            this.OnMessage = onMessage;
-            this.OnClose = onClose;
-            this.OnBinary = onBinary;
-            this.OnPing = onPing;
-            this.OnPong = onPong;
-        }
+        internal Action<string> _OnMessage { get; set; }
+        internal Action _OnClose { get; set; }
+        internal Action<byte[]> _OnBinary { get; set; }
+        internal Action<byte[]> _OnPing { get; set; }
+        internal Action<byte[]> _OnPong { get; set; }
 
-        public Action<string> OnMessage;
-        public Action OnClose;
-        public Action<byte[]> OnBinary;
-        public Action<byte[]> OnPing = (byte[] bytes) => { currentHandler.FramePong(bytes); };
-        public Action<byte[]> OnPong;
-
-        [ThreadStatic]
-        public static Fleck.IHandler currentHandler = null;
+        public event Action<string, WebSocketHandlerProxy> OnMessage = delegate { };
+        public event Action OnRespond = delegate { };
 
         protected void register()
         {
@@ -45,12 +41,58 @@ namespace LamestWebserver
             Master.RemoveWebsocketHandler(this.URL);
         }
 
-        internal void WriteAsync(string message)
+        internal void callOnMessage(string message, WebSocketHandlerProxy proxy)
         {
-            if (currentHandler == null)
-                throw new InvalidOperationException("The current handler can not be null.");
+            OnMessage(message, proxy);
+        }
 
-            currentHandler.FrameText(message);
+        internal void callOnRespond()
+        {
+            OnRespond();
+        }
+    }
+
+    public class WebSocketHandlerProxy
+    {
+        private NetworkStream networkStream;
+        private WebSocketCommunicationHandler handler;
+        private ComposableHandler websocketHandler;
+
+        [ThreadStatic]
+        internal static WebSocketHandlerProxy currentProxy;
+
+        public WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler)
+        {
+            this.networkStream = stream;
+            this.handler = handler;
+            this.websocketHandler = websocketHandler;
+
+            currentProxy = this;
+            handleConnection();
+        }
+
+        public virtual void Respond(string Message)
+        {
+            byte[] buffer = websocketHandler.TextFrame.Invoke(Message);
+            networkStream.WriteAsync(buffer, 0, buffer.Length);
+            handler.callOnRespond();
+        }
+
+        private void handleConnection()
+        {
+            byte[] currentBuffer = new byte[4096];
+            byte[] trimmedBuffer;
+
+            while (true)
+            {
+                var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096);
+                byteCount.Wait();
+                trimmedBuffer = new byte[byteCount.Result];
+
+                Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
+
+                websocketHandler.Receive(trimmedBuffer);
+            }
         }
     }
 }

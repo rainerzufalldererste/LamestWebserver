@@ -27,8 +27,6 @@ namespace LamestWebserver.NotificationService
 
     public abstract class Notification
     {
-        protected static ASCIIEncoding encoding = new ASCIIEncoding();
-
         public readonly NotificationType NotificationType;
         protected bool NoReply = false;
 
@@ -55,7 +53,7 @@ namespace LamestWebserver.NotificationService
                 ret += "\n\r" + NotificationOption.NoReply;
 
             if (!string.IsNullOrWhiteSpace(msg))
-                ret += "\n\n" + Convert.ToBase64String(encoding.GetBytes(System.Web.HttpUtility.HtmlEncode(msg)));
+                ret += "\n\n" + Convert.ToBase64String(Encoding.ASCII.GetBytes(msg.jsEncode().Replace("&quot;", "\"")));
 
             return ret;
         }
@@ -111,9 +109,12 @@ namespace LamestWebserver.NotificationService
         public string ID { get; private set; } = SessionContainer.generateHash();
         public uint ConnectedClients { get; private set; } = 0;
 
-        public NotificationHandler(string URL) : base(URL) { }
+        public NotificationHandler(string URL) : base(URL)
+        {
+            OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy));
+        }
 
-        public event Action<NotificationResponse> onResponse;
+        public event Action<NotificationResponse> OnResponse;
 
         public JSElement JSElement
         {
@@ -143,10 +144,10 @@ namespace LamestWebserver.NotificationService
             throw new NotImplementedException();
         }
 
-        public virtual void HandleResponse(NotificationResponse respsonse)
+        public virtual void HandleResponse(NotificationResponse response)
         {
-            if(respsonse.isMessage)
-                onResponse(respsonse);
+            if(response.isMessage)
+                OnResponse(response);
         }
 
         private void Connected(WebSocket socket)
@@ -169,11 +170,17 @@ namespace LamestWebserver.NotificationService
     {
         public bool isMessage = true;
         public string message = "";
-        public WebSocketCommunicationHandler communicationHandler;
+        public WebSocketHandlerProxy proxy;
+
+        internal NotificationResponse(string input, WebSocketHandlerProxy proxy)
+        {
+            message = input;
+            this.proxy = proxy;
+        }
 
         public void Reply(Notification notification)
         {
-            communicationHandler.WriteAsync(notification.GetNotification());
+            proxy.Respond(notification.GetNotification());
         }
     }
 }

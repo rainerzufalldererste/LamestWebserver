@@ -296,7 +296,6 @@ namespace LamestWebserver
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
                     HTTP_Packet htp = HTTP_Packet.Constructor(ref msg_, client.Client.RemoteEndPoint, lastmsg);
-                    WebSocketCommunicationHandler webSocketH;
 
                     byte[] buffer;
 
@@ -321,13 +320,6 @@ namespace LamestWebserver
                             buffer = htp_.getPackage(enc);
                             nws.Write(buffer, 0, buffer.Length);
                         }
-                        else if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.requestData, out webSocketH))
-                        {
-                            var handler = Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), webSocketH.OnMessage, webSocketH.OnClose, webSocketH.OnBinary, webSocketH.OnPing, webSocketH.OnPong);
-                            WebSocketCommunicationHandler.currentHandler = handler;
-                            handler.CreateHandshake();
-                            return;
-                        }
                         else
                         {
                             lastmsg = null;
@@ -338,6 +330,7 @@ namespace LamestWebserver
                             }
 
                             Master.getContents currentRequest = pageResponses[htp.requestData];
+                            WebSocketCommunicationHandler currentWebSocketHandler;
 
                             if (currentRequest == null)
                             {
@@ -347,7 +340,17 @@ namespace LamestWebserver
                                     oneTimePageResponses.Remove(htp.requestData);
                             }
 
-                            if (currentRequest != null)
+                            if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.requestData, out currentWebSocketHandler))
+                            {
+                                var handler = (Fleck.Handlers.ComposableHandler)Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose, currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
+                                msg = handler.CreateHandshake();
+                                nws.Write(msg, 0, msg.Length);
+
+                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler);
+
+                                return;
+                            }
+                            else if (currentRequest != null)
                             {
                                 HTTP_Packet htp_ = new HTTP_Packet();
 

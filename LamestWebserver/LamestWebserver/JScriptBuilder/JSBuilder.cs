@@ -74,6 +74,8 @@ namespace LamestWebserver.JScriptBuilder
         {
             if (String.IsNullOrWhiteSpace(name))
                 this._content = "_func" + SessionContainer.generateHash();
+            else
+                this._content = name;
 
             this.parameters = parameters;
         }
@@ -92,8 +94,10 @@ namespace LamestWebserver.JScriptBuilder
 
         public JSFunction(string name)
         {
-            if (String.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(name))
                 this._content = "_func" + SessionContainer.generateHash();
+            else
+                this._content = name;
         }
 
         public JSFunction()
@@ -440,7 +444,7 @@ namespace LamestWebserver.JScriptBuilder
 
     public class JSElementValue : IJSValue
     {
-        public JSElementValue(IJSValue value) { this._content = value.content; }
+        public JSElementValue(IJSValue value) { this._content = value.getCode(SessionData.currentSessionData, CallingContext.Inner); }
 
         public JSElementValue(string value) { this._content = value; }
 
