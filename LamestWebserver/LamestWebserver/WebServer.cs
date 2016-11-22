@@ -28,6 +28,7 @@ namespace LamestWebserver
 
         private AVLHashMap<string, Master.getContents> pageResponses = new AVLHashMap<string, Master.getContents>(256);
         private QueuedAVLTree<string, Master.getContents> oneTimePageResponses = new QueuedAVLTree<string, Master.getContents>(4096);
+        private AVLHashMap<string, WebSocketCommunicationHandler> webSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(64);
 
         private bool csharp_bridge = true;
         internal bool useCache = true;
@@ -41,39 +42,8 @@ namespace LamestWebserver
         private readonly byte[] crlf = new UTF8Encoding().GetBytes("\r\n");
         private Task<TcpClient> tcpRcvTask;
 
-        public WebServer(int port, string folder, bool silent = false)
-        {
-            if (!tcpPortIsUnused(port))
-            {
-                if (!silent)
-                    Console.WriteLine("Failed to start the WebServer. The tcp port " + port + " is currently used.");
-
-                throw new InvalidOperationException("The tcp port " + port + " is currently used.");
-            }
-
-            this.csharp_bridge = true;
-
-            Master.addFunctionEvent += addFunction;
-            Master.removeFunctionEvent += removeFunction;
-            Master.addOneTimeFunctionEvent += addOneTimeFunction;
-
-            this.port = port;
-            tcpListener = new TcpListener(IPAddress.Any, port);
-            mThread = new Thread(new ThreadStart(handleTcpListener));
-            mThread.Start();
-            this.silent = silent;
-
-            if (useCache)
-                setupFileSystemWatcher();
-
-            if (!silent)
-                Console.WriteLine("WebServer started on port " + port + ".");
-
-            while (folder.EndsWith("\\") || folder.EndsWith("/"))
-            {
-                folder.Remove(folder.Length - 1);
-            }
-        }
+        public WebServer(int port, string folder, bool silent = false) : this(port, folder, true, silent)
+        { }
 
         internal WebServer(int port, string folder, bool cs_bridge, bool silent = false)
         {
@@ -93,6 +63,10 @@ namespace LamestWebserver
                 Master.removeFunctionEvent += removeFunction;
                 Master.addOneTimeFunctionEvent += addOneTimeFunction;
             }
+
+            // Websockets
+            Master.AddWebsocketHandlerEvent += addWebsocketHandler;
+            Master.RemoveWebsocketHandlerEvent += removeWebsocketHandler;
 
             this.port = port;
             this.tcpListener = new TcpListener(IPAddress.Any, port);
@@ -238,6 +212,16 @@ namespace LamestWebserver
             pageResponses.Remove(hash);
         }
 
+        public void addWebsocketHandler(WebSocketCommunicationHandler handler)
+        {
+            webSocketResponses.Add(handler.URL, handler);
+        }
+
+        public void removeWebsocketHandler(string URL)
+        {
+            webSocketResponses.Remove(URL);
+        }
+
         private void handleTcpListener()
         {
             try
@@ -312,6 +296,7 @@ namespace LamestWebserver
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
                     HTTP_Packet htp = HTTP_Packet.Constructor(ref msg_, client.Client.RemoteEndPoint, lastmsg);
+                    WebSocketCommunicationHandler webSocketH;
 
                     byte[] buffer;
 
@@ -320,14 +305,6 @@ namespace LamestWebserver
                         if (htp.version == null)
                         {
                             lastmsg = msg_;
-                        }
-                        else if(htp.IsWebsocketUpgradeRequest)
-                        {
-                            if (!silent)
-                                Console.WriteLine("Websocket Upgrade: " + client.Client.RemoteEndPoint + "\nWebsockets are not working at the moment.");
-
-                            nws.Close();
-                            return;
                         }
                         else if (htp.requestData == "")
                         {
@@ -343,6 +320,13 @@ namespace LamestWebserver
 
                             buffer = htp_.getPackage(enc);
                             nws.Write(buffer, 0, buffer.Length);
+                        }
+                        else if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.requestData, out webSocketH))
+                        {
+                            var handler = Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), webSocketH.OnMessage, webSocketH.OnClose, webSocketH.OnBinary, webSocketH.OnPing, webSocketH.OnPong);
+                            WebSocketCommunicationHandler.currentHandler = handler;
+                            handler.CreateHandshake();
+                            return;
                         }
                         else
                         {
@@ -420,10 +404,18 @@ namespace LamestWebserver
                             }
                         }
                     }
+                    catch(ThreadAbortException)
+                    {
+                        return;
+                    }
                     catch (Exception e)
                     {
                         ServerHandler.addToStuff("An error occured in the client handler: " + e);
                     }
+                }
+                catch (ThreadAbortException)
+                {
+                    return;
                 }
                 catch (Exception e)
                 {

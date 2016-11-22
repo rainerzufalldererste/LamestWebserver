@@ -222,6 +222,27 @@ namespace LamestWebserver
 
             return new string(s);
         }
+        
+        internal static Action<WebSocketCommunicationHandler> AddWebsocketHandlerEvent;
+        internal static Action<string> RemoveWebsocketHandlerEvent;
+        
+        /// <summary>
+        /// Adds a WebSocketCommunicationHandler to all listening Servers.
+        /// </summary>
+        /// <param name="webSocketCommunicationHandler">the WebSocketCommunicationHandler</param>
+        public static void AddWebsocketHandler(WebSocketCommunicationHandler webSocketCommunicationHandler)
+        {
+            AddWebsocketHandlerEvent(webSocketCommunicationHandler);
+        }
+
+        /// <summary>
+        /// Removes a WebSocketCommunicationHandler from all listening Servers.
+        /// </summary>
+        /// <param name="URL">the URL of the WebSocketCommunicationHandler</param>
+        public static void RemoveWebsocketHandler(string URL)
+        {
+            RemoveWebsocketHandlerEvent(URL);
+        }
 
         [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, ControlThread = true)]
         internal static void forceQuitThread(System.Threading.Thread thread)

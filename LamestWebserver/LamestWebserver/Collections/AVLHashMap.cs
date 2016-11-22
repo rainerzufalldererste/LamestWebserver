@@ -246,8 +246,14 @@ namespace LamestWebserver.Collections
 
         public bool TryGetValue(TKey key, out TValue value)
         {
+            if (key == null)
+            {
+                value = default(TValue);
+                return false;
+            }
+
             value = this[key];
-            return value.Equals(default(TValue));
+            return value != null && !value.Equals(default(TValue));
         }
 
         public void Add(KeyValuePair<TKey, TValue> item)

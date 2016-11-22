@@ -105,16 +105,13 @@ namespace LamestWebserver.NotificationService
         NoReply
     }
 
-    public class NotificationHandler : INotificationHandler
+    public class NotificationHandler : WebSocketCommunicationHandler, INotificationHandler
     {
         public JSFunction SendingFunction { get; private set; }
         public string ID { get; private set; } = SessionContainer.generateHash();
         public uint ConnectedClients { get; private set; } = 0;
 
-        public NotificationHandler(string URL)
-        {
-            this.URL = URL + ID;
-        }
+        public NotificationHandler(string URL) : base(URL) { }
 
         public event Action<NotificationResponse> onResponse;
 
@@ -135,8 +132,6 @@ namespace LamestWebserver.NotificationService
         }
 
         private JSElement _jselement = null;
-
-        public string URL { get; protected set; }
 
         public void Notify(Notification notification)
         {
@@ -174,12 +169,11 @@ namespace LamestWebserver.NotificationService
     {
         public bool isMessage = true;
         public string message = "";
-        private NetworkStream senderStream;
+        public WebSocketCommunicationHandler communicationHandler;
 
         public void Reply(Notification notification)
         {
-            byte[] bytes = new UTF8Encoding().GetBytes(notification.GetNotification());
-            senderStream.WriteAsync(bytes, 0, bytes.Length);
+            communicationHandler.WriteAsync(notification.GetNotification());
         }
     }
 }

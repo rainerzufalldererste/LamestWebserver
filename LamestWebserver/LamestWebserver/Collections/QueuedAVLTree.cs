@@ -174,7 +174,7 @@ namespace LamestWebserver.Collections
 
         public bool ContainsKey(TKey key)
         {
-            if (head == null)
+            if (head == null || key == null)
                 return false;
 
             AVLNode node = head;
@@ -241,6 +241,12 @@ namespace LamestWebserver.Collections
 
         public bool TryGetValue(TKey key, out TValue value)
         {
+            if (key == null)
+            {
+                value = default(TValue);
+                return false;
+            }
+            
             value = this[key];
             return ContainsKey(key);
         }
