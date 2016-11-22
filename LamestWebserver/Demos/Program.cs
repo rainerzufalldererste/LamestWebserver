@@ -26,6 +26,7 @@ namespace Demos
             new pageFillerTest();
             CardGame.register();
             XmlTest.register();
+            new jsconn();
             Console.WriteLine("Demos added.\nEnter 'exit' to quit.\n");
 
             string input = "";

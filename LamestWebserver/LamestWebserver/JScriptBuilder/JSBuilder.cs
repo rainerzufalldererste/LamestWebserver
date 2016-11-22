@@ -65,38 +65,40 @@ namespace LamestWebserver.JScriptBuilder
         public List<IJSPiece> pieces = new List<IJSPiece>();
         public List<IJSValue> parameters = new List<IJSValue>();
 
-        public string content { get; set; }
+        protected string _content;
+        public override string content { get { return _content; } }
+
         public IJSValue FunctionPointer { get { return new JSValue(content); } }
 
         public JSFunction(string name, List<IJSValue> parameters)
         {
             if (String.IsNullOrWhiteSpace(name))
-                this.content = "_func" + SessionContainer.generateHash();
+                this._content = "_func" + SessionContainer.generateHash();
 
             this.parameters = parameters;
         }
 
         public JSFunction(List<IJSValue> parameters)
         {
-            this.content = "_func" + SessionContainer.generateHash();
+            this._content = "_func" + SessionContainer.generateHash();
             this.parameters = parameters;
         }
 
         public JSFunction(params IJSValue[] parameters)
         {
-            this.content = "_func" + SessionContainer.generateHash();
+            this._content = "_func" + SessionContainer.generateHash();
             this.parameters = parameters.ToList();
         }
 
         public JSFunction(string name)
         {
             if (String.IsNullOrWhiteSpace(name))
-                this.content = "_func" + SessionContainer.generateHash();
+                this._content = "_func" + SessionContainer.generateHash();
         }
 
         public JSFunction()
         {
-            this.content = "_func" + SessionContainer.generateHash();
+            this._content = "_func" + SessionContainer.generateHash();
         }
 
         public void appendCode(IJSPiece piece)
@@ -104,7 +106,7 @@ namespace LamestWebserver.JScriptBuilder
             pieces.Add(piece);
         }
 
-        public string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context)
         {
             string ret = "function " + content + " ( ";
 
@@ -146,7 +148,7 @@ namespace LamestWebserver.JScriptBuilder
             this.function = function;
         }
 
-        public string content
+        public override string content
         {
             get
             {
@@ -154,7 +156,7 @@ namespace LamestWebserver.JScriptBuilder
             }
         }
 
-        public string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context)
         {
             return "(" + function.getCode(sessionData, CallingContext.Default) + ")()" + (context == CallingContext.Default ? ";" : " ");
         }
@@ -164,14 +166,143 @@ namespace LamestWebserver.JScriptBuilder
     {
         public JSInstantFunction(params IJSPiece[] pieces)
         {
-            base.content = "_ifunc" + SessionContainer.generateHash();
+            base._content = "_ifunc" + SessionContainer.generateHash();
             base.pieces = pieces.ToList();
         }
     }
 
-    public interface IJSValue : IJSPiece
+    public abstract class IJSValue : IJSPiece
     {
-        string content { get; }
+        public abstract string content { get; }
+
+        public abstract string getCode(SessionData sessionData, CallingContext context = CallingContext.Default);
+
+        public static IJSValue operator +(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Add, a, b);
+        }
+
+        public static IJSValue operator -(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Subtract, a, b);
+        }
+
+        public static IJSValue operator *(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Multiply, a, b);
+        }
+
+        public static IJSValue operator /(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Divide, a, b);
+        }
+
+        /*public static IJSValue operator ==(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Equals, a, b);
+        }
+
+        public static IJSValue operator !=(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.NotEquals, a, b);
+        }*/
+
+        public static IJSValue operator <(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Less, a, b);
+        }
+
+        public static IJSValue operator >(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Greater, a, b);
+        }
+
+        public static IJSValue operator <=(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.LessOrEqual, a, b);
+        }
+
+        public static IJSValue operator >=(IJSValue a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.GreaterOrEqual, a, b);
+        }
+    }
+
+    public class JSOperator : IJSValue
+    {
+        JSOperatorType operatorType;
+        IJSValue a, b;
+
+        public override string content { get { return getCode(SessionData.currentSessionData, CallingContext.Default); } }
+
+        public JSOperator(JSOperatorType operatorType, IJSValue a, IJSValue b)
+        {
+            this.operatorType = operatorType;
+            this.a = a;
+            this.b = b;
+        }
+
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            string ret = a.getCode(sessionData, CallingContext.Inner);
+
+            switch(operatorType)
+            {
+                case JSOperatorType.Add:
+                    ret += " + ";
+                    break;
+
+                case JSOperatorType.Subtract:
+                    ret += " - ";
+                    break;
+
+                case JSOperatorType.Multiply:
+                    ret += " * ";
+                    break;
+
+                case JSOperatorType.Divide:
+                    ret += " / ";
+                    break;
+
+                case JSOperatorType.Set:
+                    ret += " = ";
+                    break;
+
+                case JSOperatorType.Equals:
+                    ret += " == ";
+                    break;
+
+                case JSOperatorType.NotEquals:
+                    ret += " != ";
+                    break;
+
+                case JSOperatorType.Greater:
+                    ret += " > ";
+                    break;
+
+                case JSOperatorType.Less:
+                    ret += " < ";
+                    break;
+
+                case JSOperatorType.GreaterOrEqual:
+                    ret += " >= ";
+                    break;
+
+                case JSOperatorType.LessOrEqual:
+                    ret += " <= ";
+                    break;
+
+                default:
+                    throw new InvalidOperationException("The operator '" + operatorType + "' is not handled in getCode()");
+            }
+
+            return ret + b.getCode(sessionData, CallingContext.Inner) + (context == CallingContext.Default ? ";" : " ");
+        }
+
+        public enum JSOperatorType
+        {
+            Add, Subtract, Multiply, Divide, Set, Equals, Greater, Less, GreaterOrEqual, LessOrEqual, NotEquals
+        }
     }
 
     public class JSStringValue : JSValue
@@ -191,34 +322,35 @@ namespace LamestWebserver.JScriptBuilder
 
     public class JSValue : IJSValue
     {
-        public string content { get; set; }
+        protected string _content;
+        public override string content { get { return _content; } }
 
         public JSValue(object content)
         {
-            this.content = content.ToString();
+            this._content = content.ToString();
         }
 
         public JSValue(string content)
         {
-            this.content = content;
+            this._content = content;
         }
 
         public JSValue(int content)
         {
-            this.content = content.ToString();
+            this._content = content.ToString();
         }
 
         public JSValue(bool content)
         {
-            this.content = content.ToString();
+            this._content = content.ToString();
         }
 
         public JSValue(double content)
         {
-            this.content = content.ToString();
+            this._content = content.ToString();
         }
 
-        public virtual string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context)
         {
             return content + (context == CallingContext.Default ? ";" : " ");
         }
@@ -226,15 +358,16 @@ namespace LamestWebserver.JScriptBuilder
 
     public class JSVariable : IJSValue
     {
-        public string content { get; set; }
+        protected string _content;
+        public override string content { get { return _content; } }
 
         public JSVariable(string name = null)
         {
             if (string.IsNullOrWhiteSpace(name))
-                this.content = "_var" + SessionContainer.generateHash();
+                this._content = "_var" + SessionContainer.generateHash();
         }
 
-        public string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context)
         {
             return "var " + content + (context == CallingContext.Default ? ";" : " ");
         }
@@ -245,7 +378,7 @@ namespace LamestWebserver.JScriptBuilder
         private IJSValue[] parameters;
         private string methodName;
 
-        public string content
+        public override string content
         {
             get
             {
@@ -259,7 +392,7 @@ namespace LamestWebserver.JScriptBuilder
             this.parameters = parameters;
         }
 
-        public string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context)
         {
             string ret = methodName + "(";
 
@@ -303,6 +436,31 @@ namespace LamestWebserver.JScriptBuilder
 
             return new JSValue(varName + "=document.getElementById(\"" + id + "\");" + varName + ".remove();");
         }
+    }
+
+    public class JSElementValue : IJSValue
+    {
+        public JSElementValue(IJSValue value) { this._content = value.content; }
+
+        public JSElementValue(string value) { this._content = value; }
+
+        protected string _content;
+        public override string content { get { return _content; } }
+
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            return content + (context == CallingContext.Default ? ";" : " ");
+        }
+
+        public JSValue InnerHTML { get { return new JSValue(this.content + ".innerHTML"); } }
+        public JSValue InnerText { get { return new JSValue(this.content + ".innerText"); } }
+        public JSValue Value { get { return new JSValue(this.content + ".value"); } }
+        public JSValue Name { get { return new JSValue(this.content + ".name"); } }
+        public JSValue ID { get { return new JSValue(this.content + ".id"); } }
+        public JSValue Checked { get { return new JSValue(this.content + ".checked"); } }
+        public JSValue ClassName { get { return new JSValue(this.content + ".className"); } }
+        public JSValue OuterHTML { get { return new JSValue(this.content + ".outerHTML"); } }
+        public JSValue OuterText { get { return new JSValue(this.content + ".outerText"); } }
     }
 
     public abstract class JSElement : HElement, IJSPiece
@@ -361,9 +519,9 @@ namespace LamestWebserver.JScriptBuilder
             return getContent(sessionData, CallingContext.Default);
         }
 
-        public static IJSValue getByID(string id)
+        public static JSElementValue getByID(string id)
         {
-            return new JSMethodCall("document.getElementById", new JSStringValue(id));
+            return new JSElementValue(new JSMethodCall("document.getElementById", new JSStringValue(id)));
         }
     }
 

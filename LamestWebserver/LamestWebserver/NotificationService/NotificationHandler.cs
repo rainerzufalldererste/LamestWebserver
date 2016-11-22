@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -58,12 +59,39 @@ namespace LamestWebserver.NotificationService
 
             return ret;
         }
+
+        public abstract string GetNotification();
+        
+        public static Notification ExecuteScript(string script)
+        {
+            return new ExecuteScriptNotification(script);
+        }
     }
 
     public class KeepAliveNotification : Notification
     {
         public KeepAliveNotification() : base(NotificationType.KeepAlive)
         {
+        }
+
+        public override string GetNotification()
+        {
+            return base.ToString();
+        }
+    }
+
+    public class ExecuteScriptNotification : Notification
+    {
+        public string script { get; private set; }
+
+        public ExecuteScriptNotification(string script) : base(NotificationType.ExecuteScript)
+        {
+            this.script = script;
+        }
+
+        public override string GetNotification()
+        {
+            return base.ToString(script);
         }
     }
 
@@ -79,20 +107,36 @@ namespace LamestWebserver.NotificationService
 
     public class NotificationHandler : INotificationHandler
     {
-        public JSMethodCall SendingFunction;
-        public string ID = SessionContainer.generateHash();
+        public JSFunction SendingFunction { get; private set; }
+        public string ID { get; private set; } = SessionContainer.generateHash();
+        public uint ConnectedClients { get; private set; } = 0;
 
-        public JSElement getJSElement()
+        public NotificationHandler(string URL)
         {
-            string methodName;
-            var elemeent = new JSPlainText("<script type='text/javascript'>" + JSNotificationClient.NotificationCode(SessionData.currentSessionData, URL, out methodName, ID)  + "</script>");
-
-            SendingFunction = new JSMethodCall(methodName);
-
-            return elemeent;
+            this.URL = URL + ID;
         }
 
-        public string URL { get; set; }
+        public event Action<NotificationResponse> onResponse;
+
+        public JSElement JSElement
+        {
+            get
+            {
+                if (_jselement == null)
+                {
+                    string methodName;
+                    _jselement = new JSPlainText("<script type='text/javascript'>" + JSNotificationClient.NotificationCode(SessionData.currentSessionData, URL, out methodName, ID) + "</script>");
+
+                    SendingFunction = new JSFunction(methodName);
+                }
+
+                return _jselement;
+            }
+        }
+
+        private JSElement _jselement = null;
+
+        public string URL { get; protected set; }
 
         public void Notify(Notification notification)
         {
@@ -102,6 +146,40 @@ namespace LamestWebserver.NotificationService
         public void Unsubscribe()
         {
             throw new NotImplementedException();
+        }
+
+        public virtual void HandleResponse(NotificationResponse respsonse)
+        {
+            if(respsonse.isMessage)
+                onResponse(respsonse);
+        }
+
+        private void Connected(WebSocket socket)
+        {
+            ConnectedClients++;
+        }
+
+        public IJSPiece SendMessage(IJSPiece messageGetter)
+        {
+            return SendingFunction.callFunction(new JSValue(messageGetter.getCode(SessionData.currentSessionData, CallingContext.Inner)));
+        }
+
+        public IJSPiece SendMessage(string message)
+        {
+            return SendingFunction.callFunction(new JSStringValue(message));
+        }
+    }
+
+    public class NotificationResponse
+    {
+        public bool isMessage = true;
+        public string message = "";
+        private NetworkStream senderStream;
+
+        public void Reply(Notification notification)
+        {
+            byte[] bytes = new UTF8Encoding().GetBytes(notification.GetNotification());
+            senderStream.WriteAsync(bytes, 0, bytes.Length);
         }
     }
 }

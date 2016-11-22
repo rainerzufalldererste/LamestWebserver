@@ -41,6 +41,10 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="log4net, Version=1.2.13.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CodeAnalysis, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.1.1\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
       <Private>True</Private>
@@ -57,9 +61,25 @@
       <HintPath>..\packages\Microsoft.CodeAnalysis.Scripting.Common.1.1.1\lib\dotnet\Microsoft.CodeAnalysis.Scripting.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="SHA3, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>lib\SHA3.dll</HintPath>
+    </Reference>
+    <Reference Include="SuperSocket.Common, Version=1.6.4.0, Culture=neutral, PublicKeyToken=6c80000676988ebb, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\SuperSocket.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="SuperSocket.SocketBase, Version=1.6.4.0, Culture=neutral, PublicKeyToken=6c80000676988ebb, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\SuperSocket.SocketBase.dll</HintPath>
+    </Reference>
+    <Reference Include="SuperWebSocket, Version=0.10.0.0, Culture=neutral, PublicKeyToken=7ba53b9a7cef5d1c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\SuperWebSocket.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.AppContext, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -86,6 +106,9 @@
       <HintPath>..\packages\System.IO.FileSystem.Primitives.4.0.0\lib\net46\System.IO.FileSystem.Primitives.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Net" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Reflection.Metadata, Version=1.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Reflection.Metadata.1.1.0\lib\dotnet5.2\System.Reflection.Metadata.dll</HintPath>
       <Private>True</Private>
@@ -105,6 +128,7 @@
     <Compile Include="Collections\SerializableKeyValuePair.cs" />
     <Compile Include="NotificationService\JSNotificationClient.cs" />
     <Compile Include="NotificationService\NotificationHandler.cs" />
+    <Compile Include="NotificationService\NotificationService.cs" />
     <Compile Include="ScriptHook\Hook.cs" />
     <Compile Include="HTTP_Packet.cs" />
     <Compile Include="JScriptBuilder\JSAnimation.cs" />

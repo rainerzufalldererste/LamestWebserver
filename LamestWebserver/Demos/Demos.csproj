@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CardGame.cs" />
+    <Compile Include="jsconn.cs" />
     <Compile Include="pageBuilderTest.cs" />
     <Compile Include="pageFillerTest.cs" />
     <Compile Include="Program.cs" />

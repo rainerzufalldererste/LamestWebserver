@@ -90,6 +90,11 @@ namespace LamestWebserver
         private const bool isShortPackageLineFeeds = true;
 
         /// <summary>
+        /// Is the sent package a upgradeRequest to a WebSocket?
+        /// </summary>
+        public bool IsWebsocketUpgradeRequest = false;
+
+        /// <summary>
         /// the HTTP type of the request (GET, POST)
         /// </summary>
         public HTTP_Type type;
@@ -460,6 +465,10 @@ namespace LamestWebserver
                     }
 
                     packet.cookies = cookies;
+                }
+                else if(!packet.IsWebsocketUpgradeRequest && linput[i] == "Upgrade: websocket")
+                {
+                    packet.IsWebsocketUpgradeRequest = true;
                 }
             }
 

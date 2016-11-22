@@ -131,21 +131,30 @@ namespace LamestWebserver
             {
                 tcpListener.Stop();
             }
-            catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
+            catch (Exception e)
+            {
+                if (!silent)
+                    Console.WriteLine(port + ": " + e.Message);
+            }
 
             try
             {
-                mThread.Abort();
+                Master.forceQuitThread(mThread);
             }
-            catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
+            catch (Exception e)
+            {
+                if (!silent)
+                    Console.WriteLine(port + ": " + e.Message);
+            }
 
             try
             {
                 tcpRcvTask.Dispose();
             }
             catch (Exception) { }
-
-            Console.WriteLine("Main Thread stopped! - port: " + port + " - folder: " + folder);
+            
+            if(!silent)
+                Console.WriteLine("Main Thread stopped! - port: " + port + " - folder: " + folder);
 
             int i = threads.Count;
 
@@ -153,12 +162,17 @@ namespace LamestWebserver
             {
                 try
                 {
-                    threads[0].Abort();
+                    Master.forceQuitThread(threads[0]);
                 }
-                catch (Exception e) { Console.WriteLine(port + ": " + e.Message); }
+                catch (Exception e)
+                {
+                    if (!silent)
+                        Console.WriteLine(port + ": " + e.Message);
+                }
                 threads.RemoveAt(0);
 
-                Console.WriteLine("Thread stopped! (" + (i - threads.Count) + "/" + i + ") - port: " + port + " - folder: " + folder);
+                if (!silent)
+                    Console.WriteLine("Thread stopped! (" + (i - threads.Count) + "/" + i + ") - port: " + port + " - folder: " + folder);
             }
         }
 
@@ -306,6 +320,14 @@ namespace LamestWebserver
                         if (htp.version == null)
                         {
                             lastmsg = msg_;
+                        }
+                        else if(htp.IsWebsocketUpgradeRequest)
+                        {
+                            if (!silent)
+                                Console.WriteLine("Websocket Upgrade: " + client.Client.RemoteEndPoint + "\nWebsockets are not working at the moment.");
+
+                            nws.Close();
+                            return;
                         }
                         else if (htp.requestData == "")
                         {

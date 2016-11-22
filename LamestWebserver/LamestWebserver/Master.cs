@@ -222,5 +222,11 @@ namespace LamestWebserver
 
             return new string(s);
         }
+
+        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, ControlThread = true)]
+        internal static void forceQuitThread(System.Threading.Thread thread)
+        {
+            thread.Abort();
+        }
     }
 }
