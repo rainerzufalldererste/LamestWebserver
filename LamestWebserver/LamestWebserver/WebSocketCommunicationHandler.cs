@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
+    public class WebSocketManagementOvertakeFlagException : Exception { }
+
     public class WebSocketCommunicationHandler : IURLIdentifyable
     {
         public string URL { get; private set; }
@@ -18,7 +20,9 @@ namespace LamestWebserver
         {
             this.URL = URL;
             _OnMessage = message => callOnMessage(message, WebSocketHandlerProxy.currentProxy);
-            _OnMessage = message => callOnMessage(message, WebSocketHandlerProxy.currentProxy);
+            _OnClose = () => OnDisconnect(WebSocketHandlerProxy.currentProxy);
+            _OnPing = data => WebSocketHandlerProxy.currentProxy.RespondPong(data);
+            _OnPong = x => { };
 
             register();
         }
@@ -49,7 +53,7 @@ namespace LamestWebserver
             OnMessage(message, proxy);
         }
 
-        internal void callOnRespond()
+        internal void callOnResponded()
         {
             OnRespond();
         }
@@ -67,14 +71,21 @@ namespace LamestWebserver
 
     public class WebSocketHandlerProxy
     {
+        public static TimeSpan MaximumLastMessageTime = TimeSpan.FromSeconds(2d);
+
         private NetworkStream networkStream;
         private WebSocketCommunicationHandler handler;
         private ComposableHandler websocketHandler;
 
+        public bool isActive { get; private set; } = true;
+
+        public DateTime lastMessageReceived = DateTime.UtcNow;
+        public DateTime lastMessageSent = DateTime.UtcNow;
+
         [ThreadStatic]
         internal static WebSocketHandlerProxy currentProxy;
 
-        public WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler)
+        internal WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler)
         {
             this.networkStream = stream;
             this.handler = handler;
@@ -84,14 +95,46 @@ namespace LamestWebserver
             handleConnection();
         }
 
-        public virtual void Respond(string Message)
+        public void Respond(string Message)
         {
-            if (networkStream == null)
+            if (networkStream == null || !isActive)
                 return;
 
             byte[] buffer = websocketHandler.TextFrame.Invoke(Message);
             networkStream.WriteAsync(buffer, 0, buffer.Length);
-            handler.callOnRespond();
+            lastMessageSent = DateTime.UtcNow;
+            handler.callOnResponded();
+        }
+
+        public void RespondPong(byte[] bytes)
+        {
+            if (networkStream == null || !isActive)
+                return;
+
+            byte[] buffer = websocketHandler.PongFrame.Invoke(bytes);
+            networkStream.WriteAsync(buffer, 0, buffer.Length);
+            lastMessageSent = DateTime.UtcNow;
+        }
+
+        public void RespondPing(byte[] bytes)
+        {
+            if (networkStream == null || !isActive)
+                return;
+
+            byte[] buffer = websocketHandler.PingFrame.Invoke(bytes);
+            networkStream.WriteAsync(buffer, 0, buffer.Length);
+            lastMessageSent = DateTime.UtcNow;
+        }
+
+        public void RespondBinary(byte[] bytes)
+        {
+            if (networkStream == null || !isActive)
+                return;
+
+            byte[] buffer = websocketHandler.BinaryFrame.Invoke(bytes);
+            networkStream.WriteAsync(buffer, 0, buffer.Length);
+            lastMessageSent = DateTime.UtcNow;
+            handler.callOnResponded();
         }
 
         private void handleConnection()
@@ -100,14 +143,24 @@ namespace LamestWebserver
 
             byte[] currentBuffer = new byte[4096];
             byte[] trimmedBuffer;
-            var token = new CancellationTokenSource(10000).Token;
-            token.Register(() => {
-                networkStream.Close();
-                networkStream = null;
-            });
-
+            int responseNum = 0;
+            
             while (true)
             {
+                var token = new CancellationTokenSource(10000).Token;
+                responseNum++;
+                int innerResponseNum = responseNum;
+
+                token.Register(() =>
+                {
+                    if (isActive && responseNum == innerResponseNum)
+                    {
+                        networkStream.Close();
+                        isActive = false;
+                        networkStream = null;
+                    }
+                });
+
                 try
                 {
                     if (networkStream == null)
@@ -122,6 +175,8 @@ namespace LamestWebserver
                     if (byteCount.Result == 0)
                         break;
 
+                    lastMessageReceived = DateTime.UtcNow;
+
                     trimmedBuffer = new byte[byteCount.Result];
 
                     Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
@@ -132,11 +187,73 @@ namespace LamestWebserver
                 {
                     break;
                 }
-                catch (Exception)
+                catch (WebSocketManagementOvertakeFlagException)
+                {
+                    return;
+                }
+                catch (Exception e)
                 {
                 }
             }
 
+            ConnectionClosed();
+            isActive = false;
+        }
+
+        public bool ReadAsync()
+        {
+            byte[] currentBuffer = new byte[4096], trimmedBuffer;
+            var token = new CancellationTokenSource(10000).Token;
+            token.Register(() =>
+            {
+                if (isActive)
+                {
+                    networkStream.Close();
+                    isActive = false;
+                    networkStream = null;
+                }
+            });
+
+            try
+            {
+                if (networkStream == null)
+                    return false;
+
+                var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096, token);
+                byteCount.Wait();
+
+                if (byteCount.IsCanceled || networkStream == null)
+                    return false;
+
+                if (byteCount.Result == 0)
+                    return false;
+
+                lastMessageReceived = DateTime.UtcNow;
+
+                trimmedBuffer = new byte[byteCount.Result];
+
+                Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
+
+                websocketHandler.Receive(trimmedBuffer);
+            }
+            catch (ThreadAbortException e)
+            {
+                isActive = false;
+                throw e;
+            }
+            catch (WebSocketManagementOvertakeFlagException e)
+            {
+                throw new InvalidOperationException("WebSocketHandlerProxy.ReadAsync does not support SocketManagementOvertakeFlagExceptions.", e);
+            }
+            catch (Exception)
+            {
+            }
+
+            return true;
+        }
+
+        public void ConnectionClosed()
+        {
             handler.callOnDisconnect(this);
         }
     }

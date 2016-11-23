@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LamestWebserver.NotificationService
@@ -113,6 +114,10 @@ namespace LamestWebserver.NotificationService
         public string ID { get; private set; } = SessionContainer.generateHash();
         public uint ConnectedClients { get; private set; } = 0;
 
+        public Thread handlerThread = null;
+
+        private bool running = true;
+
         public NotificationHandler(string URL) : base(URL)
         {
             OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy));
@@ -139,7 +144,35 @@ namespace LamestWebserver.NotificationService
         }
 
         private JSElement _jselement = null;
-        
+
+        public void serverClients()
+        {
+            while(running)
+            {
+                using (listMutex.Lock())
+                {
+                    for (int i = proxies.Count - 1; i >= 0; i--)
+                    {
+                        if (!proxies[i].isActive)
+                        {
+                            proxies.RemoveAt(i);
+                            continue;
+                        }
+
+                        if ((DateTime.UtcNow - proxies[i].lastMessageSent) > WebSocketHandlerProxy.MaximumLastMessageTime)
+                            proxies[i].Respond(new KeepAliveNotification().GetNotification());
+                    }
+                }
+
+                Thread.Sleep(1);
+            }
+        }
+
+        public void StopHandler()
+        {
+            running = false;
+        }
+
         public void Notify(Notification notification)
         {
             string notificationText = notification.GetNotification();
@@ -155,7 +188,7 @@ namespace LamestWebserver.NotificationService
 
         public virtual void HandleResponse(NotificationResponse response)
         {
-            if(response.isMessage)
+            if(response.IsMessage)
                 OnResponse(response);
         }
 
@@ -166,6 +199,14 @@ namespace LamestWebserver.NotificationService
                 ConnectedClients++;
                 proxies.Add(proxy);
             }
+
+            if(handlerThread == null)
+            {
+                handlerThread = new Thread(new ThreadStart(serverClients));
+                handlerThread.Start();
+            }
+
+            // throw new WebSocketManagementOvertakeFlagException();
         }
 
         private void disconnect(WebSocketHandlerProxy proxy)
@@ -190,19 +231,60 @@ namespace LamestWebserver.NotificationService
 
     public class NotificationResponse
     {
-        public bool isMessage = true;
-        public string message = "";
+        public bool IsMessage = false;
+        public string Message = null;
         public WebSocketHandlerProxy proxy;
+        internal NotificationType notificationType;
 
         internal NotificationResponse(string input, WebSocketHandlerProxy proxy)
         {
-            message = input;
             this.proxy = proxy;
+
+            ParseNotificationResponse(input, this);
         }
 
         public void Reply(Notification notification)
         {
             proxy.Respond(notification.GetNotification());
+        }
+
+        public static void ParseNotificationResponse(string input, NotificationResponse response)
+        {
+            if (input.Length <= 0)
+            {
+                return;
+            }
+
+            string[] data = input.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+            if(data.Length <= 0)
+            {
+                return;
+            }
+
+            if (!System.Enum.TryParse<NotificationType>(data[0], out response.notificationType))
+            {
+                response.notificationType = NotificationType.Invalid;
+                return;
+            }
+
+            switch(response.notificationType)
+            {
+                case NotificationType.Message:
+
+                    response.IsMessage = true;
+                    response.Message = "";
+
+                    for (int i = 1; i < data.Length; i++)
+                    {
+                        response.Message += data[i];
+                    }
+
+                    break;
+
+                default:
+                    break;
+            }
         }
     }
 }

@@ -18,8 +18,8 @@ namespace Demos
             handler.OnResponse +=
                     (NotificationResponse response) =>
                     {
-                        Console.WriteLine("({0}) " + response.message, handler.ConnectedClients);
-                        response.Reply(Notification.ExecuteScript("alert(\"" + response.message.Replace("\n", "\\n") + "\")"));
+                        Console.WriteLine("({0}) " + response.Message, handler.ConnectedClients);
+                        response.Reply(Notification.ExecuteScript("alert(\"" + response.Message.Replace("\n", "\\n") + "\")"));
                     };
         }
 
