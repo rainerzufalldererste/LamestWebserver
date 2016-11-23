@@ -32,7 +32,7 @@ namespace Demos
 
             ////////////////
 
-            Master.addFuntionToServer("fleckdemo", (SessionData data) => { return @"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.0 Transitional//EN'>
+            /*Master.addFuntionToServer("fleckdemo", (SessionData data) => { return @"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.0 Transitional//EN'>
 <html>
 <head>
     <title>websocket client</title>
@@ -109,11 +109,11 @@ namespace Demos
                     socket.Send(input);
                 }
                 input = Console.ReadLine();
-            }
+            }*/
 
             //////////////////////////////////////
 
-            /*string input = "";
+            string input = "";
 
             while (input != "exit")
             {
@@ -124,7 +124,7 @@ namespace Demos
                     ServerHandler.Main(args);
                     break;
                 }
-            }*/
+            }
 
             Master.StopServers();
         }

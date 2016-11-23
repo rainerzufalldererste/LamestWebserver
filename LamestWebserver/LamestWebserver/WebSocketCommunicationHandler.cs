@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LamestWebserver
@@ -30,7 +31,9 @@ namespace LamestWebserver
 
         public event Action<string, WebSocketHandlerProxy> OnMessage = delegate { };
         public event Action OnRespond = delegate { };
-
+        public event Action<WebSocketHandlerProxy> OnConnect = delegate { };
+        public event Action<WebSocketHandlerProxy> OnDisconnect = delegate { };
+        
         protected void register()
         {
             Master.AddWebsocketHandler(this);
@@ -49,6 +52,16 @@ namespace LamestWebserver
         internal void callOnRespond()
         {
             OnRespond();
+        }
+
+        internal void callOnConnect(WebSocketHandlerProxy webSocketHandlerProxy)
+        {
+            OnConnect(webSocketHandlerProxy);
+        }
+
+        internal void callOnDisconnect(WebSocketHandlerProxy webSocketHandlerProxy)
+        {
+            OnDisconnect(webSocketHandlerProxy);
         }
     }
 
@@ -73,6 +86,9 @@ namespace LamestWebserver
 
         public virtual void Respond(string Message)
         {
+            if (networkStream == null)
+                return;
+
             byte[] buffer = websocketHandler.TextFrame.Invoke(Message);
             networkStream.WriteAsync(buffer, 0, buffer.Length);
             handler.callOnRespond();
@@ -80,19 +96,48 @@ namespace LamestWebserver
 
         private void handleConnection()
         {
+            handler.callOnConnect(this);
+
             byte[] currentBuffer = new byte[4096];
             byte[] trimmedBuffer;
+            var token = new CancellationTokenSource(10000).Token;
+            token.Register(() => {
+                networkStream.Close();
+                networkStream = null;
+            });
 
             while (true)
             {
-                var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096);
-                byteCount.Wait();
-                trimmedBuffer = new byte[byteCount.Result];
+                try
+                {
+                    if (networkStream == null)
+                        break;
 
-                Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
+                    var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096, token);
+                    byteCount.Wait();
 
-                websocketHandler.Receive(trimmedBuffer);
+                    if (byteCount.IsCanceled || networkStream == null)
+                        break;
+
+                    if (byteCount.Result == 0)
+                        break;
+
+                    trimmedBuffer = new byte[byteCount.Result];
+
+                    Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
+
+                    websocketHandler.Receive(trimmedBuffer);
+                }
+                catch (ThreadAbortException)
+                {
+                    break;
+                }
+                catch (Exception)
+                {
+                }
             }
+
+            handler.callOnDisconnect(this);
         }
     }
 }

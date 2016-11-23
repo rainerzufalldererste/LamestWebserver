@@ -11,21 +11,20 @@ namespace Demos
 {
     public sealed class jsconn : ElementResponse
     {
+        NotificationHandler handler = new NotificationHandler("jsconn");
+
         public jsconn() : base("jsconn")
         {
             handler.OnResponse +=
                     (NotificationResponse response) =>
                     {
-                        Console.WriteLine(response.message);
+                        Console.WriteLine("({0}) " + response.message, handler.ConnectedClients);
                         response.Reply(Notification.ExecuteScript("alert(\"" + response.message.Replace("\n", "\\n") + "\")"));
                     };
         }
 
-        NotificationHandler handler = new NotificationHandler("jsconn");
-
         protected override HElement getElement(SessionData sessionData)
         {
-
             PageBuilder _pb = new PageBuilder("jsconn");
 
             _pb.addElement(handler.JSElement);

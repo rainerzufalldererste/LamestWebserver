@@ -13,7 +13,7 @@ namespace LamestWebserver.NotificationService
     {
         string URL { get; }
 
-        void Unsubscribe();
+        void Unregister();
 
         void Notify(Notification notification);
     }
@@ -105,6 +105,10 @@ namespace LamestWebserver.NotificationService
 
     public class NotificationHandler : WebSocketCommunicationHandler, INotificationHandler
     {
+        private UsableMutex listMutex = new UsableMutex();
+
+        private List<WebSocketHandlerProxy> proxies = new List<WebSocketHandlerProxy>();
+
         public JSFunction SendingFunction { get; private set; }
         public string ID { get; private set; } = SessionContainer.generateHash();
         public uint ConnectedClients { get; private set; } = 0;
@@ -112,6 +116,8 @@ namespace LamestWebserver.NotificationService
         public NotificationHandler(string URL) : base(URL)
         {
             OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy));
+            OnConnect += proxy => connect(proxy);
+            OnDisconnect += proxy => disconnect(proxy);
         }
 
         public event Action<NotificationResponse> OnResponse;
@@ -133,15 +139,18 @@ namespace LamestWebserver.NotificationService
         }
 
         private JSElement _jselement = null;
-
+        
         public void Notify(Notification notification)
         {
-            throw new NotImplementedException();
+            string notificationText = notification.GetNotification();
+
+            using (listMutex.Lock())
+                proxies.ForEach(proxy => proxy.Respond(notificationText));
         }
 
-        public void Unsubscribe()
+        public void Unregister()
         {
-            throw new NotImplementedException();
+            unregister();
         }
 
         public virtual void HandleResponse(NotificationResponse response)
@@ -150,9 +159,22 @@ namespace LamestWebserver.NotificationService
                 OnResponse(response);
         }
 
-        private void Connected(WebSocket socket)
+        private void connect(WebSocketHandlerProxy proxy)
         {
-            ConnectedClients++;
+            using (listMutex.Lock())
+            {
+                ConnectedClients++;
+                proxies.Add(proxy);
+            }
+        }
+
+        private void disconnect(WebSocketHandlerProxy proxy)
+        {
+            using (listMutex.Lock())
+            {
+                ConnectedClients--;
+                proxies.Remove(proxy);
+            }
         }
 
         public IJSPiece SendMessage(IJSPiece messageGetter)
