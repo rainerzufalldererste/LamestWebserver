@@ -65,6 +65,32 @@ namespace LamestWebserver.NotificationService
         {
             return new ExecuteScriptNotification(script);
         }
+
+        public static Notification ReplaceDivWithContent(string divId, IJSValue content)
+        {
+            return new ExecuteScriptNotification(JSElement.getByID(divId).InnerHTML.Set(content).getCode(SessionData.currentSessionData, CallingContext.Inner));
+        }
+
+        public static Notification ReplaceDivWithContent(string divId, string content)
+        {
+            return new ExecuteScriptNotification(JSElement.getByID(divId).InnerHTML.Set((JSStringValue)content).getCode(SessionData.currentSessionData, CallingContext.Inner));
+        }
+
+        public static Notification AddToDivContent(string divId, IJSValue content)
+        {
+            return new ExecuteScriptNotification(
+                JSElement.getByID(divId).InnerHTML.Set(
+                    JSElement.getByID(divId).InnerHTML + content
+                    ).getCode(SessionData.currentSessionData, CallingContext.Inner));
+        }
+
+        public static Notification AddToDivContent(string divId, string content)
+        {
+            return new ExecuteScriptNotification(
+                JSElement.getByID(divId).InnerHTML.Set(
+                    JSElement.getByID(divId).InnerHTML + (JSStringValue)content
+                    ).getCode(SessionData.currentSessionData, CallingContext.Inner));
+        }
     }
 
     public class KeepAliveNotification : Notification
@@ -134,7 +160,7 @@ namespace LamestWebserver.NotificationService
                 if (_jselement == null)
                 {
                     string methodName;
-                    _jselement = new JSPlainText("<script type='text/javascript'>" + JSNotificationClient.NotificationCode(SessionData.currentSessionData, URL, out methodName, ID) + "</script>");
+                    _jselement = new JSPlainText("<script type='text/javascript'>" + NotificationHelper.NotificationCode(SessionData.currentSessionData, URL, out methodName, ID) + "</script>");
 
                     SendingFunction = new JSFunction(methodName);
                 }

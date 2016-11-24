@@ -332,6 +332,11 @@ namespace LamestWebserver.JScriptBuilder
         {
             return "\"" + content.jsEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
+
+        public static implicit operator JSStringValue(string value)
+        {
+            return new JSStringValue(value);
+        }
     }
 
     public class JSValue : IJSValue
@@ -367,6 +372,11 @@ namespace LamestWebserver.JScriptBuilder
         public override string getCode(SessionData sessionData, CallingContext context)
         {
             return content + (context == CallingContext.Default ? ";" : " ");
+        }
+
+        public IJSValue Set(IJSValue value)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Set, this, value);
         }
     }
 

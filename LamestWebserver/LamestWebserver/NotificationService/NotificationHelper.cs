@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.NotificationService
 {
-    internal static class JSNotificationClient
+    internal static class NotificationHelper
     {
         internal static string NotificationCode(SessionData sessionData, string destinationURL, out string sendMsgMethodName, string NotificationHandlerID)
         {
