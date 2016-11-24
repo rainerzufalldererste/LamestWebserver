@@ -132,9 +132,9 @@ namespace LamestWebserver.JScriptBuilder
             return ret + "}";
         }
 
-        public JSMethodCall callFunction(params IJSValue[] values)
+        public JSPMethodCall callFunction(params IJSValue[] values)
         {
-            return new JSMethodCall(this.content, values);
+            return new JSPMethodCall(this.content, values);
         }
 
         public JSDirectFunctionCall DefineAndCall()
@@ -229,6 +229,16 @@ namespace LamestWebserver.JScriptBuilder
         public static IJSValue operator >=(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.GreaterOrEqual, a, b);
+        }
+
+        public static IJSValue operator + (string a, IJSValue b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Add, new JSStringValue(a), b);
+        }
+
+        public static IJSValue operator + (IJSValue a, string b)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Add, a, new JSStringValue(b));
         }
     }
 
@@ -377,7 +387,7 @@ namespace LamestWebserver.JScriptBuilder
         }
     }
 
-    public class JSMethodCall : IJSValue
+    public class JSPMethodCall : IJSValue
     {
         private IJSValue[] parameters;
         private string methodName;
@@ -390,7 +400,7 @@ namespace LamestWebserver.JScriptBuilder
             }
         }
 
-        public JSMethodCall(string methodName, params IJSValue[] parameters)
+        public JSPMethodCall(string methodName, params IJSValue[] parameters)
         {
             this.methodName = methodName;
             this.parameters = parameters;
@@ -413,9 +423,9 @@ namespace LamestWebserver.JScriptBuilder
 
         public static class window
         {
-            public static JSMethodCall requestAnimationFrame(JSFunction function)
+            public static JSPMethodCall requestAnimationFrame(JSFunction function)
             {
-                return new JSMethodCall("window.requestAnimationFrame", function.FunctionPointer);
+                return new JSPMethodCall("window.requestAnimationFrame", function.FunctionPointer);
             }
         }
 
@@ -525,7 +535,7 @@ namespace LamestWebserver.JScriptBuilder
 
         public static JSElementValue getByID(string id)
         {
-            return new JSElementValue(new JSMethodCall("document.getElementById", new JSStringValue(id)));
+            return new JSElementValue(new JSPMethodCall("document.getElementById", new JSStringValue(id)));
         }
     }
 

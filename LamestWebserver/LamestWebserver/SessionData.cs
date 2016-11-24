@@ -828,7 +828,7 @@ namespace LamestWebserver
         /// </summary>
         public void unregiserUser()
         {
-            if (!knownUser)
+            if (knownUser)
             {
                 SessionContainer.forceGetNextSSID(userName);
                 ssid = "";
