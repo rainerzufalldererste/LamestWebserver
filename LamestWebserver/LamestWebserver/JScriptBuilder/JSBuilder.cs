@@ -813,7 +813,7 @@ namespace LamestWebserver.JScriptBuilder
         private readonly string _methodName;
 
         /// <summary>
-        /// The name of this Mehod to call
+        /// The name of the Method to call
         /// </summary>
         public override string content => _methodName;
 
@@ -898,55 +898,117 @@ namespace LamestWebserver.JScriptBuilder
         }
     }
 
+    /// <summary>
+    /// A JavaScript Value of Type Element (representing a HTML Element)
+    /// </summary>
     public class JSElementValue : IJSValue
     {
+        /// <summary>
+        /// Constructs a new JSElementValue from a Value
+        /// </summary>
+        /// <param name="value">the value</param>
         public JSElementValue(IJSValue value) { this._content = value.getCode(SessionData.currentSessionData, CallingContext.Inner); }
 
+        /// <summary>
+        /// Constructs a new JSElementValue from a string
+        /// </summary>
+        /// <param name="value">the value</param>
         public JSElementValue(string value) { this._content = value; }
 
+        /// <summary>
+        /// The Name of this Element or the Function retrieving it
+        /// </summary>
         protected string _content;
-        public override string content { get { return _content; } }
+
+        /// <summary>
+        /// The Name of this Element or the Function retrieving it
+        /// </summary>
+        public override string content => _content;
 
         /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return content + (context == CallingContext.Default ? ";" : " ");
         }
-
+        
+        /// <inheritdoc />
         public override IJSValue Set(IJSValue value)
         {
             return new JSOperator(JSOperator.JSOperatorType.Set, this, value);
         }
 
-        public JSValue InnerHTML { get { return new JSValue(this.content + ".innerHTML"); } }
-        public JSValue InnerText { get { return new JSValue(this.content + ".innerText"); } }
-        public JSValue Value { get { return new JSValue(this.content + ".value"); } }
-        public JSValue Name { get { return new JSValue(this.content + ".name"); } }
-        public JSValue ID { get { return new JSValue(this.content + ".id"); } }
-        public JSValue Checked { get { return new JSValue(this.content + ".checked"); } }
-        public JSValue ClassName { get { return new JSValue(this.content + ".className"); } }
-        public JSValue OuterHTML { get { return new JSValue(this.content + ".outerHTML"); } }
-        public JSValue OuterText { get { return new JSValue(this.content + ".outerText"); } }
+        /// <summary>
+        /// The 'innerHTML' attribute of this Element
+        /// </summary>
+        public JSValue InnerHTML => new JSValue(this.content + ".innerHTML");
+
+        /// <summary>
+        /// The 'innerText' attribute of this Element
+        /// </summary>
+        public JSValue InnerText => new JSValue(this.content + ".innerText");
+
+        /// <summary>
+        /// The 'value' attribute of this Element
+        /// </summary>
+        public JSValue Value => new JSValue(this.content + ".value");
+
+        /// <summary>
+        /// The 'name' attribute of this Element
+        /// </summary>
+        public JSValue Name => new JSValue(this.content + ".name");
+
+        /// <summary>
+        /// The 'id' attribute of this Element
+        /// </summary>
+        public JSValue ID => new JSValue(this.content + ".id");
+
+        /// <summary>
+        /// The 'checked' attribute of this Element
+        /// </summary>
+        public JSValue Checked => new JSValue(this.content + ".checked");
+
+        /// <summary>
+        /// The 'className' attribute of this Element
+        /// </summary>
+        public JSValue ClassName => new JSValue(this.content + ".className");
+
+        /// <summary>
+        /// The 'outerHTML' attribute of this Element
+        /// </summary>
+        public JSValue OuterHTML => new JSValue(this.content + ".outerHTML");
+
+        /// <summary>
+        /// The 'outerText' attribute of this Element
+        /// </summary>
+        public JSValue OuterText => new JSValue(this.content + ".outerText");
     }
 
+    /// <summary>
+    /// A JavaScript If-Statement
+    /// </summary>
     public class JSIf : IJSPiece
     {
-        private IJSPiece[] pieces;
-        private IJSValue boolenExpression;
+        private readonly IJSPiece[] _pieces;
+        private readonly IJSValue _booleanExpression;
 
-        public JSIf(IJSValue boolenExpression, params IJSPiece[] code)
+        /// <summary>
+        /// Constructs an If-Statement from a boolean Expression and the executed Code if true
+        /// </summary>
+        /// <param name="booleanExpression">the boolean Expression that has to be true to execute the code</param>
+        /// <param name="code">the code that is executed if the boolean Expression is true</param>
+        public JSIf(IJSValue booleanExpression, params IJSPiece[] code)
         {
-            this.boolenExpression = boolenExpression;
-            this.pieces = code;
+            this._booleanExpression = booleanExpression;
+            this._pieces = code;
         }
 
         /// <inheritdoc />
         public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return getContent(pieces, boolenExpression, sessionData);
+            return GetContent(_pieces, _booleanExpression, sessionData);
         }
-
-        internal static string getContent(IJSPiece[] pieces, IJSValue headExpression, SessionData sessionData, string operation = "if")
+        
+        internal static string GetContent(IJSPiece[] pieces, IJSValue headExpression, SessionData sessionData, string operation = "if")
         {
             string ret = operation + " (" + headExpression.getCode(sessionData, CallingContext.Inner) + ") {";
 
@@ -959,31 +1021,46 @@ namespace LamestWebserver.JScriptBuilder
         }
     }
 
+    /// <summary>
+    /// A JavaScript Else-If-Statement
+    /// </summary>
     public class JSElseIf : IJSPiece
     {
-        private IJSPiece[] pieces;
-        private IJSValue boolenExpression;
+        private readonly IJSPiece[] _pieces;
+        private readonly IJSValue _booleanExpression;
 
-        public JSElseIf(IJSValue boolenExpression, params IJSPiece[] code)
+        /// <summary>
+        /// Constructs an Else-If-Statement from a boolean Expression and the executed Code if true
+        /// </summary>
+        /// <param name="booleanExpression">the boolean Expression that has to be true to execute the code</param>
+        /// <param name="code">the code that is executed if the boolean Expression is true</param>
+        public JSElseIf(IJSValue booleanExpression, params IJSPiece[] code)
         {
-            this.boolenExpression = boolenExpression;
-            this.pieces = code;
+            this._booleanExpression = booleanExpression;
+            this._pieces = code;
         }
 
         /// <inheritdoc />
         public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return JSIf.getContent(pieces, boolenExpression, sessionData, "else if ");
+            return JSIf.GetContent(_pieces, _booleanExpression, sessionData, "else if ");
         }
     }
 
+    /// <summary>
+    /// A JavaScript Else-Statement
+    /// </summary>
     public class JSElse : IJSPiece
     {
-        private IJSPiece[] pieces;
+        private readonly IJSPiece[] _pieces;
 
+        /// <summary>
+        /// Constructs an Else-Statement from  the executed Code if true
+        /// </summary>
+        /// <param name="code">the code that is executed</param>
         public JSElse(params IJSPiece[] code)
         {
-            this.pieces = code;
+            this._pieces = code;
         }
 
         /// <inheritdoc />
@@ -991,142 +1068,212 @@ namespace LamestWebserver.JScriptBuilder
         {
             string ret = "else {";
 
-            for (int i = 0; i < pieces.Length; i++)
+            for (int i = 0; i < _pieces.Length; i++)
             {
-                ret += pieces[i].getCode(sessionData);
+                ret += _pieces[i].getCode(sessionData);
             }
 
             return ret + "}";
         }
     }
 
+    /// <summary>
+    /// A JavaScript inline If-Statement
+    /// </summary>
     public class JSInlineIf : IJSValue
     {
-        private IJSValue booleanExpression, ifTrue, ifFalse;
+        readonly IJSValue _booleanExpression, _ifTrue, _ifFalse;
 
+        /// <summary>
+        /// Constructs an Inline-If-Statement from a boolean Expression and the Values if true and if false
+        /// </summary>
+        /// <param name="booleanExpression">the boolean Expression</param>
+        /// <param name="ifTrue">the value if true</param>
+        /// <param name="ifFalse">the value if false</param>
         public JSInlineIf(IJSValue booleanExpression, IJSValue ifTrue, IJSValue ifFalse)
         {
-            this.booleanExpression = booleanExpression;
-            this.ifTrue = ifTrue;
-            this.ifFalse = ifFalse;
+            this._booleanExpression = booleanExpression;
+            this._ifTrue = ifTrue;
+            this._ifFalse = ifFalse;
         }
 
-        public override string content
-        {
-            get { return getCode(SessionData.currentSessionData, CallingContext.Inner); }
-        }
+        /// <summary>
+        /// Retrieves the whole Inline-If-Statement
+        /// </summary>
+        public override string content => getCode(SessionData.currentSessionData, CallingContext.Inner);
 
         /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "(" + booleanExpression.getCode(sessionData, CallingContext.Inner) + " ? "
-                + ifTrue.getCode(sessionData, CallingContext.Inner) + " : "
-                + ifFalse.getCode(sessionData, CallingContext.Inner) + ")"
+            return "(" + _booleanExpression.getCode(sessionData, CallingContext.Inner) + " ? "
+                + _ifTrue.getCode(sessionData, CallingContext.Inner) + " : "
+                + _ifFalse.getCode(sessionData, CallingContext.Inner) + ")"
                 + (context == CallingContext.Default ? ";" : " ");
-        }
-        public override IJSValue Set(IJSValue value)
-        {
-            throw new InvalidOperationException("You can't set a value to an inline if.");
-        }
-    }
-
-    public class JSWhile : IJSPiece
-    {
-        private IJSPiece[] pieces;
-        private IJSValue boolenExpression;
-
-        public JSWhile(IJSValue boolenExpression, params IJSPiece[] code)
-        {
-            this.boolenExpression = boolenExpression;
-            this.pieces = code;
         }
 
         /// <inheritdoc />
-        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public override IJSValue Set(IJSValue value)
         {
-            return JSIf.getContent(pieces, boolenExpression, sessionData, "while ");
+            return new JSOperator(JSOperator.JSOperatorType.Set, this, value);
+        }
+    }
+
+    /// <summary>
+    /// A JavaScript while Loop
+    /// </summary>
+    public class JSWhileLoop : IJSPiece
+    {
+        /// <summary>
+        /// The code in this Loop
+        /// </summary>
+        protected readonly IJSPiece[] _pieces;
+
+        /// <summary>
+        /// The boolean expression for this Loop
+        /// </summary>
+        protected readonly IJSValue _booleanExpression;
+
+        /// <summary>
+        /// Constructs a new JSWhileLoop
+        /// </summary>
+        /// <param name="booleanExpression">the boolean Expression that has to be true</param>
+        /// <param name="code">the code to execute while the expression is true</param>
+        public JSWhileLoop(IJSValue booleanExpression, params IJSPiece[] code)
+        {
+            this._booleanExpression = booleanExpression;
+            this._pieces = code;
+        }
+
+        /// <inheritdoc />
+        public virtual string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            return JSIf.GetContent(_pieces, _booleanExpression, sessionData, "while ");
         }
     }
     
-    public class JSDoWhile : JSWhile
+    /// <summary>
+    /// A JavaScript DoWhileLoop
+    /// </summary>
+    public class JSDoWhileLoop : JSWhileLoop
     {
-        private IJSPiece[] pieces;
-        private IJSValue boolenExpression;
-
-        public JSDoWhile(IJSValue boolenExpression, params IJSPiece[] code) : base(boolenExpression, code) { }
+        /// <summary>
+        /// Constructs a new Do-While-Loop
+        /// </summary>
+        /// <param name="booleanExpression">the expression that has to be true to repeat the loop</param>
+        /// <param name="code">the code to execute in the loop</param>
+        public JSDoWhileLoop(IJSValue booleanExpression, params IJSPiece[] code) : base(booleanExpression, code) { }
 
         /// <inheritdoc />
-        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "do {";
 
-            for (int i = 0; i < pieces.Length; i++)
+            for (int i = 0; i < _pieces.Length; i++)
             {
-                ret += pieces[i].getCode(sessionData);
+                ret += _pieces[i].getCode(sessionData);
             }
 
-            return ret + "} while (" + boolenExpression.getCode(sessionData, CallingContext.Inner) + ") ";
+            return ret + "} while (" + _booleanExpression.getCode(sessionData, CallingContext.Inner) + ") ";
         }
     }
 
-    public class JSFor : IJSPiece
+    /// <summary>
+    /// A JavaScript For-Loop
+    /// </summary>
+    public class JSForLoop : IJSPiece
     {
-        private IJSPiece[] pieces;
-        private JSVariable variable;
-        private IJSValue startValue;
-        private IJSPiece stepOperation, booleanExpression;
+        private readonly IJSPiece[] _pieces;
+        private readonly JSVariable _variable;
+        private readonly IJSValue _startValue;
+        private readonly IJSPiece _stepOperation, _booleanExpression;
 
-        public JSFor(IJSValue endValue, params IJSPiece[] code)
+        /// <summary>
+        /// Constructs a For-Loop iterating from Zero to the specified endValue
+        /// </summary>
+        /// <param name="endValue">the End-Value</param>
+        /// <param name="code">the code to execute</param>
+        public JSForLoop(IJSValue endValue, params IJSPiece[] code)
         {
-            this.variable = new JSVariable();
-            this.startValue = new JSValue(0);
-            this.booleanExpression = (new JSValue(variable.content) < endValue);
-            this.stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
-            this.pieces = code;
-        }
-        public JSFor(JSVariable variable, IJSValue endValue, params IJSPiece[] code)
-        {
-            this.variable = variable;
-            this.startValue = new JSValue(0);
-            this.booleanExpression = (new JSValue(variable.content) < endValue);
-            this.stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
-            this.pieces = code;
+            this._variable = new JSVariable();
+            this._startValue = new JSValue(0);
+            this._booleanExpression = (new JSValue(_variable.content) < endValue);
+            this._stepOperation = new JSValue(_variable.content).Set(new JSValue(_variable.content) + new JSValue(1));
+            this._pieces = code;
         }
 
-        public JSFor(JSVariable variable, IJSValue startValue, IJSValue endValue, params IJSPiece[] code)
+        /// <summary>
+        /// Constructs a For-Loop iterating a Variable from Zero to the specified endValue
+        /// </summary>
+        /// <param name="variable">the Variable to iterate</param>
+        /// <param name="endValue">the End-Value</param>
+        /// <param name="code">the code to execute</param>
+        public JSForLoop(JSVariable variable, IJSValue endValue, params IJSPiece[] code)
         {
-            this.variable = variable;
-            this.startValue = startValue;
-            this.booleanExpression = (new JSValue(variable.content) < endValue);
-            this.stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
-            this.pieces = code;
+            this._variable = variable;
+            this._startValue = new JSValue(0);
+            this._booleanExpression = (new JSValue(variable.content) < endValue);
+            this._stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            this._pieces = code;
+        }
+        
+        /// <summary>
+        /// Constructs a For-Loop iterating a Variable from the specified startValue to the specified endValue
+        /// </summary>
+        /// <param name="variable">the Variable to iterate</param>
+        /// <param name="startValue">the Start-Value</param>
+        /// <param name="endValue">the End-Value</param>
+        /// <param name="code">the code to execute</param>
+        public JSForLoop(JSVariable variable, IJSValue startValue, IJSValue endValue, params IJSPiece[] code)
+        {
+            this._variable = variable;
+            this._startValue = startValue;
+            this._booleanExpression = (new JSValue(variable.content) < endValue);
+            this._stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            this._pieces = code;
         }
 
-        public JSFor(JSVariable variable, IJSValue startValue, IJSValue endValue, JSOperator.JSOperatorType _operator, IJSPiece stepOperation, params IJSPiece[] code)
+        /// <summary>
+        /// Constructs a For-Loop iterating a Variable from the specified startValue as long as the variable is within a certain relation with the endValue executing the given operation each step.
+        /// </summary>
+        /// <param name="variable">the Variable to iterate</param>
+        /// <param name="startValue">the Start-Value</param>
+        /// <param name="endValue">the End-Value</param>
+        /// <param name="_operator">the relation the endValue stands in with the variable</param>
+        /// <param name="stepOperation">the operation to execute each iteration</param>
+        /// <param name="code">the code to execute</param>
+        public JSForLoop(JSVariable variable, IJSValue startValue, IJSValue endValue, JSOperator.JSOperatorType _operator, IJSPiece stepOperation, params IJSPiece[] code)
         {
-            this.variable = variable;
-            this.startValue = startValue;
-            this.booleanExpression = new JSOperator(_operator, new JSValue(variable.content), endValue);
-            this.stepOperation = stepOperation;
-            this.pieces = code;
+            this._variable = variable;
+            this._startValue = startValue;
+            this._booleanExpression = new JSOperator(_operator, new JSValue(variable.content), endValue);
+            this._stepOperation = stepOperation;
+            this._pieces = code;
         }
 
-        public JSFor(JSVariable variable, IJSValue value, IJSValue booleanExpression, IJSPiece stepOperation, params IJSPiece[] code)
+        /// <summary>
+        /// Constructs a For-Loop iterating a Variable with a value as long as a booleanExpression is true by modifying something each iteration in the specified stepOperation and executing the given piece of code.
+        /// </summary>
+        /// <param name="variable">the variable</param>
+        /// <param name="value">the start-value of the variable</param>
+        /// <param name="booleanExpression">the boolean expression</param>
+        /// <param name="stepOperation">the operation to execute each step</param>
+        /// <param name="code">the code to execute inside the loop</param>
+        public JSForLoop(JSVariable variable, IJSValue value, IJSValue booleanExpression, IJSPiece stepOperation, params IJSPiece[] code)
         {
-            this.variable = variable;
-            this.startValue = value;
-            this.booleanExpression = booleanExpression;
-            this.stepOperation = stepOperation;
-            this.pieces = code;
+            this._variable = variable;
+            this._startValue = value;
+            this._booleanExpression = booleanExpression;
+            this._stepOperation = stepOperation;
+            this._pieces = code;
         }
 
         /// <inheritdoc />
         public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return JSIf.getContent(pieces,
-                new JSValue(variable.Set(startValue).getCode(sessionData) +
-                            booleanExpression.getCode(sessionData) +
-                             stepOperation.getCode(sessionData, CallingContext.Inner)), sessionData, "for ");
+            return JSIf.GetContent(_pieces,
+                new JSValue(_variable.Set(_startValue).getCode(sessionData) +
+                            _booleanExpression.getCode(sessionData) +
+                             _stepOperation.getCode(sessionData, CallingContext.Inner)), sessionData, "for ");
         }
     }
 }
