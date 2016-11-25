@@ -7,31 +7,54 @@ using System.Web;
 
 namespace LamestWebserver.JScriptBuilder
 {
+    /// <summary>
+    /// A JavaScript powered HTML-Element
+    /// </summary>
     public abstract class JSElement : HElement, IJSPiece
     {
+        /// <summary>
+        /// Additional Attributes added to the Element
+        /// </summary>
         public string descriptionTags = "";
 
-        public JSElement()
+        /// <summary>
+        /// Constructs a new JSElement and sets it's ID to a HashValue
+        /// </summary>
+        protected JSElement()
         {
             ID = SessionContainer.generateHash();
         }
-
-        public IJSValue CreateNew(CallingContext context = CallingContext.Default)
+        
+        /// <summary>
+        /// Inserts this Element into the document body.
+        /// </summary>
+        /// <returns>A piece of JavaScript code</returns>
+        public IJSValue CreateNew()
         {
             return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + getContent(SessionData.currentSessionData, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
         }
 
-        public IJSValue CreateNew(string intoID, CallingContext context = CallingContext.Default)
+        /// <summary>
+        /// Inserts this Element into an Element with the specified ID.
+        /// </summary>
+        /// <param name="intoID">the ID of the Element</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public IJSValue CreateNew(string intoID)
         {
             return new JSInstantFunction(new JSValue("document.getElementById(\"" + intoID + "\").insertAdjacentHTML(\"beforeend\", " + getContent(SessionData.currentSessionData, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
         }
 
+        /// <inheritdoc />
         public string getCode(SessionData sessionData, CallingContext context)
         {
             return "\"" + getContent(sessionData, CallingContext.Inner).JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
 
-        protected string getDefaultAttributes()
+        /// <summary>
+        /// Retrieves the default attributes for a HTML element
+        /// </summary>
+        /// <returns>the attributes as string</returns>
+        protected string GetDefaultAttributes()
         {
             string ret = " ";
 
@@ -56,62 +79,98 @@ namespace LamestWebserver.JScriptBuilder
             return ret;
         }
 
-        public abstract string getContent(SessionData sessionData, CallingContext context);
+        /// <summary>
+        /// Retrieves the HTML-Text of this Element
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <param name="context">the current CallingContext</param>
+        /// <returns></returns>
+        public abstract string getContent(SessionData sessionData, CallingContext context = CallingContext.Default);
 
+        /// <inheritdoc />
         public override string getContent(SessionData sessionData)
         {
-            return getContent(sessionData, CallingContext.Default);
+            return getContent(sessionData);
         }
 
+        /// <summary>
+        /// Retrieves
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public static JSElementValue getByID(string id)
         {
             return new JSElementValue(new JSPMethodCall("document.getElementById", new JSStringValue(id)));
         }
     }
 
+    /// <summary>
+    /// Just a wrapper to put the text given in the constructor into the final document
+    /// </summary>
     public class JSPlainText : JSElement
     {
+        /// <summary>
+        /// The text add to the final output
+        /// </summary>
         public string Contents;
 
+        /// <summary>
+        /// Creates a pseudo element containing the given contents
+        /// </summary>
+        /// <param name="Contents">the contents to add to the final output</param>
         public JSPlainText(string Contents)
         {
             this.Contents = Contents;
         }
 
+        /// <inheritdoc />
         public override string getContent(SessionData sessionData, CallingContext context)
         {
             return Contents;
         }
     }
 
+    /// <summary>
+    /// A simple MessageBox
+    /// </summary>
     public class JSMsgBox : JSElement
     {
-        private List<JSElement> elements;
-        private bool hasExitButton = true;
+        private readonly List<JSElement> _elements;
+        private readonly bool _hasExitButton = true;
 
+        /// <summary>
+        /// Constructs a new MessageBox
+        /// </summary>
+        /// <param name="hasExitButton">Should there be an Exit-Button?</param>
+        /// <param name="elements">The contained elements</param>
         public JSMsgBox(bool hasExitButton, params JSElement[] elements)
         {
-            this.hasExitButton = hasExitButton;
-            this.elements = elements.ToList();
+            _hasExitButton = hasExitButton;
+            _elements = elements.ToList();
         }
 
+        /// <summary>
+        /// Constructs a new MessageBox
+        /// </summary>
+        /// <param name="elements">The contained elements</param>
         public JSMsgBox(params JSElement[] elements)
         {
-            this.elements = elements.ToList();
+            _elements = elements.ToList();
         }
 
+        /// <inheritdoc />
         public override string getContent(SessionData sessionData, CallingContext context)
         {
             string _content = "";
 
-            for (int i = 0; i < elements.Count; i++)
+            for (int i = 0; i < _elements.Count; i++)
             {
-                _content += elements[i].getContent(sessionData, CallingContext.Default);
+                _content += _elements[i].getContent(sessionData, CallingContext.Default);
             }
 
             string ret = "<div id=\"" + GlobalID + "\" class=\"" + GlobalID + "\" style=\"display: block;position: fixed;top: 0;right: 0;left: 0;bottom: 0;width: 100%;height: 100%;z-index: 100;background-color: rgba(33, 33, 33, 0.75);margin: 0px\"><div class=\"" + GlobalInnerID + "\" id=\"" + GlobalInnerID + "\" style=\"display: block;position: relative;margin: auto;background-color: #fff;max-width: 600px;overflow: auto;margin-top: 8em;\">";
 
-            if (hasExitButton)
+            if (_hasExitButton)
                 ret += "<button onclick=\"javascript: { document.body.removeChild(document.getElementById('_lws_jsbuilder_msgbox_outer')); }\" class=\"_lws_jsbuilder_msgbox_exitbutton\"></button>";
 
             ret += _content;
@@ -119,44 +178,91 @@ namespace LamestWebserver.JScriptBuilder
             return ret + "</div></div>";
         }
 
+        /// <summary>
+        /// The Id of the MessageBox Background
+        /// </summary>
         public const string GlobalID = "_lws_jsbuilder_msgbox_outer";
+
+        /// <summary>
+        /// The Id of the MessageBox Foreground
+        /// </summary>
         public const string GlobalInnerID = "_lws_jsbuilder_msgbox_inner";
     }
 
+    /// <summary>
+    /// A HTML Button Element
+    /// </summary>
     public class JSButton : JSInteractableElement
     {
+        /// <summary>
+        /// The type of the button
+        /// </summary>
         public HButton.EButtonType buttonType = HButton.EButtonType.button;
+
+        /// <summary>
+        /// The text displayed on the button
+        /// </summary>
         public string buttonText = "";
 
+        /// <summary>
+        /// Constructs a new JSButton element
+        /// </summary>
+        /// <param name="buttonText">the text displayed on the button</param>
+        /// <param name="buttonType">the type of the button</param>
         public JSButton(string buttonText, HButton.EButtonType buttonType = HButton.EButtonType.button) : base()
         {
             this.buttonText = buttonText;
             this.buttonType = buttonType;
         }
 
+        /// <inheritdoc />
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            return "<button type='" + buttonType + "' " + getDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText) + "</button>";
+            return "<button type='" + buttonType + "' " + GetDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText) + "</button>";
         }
     }
 
+    /// <summary>
+    /// A HTML Text Element
+    /// </summary>
     public class JSText : JSInteractableElement
     {
-        private string content;
+        private readonly string _content;
 
-        public JSText(string content) : base() { this.content = content; }
+        /// <summary>
+        /// Constructs a new JSText element with the given content
+        /// </summary>
+        /// <param name="content">the content of the Text-Element</param>
+        public JSText(string content) { _content = content; }
 
+        /// <inheritdoc />
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            return "<p " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(content) + "</p>";
+            return "<p " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content) + "</p>";
         }
     }
 
+    /// <summary>
+    /// A HTML Input Element
+    /// </summary>
     public class JSInput : JSInteractableElement
     {
-        protected HInput.EInputType inputType = HInput.EInputType.text;
-        public string Value = "";
+        /// <summary>
+        /// The inputType of this Element
+        /// </summary>
+        protected HInput.EInputType inputType;
+        
+        /// <summary>
+        /// The Value of this Element
+        /// </summary>
+        public string Value;
 
+        /// <summary>
+        /// Constructs a new JSInput Element
+        /// </summary>
+        /// <param name="type">the type of the element</param>
+        /// <param name="name">the name of the element</param>
+        /// <param name="value">the value of the element</param>
         public JSInput(HInput.EInputType type, string name, string value = "") : base()
         {
             inputType = type;
@@ -164,9 +270,10 @@ namespace LamestWebserver.JScriptBuilder
             this.Value = value;
         }
 
+        /// <inheritdoc />
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            return "<input type='" + inputType + "' " + getDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value) + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
+            return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value) + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
         }
 
         /// <summary>
@@ -233,21 +340,40 @@ namespace LamestWebserver.JScriptBuilder
         }
     }
 
+    /// <summary>
+    /// A HTML Text-Area Element
+    /// </summary>
     public class JSTextArea : JSInput
     {
-        public uint? cols, rows;
+        /// <summary>
+        /// The Columns displayed
+        /// </summary>
+        public uint? cols;
 
+        /// <summary>
+        /// The Rows displayed
+        /// </summary>
+        public uint? rows;
+
+        /// <summary>
+        /// Constructs a new JSTextArea
+        /// </summary>
+        /// <param name="name">the name</param>
+        /// <param name="value">the default value</param>
+        /// <param name="cols">the columns displayed</param>
+        /// <param name="rows">the rows displayed</param>
         public JSTextArea(string name, string value = "", uint? cols = null, uint? rows = null) : base(HInput.EInputType.text, name, value)
         {
-            this.Value = value;
-            this.Name = name;
+            Value = value;
+            Name = name;
             this.cols = cols;
             this.rows = rows;
         }
 
+        /// <inheritdoc />
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            string ret = "<textarea " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
+            string ret = "<textarea " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
 
             if (cols.HasValue)
                 ret += "cols='" + cols.Value + "' ";
@@ -261,9 +387,12 @@ namespace LamestWebserver.JScriptBuilder
         }
     }
 
+    /// <summary>
+    /// A HTML Drop-Down-Menu Element
+    /// </summary>
     public class JSDropDownMenu : JSInput
     {
-        private Tuple<string, string>[] options;
+        private readonly Tuple<string, string>[] _options;
 
         /// <summary>
         /// The amount of entries displayed if not expanded
@@ -297,7 +426,7 @@ namespace LamestWebserver.JScriptBuilder
             this.Name = name;
             this.size = size;
             this.multipleSelectable = multipleSelectable;
-            this.options = TextValuePairsToDisplay;
+            this._options = TextValuePairsToDisplay;
         }
 
         /// <summary>
@@ -308,7 +437,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSDropDownMenu(string name, params Tuple<string, string>[] TextValuePairsToDisplay) : base(HInput.EInputType.text, name, "")
         {
             this.Name = name;
-            this.options = TextValuePairsToDisplay;
+            this._options = TextValuePairsToDisplay;
         }
 
         /// <summary>
@@ -323,9 +452,9 @@ namespace LamestWebserver.JScriptBuilder
             if (!multipleSelectable)
                 selectedIndexes.Clear();
 
-            for (int i = 0; i < options.Length; i++)
+            for (int i = 0; i < _options.Length; i++)
             {
-                if (options[i].Item2 == value)
+                if (_options[i].Item2 == value)
                 {
                     this.selectedIndexes.Add(i);
                 }
@@ -346,9 +475,9 @@ namespace LamestWebserver.JScriptBuilder
             if (!multipleSelectable)
                 selectedIndexes.Clear();
 
-            for (int i = 0; i < options.Length; i++)
+            for (int i = 0; i < _options.Length; i++)
             {
-                if (options[i].Item1 == text)
+                if (_options[i].Item1 == text)
                 {
                     this.selectedIndexes.Add(i);
                 }
@@ -356,16 +485,11 @@ namespace LamestWebserver.JScriptBuilder
 
             return this;
         }
-
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current SessionData</param>
-        /// <param name="context">the current callingContext</param>
-        /// <returns>the element as string</returns>
+        
+        /// <inheritdoc />
         public override string getContent(SessionData sessionData, CallingContext context)
         {
-            string ret = "<select " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
+            string ret = "<select " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
 
             ret += "size=\"" + size + "\" ";
 
@@ -377,16 +501,16 @@ namespace LamestWebserver.JScriptBuilder
 
             ret += ">\n";
 
-            if (options != null)
+            if (_options != null)
             {
-                for (int i = 0; i < options.Length; i++)
+                for (int i = 0; i < _options.Length; i++)
                 {
-                    ret += "<option value=\"" + HttpUtility.UrlEncode(options[i].Item2) + "\" ";
+                    ret += "<option value=\"" + HttpUtility.UrlEncode(_options[i].Item2) + "\" ";
 
                     if (selectedIndexes.Contains(i))
                         ret += "selected=\"selected\" ";
 
-                    ret += ">" + HttpUtility.HtmlEncode(options[i].Item1) + "</option>";
+                    ret += ">" + HttpUtility.HtmlEncode(_options[i].Item1) + "</option>";
                 }
             }
 
@@ -394,9 +518,7 @@ namespace LamestWebserver.JScriptBuilder
 
             return ret;
         }
-
-
-
+        
         /// <summary>
         /// Sends this elements name and value to a remote server.
         /// </summary>
@@ -450,9 +572,8 @@ namespace LamestWebserver.JScriptBuilder
     /// </summary>
     public abstract class JSInteractableElement : JSElement
     {
+        /// <inheritdoc />
         public abstract override string getContent(SessionData sessionData, CallingContext context);
-
-        public JSInteractableElement() : base() { }
 
         // #AREYOUREADYFORTHEWEB?
 
@@ -884,6 +1005,7 @@ namespace LamestWebserver.JScriptBuilder
         /// gets all event attributes for the given object
         /// </summary>
         /// <param name="sessionData">the sessionData</param>
+        /// <param name="context">the current Calling Context</param>
         /// <returns>the event attributes as string</returns>
         public string getEventAttributes(SessionData sessionData, CallingContext context)
         {

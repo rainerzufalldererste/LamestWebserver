@@ -184,9 +184,9 @@ namespace LamestWebserver.JScriptBuilder
         public JSFunction(string name, List<IJSValue> parameters)
         {
             if (String.IsNullOrWhiteSpace(name))
-                this._content = "_func" + SessionContainer.generateHash();
+                _content = "_func" + SessionContainer.generateHash();
             else
-                this._content = name;
+                _content = name;
 
             this.parameters = parameters;
         }
@@ -197,7 +197,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="parameters">the parameters of the Function Definition</param>
         public JSFunction(List<IJSValue> parameters)
         {
-            this._content = "_func" + SessionContainer.generateHash();
+            _content = "_func" + SessionContainer.generateHash();
             this.parameters = parameters;
         }
 
@@ -214,9 +214,9 @@ namespace LamestWebserver.JScriptBuilder
         public JSFunction(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                this._content = "_func" + SessionContainer.generateHash();
+                _content = "_func" + SessionContainer.generateHash();
             else
-                this._content = name;
+                _content = name;
         }
 
         /// <summary>
@@ -224,7 +224,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         public JSFunction()
         {
-            this._content = "_func" + SessionContainer.generateHash();
+            _content = "_func" + SessionContainer.generateHash();
         }
 
         /// <summary>
@@ -311,7 +311,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="function">the function to define and execute</param>
         public JSDirectFunctionCall(JSFunction function)
         {
-            this._function = function;
+            _function = function;
         }
 
         /// <summary>
@@ -347,8 +347,8 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="pieces">the code to execute on execution</param>
         public JSInstantFunction(params IJSPiece[] pieces)
         {
-            base._content = "_ifunc" + SessionContainer.generateHash();
-            base.pieces = pieces.ToList();
+            _content = "_ifunc" + SessionContainer.generateHash();
+            this.pieces = pieces.ToList();
         }
     }
 
@@ -415,18 +415,6 @@ namespace LamestWebserver.JScriptBuilder
         {
             return new JSOperator(JSOperator.JSOperatorType.Divide, a, b);
         }
-
-        /*
-        public static IJSValue operator ==(IJSValue a, IJSValue b)
-        {
-            return new JSOperator(JSOperator.JSOperatorType.Equals, a, b);
-        }
-
-        public static IJSValue operator !=(IJSValue a, IJSValue b)
-        {
-            return new JSOperator(JSOperator.JSOperatorType.NotEquals, a, b);
-        }*/
-
         
         /// <summary>
         /// Compares two Values
@@ -517,9 +505,9 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="b">second parameter</param>
         public JSOperator(JSOperatorType operatorType, IJSValue a, IJSValue b)
         {
-            this._operatorType = operatorType;
-            this._a = a;
-            this._b = b;
+            _operatorType = operatorType;
+            _a = a;
+            _b = b;
         }
 
         /// <summary>
@@ -664,7 +652,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="value">the string to set this value to</param>
         public JSStringValue(string value) : base(value)
         {
-            base._content = value;
+            _content = value;
         }
 
         /// <inheritdoc />
@@ -708,7 +696,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="content">the object to read from</param>
         public JSValue(object content)
         {
-            this._content = content.ToString();
+            _content = content.ToString();
         }
 
         /// <summary>
@@ -717,7 +705,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="content">the content of this value</param>
         public JSValue(string content)
         {
-            this._content = content;
+            _content = content;
         }
 
         /// <summary>
@@ -726,7 +714,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="content">the content of this value</param>
         public JSValue(int content)
         {
-            this._content = content.ToString();
+            _content = content.ToString();
         }
 
         /// <summary>
@@ -736,7 +724,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSValue(bool content)
         {
             // Chris: way better than .ToString().ToLower()
-            this._content = content ? "true" : "false";
+            _content = content ? "true" : "false";
         }
 
         /// <summary>
@@ -745,7 +733,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="content">the content of this value</param>
         public JSValue(double content)
         {
-            this._content = content.ToString();
+            _content = content.ToString();
         }
 
         /// <inheritdoc />
@@ -824,8 +812,8 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="parameters">the parameters of the Function</param>
         public JSPMethodCall(string methodName, params IJSValue[] parameters)
         {
-            this._methodName = methodName;
-            this._parameters = parameters;
+            _methodName = methodName;
+            _parameters = parameters;
         }
 
         /// <summary>
@@ -940,47 +928,47 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The 'innerHTML' attribute of this Element
         /// </summary>
-        public JSValue InnerHTML => new JSValue(this.content + ".innerHTML");
+        public JSValue InnerHTML => new JSValue(content + ".innerHTML");
 
         /// <summary>
         /// The 'innerText' attribute of this Element
         /// </summary>
-        public JSValue InnerText => new JSValue(this.content + ".innerText");
+        public JSValue InnerText => new JSValue(content + ".innerText");
 
         /// <summary>
         /// The 'value' attribute of this Element
         /// </summary>
-        public JSValue Value => new JSValue(this.content + ".value");
+        public JSValue Value => new JSValue(content + ".value");
 
         /// <summary>
         /// The 'name' attribute of this Element
         /// </summary>
-        public JSValue Name => new JSValue(this.content + ".name");
+        public JSValue Name => new JSValue(content + ".name");
 
         /// <summary>
         /// The 'id' attribute of this Element
         /// </summary>
-        public JSValue ID => new JSValue(this.content + ".id");
+        public JSValue ID => new JSValue(content + ".id");
 
         /// <summary>
         /// The 'checked' attribute of this Element
         /// </summary>
-        public JSValue Checked => new JSValue(this.content + ".checked");
+        public JSValue Checked => new JSValue(content + ".checked");
 
         /// <summary>
         /// The 'className' attribute of this Element
         /// </summary>
-        public JSValue ClassName => new JSValue(this.content + ".className");
+        public JSValue ClassName => new JSValue(content + ".className");
 
         /// <summary>
         /// The 'outerHTML' attribute of this Element
         /// </summary>
-        public JSValue OuterHTML => new JSValue(this.content + ".outerHTML");
+        public JSValue OuterHTML => new JSValue(content + ".outerHTML");
 
         /// <summary>
         /// The 'outerText' attribute of this Element
         /// </summary>
-        public JSValue OuterText => new JSValue(this.content + ".outerText");
+        public JSValue OuterText => new JSValue(content + ".outerText");
     }
 
     /// <summary>
@@ -998,8 +986,8 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="code">the code that is executed if the boolean Expression is true</param>
         public JSIf(IJSValue booleanExpression, params IJSPiece[] code)
         {
-            this._booleanExpression = booleanExpression;
-            this._pieces = code;
+            _booleanExpression = booleanExpression;
+            _pieces = code;
         }
 
         /// <inheritdoc />
@@ -1036,8 +1024,8 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="code">the code that is executed if the boolean Expression is true</param>
         public JSElseIf(IJSValue booleanExpression, params IJSPiece[] code)
         {
-            this._booleanExpression = booleanExpression;
-            this._pieces = code;
+            _booleanExpression = booleanExpression;
+            _pieces = code;
         }
 
         /// <inheritdoc />
@@ -1092,9 +1080,9 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="ifFalse">the value if false</param>
         public JSInlineIf(IJSValue booleanExpression, IJSValue ifTrue, IJSValue ifFalse)
         {
-            this._booleanExpression = booleanExpression;
-            this._ifTrue = ifTrue;
-            this._ifFalse = ifFalse;
+            _booleanExpression = booleanExpression;
+            _ifTrue = ifTrue;
+            _ifFalse = ifFalse;
         }
 
         /// <summary>
@@ -1119,19 +1107,19 @@ namespace LamestWebserver.JScriptBuilder
     }
 
     /// <summary>
-    /// A JavaScript while Loop
+    /// A JavaScript While-Loop
     /// </summary>
     public class JSWhileLoop : IJSPiece
     {
         /// <summary>
         /// The code in this Loop
         /// </summary>
-        protected readonly IJSPiece[] _pieces;
+        protected readonly IJSPiece[] Pieces;
 
         /// <summary>
         /// The boolean expression for this Loop
         /// </summary>
-        protected readonly IJSValue _booleanExpression;
+        protected readonly IJSValue BooleanExpression;
 
         /// <summary>
         /// Constructs a new JSWhileLoop
@@ -1140,19 +1128,19 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="code">the code to execute while the expression is true</param>
         public JSWhileLoop(IJSValue booleanExpression, params IJSPiece[] code)
         {
-            this._booleanExpression = booleanExpression;
-            this._pieces = code;
+            BooleanExpression = booleanExpression;
+            Pieces = code;
         }
 
         /// <inheritdoc />
         public virtual string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return JSIf.GetContent(_pieces, _booleanExpression, sessionData, "while ");
+            return JSIf.GetContent(Pieces, BooleanExpression, sessionData, "while ");
         }
     }
     
     /// <summary>
-    /// A JavaScript DoWhileLoop
+    /// A JavaScript Do-While-Loop
     /// </summary>
     public class JSDoWhileLoop : JSWhileLoop
     {
@@ -1168,12 +1156,12 @@ namespace LamestWebserver.JScriptBuilder
         {
             string ret = "do {";
 
-            for (int i = 0; i < _pieces.Length; i++)
+            for (int i = 0; i < Pieces.Length; i++)
             {
-                ret += _pieces[i].getCode(sessionData);
+                ret += Pieces[i].getCode(sessionData);
             }
 
-            return ret + "} while (" + _booleanExpression.getCode(sessionData, CallingContext.Inner) + ") ";
+            return ret + "} while (" + BooleanExpression.getCode(sessionData, CallingContext.Inner) + ") ";
         }
     }
 
@@ -1194,11 +1182,11 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="code">the code to execute</param>
         public JSForLoop(IJSValue endValue, params IJSPiece[] code)
         {
-            this._variable = new JSVariable();
-            this._startValue = new JSValue(0);
-            this._booleanExpression = (new JSValue(_variable.content) < endValue);
-            this._stepOperation = new JSValue(_variable.content).Set(new JSValue(_variable.content) + new JSValue(1));
-            this._pieces = code;
+            _variable = new JSVariable();
+            _startValue = new JSValue(0);
+            _booleanExpression = (new JSValue(_variable.content) < endValue);
+            _stepOperation = new JSValue(_variable.content).Set(new JSValue(_variable.content) + new JSValue(1));
+            _pieces = code;
         }
 
         /// <summary>
@@ -1209,11 +1197,11 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="code">the code to execute</param>
         public JSForLoop(JSVariable variable, IJSValue endValue, params IJSPiece[] code)
         {
-            this._variable = variable;
-            this._startValue = new JSValue(0);
-            this._booleanExpression = (new JSValue(variable.content) < endValue);
-            this._stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
-            this._pieces = code;
+            _variable = variable;
+            _startValue = new JSValue(0);
+            _booleanExpression = (new JSValue(variable.content) < endValue);
+            _stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            _pieces = code;
         }
         
         /// <summary>
@@ -1225,11 +1213,11 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="code">the code to execute</param>
         public JSForLoop(JSVariable variable, IJSValue startValue, IJSValue endValue, params IJSPiece[] code)
         {
-            this._variable = variable;
-            this._startValue = startValue;
-            this._booleanExpression = (new JSValue(variable.content) < endValue);
-            this._stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
-            this._pieces = code;
+            _variable = variable;
+            _startValue = startValue;
+            _booleanExpression = (new JSValue(variable.content) < endValue);
+            _stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            _pieces = code;
         }
 
         /// <summary>
@@ -1243,11 +1231,11 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="code">the code to execute</param>
         public JSForLoop(JSVariable variable, IJSValue startValue, IJSValue endValue, JSOperator.JSOperatorType _operator, IJSPiece stepOperation, params IJSPiece[] code)
         {
-            this._variable = variable;
-            this._startValue = startValue;
-            this._booleanExpression = new JSOperator(_operator, new JSValue(variable.content), endValue);
-            this._stepOperation = stepOperation;
-            this._pieces = code;
+            _variable = variable;
+            _startValue = startValue;
+            _booleanExpression = new JSOperator(_operator, new JSValue(variable.content), endValue);
+            _stepOperation = stepOperation;
+            _pieces = code;
         }
 
         /// <summary>
@@ -1260,11 +1248,11 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="code">the code to execute inside the loop</param>
         public JSForLoop(JSVariable variable, IJSValue value, IJSValue booleanExpression, IJSPiece stepOperation, params IJSPiece[] code)
         {
-            this._variable = variable;
-            this._startValue = value;
-            this._booleanExpression = booleanExpression;
-            this._stepOperation = stepOperation;
-            this._pieces = code;
+            _variable = variable;
+            _startValue = value;
+            _booleanExpression = booleanExpression;
+            _stepOperation = stepOperation;
+            _pieces = code;
         }
 
         /// <inheritdoc />
