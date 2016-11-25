@@ -54,7 +54,7 @@ namespace LamestWebserver.NotificationService
                 ret += "\n\r" + NotificationOption.NoReply;
 
             if (!string.IsNullOrWhiteSpace(msg))
-                ret += "\n\n" + Convert.ToBase64String(Encoding.ASCII.GetBytes(msg.jsEncode().Replace("&quot;", "\"")));
+                ret += "\n\n" + Convert.ToBase64String(Encoding.ASCII.GetBytes(msg.JSEncode().Replace("&quot;", "\"")));
 
             return ret;
         }
@@ -73,7 +73,7 @@ namespace LamestWebserver.NotificationService
 
         public static Notification ReplaceDivWithContent(string divId, string content)
         {
-            return new ExecuteScriptNotification(JSElement.getByID(divId).InnerHTML.Set((JSStringValue)content).getCode(SessionData.currentSessionData, CallingContext.Inner));
+            return ReplaceDivWithContent(divId, (JSStringValue) content);
         }
 
         public static Notification AddToDivContent(string divId, IJSValue content)
@@ -86,10 +86,24 @@ namespace LamestWebserver.NotificationService
 
         public static Notification AddToDivContent(string divId, string content)
         {
-            return new ExecuteScriptNotification(
-                JSElement.getByID(divId).InnerHTML.Set(
-                    JSElement.getByID(divId).InnerHTML + (JSStringValue)content
-                    ).getCode(SessionData.currentSessionData, CallingContext.Inner));
+            return AddToDivContent(divId, (JSStringValue) content);
+        }
+
+        public static Notification ReploadPage()
+        {
+            return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(JSValue.CurrentBrowserURL)
+                .getCode(SessionData.currentSessionData, CallingContext.Inner));
+        }
+
+        public static Notification Redirect(IJSValue newPageUrl)
+        {
+            return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(newPageUrl)
+                .getCode(SessionData.currentSessionData, CallingContext.Inner));
+        }
+
+        public static Notification Redirect(string newPageUrl)
+        {
+            return Redirect((JSStringValue)newPageUrl);
         }
     }
 

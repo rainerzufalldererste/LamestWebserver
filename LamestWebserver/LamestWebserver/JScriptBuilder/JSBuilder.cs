@@ -5,71 +5,182 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
+using JSFunctionCall = LamestWebserver.JScriptBuilder.JSPMethodCall;
+
 namespace LamestWebserver.JScriptBuilder
 {
-    public class JScript
+    /// <summary>
+    /// A batch of javascript code pieces
+    /// </summary>
+    public class JScript : IJSPiece
     {
+        /// <summary>
+        /// The contained javascript code pieces
+        /// </summary>
         public List<IJSPiece> pieces = new List<IJSPiece>();
 
+        /// <summary>
+        /// Constructs an empty JScript
+        /// </summary>
         public JScript()
         {
 
         }
 
-        public JScript(params IJSPiece[] pieces)
-        {
-            this.pieces = pieces.ToList();
-        }
+        /// <summary>
+        /// Constructs a JScript containing the given code pieces
+        /// </summary>
+        /// <param name="pieces">the contained code pieces</param>
+        public JScript(params IJSPiece[] pieces) : this(pieces.ToList()) { }
 
+        /// <summary>
+        /// Constructs a JScript containing the given code pieces
+        /// </summary>
+        /// <param name="pieces">the contained code pieces</param>
         public JScript(List<IJSPiece> pieces)
         {
             this.pieces = pieces;
         }
 
-        public void appendCode(IJSPiece piece)
+        /// <summary>
+        /// Appends a given piece of code to the Script
+        /// </summary>
+        /// <param name="piece">the piece of code to add</param>
+        public void AppendCode(IJSPiece piece)
         {
             pieces.Add(piece);
         }
+
+        /// <summary>
+        /// Appends a given piece of code to the Script
+        /// </summary>
+        /// <param name="piecesToAdd">the pieces of code to add</param>
+        public void AppendCodePieces(params IJSPiece[] piecesToAdd)
+        {
+            this.pieces.AddRange(piecesToAdd);
+        }
+
+        /// <inheritdoc />
+        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            string ret = "";
+
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                ret += pieces[i].getCode(sessionData, context);
+            }
+
+            return ret;
+        }
     }
 
+    /// <summary>
+    /// Contains Features for JavaScript parsing
+    /// </summary>
     public static class JSMaster
     {
-        public static string jsEncode(this string input)
+        /// <summary>
+        /// Encodes the given string to a JavaScript inner String
+        /// </summary>
+        /// <param name="input">the given string</param>
+        /// <returns>the encoded string</returns>
+        public static string JSEncode(this string input)
         {
             return HttpUtility.HtmlEncode(input).Replace("&lt;", "<").Replace("&gt;", ">");
         }
 
-        public static string base64Encode(this string input)
+        /// <summary>
+        /// Returns a piece of JavaScript code to decode this string as Base64 back to normal text
+        /// </summary>
+        /// <param name="input">the given input</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public static string Base64Encode(this string input)
         {
             return "window.atob(\"" + Convert.ToBase64String(new ASCIIEncoding().GetBytes(input)) + "\")";
         }
 
-        public static string evalBase64(this string input)
+        /// <summary>
+        /// Returns a piece of JavaScript code decoding and executing the given string as base64
+        /// </summary>
+        /// <param name="input">the given code to encode</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public static string EvalBase64(this string input)
         {
-            return "eval(" + input.base64Encode() + ")";
+            return "eval(" + input.Base64Encode() + ")";
         }
     }
 
+    /// <summary>
+    /// The context in which this piece of code will be executed.
+    /// </summary>
     public enum CallingContext
     {
-        Default, Inner, NoSemicolon
+        /// <summary>
+        /// The Default Calling Context: End command with Semicolon
+        /// </summary>
+        Default,
+
+        /// <summary>
+        /// Inside a Call - Don't end command with Semicolon 
+        /// </summary>
+        Inner,
+
+        /// <summary>
+        /// Don't end command with a Semicolon
+        /// </summary>
+        NoSemicolon
     }
 
+    /// <summary>
+    /// Some kind of JavaScript code
+    /// </summary>
     public interface IJSPiece
     {
+
+        /// <summary>
+        /// Retrieves the JavaScript code for this Element
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <param name="context">the current context. Default: CallingContext.Default</param>
+        /// <returns>the JavaScript code as string</returns>
         string getCode(SessionData sessionData, CallingContext context = CallingContext.Default);
     }
 
+    /// <summary>
+    /// A JavaScript function definition
+    /// </summary>
     public class JSFunction : IJSValue
     {
+        /// <summary>
+        /// The pieces of code to execute
+        /// </summary>
         public List<IJSPiece> pieces = new List<IJSPiece>();
+
+        /// <summary>
+        /// the parameters to feed to this function
+        /// </summary>
         public List<IJSValue> parameters = new List<IJSValue>();
 
+        /// <summary>
+        /// The name of this Function
+        /// </summary>
         protected string _content;
-        public override string content { get { return _content; } }
 
+        /// <summary>
+        /// The name of this Function
+        /// </summary>
+        public override string content => _content;
+
+        /// <summary>
+        /// The name of this Function as JSValue
+        /// </summary>
         public IJSValue FunctionPointer { get { return new JSValue(content); } }
 
+        /// <summary>
+        /// Constructs a new JSFunction
+        /// </summary>
+        /// <param name="name">the name of the function</param>
+        /// <param name="parameters">the parameters of the Function Definition</param>
         public JSFunction(string name, List<IJSValue> parameters)
         {
             if (String.IsNullOrWhiteSpace(name))
@@ -80,18 +191,26 @@ namespace LamestWebserver.JScriptBuilder
             this.parameters = parameters;
         }
 
+        /// <summary>
+        /// Constructs a new JSFunction
+        /// </summary>
+        /// <param name="parameters">the parameters of the Function Definition</param>
         public JSFunction(List<IJSValue> parameters)
         {
             this._content = "_func" + SessionContainer.generateHash();
             this.parameters = parameters;
         }
 
-        public JSFunction(params IJSValue[] parameters)
-        {
-            this._content = "_func" + SessionContainer.generateHash();
-            this.parameters = parameters.ToList();
-        }
+        /// <summary>
+        /// Constructs a new JSFunction
+        /// </summary>
+        /// <param name="parameters">the parameters of the Function Definition</param>
+        public JSFunction(params IJSValue[] parameters) : this(parameters.ToList()) { }
 
+        /// <summary>
+        /// Constructs a new JSFunction
+        /// </summary>
+        /// <param name="name">the name of the function</param>
         public JSFunction(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -100,16 +219,43 @@ namespace LamestWebserver.JScriptBuilder
                 this._content = name;
         }
 
+        /// <summary>
+        /// Constructs a new empty JSFunction
+        /// </summary>
         public JSFunction()
         {
             this._content = "_func" + SessionContainer.generateHash();
         }
 
-        public void appendCode(IJSPiece piece)
+        /// <summary>
+        /// Adds a given piece of JavaScript code to this function.
+        /// </summary>
+        /// <param name="piece">the piece to add</param>
+        public void AppendCode(IJSPiece piece)
         {
             pieces.Add(piece);
         }
+        
+        /// <summary>
+        /// Adds a bunch of given pieces of JavaScript code to this function.
+        /// </summary>
+        /// <param name="piecesToAdd">the pieces to add</param>
+        public void AppendCodePieces(params IJSPiece[] piecesToAdd)
+        {
+            pieces.AddRange(piecesToAdd);
+        }
 
+        /// <summary>
+        /// You can't set a function.
+        /// </summary>
+        /// <param name="value">the value to set this value to</param>
+        /// <returns>throws an Exception, because you cannot set a Function</returns>
+        public override IJSValue Set(IJSValue value)
+        {
+            throw new InvalidOperationException("You can't set a function");
+        }
+
+        /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context)
         {
             string ret = "function " + content + " ( ";
@@ -132,42 +278,73 @@ namespace LamestWebserver.JScriptBuilder
             return ret + "}";
         }
 
-        public JSPMethodCall callFunction(params IJSValue[] values)
+        /// <summary>
+        /// Calls the given Function
+        /// </summary>
+        /// <param name="values">the parameters to input in this call</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public JSFunctionCall callFunction(params IJSValue[] values)
         {
-            return new JSPMethodCall(this.content, values);
+            return new JSFunctionCall(this.content, values);
         }
 
+        /// <summary>
+        /// Defines and Calls this Function at the same time.
+        /// </summary>
+        /// <returns>A piece of JavaScript code</returns>
         public JSDirectFunctionCall DefineAndCall()
         {
             return new JSDirectFunctionCall(this);
         }
     }
 
+    /// <summary>
+    /// A JSDirectFunctionCall defines and calls a function at the same time.
+    /// </summary>
     public class JSDirectFunctionCall : IJSValue
     {
-        JSFunction function;
+        private readonly JSFunction _function;
 
+        /// <summary>
+        /// Constructs a new JSDirectFunctionCall from a given Function
+        /// </summary>
+        /// <param name="function">the function to define and execute</param>
         public JSDirectFunctionCall(JSFunction function)
         {
-            this.function = function;
+            this._function = function;
         }
 
-        public override string content
+        /// <summary>
+        /// The name of the given function.
+        /// </summary>
+        public override string content => _function.content;
+
+        /// <summary>
+        /// Sets the result of this FunctionCall to a Value
+        /// </summary>
+        /// <param name="value">the value to set to</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public override IJSValue Set(IJSValue value)
         {
-            get
-            {
-                return function.content;
-            }
+            return new JSOperator(JSOperator.JSOperatorType.Set, this, value);
         }
 
+        /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context)
         {
-            return "(" + function.getCode(sessionData, CallingContext.Default) + ")()" + (context == CallingContext.Default ? ";" : " ");
+            return "(" + _function.getCode(sessionData, CallingContext.Default) + ")()" + (context == CallingContext.Default ? ";" : " ");
         }
     }
 
+    /// <summary>
+    /// A JSInstant functino is a quick way to generate an anonymus Function executing some code.
+    /// </summary>
     public class JSInstantFunction : JSFunction
     {
+        /// <summary>
+        /// Constructs a new Function containing the given code
+        /// </summary>
+        /// <param name="pieces">the code to execute on execution</param>
         public JSInstantFunction(params IJSPiece[] pieces)
         {
             base._content = "_ifunc" + SessionContainer.generateHash();
@@ -175,33 +352,72 @@ namespace LamestWebserver.JScriptBuilder
         }
     }
 
+    /// <summary>
+    /// A Value in JavaScript code
+    /// </summary>
     public abstract class IJSValue : IJSPiece
     {
+        /// <summary>
+        /// The name of the Value
+        /// </summary>
         public abstract string content { get; }
 
-        public abstract string getCode(SessionData sessionData, CallingContext context = CallingContext.Default);
+        /// <summary>
+        /// A way to quickly set this Value.
+        /// </summary>
+        /// <param name="value">the value to set this element to</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public abstract IJSValue Set(IJSValue value);
 
+        /// <inheritdoc />
+        public abstract string getCode(SessionData sessionData, CallingContext context = CallingContext.Default);
+        
+        /// <summary>
+        /// Adds two Values
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator +(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.Add, a, b);
         }
 
+        /// <summary>
+        /// Subtracts two Values
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator -(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.Subtract, a, b);
         }
 
+        /// <summary>
+        /// Multiplies two Values
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator *(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.Multiply, a, b);
         }
 
+        /// <summary>
+        /// Divides two Values
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator /(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.Divide, a, b);
         }
 
-        /*public static IJSValue operator ==(IJSValue a, IJSValue b)
+        /*
+        public static IJSValue operator ==(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.Equals, a, b);
         }
@@ -211,56 +427,118 @@ namespace LamestWebserver.JScriptBuilder
             return new JSOperator(JSOperator.JSOperatorType.NotEquals, a, b);
         }*/
 
+        
+        /// <summary>
+        /// Compares two Values
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator <(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.Less, a, b);
         }
 
+        /// <summary>
+        /// Compares two Values
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator >(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.Greater, a, b);
         }
 
+        /// <summary>
+        /// Compares two Values
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator <=(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.LessOrEqual, a, b);
         }
 
+        /// <summary>
+        /// Compares two Values
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator >=(IJSValue a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.GreaterOrEqual, a, b);
         }
-
+        
+        /// <summary>
+        /// Adds this Value to a StringValue
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator + (string a, IJSValue b)
         {
             return new JSOperator(JSOperator.JSOperatorType.Add, new JSStringValue(a), b);
         }
 
+        /// <summary>
+        /// Adds a StringVaue to this Value
+        /// </summary>
+        /// <param name="a">value a</param>
+        /// <param name="b">value b</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSValue operator + (IJSValue a, string b)
         {
             return new JSOperator(JSOperator.JSOperatorType.Add, a, new JSStringValue(b));
         }
     }
 
+    /// <summary>
+    /// Performs operations on IJSValues
+    /// </summary>
     public class JSOperator : IJSValue
     {
-        JSOperatorType operatorType;
-        IJSValue a, b;
+        readonly JSOperatorType _operatorType;
+        readonly IJSValue _a;
+        readonly IJSValue _b;
 
-        public override string content { get { return getCode(SessionData.currentSessionData, CallingContext.Default); } }
+        /// <summary>
+        /// Returns the value of this Operation
+        /// </summary>
+        public override string content => getCode(SessionData.currentSessionData);
 
+        /// <summary>
+        /// Constructs a new Operation
+        /// </summary>
+        /// <param name="operatorType">the operator</param>
+        /// <param name="a">first parameter</param>
+        /// <param name="b">second parameter</param>
         public JSOperator(JSOperatorType operatorType, IJSValue a, IJSValue b)
         {
-            this.operatorType = operatorType;
-            this.a = a;
-            this.b = b;
+            this._operatorType = operatorType;
+            this._a = a;
+            this._b = b;
         }
 
+        /// <summary>
+        /// Sets the resulting value of this operation to a specified value.
+        /// Please make sure, that you really want to do this.
+        /// </summary>
+        /// <param name="value">the value to set to</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public override IJSValue Set(IJSValue value)
+        {
+            return new JSOperator(JSOperatorType.Set, this, value);
+        }
+
+        /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            string ret = a.getCode(sessionData, CallingContext.Inner);
+            string ret = _a.getCode(sessionData, CallingContext.Inner);
 
-            switch(operatorType)
+            switch(_operatorType)
             {
                 case JSOperatorType.Add:
                     ret += " + ";
@@ -307,153 +585,311 @@ namespace LamestWebserver.JScriptBuilder
                     break;
 
                 default:
-                    throw new InvalidOperationException("The operator '" + operatorType + "' is not handled in getCode()");
+                    throw new InvalidOperationException("The operator '" + _operatorType + "' is not handled in getCode()");
             }
 
-            return ret + b.getCode(sessionData, CallingContext.Inner) + (context == CallingContext.Default ? ";" : " ");
+            return ret + _b.getCode(sessionData, CallingContext.Inner) + (context == CallingContext.Default ? ";" : " ");
         }
 
+        /// <summary>
+        /// The Types of Operators supported in JSOperator
+        /// </summary>
         public enum JSOperatorType
         {
-            Add, Subtract, Multiply, Divide, Set, Equals, Greater, Less, GreaterOrEqual, LessOrEqual, NotEquals
+            /// <summary>
+            /// Addition
+            /// </summary>
+            Add,
+
+            /// <summary>
+            /// Subtraction
+            /// </summary>
+            Subtract,
+
+            /// <summary>
+            /// Multiplication
+            /// </summary>
+            Multiply,
+
+            /// <summary>
+            /// Division
+            /// </summary>
+            Divide,
+
+            /// <summary>
+            /// Setting to a Value
+            /// </summary>
+            Set,
+
+            /// <summary>
+            /// Equality-Comparison
+            /// </summary>
+            Equals,
+
+            /// <summary>
+            /// Greater than
+            /// </summary>
+            Greater,
+
+            /// <summary>
+            /// Less than
+            /// </summary>
+            Less,
+
+            /// <summary>
+            /// Greater or Equal than
+            /// </summary>
+            GreaterOrEqual,
+
+            /// <summary>
+            /// Less or Equal than
+            /// </summary>
+            LessOrEqual,
+
+            /// <summary>
+            /// Not Equal to Value
+            /// </summary>
+            NotEquals
         }
     }
 
+    /// <summary>
+    /// A String literal Value in JavaScript
+    /// </summary>
     public class JSStringValue : JSValue
     {
+        /// <summary>
+        /// Constructs a new JSStringValue of a given string
+        /// </summary>
+        /// <param name="value">the string to set this value to</param>
         public JSStringValue(string value) : base(value)
         {
-            this.content = value;
+            base._content = value;
         }
 
-        public string content { get; set; }
+        /// <inheritdoc />
+        public override string content => "\"" + _content + "\"";
 
+        /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context)
         {
-            return "\"" + content.jsEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
+            return "\"" + content.JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
 
+        /// <summary>
+        /// Casts a string to a JSStringValue
+        /// </summary>
+        /// <param name="value">the string being casted</param>
+        /// <returns>the string as JSStringValue</returns>
         public static implicit operator JSStringValue(string value)
         {
             return new JSStringValue(value);
         }
     }
 
+    /// <summary>
+    /// A JavaScript value
+    /// </summary>
     public class JSValue : IJSValue
     {
+        /// <summary>
+        /// The content of the Value
+        /// </summary>
         protected string _content;
-        public override string content { get { return _content; } }
 
+        /// <summary>
+        /// Retrieves the Value
+        /// </summary>
+        public override string content => _content;
+
+        /// <summary>
+        /// Constructs a new JSValue from an Object. ToString will be Called.
+        /// </summary>
+        /// <param name="content">the object to read from</param>
         public JSValue(object content)
         {
             this._content = content.ToString();
         }
 
+        /// <summary>
+        /// Constructs a new JSValue from a string. If you want a string literal, use JSStringValue instead.
+        /// </summary>
+        /// <param name="content">the content of this value</param>
         public JSValue(string content)
         {
             this._content = content;
         }
 
+        /// <summary>
+        /// Constructs a new JSValue from an integer
+        /// </summary>
+        /// <param name="content">the content of this value</param>
         public JSValue(int content)
         {
             this._content = content.ToString();
         }
 
+        /// <summary>
+        /// Constructs a new JSValue from a boolean value
+        /// </summary>
+        /// <param name="content">the content of this value</param>
         public JSValue(bool content)
         {
-            this._content = content.ToString();
+            // Chris: way better than .ToString().ToLower()
+            this._content = content ? "true" : "false";
         }
 
+        /// <summary>
+        /// Constructs a new JSValue from a double
+        /// </summary>
+        /// <param name="content">the content of this value</param>
         public JSValue(double content)
         {
             this._content = content.ToString();
         }
 
+        /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context)
         {
             return content + (context == CallingContext.Default ? ";" : " ");
         }
 
-        public IJSValue Set(IJSValue value)
+        /// <inheritdoc />
+        public override IJSValue Set(IJSValue value)
         {
             return new JSOperator(JSOperator.JSOperatorType.Set, this, value);
         }
-    }
 
+        /// <summary>
+        /// Returns the current browser URL (window.location)
+        /// </summary>
+        public static JSValue CurrentBrowserURL => new JSValue("window.location");
+    }
+    
+    /// <summary>
+    /// A JavaScript variable
+    /// </summary>
     public class JSVariable : IJSValue
     {
+        /// <summary>
+        /// The name of this Variable
+        /// </summary>
         protected string _content;
-        public override string content { get { return _content; } }
 
+        /// <summary>
+        /// The name of this Variable
+        /// </summary>
+        public override string content => _content;
+
+        /// <summary>
+        /// Constructs a new JSVariable
+        /// </summary>
+        /// <param name="name">the name of the variable</param>
         public JSVariable(string name = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 this._content = "_var" + SessionContainer.generateHash();
         }
 
+        /// <inheritdoc />
+        public override IJSValue Set(IJSValue value)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Set, this, value);
+        }
+
+        /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context)
         {
             return "var " + content + (context == CallingContext.Default ? ";" : " ");
         }
     }
 
+    /// <summary>
+    /// A JavaScript Function call
+    /// </summary>
     public class JSPMethodCall : IJSValue
     {
-        private IJSValue[] parameters;
-        private string methodName;
+        private readonly IJSValue[] _parameters;
+        private readonly string _methodName;
 
-        public override string content
-        {
-            get
-            {
-                return methodName;
-            }
-        }
+        /// <summary>
+        /// The name of this Mehod to call
+        /// </summary>
+        public override string content => _methodName;
 
+        /// <summary>
+        /// Constructs a new JavaScript functionCall
+        /// </summary>
+        /// <param name="methodName">the name of the Function</param>
+        /// <param name="parameters">the parameters of the Function</param>
         public JSPMethodCall(string methodName, params IJSValue[] parameters)
         {
-            this.methodName = methodName;
-            this.parameters = parameters;
+            this._methodName = methodName;
+            this._parameters = parameters;
         }
 
+        /// <summary>
+        /// Sets the resulting object to a value
+        /// </summary>
+        /// <param name="value">hte value to set to</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public override IJSValue Set(IJSValue value)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Set, this, value);
+        }
+        
+        /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context)
         {
-            string ret = methodName + "(";
+            string ret = _methodName + "(";
 
-            for (int i = 0; i < parameters.Length; i++)
+            for (int i = 0; i < _parameters.Length; i++)
             {
                 if (i > 0)
                     ret += ", ";
 
-                ret += parameters[i].getCode(sessionData, CallingContext.Inner);
+                ret += _parameters[i].getCode(sessionData, CallingContext.Inner);
             }
 
             return ret + ")" + (context == CallingContext.Default ? ";" : " ");
         }
 
-        public static class window
-        {
-            public static JSPMethodCall requestAnimationFrame(JSFunction function)
-            {
-                return new JSPMethodCall("window.requestAnimationFrame", function.FunctionPointer);
-            }
-        }
-
+        /// <summary>
+        /// Sets the innerHTML of an Element to the contents of a predefinded URL
+        /// </summary>
+        /// <param name="value">the element to set the new content to</param>
+        /// <param name="URL">the URL where the new contents come from</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static JSValue SetInnerHTMLAsync(IJSValue value, string URL)
         {
             return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\",true);xmlhttp.send();");
         }
 
+        /// <summary>
+        /// Requests a page from the predefinded URL. This can be used as Notification to the Server without any response.
+        /// </summary>
+        /// <param name="URL">The URL to request</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static JSValue NotifyAsync(string URL)
         {
             return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\",true);xmlhttp.send();");
         }
 
+        /// <summary>
+        /// Hides a specified element.
+        /// </summary>
+        /// <param name="id">the id of the element</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSPiece HideElementByID(string id)
         {
             return new JSValue("document.getElementById(\"" + id + "\").style.display = \"none\";");
         }
 
+        /// <summary>
+        /// Removes a specified element from the current document.
+        /// </summary>
+        /// <param name="id">the id of the element</param>
+        /// <returns>A piece of JavaScript code</returns>
         public static IJSPiece RemoveElementByID(string id)
         {
             string varName = "_var" + SessionContainer.generateHash();
@@ -471,9 +907,15 @@ namespace LamestWebserver.JScriptBuilder
         protected string _content;
         public override string content { get { return _content; } }
 
+        /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return content + (context == CallingContext.Default ? ";" : " ");
+        }
+
+        public override IJSValue Set(IJSValue value)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Set, this, value);
         }
 
         public JSValue InnerHTML { get { return new JSValue(this.content + ".innerHTML"); } }
@@ -487,1132 +929,204 @@ namespace LamestWebserver.JScriptBuilder
         public JSValue OuterText { get { return new JSValue(this.content + ".outerText"); } }
     }
 
-    public abstract class JSElement : HElement, IJSPiece
+    public class JSIf : IJSPiece
     {
-        public string descriptionTags = "";
+        private IJSPiece[] pieces;
+        private IJSValue boolenExpression;
 
-        public JSElement()
+        public JSIf(IJSValue boolenExpression, params IJSPiece[] code)
         {
-            ID = SessionContainer.generateHash();
+            this.boolenExpression = boolenExpression;
+            this.pieces = code;
         }
 
-        public IJSValue CreateNew(CallingContext context = CallingContext.Default)
+        /// <inheritdoc />
+        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + getContent(SessionData.currentSessionData, CallingContext.Inner).base64Encode() + ");")).DefineAndCall();
+            return getContent(pieces, boolenExpression, sessionData);
         }
 
-        public IJSValue CreateNew(string intoID, CallingContext context = CallingContext.Default)
+        internal static string getContent(IJSPiece[] pieces, IJSValue headExpression, SessionData sessionData, string operation = "if")
         {
-            return new JSInstantFunction(new JSValue("document.getElementById(\"" + intoID + "\").insertAdjacentHTML(\"beforeend\", " + getContent(SessionData.currentSessionData, CallingContext.Inner).base64Encode() + ");")).DefineAndCall();
-        }
+            string ret = operation + " (" + headExpression.getCode(sessionData, CallingContext.Inner) + ") {";
 
-        public string getCode(SessionData sessionData, CallingContext context)
-        {
-            return "\"" + getContent(sessionData, CallingContext.Inner).jsEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
-        }
+            for (int i = 0; i < pieces.Length; i++)
+            {
+                ret += pieces[i].getCode(sessionData);
+            }
 
-        protected string getDefaultAttributes()
-        {
-            string ret = " ";
-
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id=\"" + ID + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name=\"" + Name + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class=\"" + Class + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
-
-            return ret;
-        }
-
-        public abstract string getContent(SessionData sessionData, CallingContext context);
-
-        public override string getContent(SessionData sessionData)
-        {
-            return getContent(sessionData, CallingContext.Default);
-        }
-
-        public static JSElementValue getByID(string id)
-        {
-            return new JSElementValue(new JSPMethodCall("document.getElementById", new JSStringValue(id)));
+            return ret + "}";
         }
     }
 
-    public class JSPlainText : JSElement
+    public class JSElseIf : IJSPiece
     {
-        public string Contents;
+        private IJSPiece[] pieces;
+        private IJSValue boolenExpression;
 
-        public JSPlainText(string Contents)
+        public JSElseIf(IJSValue boolenExpression, params IJSPiece[] code)
         {
-            this.Contents = Contents;
+            this.boolenExpression = boolenExpression;
+            this.pieces = code;
         }
 
-        public override string getContent(SessionData sessionData, CallingContext context)
+        /// <inheritdoc />
+        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return Contents;
+            return JSIf.getContent(pieces, boolenExpression, sessionData, "else if ");
         }
     }
 
-    public class JSMsgBox : JSElement
+    public class JSElse : IJSPiece
     {
-        private List<JSElement> elements;
-        private bool hasExitButton = true;
+        private IJSPiece[] pieces;
 
-        public JSMsgBox(bool hasExitButton, params JSElement[] elements)
+        public JSElse(params IJSPiece[] code)
         {
-            this.hasExitButton = hasExitButton;
-            this.elements = elements.ToList();
+            this.pieces = code;
         }
 
-        public JSMsgBox(params JSElement[] elements)
+        /// <inheritdoc />
+        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            this.elements = elements.ToList();
-        }
+            string ret = "else {";
 
-        public override string getContent(SessionData sessionData, CallingContext context)
-        {
-            string _content = "";
-
-            for (int i = 0; i < elements.Count; i++)
+            for (int i = 0; i < pieces.Length; i++)
             {
-                _content += elements[i].getContent(sessionData, CallingContext.Default);
+                ret += pieces[i].getCode(sessionData);
             }
 
-            string ret = "<div id=\"" + GlobalID + "\" class=\"" + GlobalID + "\" style=\"display: block;position: fixed;top: 0;right: 0;left: 0;bottom: 0;width: 100%;height: 100%;z-index: 100;background-color: rgba(33, 33, 33, 0.75);margin: 0px\"><div class=\"" + GlobalInnerID + "\" id=\"" + GlobalInnerID + "\" style=\"display: block;position: relative;margin: auto;background-color: #fff;max-width: 600px;overflow: auto;margin-top: 8em;\">";
-
-            if (hasExitButton)
-                ret += "<button onclick=\"javascript: { document.body.removeChild(document.getElementById('_lws_jsbuilder_msgbox_outer')); }\" class=\"_lws_jsbuilder_msgbox_exitbutton\"></button>";
-
-            ret += _content;
-
-            return ret + "</div></div>";
-        }
-
-        public const string GlobalID = "_lws_jsbuilder_msgbox_outer";
-        public const string GlobalInnerID = "_lws_jsbuilder_msgbox_inner";
-    }
-
-    public class JSButton : JSInteractableElement
-    {
-        public HButton.EButtonType buttonType = HButton.EButtonType.button;
-        public string buttonText = "";
-        
-        public JSButton(string buttonText, HButton.EButtonType buttonType = HButton.EButtonType.button) : base()
-        {
-            this.buttonText = buttonText;
-            this.buttonType = buttonType;
-        }
-
-        public override string getContent(SessionData sessionData, CallingContext context)
-        {
-            return "<button type='" + buttonType + "' " + getDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText) + "</button>";
+            return ret + "}";
         }
     }
 
-    public class JSText : JSInteractableElement
+    public class JSInlineIf : IJSValue
     {
-        private string content;
+        private IJSValue booleanExpression, ifTrue, ifFalse;
 
-        public JSText(string content) : base() { this.content = content; }
-
-        public override string getContent(SessionData sessionData, CallingContext context)
+        public JSInlineIf(IJSValue booleanExpression, IJSValue ifTrue, IJSValue ifFalse)
         {
-            return "<p " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(content) + "</p>";
+            this.booleanExpression = booleanExpression;
+            this.ifTrue = ifTrue;
+            this.ifFalse = ifFalse;
+        }
+
+        public override string content
+        {
+            get { return getCode(SessionData.currentSessionData, CallingContext.Inner); }
+        }
+
+        /// <inheritdoc />
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            return "(" + booleanExpression.getCode(sessionData, CallingContext.Inner) + " ? "
+                + ifTrue.getCode(sessionData, CallingContext.Inner) + " : "
+                + ifFalse.getCode(sessionData, CallingContext.Inner) + ")"
+                + (context == CallingContext.Default ? ";" : " ");
+        }
+        public override IJSValue Set(IJSValue value)
+        {
+            throw new InvalidOperationException("You can't set a value to an inline if.");
         }
     }
 
-    public class JSInput : JSInteractableElement
+    public class JSWhile : IJSPiece
     {
-        protected HInput.EInputType inputType = HInput.EInputType.text;
-        public string Value = "";
+        private IJSPiece[] pieces;
+        private IJSValue boolenExpression;
 
-        public JSInput(HInput.EInputType type, string name, string value = "") : base()
+        public JSWhile(IJSValue boolenExpression, params IJSPiece[] code)
         {
-            inputType = type;
-            Name = name;
-            this.Value = value;
+            this.boolenExpression = boolenExpression;
+            this.pieces = code;
         }
 
-        public override string getContent(SessionData sessionData, CallingContext context)
+        /// <inheritdoc />
+        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<input type='" + inputType + "' " + getDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value) + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
+            return JSIf.getContent(pieces, boolenExpression, sessionData, "while ");
         }
+    }
+    
+    public class JSDoWhile : JSWhile
+    {
+        private IJSPiece[] pieces;
+        private IJSValue boolenExpression;
 
-        /// <summary>
-        /// Sends this elements name and value to a remote server.
-        /// </summary>
-        /// <param name="URL">the event to reach</param>
-        public virtual JSDirectFunctionCall SendNameValueAsync(string URL)
+        public JSDoWhile(IJSValue boolenExpression, params IJSPiece[] code) : base(boolenExpression, code) { }
+
+        /// <inheritdoc />
+        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            if (URL.Contains('?') && URL[URL.Length - 1] != '?')
+            string ret = "do {";
+
+            for (int i = 0; i < pieces.Length; i++)
             {
-                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-            else if (URL[URL.Length - 1] != '?')
-            {
-                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-            else
-            {
-                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                ret += pieces[i].getCode(sessionData);
             }
 
-            switch (inputType)
-            {
-                case HInput.EInputType.checkbox:
-                case HInput.EInputType.radio:
-                    URL += HttpUtility.UrlEncode(Value) + "&checked=";
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".checked, true);xmlhttp.send();")).DefineAndCall();
-
-                default:
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value, true);xmlhttp.send();")).DefineAndCall();
-            }
-        }
-
-        /// <summary>
-        /// Sends this elements name and value to a remote server and sets the response as InnerHtml of a HTML element.
-        /// </summary>
-        /// <param name="element">the element which innerHTML you want to override</param>
-        /// <param name="URL">the event to reach</param>
-        public virtual JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL)
-        {
-            if (URL.Contains('?') && URL[URL.Length - 1] != '?')
-            {
-                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-            else if (URL[URL.Length - 1] != '?')
-            {
-                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-            else
-            {
-                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-
-            switch(inputType)
-            {
-                case HInput.EInputType.checkbox:
-                case HInput.EInputType.radio:
-                    URL += HttpUtility.UrlEncode(Value) + "&checked=";
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
-
-                default:
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value,true);xmlhttp.send();")).DefineAndCall();
-            }
+            return ret + "} while (" + boolenExpression.getCode(sessionData, CallingContext.Inner) + ") ";
         }
     }
 
-    public class JSTextArea : JSInput
+    public class JSFor : IJSPiece
     {
-        public uint? cols, rows;
+        private IJSPiece[] pieces;
+        private JSVariable variable;
+        private IJSValue startValue;
+        private IJSPiece stepOperation, booleanExpression;
 
-        public JSTextArea(string name, string value = "", uint? cols = null, uint? rows = null) : base(HInput.EInputType.text, name, value)
+        public JSFor(IJSValue endValue, params IJSPiece[] code)
         {
-            this.Value = value;
-            this.Name = name;
-            this.cols = cols;
-            this.rows = rows;
+            this.variable = new JSVariable();
+            this.startValue = new JSValue(0);
+            this.booleanExpression = (new JSValue(variable.content) < endValue);
+            this.stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            this.pieces = code;
+        }
+        public JSFor(JSVariable variable, IJSValue endValue, params IJSPiece[] code)
+        {
+            this.variable = variable;
+            this.startValue = new JSValue(0);
+            this.booleanExpression = (new JSValue(variable.content) < endValue);
+            this.stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            this.pieces = code;
         }
 
-        public override string getContent(SessionData sessionData, CallingContext context)
+        public JSFor(JSVariable variable, IJSValue startValue, IJSValue endValue, params IJSPiece[] code)
         {
-            string ret = "<textarea " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
+            this.variable = variable;
+            this.startValue = startValue;
+            this.booleanExpression = (new JSValue(variable.content) < endValue);
+            this.stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            this.pieces = code;
+        }
 
-            if (cols.HasValue)
-                ret += "cols='" + cols.Value + "' ";
+        public JSFor(JSVariable variable, IJSValue startValue, IJSValue endValue, JSOperator.JSOperatorType _operator, IJSPiece stepOperation, params IJSPiece[] code)
+        {
+            this.variable = variable;
+            this.startValue = startValue;
+            this.booleanExpression = new JSOperator(_operator, new JSValue(variable.content), endValue);
+            this.stepOperation = stepOperation;
+            this.pieces = code;
+        }
 
-            if (rows.HasValue)
-                ret += "rows='" + rows.Value + "' ";
+        public JSFor(JSVariable variable, IJSValue value, IJSValue booleanExpression, IJSPiece stepOperation, params IJSPiece[] code)
+        {
+            this.variable = variable;
+            this.startValue = value;
+            this.booleanExpression = booleanExpression;
+            this.stepOperation = stepOperation;
+            this.pieces = code;
+        }
 
-            ret += ">" + HttpUtility.HtmlEncode(Value)  + "</textarea>";
-
-            return ret;
+        /// <inheritdoc />
+        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            return JSIf.getContent(pieces,
+                new JSValue(variable.Set(startValue).getCode(sessionData) +
+                            booleanExpression.getCode(sessionData) +
+                             stepOperation.getCode(sessionData, CallingContext.Inner)), sessionData, "for ");
         }
     }
-
-    public class JSDropDownMenu : JSInput
-    {
-        private Tuple<string, string>[] options;
-
-        /// <summary>
-        /// The amount of entries displayed if not expanded
-        /// </summary>
-        public int size = 1;
-
-        /// <summary>
-        /// does the dropdownmenu allow multiple selections?
-        /// </summary>
-        public bool multipleSelectable = false;
-
-        /// <summary>
-        /// is the dropdownmenu disabled for the user?
-        /// </summary>
-        public bool disabled = false;
-
-        /// <summary>
-        /// the selectedIndexes
-        /// </summary>
-        public List<int> selectedIndexes = new List<int>() { 0 };
-
-        /// <summary>
-        /// Constructs a new DropDownMenu element
-        /// </summary>
-        /// <param name="name">the name of the element (for forms)</param>
-        /// <param name="size">The amount of entries displayed if not expanded</param>
-        /// <param name="multipleSelectable">does the dropdownmenu allow multiple selections?</param>
-        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
-        public JSDropDownMenu(string name, int size, bool multipleSelectable, params Tuple<string, string>[] TextValuePairsToDisplay) : base(HInput.EInputType.text, name, "")
-        {
-            this.Name = name;
-            this.size = size;
-            this.multipleSelectable = multipleSelectable;
-            this.options = TextValuePairsToDisplay;
-        }
-
-        /// <summary>
-        /// Constructs a new DropDownMenu element
-        /// </summary>
-        /// <param name="name">the name of the element (for forms)</param>
-        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
-        public JSDropDownMenu(string name, params Tuple<string, string>[] TextValuePairsToDisplay) : base(HInput.EInputType.text, name, "")
-        {
-            this.Name = name;
-            this.options = TextValuePairsToDisplay;
-        }
-
-        /// <summary>
-        /// Selects an item based on the value given to it.
-        /// Unselects everything else if !multipleSelectable.
-        /// DOES NOT THROW AN EXCEPTION IF NO MATCHING INDEX HAS BEEN FOUND!
-        /// </summary>
-        /// <param name="value">the value to look for</param>
-        /// <returns>this element for inline use.</returns>
-        public JSDropDownMenu SelectByValue(string value)
-        {
-            if (!multipleSelectable)
-                selectedIndexes.Clear();
-
-            for (int i = 0; i < options.Length; i++)
-            {
-                if (options[i].Item2 == value)
-                {
-                    this.selectedIndexes.Add(i);
-                }
-            }
-
-            return this;
-        }
-
-        /// <summary>
-        /// Selects an item based on the text given to it.
-        /// Unselects everything else if !multipleSelectable.
-        /// DOES NOT THROW AN EXCEPTION IF NO MATCHING INDEX HAS BEEN FOUND!
-        /// </summary>
-        /// <param name="text">the text to look for</param>
-        /// <returns>this element for inline use.</returns>
-        public JSDropDownMenu SelectByText(string text)
-        {
-            if (!multipleSelectable)
-                selectedIndexes.Clear();
-
-            for (int i = 0; i < options.Length; i++)
-            {
-                if (options[i].Item1 == text)
-                {
-                    this.selectedIndexes.Add(i);
-                }
-            }
-
-            return this;
-        }
-
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current SessionData</param>
-        /// <param name="context">the current callingContext</param>
-        /// <returns>the element as string</returns>
-        public override string getContent(SessionData sessionData, CallingContext context)
-        {
-            string ret = "<select " + getDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
-
-            ret += "size=\"" + size + "\" ";
-
-            if (multipleSelectable)
-                ret += "multiple=\"multiple\" ";
-
-            if (disabled)
-                ret += "disabled=\"" + disabled + "\" ";
-
-            ret += ">\n";
-
-            if (options != null)
-            {
-                for (int i = 0; i < options.Length; i++)
-                {
-                    ret += "<option value=\"" + HttpUtility.UrlEncode(options[i].Item2) + "\" ";
-
-                    if (selectedIndexes.Contains(i))
-                        ret += "selected=\"selected\" ";
-
-                    ret += ">" + HttpUtility.HtmlEncode(options[i].Item1) + "</option>";
-                }
-            }
-
-            ret += "\n</select>\n";
-
-            return ret;
-        }
-
-
-
-        /// <summary>
-        /// Sends this elements name and value to a remote server.
-        /// </summary>
-        /// <param name="URL">the event to reach</param>
-        public override JSDirectFunctionCall SendNameValueAsync(string URL)
-        {
-            if (URL.Contains('?') && URL[URL.Length - 1] != '?')
-            {
-                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-            else if (URL[URL.Length - 1] != '?')
-            {
-                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-            else
-            {
-                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-
-            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
-        }
-
-        /// <summary>
-        /// Sends this elements name and value to a remote server and sets the response as InnerHtml of a HTML element.
-        /// </summary>
-        /// <param name="element">the element which innerHTML you want to override</param>
-        /// <param name="URL">the event to reach</param>
-        public override JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL)
-        {
-            if (URL.Contains('?') && URL[URL.Length - 1] != '?')
-            {
-                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-            else if (URL[URL.Length - 1] != '?')
-            {
-                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-            else
-            {
-                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
-            }
-
-            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
-        }
-    }
-
-    #region ARE YOU READY FOR THE WEB? THE TRUE WEB? FEEL FREE TO ENTER?
-
-    /// <summary>
-    /// See: http://www.w3schools.com/jsref/dom_obj_event.asp
-    /// </summary>
-    public abstract class JSInteractableElement : JSElement
-    {
-        public abstract override string getContent(SessionData sessionData, CallingContext context);
-
-        public JSInteractableElement() : base() { }
-
-        // #AREYOUREADYFORTHEWEB?
-
-        /// <summary>
-        /// The event occurs when the user clicks on an element
-        /// </summary>
-        public IJSPiece onclick;
-
-        /// <summary>
-        /// The event occurs when the user right-clicks on an element to open a context menu
-        /// </summary>
-        public IJSPiece oncontextmenu;
-
-        /// <summary>
-        /// The event occurs when the user double-clicks on an element
-        /// </summary>
-        public IJSPiece ondblclick;
-
-        /// <summary>
-        /// The event occurs when the user presses a mouse button over an element
-        /// </summary>
-        public IJSPiece onmousedown;
-
-        /// <summary>
-        /// The event occurs when the pointer is moved onto an element
-        /// </summary>
-        public IJSPiece onmouseenter;
-
-        /// <summary>
-        /// The event occurs when the pointer is moved out of an element
-        /// </summary>
-        public IJSPiece onmouseleave;
-
-        /// <summary>
-        /// The event occurs when the pointer is moving while it is over an element
-        /// </summary>
-        public IJSPiece onmousemove;
-
-        /// <summary>
-        /// The event occurs when the pointer is moved onto an element, or onto one of its children
-        /// </summary>
-        public IJSPiece onmouseover;
-
-        /// <summary>
-        /// The event occurs when a user moves the mouse pointer out of an element, or out of one of its children
-        /// </summary>
-        public IJSPiece onmouseout;
-
-        /// <summary>
-        /// The event occurs when a user releases a mouse button over an element
-        /// </summary>
-        public IJSPiece onmouseup;
-
-        /// <summary>
-        /// The event occurs when the user is pressing a key
-        /// </summary>
-        public IJSPiece onkeydown;
-
-        /// <summary>
-        /// The event occurs when the user presses a key
-        /// </summary>
-        public IJSPiece onkeypress;
-
-        /// <summary>
-        /// The event occurs when the user releases a key
-        /// </summary>
-        public IJSPiece onkeyup;
-
-        /// <summary>
-        /// The event occurs when the loading of a resource has been aborted
-        /// The event occurs when the loading of a media is aborted
-        /// </summary>
-        public IJSPiece onabort;
-
-        /// <summary>
-        /// The event occurs before the document is about to be unloaded
-        /// </summary>
-        public IJSPiece onbeforeunload;
-
-        /// <summary>
-        /// The event occurs when an error occurs while loading an external file
-        /// The event occurs when an error occurred during the loading of a media file
-        /// The event occurs when an error occurs with the event source
-        /// </summary>
-        public IJSPiece onerror;
-
-        /// <summary>
-        /// The event occurs when there has been changes to the anchor part of a URL
-        /// </summary>
-        public IJSPiece onhashchange;
-
-        /// <summary>
-        /// The event occurs when an object has loaded
-        /// </summary>
-        public IJSPiece onload;
-
-        /// <summary>
-        /// The event occurs when the user navigates to a webpage
-        /// </summary>
-        public IJSPiece onpageshow;
-
-        /// <summary>
-        /// The event occurs when the user navigates away from a webpage
-        /// </summary>
-        public IJSPiece onpagehide;
-
-        /// <summary>
-        /// The event occurs when the document view is resized
-        /// </summary>
-        public IJSPiece onresize;
-
-        /// <summary>
-        /// The event occurs when an element's scrollbar is being scrolled
-        /// </summary>
-        public IJSPiece onscroll;
-
-        /// <summary>
-        /// The event occurs once a page has unloaded (for body)
-        /// </summary>
-        public IJSPiece onunload;
-
-        /// <summary>
-        /// The event occurs when an element loses focus
-        /// </summary>
-        public IJSPiece onblur;
-
-        /// <summary>
-        /// The event occurs when the content of a form element, the selection, or the checked state have changed (for input, keygen, select, and textarea)
-        /// </summary>
-        public IJSPiece onchange;
-
-        /// <summary>
-        /// The event occurs when an element gets focus
-        /// </summary>
-        public IJSPiece onfocus;
-
-        /// <summary>
-        /// The event occurs when an element is about to get focus
-        /// </summary>
-        public IJSPiece onfocusin;
-
-        /// <summary>
-        /// The event occurs when an element is about to lose focus
-        /// </summary>
-        public IJSPiece onfocusout;
-
-        /// <summary>
-        /// The event occurs when an element gets user input
-        /// </summary>
-        public IJSPiece oninput;
-
-        /// <summary>
-        /// The event occurs when an element is invalid
-        /// </summary>
-        public IJSPiece oninvalid;
-
-        /// <summary>
-        /// The event occurs when a form is reset
-        /// </summary>
-        public IJSPiece onreset;
-
-        /// <summary>
-        /// The event occurs when the user writes something in a search field (for input="search")
-        /// </summary>
-        public IJSPiece onsearch;
-
-        /// <summary>
-        /// The event occurs after the user selects some text (for input and textarea)
-        /// </summary>
-        public IJSPiece onselect;
-
-        /// <summary>
-        /// The event occurs when a form is submitted
-        /// </summary>
-        public IJSPiece onsubmit;
-
-        /// <summary>
-        /// The event occurs when an element is being dragged
-        /// </summary>
-        public IJSPiece ondrag;
-
-        /// <summary>
-        /// The event occurs when the user has finished dragging an element
-        /// </summary>
-        public IJSPiece ondragend;
-
-        /// <summary>
-        /// The event occurs when the dragged element enters the drop target
-        /// </summary>
-        public IJSPiece ondragenter;
-
-        /// <summary>
-        /// The event occurs when the dragged element leaves the drop target
-        /// </summary>
-        public IJSPiece ondragleave;
-
-        /// <summary>
-        /// The event occurs when the dragged element is over the drop target
-        /// </summary>
-        public IJSPiece ondragover;
-
-        /// <summary>
-        /// The event occurs when the user starts to drag an element
-        /// </summary>
-        public IJSPiece ondragstart;
-
-        /// <summary>
-        /// The event occurs when the dragged element is dropped on the drop target
-        /// </summary>
-        public IJSPiece ondrop;
-
-        /// <summary>
-        /// The event occurs when the user copies the content of an element
-        /// </summary>
-        public IJSPiece oncopy;
-
-        /// <summary>
-        /// The event occurs when the user cuts the content of an element
-        /// </summary>
-        public IJSPiece oncut;
-
-        /// <summary>
-        /// The event occurs when the user pastes some content in an element
-        /// </summary>
-        public IJSPiece onpaste;
-
-        /// <summary>
-        /// The event occurs when a page has started printing, or if the print dialogue box has been closed
-        /// </summary>
-        public IJSPiece onafterprint;
-
-        /// <summary>
-        /// The event occurs when a page is about to be printed
-        /// </summary>
-        public IJSPiece onbeforeprint;
-
-        /// <summary>
-        /// The event occurs when the browser can start playing the media (when it has buffered enough to begin)
-        /// </summary>
-        public IJSPiece oncanplay;
-
-        /// <summary>
-        /// The event occurs when the browser can play through the media without stopping for buffering
-        /// </summary>
-        public IJSPiece oncanplaythrough;
-
-        /// <summary>
-        /// The event occurs when the duration of the media is changed
-        /// </summary>
-        public IJSPiece ondurationchange;
-
-        /// <summary>
-        /// The event occurs when something bad happens and the media file is suddenly unavailable (like unexpectedly disconnects)
-        /// </summary>
-        public IJSPiece onemptied;
-
-        /// <summary>
-        /// The event occurs when the media has reach the end (useful for messages like "thanks for listening")
-        /// </summary>
-        public IJSPiece onended;
-
-        /// <summary>
-        /// The event occurs when media data is loaded
-        /// </summary>
-        public IJSPiece onloadeddata;
-
-        /// <summary>
-        /// The event occurs when meta data (like dimensions and duration) are loaded
-        /// </summary>
-        public IJSPiece onloadedmetadata;
-
-        /// <summary>
-        /// The event occurs when the browser starts looking for the specified media
-        /// </summary>
-        public IJSPiece onloadstart;
-
-        /// <summary>
-        /// The event occurs when the media is paused either by the user or programmatically
-        /// </summary>
-        public IJSPiece onpause;
-
-        /// <summary>
-        /// The event occurs when the media has been started or is no longer paused
-        /// </summary>
-        public IJSPiece onplay;
-
-        /// <summary>
-        /// The event occurs when the media is playing after having been paused or stopped for buffering
-        /// </summary>
-        public IJSPiece onplaying;
-
-        /// <summary>
-        /// The event occurs when the browser is in the process of getting the media data (downloading the media)
-        /// </summary>
-        public IJSPiece onprogress;
-
-        /// <summary>
-        /// The event occurs when the playing speed of the media is changed
-        /// </summary>
-        public IJSPiece onratechange;
-
-        /// <summary>
-        /// The event occurs when the user is finished moving/skipping to a new position in the media
-        /// </summary>
-        public IJSPiece onseeked;
-
-        /// <summary>
-        /// The event occurs when the user starts moving/skipping to a new position in the media
-        /// </summary>
-        public IJSPiece onseeking;
-
-        /// <summary>
-        /// The event occurs when the browser is trying to get media data, but data is not available
-        /// </summary>
-        public IJSPiece onstalled;
-
-        /// <summary>
-        /// The event occurs when the browser is intentionally not getting media data
-        /// </summary>
-        public IJSPiece onsuspend;
-
-        /// <summary>
-        /// The event occurs when the playing position has changed (like when the user fast forwards to a different point in the media)
-        /// </summary>
-        public IJSPiece ontimeupdate;
-
-        /// <summary>
-        /// The event occurs when the volume of the media has changed (includes setting the volume to "mute")
-        /// </summary>
-        public IJSPiece onvolumechange;
-
-        /// <summary>
-        /// The event occurs when the media has paused but is expected to resume (like when the media pauses to buffer more data)
-        /// </summary>
-        public IJSPiece onwaiting;
-
-        /// <summary>
-        /// The event occurs when a CSS animation has completed
-        /// </summary>
-        public IJSPiece animationend;
-
-        /// <summary>
-        /// The event occurs when a CSS animation is repeated
-        /// </summary>
-        public IJSPiece animationiteration;
-
-        /// <summary>
-        /// The event occurs when a CSS animation has started
-        /// </summary>
-        public IJSPiece animationstart;
-
-        /// <summary>
-        /// The event occurs when a CSS transition has completed
-        /// </summary>
-        public IJSPiece transitionend;
-
-        /// <summary>
-        /// The event occurs when a message is received through the event source
-        /// </summary>
-        public IJSPiece onmessage;
-
-        /// <summary>
-        /// The event occurs when a connection with the event source is opened
-        /// The event occurs when a message is received through or from an object (WebSocket, Web Worker, Event Source or a child frame or a parent window)
-        /// </summary>
-        public IJSPiece onopen;
-
-        /// <summary>
-        /// Deprecated. Use the onwheel event instead
-        /// </summary>
-        public IJSPiece onmousewheel;
-
-        /// <summary>
-        /// The event occurs when the browser starts to work online
-        /// </summary>
-        public IJSPiece ononline;
-
-        /// <summary>
-        /// The event occurs when the browser starts to work offline
-        /// </summary>
-        public IJSPiece onoffline;
-
-        /// <summary>
-        /// The event occurs when the window's history changes
-        /// </summary>
-        public IJSPiece onpopstate;
-
-        /// <summary>
-        /// The event occurs when a menu element is shown as a context menu
-        /// </summary>
-        public IJSPiece onshow;
-
-        /// <summary>
-        /// The event occurs when a Web Storage area is updated
-        /// </summary>
-        public IJSPiece onstorage;
-
-        /// <summary>
-        /// The event occurs when the user opens or closes the details element
-        /// </summary>
-        public IJSPiece ontoggle;
-
-        /// <summary>
-        /// The event occurs when the mouse wheel rolls up or down over an element
-        /// </summary>
-        public IJSPiece onwheel;
-
-        /// <summary>
-        /// The event occurs when the touch is interrupted
-        /// </summary>
-        public IJSPiece ontouchcancel;
-
-        /// <summary>
-        /// The event occurs when a finger is removed from a touch screen
-        /// </summary>
-        public IJSPiece ontouchend;
-
-        /// <summary>
-        /// The event occurs when a finger is dragged across the screen
-        /// </summary>
-        public IJSPiece ontouchmove;
-
-        /// <summary>
-        /// The event occurs when a finger is placed on a touch screen
-        /// </summary>
-        public IJSPiece ontouchstart;
-
-        /// <summary>
-        /// gets all event attributes for the given object
-        /// </summary>
-        /// <param name="sessionData">the sessionData</param>
-        /// <returns>the event attributes as string</returns>
-        public string getEventAttributes(SessionData sessionData, CallingContext context)
-        {
-            // #AREYOUREADYFORTHEWEB?
-
-            string ret = " ";
-
-            if (onabort != null)
-                ret += "onabort=" + onabort.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onafterprint != null)
-                ret += "onafterprint=" + onafterprint.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onbeforeprint != null)
-                ret += "onbeforeprint=" + onbeforeprint.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onbeforeunload != null)
-                ret += "onbeforeunload=" + onbeforeunload.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onblur != null)
-                ret += "onblur=" + onblur.getCode(sessionData, context).evalBase64() + " ";
-
-            if (oncanplay != null)
-                ret += "oncanplay=" + oncanplay.getCode(sessionData, context).evalBase64() + " ";
-
-            if (oncanplaythrough != null)
-                ret += "oncanplaythrough=" + oncanplaythrough.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onchange != null)
-                ret += "onchange=" + onchange.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onclick != null)
-                ret += "onclick=" + onclick.getCode(sessionData, context).evalBase64() + " ";
-
-            if (oncontextmenu != null)
-                ret += "oncontextmenu=" + oncontextmenu.getCode(sessionData, context).evalBase64() + " ";
-
-            if (oncopy != null)
-                ret += "oncopy=" + oncopy.getCode(sessionData, context).evalBase64() + " ";
-
-            if (oncut != null)
-                ret += "oncut=" + oncut.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ondblclick != null)
-                ret += "ondblclick=" + ondblclick.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ondrag != null)
-                ret += "ondrag=" + ondrag.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ondragend != null)
-                ret += "ondragend=" + ondragend.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ondragenter != null)
-                ret += "ondragenter=" + ondragenter.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ondragleave != null)
-                ret += "ondragleave=" + ondragleave.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ondragover != null)
-                ret += "ondragover=" + ondragover.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ondragstart != null)
-                ret += "ondragstart=" + ondragstart.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ondrop != null)
-                ret += "ondrop=" + ondrop.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ondurationchange != null)
-                ret += "ondurationchange=" + ondurationchange.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onemptied != null)
-                ret += "onemptied=" + onemptied.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onended != null)
-                ret += "onended=" + onended.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onerror != null)
-                ret += "onerror=" + onerror.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onfocus != null)
-                ret += "onfocus=" + onfocus.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onfocusin != null)
-                ret += "onfocusin=" + onfocusin.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onfocusout != null)
-                ret += "onfocusout=" + onfocusout.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onhashchange != null)
-                ret += "onhashchange=" + onhashchange.getCode(sessionData, context).evalBase64() + " ";
-
-            if (oninput != null)
-                ret += "oninput=" + oninput.getCode(sessionData, context).evalBase64() + " ";
-
-            if (oninvalid != null)
-                ret += "oninvalid=" + oninvalid.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onkeydown != null)
-                ret += "onkeydown=" + onkeydown.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onkeypress != null)
-                ret += "onkeypress=" + onkeypress.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onkeyup != null)
-                ret += "onkeyup=" + onkeyup.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onload != null)
-                ret += "onload=" + onload.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onloadeddata != null)
-                ret += "onloadeddata=" + onloadeddata.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onloadedmetadata != null)
-                ret += "onloadedmetadata=" + onloadedmetadata.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onloadstart != null)
-                ret += "onloadstart=" + onloadstart.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onmessage != null)
-                ret += "onmessage=" + onmessage.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onmousedown != null)
-                ret += "onmousedown=" + onmousedown.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onmouseenter != null)
-                ret += "onmouseenter=" + onmouseenter.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onmouseleave != null)
-                ret += "onmouseleave=" + onmouseleave.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onmousemove != null)
-                ret += "onmousemove=" + onmousemove.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onmouseout != null)
-                ret += "onmouseout=" + onmouseout.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onmouseover != null)
-                ret += "onmouseover=" + onmouseover.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onmouseup != null)
-                ret += "onmouseup=" + onmouseup.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onmousewheel != null)
-                ret += "onmousewheel=" + onmousewheel.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onoffline != null)
-                ret += "onoffline=" + onoffline.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ononline != null)
-                ret += "ononline=" + ononline.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onopen != null)
-                ret += "onopen=" + onopen.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onpagehide != null)
-                ret += "onpagehide=" + onpagehide.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onpageshow != null)
-                ret += "onpageshow=" + onpageshow.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onpaste != null)
-                ret += "onpaste=" + onpaste.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onpause != null)
-                ret += "onpause=" + onpause.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onplay != null)
-                ret += "onplay=" + onplay.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onplaying != null)
-                ret += "onplaying=" + onplaying.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onpopstate != null)
-                ret += "onpopstate=" + onpopstate.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onprogress != null)
-                ret += "onprogress=" + onprogress.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onratechange != null)
-                ret += "onratechange=" + onratechange.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onreset != null)
-                ret += "onreset=" + onreset.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onresize != null)
-                ret += "onresize=" + onresize.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onscroll != null)
-                ret += "onscroll=" + onscroll.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onsearch != null)
-                ret += "onsearch=" + onsearch.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onseeked != null)
-                ret += "onseeked=" + onseeked.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onseeking != null)
-                ret += "onseeking=" + onseeking.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onselect != null)
-                ret += "onselect=" + onselect.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onshow != null)
-                ret += "onshow=" + onshow.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onstalled != null)
-                ret += "onstalled=" + onstalled.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onstorage != null)
-                ret += "onstorage=" + onstorage.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onsubmit != null)
-                ret += "onsubmit=" + onsubmit.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onsuspend != null)
-                ret += "onsuspend=" + onsuspend.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ontimeupdate != null)
-                ret += "ontimeupdate=" + ontimeupdate.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ontoggle != null)
-                ret += "ontoggle=" + ontoggle.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ontouchcancel != null)
-                ret += "ontouchcancel=" + ontouchcancel.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ontouchend != null)
-                ret += "ontouchend=" + ontouchend.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ontouchmove != null)
-                ret += "ontouchmove=" + ontouchmove.getCode(sessionData, context).evalBase64() + " ";
-
-            if (ontouchstart != null)
-                ret += "ontouchstart=" + ontouchstart.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onunload != null)
-                ret += "onunload=" + onunload.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onvolumechange != null)
-                ret += "onvolumechange=" + onvolumechange.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onwaiting != null)
-                ret += "onwaiting=" + onwaiting.getCode(sessionData, context).evalBase64() + " ";
-
-            if (onwheel != null)
-                ret += "onwheel=" + onwheel.getCode(sessionData, context).evalBase64() + " ";
-
-            return ret;
-        }
-    }
-    #endregion
 }
