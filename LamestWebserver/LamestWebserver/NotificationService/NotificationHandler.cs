@@ -304,6 +304,7 @@ namespace LamestWebserver.NotificationService
                     break;
 
                 default:
+                    response.IsMessage = false;
                     break;
             }
         }

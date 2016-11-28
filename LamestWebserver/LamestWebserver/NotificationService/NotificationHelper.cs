@@ -41,16 +41,20 @@ namespace LamestWebserver.NotificationService
             sendMsgMethodName = "func_send_" + NotificationHandlerID;
 
             return "var conn = new WebSocket('ws://" + sessionData._localEndPoint.ToString() + "/" + destinationURL + "');" +
-                    "function " + sendMsgMethodName + " (type, msg){conn.send(window.JSON.stringify({" + JsonNotificationPacket.NotificationType_string + ": type," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}));};" +
-                    "function " + sendMsgMethodName + " (msg){conn.send(window.JSON.stringify({" + JsonNotificationPacket.NotificationType_string + ": \"" + NotificationType.Message + "\"," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}));};" +
+                    "function " + sendMsgMethodName + "_ (type, msg){" +
+#if DEBUG
+                    "console.log({mode: \">> (from Client)\", type: type, message: msg});" + 
+#endif
+                    "conn.send(window.JSON.stringify({" + JsonNotificationPacket.NotificationType_string + ": type," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}));};" +
+                    "function " + sendMsgMethodName + " (msg){" + sendMsgMethodName + "_(\"" + NotificationType.Message + "\", msg);};" +
                     "conn.onmessage = function(event) { var rcv = window.JSON.parse(event.data); var answer = true; if(rcv." + JsonNotificationPacket.NoReply_string + ") answer = false; " +
 #if DEBUG
-                    "console.log(rcv);" +
+                    "console.log({mode: \"<< (from Server)\", type: rcv." + JsonNotificationPacket.NotificationType_string + ", rcv});" +
 #endif
-                    "var cmd = rcv." + JsonNotificationPacket.NotificationType_string + "; switch(cmd) { case \"" + NotificationType.KeepAlive + "\": if(answer) " + sendMsgMethodName + "(\"" + NotificationType.KeepAlive + "\", \"\"); break;" +
-                    "case \"" + NotificationType.ExecuteScript + "\": {if(rcv." + JsonNotificationPacket.Script_string + ") eval(rcv." + JsonNotificationPacket.Script_string + ");} if(answer) " + sendMsgMethodName + "(\"" + NotificationType.Acknowledge + "\", \"\"); break;" +
+                    "var cmd = rcv." + JsonNotificationPacket.NotificationType_string + "; switch(cmd) { case \"" + NotificationType.KeepAlive + "\": if(answer) " + sendMsgMethodName + "_(\"" + NotificationType.KeepAlive + "\", \"\"); break;" +
+                    "case \"" + NotificationType.ExecuteScript + "\": {if(rcv." + JsonNotificationPacket.Script_string + ") eval(rcv." + JsonNotificationPacket.Script_string + ");} if(answer) " + sendMsgMethodName + "_(\"" + NotificationType.Acknowledge + "\", \"\"); break;" +
                     " } };" +
-                    "conn.onopen = function (event) { conn.send(\"" + NotificationType.KeepAlive + "\") };";
+                    "conn.onopen = function (event) { " + sendMsgMethodName + "_(\"" + NotificationType.KeepAlive + "\") };";
         }
     }
 

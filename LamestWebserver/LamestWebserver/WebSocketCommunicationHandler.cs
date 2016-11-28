@@ -4,13 +4,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
-    public class WebSocketManagementOvertakeFlagException : Exception { }
+    public class WebSocketManagementOvertakeFlagException : Exception
+    {
+    }
 
     public class WebSocketCommunicationHandler : IURLIdentifyable
     {
@@ -37,7 +40,7 @@ namespace LamestWebserver
         public event Action OnRespond = delegate { };
         public event Action<WebSocketHandlerProxy> OnConnect = delegate { };
         public event Action<WebSocketHandlerProxy> OnDisconnect = delegate { };
-        
+
         protected void register()
         {
             Master.AddWebsocketHandler(this);
@@ -82,8 +85,7 @@ namespace LamestWebserver
         public DateTime lastMessageReceived = DateTime.UtcNow;
         public DateTime lastMessageSent = DateTime.UtcNow;
 
-        [ThreadStatic]
-        internal static WebSocketHandlerProxy currentProxy;
+        [ThreadStatic] internal static WebSocketHandlerProxy currentProxy;
 
         internal WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler)
         {
@@ -100,10 +102,18 @@ namespace LamestWebserver
             if (networkStream == null || !isActive)
                 return;
 
-            byte[] buffer = websocketHandler.TextFrame.Invoke(Message);
-            networkStream.WriteAsync(buffer, 0, buffer.Length);
-            lastMessageSent = DateTime.UtcNow;
-            handler.callOnResponded();
+            try
+            {
+                byte[] buffer = websocketHandler.TextFrame.Invoke(Message);
+                networkStream.WriteAsync(buffer, 0, buffer.Length);
+                lastMessageSent = DateTime.UtcNow;
+                handler.callOnResponded();
+            }
+            catch (ObjectDisposedException)
+            {
+                isActive = false;
+                return;
+            }
         }
 
         public void RespondPong(byte[] bytes)
@@ -111,9 +121,17 @@ namespace LamestWebserver
             if (networkStream == null || !isActive)
                 return;
 
-            byte[] buffer = websocketHandler.PongFrame.Invoke(bytes);
-            networkStream.WriteAsync(buffer, 0, buffer.Length);
-            lastMessageSent = DateTime.UtcNow;
+            try
+            {
+                byte[] buffer = websocketHandler.PongFrame.Invoke(bytes);
+                networkStream.WriteAsync(buffer, 0, buffer.Length);
+                lastMessageSent = DateTime.UtcNow;
+            }
+            catch (ObjectDisposedException)
+            {
+                isActive = false;
+                return;
+            }
         }
 
         public void RespondPing(byte[] bytes)
@@ -121,9 +139,17 @@ namespace LamestWebserver
             if (networkStream == null || !isActive)
                 return;
 
-            byte[] buffer = websocketHandler.PingFrame.Invoke(bytes);
-            networkStream.WriteAsync(buffer, 0, buffer.Length);
-            lastMessageSent = DateTime.UtcNow;
+            try
+            {
+                byte[] buffer = websocketHandler.PingFrame.Invoke(bytes);
+                networkStream.WriteAsync(buffer, 0, buffer.Length);
+                lastMessageSent = DateTime.UtcNow;
+            }
+            catch (ObjectDisposedException)
+            {
+                isActive = false;
+                return;
+            }
         }
 
         public void RespondBinary(byte[] bytes)
@@ -131,10 +157,18 @@ namespace LamestWebserver
             if (networkStream == null || !isActive)
                 return;
 
-            byte[] buffer = websocketHandler.BinaryFrame.Invoke(bytes);
-            networkStream.WriteAsync(buffer, 0, buffer.Length);
-            lastMessageSent = DateTime.UtcNow;
-            handler.callOnResponded();
+            try
+            {
+                byte[] buffer = websocketHandler.BinaryFrame.Invoke(bytes);
+                networkStream.WriteAsync(buffer, 0, buffer.Length);
+                lastMessageSent = DateTime.UtcNow;
+                handler.callOnResponded();
+            }
+            catch (ObjectDisposedException)
+            {
+                isActive = false;
+                return;
+            }
         }
 
         private void handleConnection()
@@ -144,7 +178,7 @@ namespace LamestWebserver
             byte[] currentBuffer = new byte[4096];
             byte[] trimmedBuffer;
             int responseNum = 0;
-            
+
             while (true)
             {
                 var token = new CancellationTokenSource(10000).Token;
