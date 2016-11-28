@@ -133,7 +133,7 @@ namespace LamestWebserver
             {
                 try
                 {
-                    ServerHandler.RunningServers[i].stopServer();
+                    ServerHandler.RunningServers[i].StopServer();
                     ServerHandler.RunningServers.RemoveAt(i);
                 }
                 catch (Exception) { }
@@ -152,7 +152,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        ServerHandler.RunningServers[i].stopServer();
+                        ServerHandler.RunningServers[i].StopServer();
                         ServerHandler.RunningServers.RemoveAt(i);
                     }
                     catch (Exception) { }

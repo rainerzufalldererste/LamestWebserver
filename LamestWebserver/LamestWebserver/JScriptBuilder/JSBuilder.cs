@@ -661,7 +661,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string getCode(SessionData sessionData, CallingContext context)
         {
-            return "\"" + content.JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
+            return "\"" + _content.JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
 
         /// <summary>
@@ -874,6 +874,16 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <summary>
+        /// Shows a specified element. (Sets it's display style to Block)
+        /// </summary>
+        /// <param name="id">the id of the element</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public static IJSPiece DisplayElementByID(string id)
+        {
+            return new JSValue("document.getElementById(\"" + id + "\").style.display = \"block\";");
+        }
+
+        /// <summary>
         /// Removes a specified element from the current document.
         /// </summary>
         /// <param name="id">the id of the element</param>
@@ -969,6 +979,21 @@ namespace LamestWebserver.JScriptBuilder
         /// The 'outerText' attribute of this Element
         /// </summary>
         public JSValue OuterText => new JSValue(content + ".outerText");
+
+        /// <summary>
+        /// Displays (display = 'block') this Element
+        /// </summary>
+        public IJSPiece Show => JSFunctionCall.DisplayElementByID(ID.content);
+
+        /// <summary>
+        /// Hides (display = 'none') this Element
+        /// </summary>
+        public IJSPiece Hide => JSFunctionCall.HideElementByID(ID.content);
+
+        /// <summary>
+        /// Removes this Element from the page
+        /// </summary>
+        public IJSPiece Delete => JSFunctionCall.DisplayElementByID(ID.content);
     }
 
     /// <summary>

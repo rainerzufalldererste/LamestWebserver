@@ -79,7 +79,7 @@ namespace LamestWebserver
 
                     switch (s)
                     {
-                        case "ports": { readme = false_; for (int i = 0; i < RunningServers.Count; i++) { Console.WriteLine("Port: " + RunningServers[i].port + " Folder: " + RunningServers[i].folder + " Threads: " + RunningServers[i].getThreadCount()); } };
+                        case "ports": { readme = false_; for (int i = 0; i < RunningServers.Count; i++) { Console.WriteLine("Port: " + RunningServers[i].port + " Folder: " + RunningServers[i].folder + " Threads: " + RunningServers[i].GetThreadCount()); } };
                             Console.WriteLine("Done!"); readme = true_;
                             break;
 
@@ -94,7 +94,7 @@ namespace LamestWebserver
                                     {
                                         if (RunningServers[i].port == Int32.Parse(id))
                                         {
-                                            RunningServers[i].stopServer();
+                                            RunningServers[i].StopServer();
                                             RunningServers.RemoveAt(i);
                                             Console.WriteLine("Done!");
                                             readme = true_;

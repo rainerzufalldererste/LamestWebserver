@@ -125,6 +125,7 @@
     <Compile Include="ScriptCollection.cs" />
     <Compile Include="Security\Password.cs" />
     <Compile Include="Serializer.cs" />
+    <Compile Include="SessionContainer.cs" />
     <Compile Include="SessionData.cs" />
     <Compile Include="UsableLocker.cs" />
     <Compile Include="UsableMutex.cs" />

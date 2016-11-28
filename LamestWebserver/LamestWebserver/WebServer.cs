@@ -47,7 +47,7 @@ namespace LamestWebserver
 
         internal WebServer(int port, string folder, bool cs_bridge, bool silent = false)
         {
-            if (!tcpPortIsUnused(port))
+            if (!TcpPortIsUnused(port))
             {
                 if (!silent)
                     Console.WriteLine("Failed to start the WebServer. The tcp port " + port + " is currently used.");
@@ -59,18 +59,18 @@ namespace LamestWebserver
 
             if (cs_bridge)
             {
-                Master.addFunctionEvent += addFunction;
-                Master.removeFunctionEvent += removeFunction;
-                Master.addOneTimeFunctionEvent += addOneTimeFunction;
+                Master.addFunctionEvent += AddFunction;
+                Master.removeFunctionEvent += RemoveFunction;
+                Master.addOneTimeFunctionEvent += AddOneTimeFunction;
             }
 
             // Websockets
-            Master.AddWebsocketHandlerEvent += addWebsocketHandler;
-            Master.RemoveWebsocketHandlerEvent += removeWebsocketHandler;
+            Master.AddWebsocketHandlerEvent += AddWebsocketHandler;
+            Master.RemoveWebsocketHandlerEvent += RemoveWebsocketHandler;
 
             this.port = port;
             this.tcpListener = new TcpListener(IPAddress.Any, port);
-            mThread = new Thread(new ThreadStart(handleTcpListener));
+            mThread = new Thread(new ThreadStart(HandleTcpListener));
             mThread.Start();
             this.silent = silent;
 
@@ -85,19 +85,19 @@ namespace LamestWebserver
         {
             if (csharp_bridge)
             {
-                Master.addFunctionEvent -= addFunction;
-                Master.removeFunctionEvent -= removeFunction;
-                Master.addOneTimeFunctionEvent -= addOneTimeFunction;
+                Master.addFunctionEvent -= AddFunction;
+                Master.removeFunctionEvent -= RemoveFunction;
+                Master.addOneTimeFunctionEvent -= AddOneTimeFunction;
             }
 
             try
             {
-                stopServer();
+                StopServer();
             }
             catch (Exception) { }
         }
 
-        public void stopServer()
+        public void StopServer()
         {
             running = false;
 
@@ -150,11 +150,11 @@ namespace LamestWebserver
             }
         }
 
-        public int getThreadCount()
+        public int GetThreadCount()
         {
             int num = 1;
 
-            cleanThreads();
+            CleanThreads();
 
             for (int i = 0; i < threads.Count; i++)
             {
@@ -167,7 +167,7 @@ namespace LamestWebserver
             return num;
         }
 
-        public void cleanThreads()
+        public void CleanThreads()
         {
             cleanMutex.WaitOne();
 
@@ -197,32 +197,32 @@ namespace LamestWebserver
             cleanMutex.ReleaseMutex();
         }
 
-        public void addFunction(string hash, Master.getContents getc)
+        public void AddFunction(string hash, Master.getContents getc)
         {
             pageResponses.Add(hash, getc);
         }
 
-        public void addOneTimeFunction(string hash, Master.getContents getc)
+        public void AddOneTimeFunction(string hash, Master.getContents getc)
         {
             oneTimePageResponses.Add(hash, getc);
         }
 
-        public void removeFunction(string hash)
+        public void RemoveFunction(string hash)
         {
             pageResponses.Remove(hash);
         }
 
-        public void addWebsocketHandler(WebSocketCommunicationHandler handler)
+        public void AddWebsocketHandler(WebSocketCommunicationHandler handler)
         {
             webSocketResponses.Add(handler.URL, handler);
         }
 
-        public void removeWebsocketHandler(string URL)
+        public void RemoveWebsocketHandler(string URL)
         {
             webSocketResponses.Remove(URL);
         }
 
-        private void handleTcpListener()
+        private void HandleTcpListener()
         {
             try
             {
@@ -239,14 +239,14 @@ namespace LamestWebserver
                     tcpRcvTask = tcpListener.AcceptTcpClientAsync();
                     tcpRcvTask.Wait();
                     TcpClient tcpClient = tcpRcvTask.Result;
-                    Thread t = new Thread(new ParameterizedThreadStart(handleClient));
+                    Thread t = new Thread(handleClient);
                     threads.Add(t);
                     t.Start((object)tcpClient);
                     ServerHandler.addToStuff("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
                     if (threads.Count % 25 == 0)
                     {
-                        threads.Add(new Thread(new ThreadStart(cleanThreads)));
+                        threads.Add(new Thread(new ThreadStart(CleanThreads)));
                         threads[threads.Count - 1].Start();
                     }
                 }
@@ -400,7 +400,7 @@ namespace LamestWebserver
                             }
                             else
                             {
-                                buffer = getFile(htp.requestData, htp, enc, msg_).getPackage(enc);
+                                buffer = GetFile(htp.requestData, htp, enc, msg_).getPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
 
                                 buffer = null;
@@ -427,7 +427,7 @@ namespace LamestWebserver
             }
         }
 
-        private HTTP_Packet getFile(string URL, HTTP_Packet requestPacket, UTF8Encoding enc, string fullPacketString)
+        private HTTP_Packet GetFile(string URL, HTTP_Packet requestPacket, UTF8Encoding enc, string fullPacketString)
         {
             string fileName = URL;
             byte[] contents = null;
@@ -448,24 +448,24 @@ namespace LamestWebserver
 
                     if (useCache && getFromCache(fileName, out file))
                     {
-                        lastModified = file.lastModified;
+                        lastModified = file.LastModified;
 
                         if (requestPacket.modified != null && requestPacket.modified.Value < lastModified)
                         {
-                            contents = file.contents;
+                            contents = file.Contents;
 
                             extention = getExtention(fileName);
                         }
                         else
                         {
-                            contents = file.contents;
+                            contents = file.Contents;
 
                             notModified = requestPacket.modified != null;
                         }
                     }
                     else if (File.Exists(folder + fileName))
                     {
-                        contents = readFile(fileName, enc, false);
+                        contents = ReadFile(fileName, enc);
                         lastModified = File.GetLastWriteTimeUtc(folder + fileName);
 
                         if (useCache)
@@ -490,17 +490,17 @@ namespace LamestWebserver
                 else if (useCache && getFromCache(fileName, out file))
                 {
                     extention = getExtention(fileName);
-                    lastModified = file.lastModified;
+                    lastModified = file.LastModified;
 
                     if (requestPacket.modified != null && requestPacket.modified.Value < lastModified)
                     {
-                        contents = file.contents;
+                        contents = file.Contents;
 
                         extention = getExtention(fileName);
                     }
                     else
                     {
-                        contents = file.contents;
+                        contents = file.Contents;
 
                         notModified = requestPacket.modified != null;
                     }
@@ -509,7 +509,7 @@ namespace LamestWebserver
                 {
                     extention = getExtention(fileName);
                     bool isBinary = fileIsBinary(fileName, extention);
-                    contents = readFile(fileName, enc, isBinary);
+                    contents = ReadFile(fileName, enc, isBinary);
                     lastModified = File.GetLastWriteTimeUtc(folder + fileName);
 
                     if (useCache)
@@ -598,7 +598,7 @@ namespace LamestWebserver
             {
                 if (cache.TryGetValue(name, out file))
                 {
-                    file.loadCount++;
+                    file.LoadCount++;
                     file = file.Clone();
                 }
                 else
@@ -722,16 +722,16 @@ namespace LamestWebserver
                         if (cache.TryGetValue(e.OldName, out file))
                         {
                             cache.Remove("/" + e.OldName);
-                            file.filename = "/" + e.Name;
-                            file.contents = readFile(file.filename, new UTF8Encoding(), file.isBinary);
-                            file.size = file.contents.Length;
-                            file.lastModified = File.GetLastWriteTimeUtc(folder + e.Name);
+                            file.Filename = "/" + e.Name;
+                            file.Contents = ReadFile(file.Filename, new UTF8Encoding(), file.IsBinary);
+                            file.Size = file.Contents.Length;
+                            file.LastModified = File.GetLastWriteTimeUtc(folder + e.Name);
                             cache.Add(e.Name, file);
                         }
                     }
                     catch(Exception)
                     {
-                        oldfile.filename = "/" + e.Name;
+                        oldfile.Filename = "/" + e.Name;
                         cache["/" + e.Name] = oldfile;
                     }
                 }
@@ -755,9 +755,9 @@ namespace LamestWebserver
                     {
                         if (file != null)
                         {
-                            file.contents = readFile(file.filename, new UTF8Encoding(), file.isBinary);
-                            file.size = file.contents.Length;
-                            file.lastModified = DateTime.Now;
+                            file.Contents = ReadFile(file.Filename, new UTF8Encoding(), file.IsBinary);
+                            file.Size = file.Contents.Length;
+                            file.LastModified = DateTime.Now;
                         }
                     }
                     catch (Exception) { };
@@ -767,7 +767,7 @@ namespace LamestWebserver
             fileSystemWatcher.EnableRaisingEvents = true;
         }
 
-        internal byte[] readFile(string filename, UTF8Encoding enc, bool isBinary = false)
+        internal byte[] ReadFile(string filename, UTF8Encoding enc, bool isBinary = false)
         {
             int i = 10;
 
@@ -779,23 +779,18 @@ namespace LamestWebserver
                     {
                         return File.ReadAllBytes(folder + filename);
                     }
-                    else
+
+                    if (Equals(GetEncoding(folder + filename), Encoding.UTF8))
                     {
-                        if (GetEncoding(folder + filename) == Encoding.UTF8)
-                        {
-                            return File.ReadAllBytes(folder + filename);
-                        }
-                        else
-                        {
-                            string content = File.ReadAllText(folder + filename);
-                            UTF8Encoding utf8Encoding = new UTF8Encoding();
-                            return utf8Encoding.GetBytes(content);
-                        }
+                        return File.ReadAllBytes(folder + filename);
                     }
+
+                    string content = File.ReadAllText(folder + filename);
+                    return Encoding.UTF8.GetBytes(content);
                 }
                 catch (IOException)
                 {
-                    System.Threading.Thread.Sleep(2);
+                    Thread.Sleep(2); // Chris: if the file has currently been changed you probably have to wait until the writing process has finished
                 }
             }
 
@@ -807,7 +802,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="port">The TCP-Port to check for</param>
         /// <returns>true if unused</returns>
-        public static bool tcpPortIsUnused(int port)
+        public static bool TcpPortIsUnused(int port)
         {
             // Evaluate current system tcp connections. This is the same information provided
             // by the netstat command line application, just in .Net strongly-typed object
@@ -846,26 +841,26 @@ namespace LamestWebserver
 
     internal class PreloadedFile
     {
-        public string filename;
-        public byte[] contents;
-        public int size;
-        public DateTime lastModified;
-        public bool isBinary;
-        public int loadCount;
+        public string Filename;
+        public byte[] Contents;
+        public int Size;
+        public DateTime LastModified;
+        public bool IsBinary;
+        public int LoadCount;
 
         public PreloadedFile(string filename, byte[] contents, int size, DateTime lastModified, bool isBinary)
         {
-            this.filename = filename;
-            this.contents = contents;
-            this.size = size;
-            this.lastModified = lastModified;
-            this.isBinary = isBinary;
-            this.loadCount = 1;
+            Filename = filename;
+            Contents = contents;
+            Size = size;
+            LastModified = lastModified;
+            IsBinary = isBinary;
+            LoadCount = 1;
         }
 
         internal PreloadedFile Clone()
         {
-            return new PreloadedFile((string)filename.Clone(), contents.ToArray(), size, lastModified, isBinary);
+            return new PreloadedFile((string)Filename.Clone(), Contents.ToArray(), Size, LastModified, IsBinary);
         }
     }
 }
