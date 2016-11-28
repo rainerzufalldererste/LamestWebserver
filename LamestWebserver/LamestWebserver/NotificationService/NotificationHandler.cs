@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,25 +39,17 @@ namespace LamestWebserver.NotificationService
 
         public override string ToString()
         {
-            string ret = NotificationType.ToString();
-
-            if (NoReply)
-                ret += "\r\n" + NotificationOption.NoReply;
-
-            return ret;
+            return ToString(new KeyValuePair<string, string>[0]);
         }
 
-        public string ToString(string msg)
+        public string ToString(params KeyValuePair<string, string>[] args)
         {
-            string ret = NotificationType.ToString();
+            JsonNotificationPacket packet = new JsonNotificationPacket(NotificationType, args);
 
             if (NoReply)
-                ret += "\n\r" + NotificationOption.NoReply;
-
-            if (!string.IsNullOrWhiteSpace(msg))
-                ret += "\n\n" + Convert.ToBase64String(Encoding.ASCII.GetBytes(msg.JSEncode().Replace("&quot;", "\"")));
-
-            return ret;
+                packet.Values.Add(JsonNotificationPacket.NoReply_string, JsonNotificationPacket.NoReply_string);
+            
+            return packet.Serialize();
         }
 
         public abstract string GetNotification();
@@ -130,7 +123,7 @@ namespace LamestWebserver.NotificationService
 
         public override string GetNotification()
         {
-            return base.ToString(script);
+            return base.ToString(new KeyValuePair<string, string>(JsonNotificationPacket.Script_string, script));
         }
     }
 
@@ -174,7 +167,7 @@ namespace LamestWebserver.NotificationService
                 if (_jselement == null)
                 {
                     string methodName;
-                    _jselement = new JSPlainText("<script type='text/javascript'>" + NotificationHelper.NotificationCode(SessionData.currentSessionData, URL, out methodName, ID) + "</script>");
+                    _jselement = new JSPlainText("<script type='text/javascript'>" + NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL, out methodName, ID) + "</script>");
 
                     SendingFunction = new JSFunction(methodName);
                 }
@@ -274,7 +267,10 @@ namespace LamestWebserver.NotificationService
         public bool IsMessage = false;
         public string Message = null;
         public WebSocketHandlerProxy proxy;
-        internal NotificationType notificationType;
+        internal NotificationType NotificationType;
+        private Dictionary<string, string> Values = new Dictionary<string, string>();
+
+        public string SSID { get; private set; }
 
         internal NotificationResponse(string input, WebSocketHandlerProxy proxy)
         {
@@ -295,36 +291,26 @@ namespace LamestWebserver.NotificationService
                 return;
             }
 
-            string[] data = input.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            JsonNotificationPacket packet = new JsonNotificationPacket(input);
 
-            if(data.Length <= 0)
-            {
-                return;
-            }
+            response.Values = packet.Values;
+            response.NotificationType = packet.NotificationType;
 
-            if (!System.Enum.TryParse<NotificationType>(data[0], out response.notificationType))
-            {
-                response.notificationType = NotificationType.Invalid;
-                return;
-            }
-
-            switch(response.notificationType)
+            switch(response.NotificationType)
             {
                 case NotificationType.Message:
-
                     response.IsMessage = true;
-                    response.Message = "";
-
-                    for (int i = 1; i < data.Length; i++)
-                    {
-                        response.Message += data[i];
-                    }
-
+                    packet.Values.TryGetValue("msg", out response.Message);
                     break;
 
                 default:
                     break;
             }
+        }
+
+        public string GetValue(string key)
+        {
+            return Values.ContainsKey(key) ? Values[key] : null;
         }
     }
 }

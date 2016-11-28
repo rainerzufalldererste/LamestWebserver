@@ -2,8 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
+using LamestWebserver.Collections;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LamestWebserver.NotificationService
 {
@@ -28,6 +32,69 @@ namespace LamestWebserver.NotificationService
                     "case \"" + NotificationType.ReplaceDivContent + "\": {var dat = event.data.split(\"\\n\\n\", 2)[1]; var dat0 = event.data.split(\"\\n\\n\", 2)[2]; if(dat && dat0) { document.getElementByID(dat).innerHTML = dat0; } else { conn.send(\"" + NotificationType.Invalid + "\") }} if(answer) conn.send(\"" + NotificationType.Acknowledge + "\\r\\n\"); break;" +
                     " } };" +
                     "conn.onopen = function (event) { conn.send(\"" + NotificationType.KeepAlive + "\") };";
+        }
+
+        internal static string JsonNotificationCode(SessionData sessionData, string destinationURL, out string sendMsgMethodName, string NotificationHandlerID)
+        {
+            destinationURL = destinationURL.TrimStart('/', ' ');
+
+            sendMsgMethodName = "func_send_" + NotificationHandlerID;
+
+            return "var conn = new WebSocket('ws://" + sessionData._localEndPoint.ToString() + "/" + destinationURL + "');" +
+                    "function " + sendMsgMethodName + " (type, msg){conn.send(window.JSON.stringify({" + JsonNotificationPacket.NotificationType_string + ": type," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}));};" +
+                    "function " + sendMsgMethodName + " (msg){conn.send(window.JSON.stringify({" + JsonNotificationPacket.NotificationType_string + ": \"" + NotificationType.Message + "\"," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}));};" +
+                    "conn.onmessage = function(event) { var rcv = window.JSON.parse(event.data); var answer = true; if(rcv." + JsonNotificationPacket.NoReply_string + ") answer = false; " +
+#if DEBUG
+                    "console.log(rcv);" +
+#endif
+                    "var cmd = rcv." + JsonNotificationPacket.NotificationType_string + "; switch(cmd) { case \"" + NotificationType.KeepAlive + "\": if(answer) " + sendMsgMethodName + "(\"" + NotificationType.KeepAlive + "\", \"\"); break;" +
+                    "case \"" + NotificationType.ExecuteScript + "\": {if(rcv." + JsonNotificationPacket.Script_string + ") eval(rcv." + JsonNotificationPacket.Script_string + ");} if(answer) " + sendMsgMethodName + "(\"" + NotificationType.Acknowledge + "\", \"\"); break;" +
+                    " } };" +
+                    "conn.onopen = function (event) { conn.send(\"" + NotificationType.KeepAlive + "\") };";
+        }
+    }
+
+    internal class JsonNotificationPacket
+    {
+        internal Dictionary<string, string> Values = new Dictionary<string, string>();
+        internal string SSID { get; private set; }
+        internal NotificationType NotificationType = NotificationType.Invalid;
+        internal bool noreply = false;
+
+        internal const string SSID_string = "SSID";
+        internal const string NotificationType_string = "NotificationType";
+        internal const string NoReply_string = "noreply";
+        internal const string Script_string = "script";
+
+        internal JsonNotificationPacket(NotificationType notificationType, params KeyValuePair<string, string>[] values)
+        {
+            NotificationType = notificationType;
+
+            foreach (var value in values)
+            {
+                Values.Add(value.Key, value.Value);
+            }
+        }
+
+        internal JsonNotificationPacket(string input)
+        {
+            Values = (Dictionary<string, string>)JsonConvert.DeserializeObject(input, typeof(Dictionary<string, string>));
+
+            if (Values.ContainsKey(SSID_string))
+                SSID = Values[SSID_string];
+
+            if (Values.ContainsKey(NotificationType_string))
+                Enum.TryParse(Values[NotificationType_string], out NotificationType);
+        }
+
+        internal string Serialize()
+        {
+            if (noreply)
+                Values[NoReply_string] = NoReply_string;
+
+            Values[NotificationType_string] = NotificationType.ToString();
+
+            return JsonConvert.SerializeObject(Values);
         }
     }
 }
