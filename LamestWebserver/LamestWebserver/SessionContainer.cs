@@ -243,7 +243,7 @@ namespace LamestWebserver
         private static readonly Mutex Sha3HashMutex = new Mutex();
 
         /// <summary>
-        /// Generates a SHA3 512 bit Hash of the given input
+        /// Generates a SHA3 512 bit Hash of the given input as Hex-String
         /// </summary>
         /// <param name="input">the text to hash</param>
         /// <returns>the hash as hex string</returns>
