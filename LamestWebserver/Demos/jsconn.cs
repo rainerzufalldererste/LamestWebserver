@@ -15,7 +15,7 @@ namespace Demos
 
         public jsconn() : base("jsconn")
         {
-            handler.OnResponse +=
+            handler.OnNotification +=
                     (NotificationResponse response) =>
                     {
                         Console.WriteLine("({0}) " + response.Message, handler.ConnectedClients);

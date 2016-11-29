@@ -191,7 +191,7 @@ namespace LamestWebserver.NotificationService
             OnDisconnect += proxy => disconnect(proxy);
         }
 
-        public event Action<NotificationResponse> OnResponse;
+        public event Action<NotificationResponse> OnNotification;
 
         public JSElement JSElement
         {
@@ -259,7 +259,7 @@ namespace LamestWebserver.NotificationService
         public virtual void HandleResponse(NotificationResponse response)
         {
             if (response.IsMessage)
-                OnResponse(response);
+                OnNotification(response);
         }
 
         private void connect(WebSocketHandlerProxy proxy)

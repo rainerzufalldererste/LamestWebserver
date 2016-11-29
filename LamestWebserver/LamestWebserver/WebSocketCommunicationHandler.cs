@@ -37,7 +37,7 @@ namespace LamestWebserver
         internal Action<byte[]> _OnPong { get; set; }
 
         public event Action<string, WebSocketHandlerProxy> OnMessage = delegate { };
-        public event Action OnRespond = delegate { };
+        public event Action OnResponded = delegate { };
         public event Action<WebSocketHandlerProxy> OnConnect = delegate { };
         public event Action<WebSocketHandlerProxy> OnDisconnect = delegate { };
 
@@ -58,7 +58,7 @@ namespace LamestWebserver
 
         internal void callOnResponded()
         {
-            OnRespond();
+            OnResponded();
         }
 
         internal void callOnConnect(WebSocketHandlerProxy webSocketHandlerProxy)
@@ -97,7 +97,7 @@ namespace LamestWebserver
             handleConnection();
         }
 
-        public void Respond(string Message)
+        public async void Respond(string Message)
         {
             if (networkStream == null || !isActive)
                 return;
@@ -105,7 +105,7 @@ namespace LamestWebserver
             try
             {
                 byte[] buffer = websocketHandler.TextFrame.Invoke(Message);
-                networkStream.WriteAsync(buffer, 0, buffer.Length);
+                await networkStream.WriteAsync(buffer, 0, buffer.Length);
                 lastMessageSent = DateTime.UtcNow;
                 handler.callOnResponded();
             }
