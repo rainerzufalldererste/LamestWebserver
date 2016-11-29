@@ -312,7 +312,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="element">the element which innerHTML you want to override</param>
         /// <param name="URL">the event to reach</param>
-        public virtual JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL)
+        public virtual JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL, params IJSPiece[] executeOnComplete)
         {
             if (URL.Contains('?') && URL[URL.Length - 1] != '?')
             {
@@ -332,10 +332,14 @@ namespace LamestWebserver.JScriptBuilder
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
                     URL += HttpUtility.UrlEncode(Value) + "&checked=";
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                        + (Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
 
                 default:
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value,true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                        + (Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value,true);xmlhttp.send();")).DefineAndCall();
             }
         }
     }
@@ -546,7 +550,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="element">the element which innerHTML you want to override</param>
         /// <param name="URL">the event to reach</param>
-        public override JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL)
+        public override JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL, params IJSPiece[] executeOnComplete)
         {
             if (URL.Contains('?') && URL[URL.Length - 1] != '?')
             {
@@ -561,7 +565,9 @@ namespace LamestWebserver.JScriptBuilder
                 URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
             }
 
-            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                + (Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })
+                + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
         }
     }
 

@@ -81,12 +81,14 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="animationType">the type of the function</param>
         /// <param name="speedFactor">the speed factor of the animation</param>
         /// <returns>the animation as function</returns>
-        public static JSFunction ResizeElementToFit(IJSValue element, JSAxis axis = JSAxis.Y, JSAnimationType animationType = JSAnimationType.Differencial, int speedFactor = 100)
+        public static JSFunction ResizeElementToFit(IJSValue element, JSAxis axis = JSAxis.Y, JSAnimationType animationType = JSAnimationType.Differencial, int speedFactor = 100, params IJSPiece[] executeOnComplete)
         {
             if (axis != JSAxis.Y || animationType != JSAnimationType.Differencial)
                 throw new InvalidOperationException("Only Y Axis and Differencial supported yet.");
             
-            return new JSInstantFunction(new JSValue("function changeheight(object, oldsize, newsize){var rem = newsize - oldsize;var speed = " + speedFactor + ".0;object.style.overflow = \"hidden\"; object.style.height = oldsize; function move() { var f = (rem) / speed; oldsize += f; object.style.height = oldsize + f; if (Math.abs(newsize - oldsize) < 0.1) { object.style.overflow = \"auto\"; object.style.height = newsize; clearInterval(interval0); } } var interval0 = setInterval(move, 10); } "
+            return new JSInstantFunction(new JSValue("function changeheight(object, oldsize, newsize){var rem = newsize - oldsize;var speed = " + speedFactor + ".0;object.style.overflow = \"hidden\"; object.style.height = oldsize; function move() { var f = (rem) / speed; oldsize += f; object.style.height = oldsize + f; if (Math.abs(newsize - oldsize) < 0.1) { object.style.overflow = \"auto\"; object.style.height = newsize; clearInterval(interval0); "
+                + (Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })
+                + " } } var interval0 = setInterval(move, 10); } "
                 + "var obj0 = " + element.getCode(SessionData.currentSessionData, CallingContext.Default) + " var oldsize = obj0.getBoundingClientRect().height;  obj0.style.overflow = \"auto\"; obj0.style.height = \"auto\"; changeheight(obj0, oldsize, obj0.getBoundingClientRect().height);"));
         }
         
@@ -98,12 +100,14 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="animationType">the type of the function</param>
         /// <param name="speedFactor">the speed factor of the animation</param>
         /// <returns>the animation as function</returns>
-        public static JSFunction DecreaseElementToZero(IJSValue element, JSAxis axis = JSAxis.Y, JSAnimationType animationType = JSAnimationType.Differencial, int speedFactor = 100)
+        public static JSFunction DecreaseElementToZero(IJSValue element, JSAxis axis = JSAxis.Y, JSAnimationType animationType = JSAnimationType.Differencial, int speedFactor = 100, params IJSPiece[] executeOnComplete)
         {
             if (axis != JSAxis.Y || animationType != JSAnimationType.Differencial)
                 throw new InvalidOperationException("Only Y Axis and Differencial supported yet.");
 
-            return new JSInstantFunction(new JSValue("function changeheight(object, oldsize, newsize){var rem = newsize - oldsize;var speed = " + speedFactor + ".0;object.style.overflow = \"hidden\"; object.style.height = oldsize; function move() { var f = (rem) / speed; oldsize += f; object.style.height = oldsize + f; if (Math.abs(newsize - oldsize) < 0.1) { object.style.overflow = \"auto\"; object.style.height = newsize; clearInterval(interval0); } } var interval0 = setInterval(move, 10); } "
+            return new JSInstantFunction(new JSValue("function changeheight(object, oldsize, newsize){var rem = newsize - oldsize;var speed = " + speedFactor + ".0;object.style.overflow = \"hidden\"; object.style.height = oldsize; function move() { var f = (rem) / speed; oldsize += f; object.style.height = oldsize + f; if (Math.abs(newsize - oldsize) < 0.1) { object.style.overflow = \"auto\"; object.style.height = newsize; clearInterval(interval0);"
+                + (Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })
+                + " } } var interval0 = setInterval(move, 10); } "
                 + "var obj0 = " + element.getCode(SessionData.currentSessionData, CallingContext.Default) + " var oldsize = obj0.getBoundingClientRect().height;  obj0.style.overflow = \"auto\"; obj0.style.height = \"auto\"; changeheight(obj0, oldsize, 0);"));
         }
     }

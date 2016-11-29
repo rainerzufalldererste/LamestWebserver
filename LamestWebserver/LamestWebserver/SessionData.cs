@@ -8,7 +8,7 @@ namespace LamestWebserver
     /// <summary>
     /// Contains all Session dependent Information
     /// </summary>
-    public class SessionData
+    public class SessionData : ISessionIdentificator
     {
         /// <summary>
         /// contains the current session data of this thread
@@ -120,8 +120,9 @@ namespace LamestWebserver
             this._rawPacket = packet;
             this._tcpClient = client;
             this._networkStream = nws;
-            this._remoteEndPoint = _tcpClient.Client.RemoteEndPoint;
-            this._localEndPoint = _tcpClient.Client.LocalEndPoint;
+            
+            this._remoteEndPoint = _tcpClient?.Client.RemoteEndPoint;
+            this._localEndPoint = _tcpClient?.Client.LocalEndPoint;
 
             if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
             {
@@ -228,29 +229,6 @@ namespace LamestWebserver
 
         // ===============================================================================================================================================
         // ===============================================================================================================================================
-
-        /// <summary>
-        /// contains all available scopes for variables
-        /// </summary>
-        public enum EVariableScope : byte
-        {
-            /// <summary>
-            /// available for all visitors of this page
-            /// </summary>
-            File,
-            /// <summary>
-            /// Available globally for this USER
-            /// </summary>
-            User,
-            /// <summary>
-            /// Available for the current User on only this page
-            /// </summary>
-            FileAndUser,
-            /// <summary>
-            /// Available for all Users on any page
-            /// </summary>
-            Global
-        }
 
         /// <summary>
         /// Get the value of a variable defined at a certain scope by name

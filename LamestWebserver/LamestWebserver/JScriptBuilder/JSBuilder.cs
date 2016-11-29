@@ -369,6 +369,26 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public abstract IJSValue Set(IJSValue value);
 
+        /// <summary>
+        /// A way to quickly compare two values in JavaScript on Equality
+        /// </summary>
+        /// <param name="value">the value to compare to</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public IJSValue IsEqualTo(IJSValue value)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Equals, this, value);
+        }
+
+        /// <summary>
+        /// A way to quickly compare two values in JavaScript on Nonequality
+        /// </summary>
+        /// <param name="value">the value to compare to</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public IJSValue IsNotEqualTo(IJSValue value)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.NotEquals, this, value);
+        }
+
         /// <inheritdoc />
         public abstract string getCode(SessionData sessionData, CallingContext context = CallingContext.Default);
         
@@ -549,11 +569,11 @@ namespace LamestWebserver.JScriptBuilder
                     break;
 
                 case JSOperatorType.Equals:
-                    ret += " == ";
+                    ret += " === ";
                     break;
 
                 case JSOperatorType.NotEquals:
-                    ret += " != ";
+                    ret += " !== ";
                     break;
 
                 case JSOperatorType.Greater:
@@ -848,9 +868,11 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="value">the element to set the new content to</param>
         /// <param name="URL">the URL where the new contents come from</param>
         /// <returns>A piece of JavaScript code</returns>
-        public static JSValue SetInnerHTMLAsync(IJSValue value, string URL)
+        public static JSValue SetInnerHTMLAsync(IJSValue value, string URL, params IJSPiece[] executeOnComplete)
         {
-            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText; } }; xmlhttp.open(\"GET\",\"" + URL + "\",true);xmlhttp.send();");
+            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                + (Func<string>)(() => {string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret;})
+                + " } }; xmlhttp.open(\"GET\",\"" + URL + "\",true);xmlhttp.send();");
         }
 
         /// <summary>

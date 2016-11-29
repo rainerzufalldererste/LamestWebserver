@@ -286,6 +286,11 @@ namespace LamestWebserver
             return true;
         }
 
+        internal NetworkStream GetNetworkStream()
+        {
+            return networkStream;
+        }
+
         public void ConnectionClosed()
         {
             handler.callOnDisconnect(this);

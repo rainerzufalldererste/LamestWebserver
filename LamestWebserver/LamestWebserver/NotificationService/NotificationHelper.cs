@@ -87,6 +87,9 @@ namespace LamestWebserver.NotificationService
             if (Values.ContainsKey(SSID_string))
                 SSID = Values[SSID_string];
 
+            if (Values.ContainsKey(NoReply_string))
+                noreply = true;
+
             if (Values.ContainsKey(NotificationType_string))
                 Enum.TryParse(Values[NotificationType_string], out NotificationType);
         }

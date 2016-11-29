@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Runtime.Remoting.Messaging;
 using System.Security.Policy;
 using System.Text;
 using System.Threading;
@@ -48,12 +49,12 @@ namespace LamestWebserver.NotificationService
 
             if (NoReply)
                 packet.Values.Add(JsonNotificationPacket.NoReply_string, JsonNotificationPacket.NoReply_string);
-            
+
             return packet.Serialize();
         }
 
         public abstract string GetNotification();
-        
+
         public static Notification ExecuteScript(string script)
         {
             return new ExecuteScriptNotification(script);
@@ -61,7 +62,11 @@ namespace LamestWebserver.NotificationService
 
         public static Notification ReplaceDivWithContent(string divId, IJSValue content)
         {
-            return new ExecuteScriptNotification(JSElement.getByID(divId).InnerHTML.Set(content).getCode(SessionData.currentSessionData, CallingContext.Inner));
+            return
+                new ExecuteScriptNotification(
+                    JSElement.getByID(divId)
+                        .InnerHTML.Set(content)
+                        .getCode(SessionData.currentSessionData, CallingContext.Inner));
         }
 
         public static Notification ReplaceDivWithContent(string divId, string content)
@@ -74,7 +79,7 @@ namespace LamestWebserver.NotificationService
             return new ExecuteScriptNotification(
                 JSElement.getByID(divId).InnerHTML.Set(
                     JSElement.getByID(divId).InnerHTML + content
-                    ).getCode(SessionData.currentSessionData, CallingContext.Inner));
+                ).getCode(SessionData.currentSessionData, CallingContext.Inner));
         }
 
         public static Notification AddToDivContent(string divId, string content)
@@ -96,13 +101,30 @@ namespace LamestWebserver.NotificationService
 
         public static Notification Redirect(string newPageUrl)
         {
-            return Redirect((JSStringValue)newPageUrl);
+            return Redirect((JSStringValue) newPageUrl);
+        }
+
+        public static Notification Invalid()
+        {
+            return new InvalidNotification();
         }
     }
 
     public class KeepAliveNotification : Notification
     {
         public KeepAliveNotification() : base(NotificationType.KeepAlive)
+        {
+        }
+
+        public override string GetNotification()
+        {
+            return base.ToString();
+        }
+    }
+
+    public class InvalidNotification : Notification
+    {
+        public InvalidNotification() : base(NotificationType.Invalid)
         {
         }
 
@@ -129,7 +151,18 @@ namespace LamestWebserver.NotificationService
 
     public enum NotificationType : byte
     {
-        Acknowledge, KeepAlive, Message, Invalid, ExecuteScript, Redirect, ReloadPage, ReplacePageContent, ReplacePageBody, ReplaceDivContent, ExpandPageBodyWith, ExpandDivContentWith
+        Acknowledge,
+        KeepAlive,
+        Message,
+        Invalid,
+        ExecuteScript,
+        Redirect,
+        ReloadPage,
+        ReplacePageContent,
+        ReplacePageBody,
+        ReplaceDivContent,
+        ExpandPageBodyWith,
+        ExpandDivContentWith
     }
 
     public enum NotificationOption : byte
@@ -153,7 +186,7 @@ namespace LamestWebserver.NotificationService
 
         public NotificationHandler(string URL) : base(URL)
         {
-            OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy));
+            OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy, URL));
             OnConnect += proxy => connect(proxy);
             OnDisconnect += proxy => disconnect(proxy);
         }
@@ -167,7 +200,10 @@ namespace LamestWebserver.NotificationService
                 if (_jselement == null)
                 {
                     string methodName;
-                    _jselement = new JSPlainText("<script type='text/javascript'>" + NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL, out methodName, ID) + "</script>");
+                    _jselement =
+                        new JSPlainText("<script type='text/javascript'>" +
+                                        NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL,
+                                            out methodName, ID) + "</script>");
 
                     SendingFunction = new JSFunction(methodName);
                 }
@@ -180,7 +216,7 @@ namespace LamestWebserver.NotificationService
 
         public void serverClients()
         {
-            while(running)
+            while (running)
             {
                 using (listMutex.Lock())
                 {
@@ -192,7 +228,8 @@ namespace LamestWebserver.NotificationService
                             continue;
                         }
 
-                        if ((DateTime.UtcNow - proxies[i].lastMessageSent) > WebSocketHandlerProxy.MaximumLastMessageTime)
+                        if ((DateTime.UtcNow - proxies[i].lastMessageSent) >
+                            WebSocketHandlerProxy.MaximumLastMessageTime)
                             proxies[i].Respond(new KeepAliveNotification().GetNotification());
                     }
                 }
@@ -221,7 +258,7 @@ namespace LamestWebserver.NotificationService
 
         public virtual void HandleResponse(NotificationResponse response)
         {
-            if(response.IsMessage)
+            if (response.IsMessage)
                 OnResponse(response);
         }
 
@@ -233,7 +270,7 @@ namespace LamestWebserver.NotificationService
                 proxies.Add(proxy);
             }
 
-            if(handlerThread == null)
+            if (handlerThread == null)
             {
                 handlerThread = new Thread(new ThreadStart(serverClients));
                 handlerThread.Start();
@@ -253,7 +290,9 @@ namespace LamestWebserver.NotificationService
 
         public IJSPiece SendMessage(IJSPiece messageGetter)
         {
-            return SendingFunction.callFunction(new JSValue(messageGetter.getCode(SessionData.currentSessionData, CallingContext.Inner)));
+            return
+                SendingFunction.callFunction(
+                    new JSValue(messageGetter.getCode(SessionData.currentSessionData, CallingContext.Inner)));
         }
 
         public IJSPiece SendMessage(string message)
@@ -269,14 +308,15 @@ namespace LamestWebserver.NotificationService
         public WebSocketHandlerProxy proxy;
         internal NotificationType NotificationType;
         private Dictionary<string, string> Values = new Dictionary<string, string>();
+        private bool noreply = false;
 
-        public string SSID { get; private set; }
+        public SessionData SessionData { get; private set; }
 
-        internal NotificationResponse(string input, WebSocketHandlerProxy proxy)
+        internal NotificationResponse(string input, WebSocketHandlerProxy proxy, string URL)
         {
             this.proxy = proxy;
 
-            ParseNotificationResponse(input, this);
+            ParseNotificationResponse(input, this, URL);
         }
 
         public void Reply(Notification notification)
@@ -284,17 +324,58 @@ namespace LamestWebserver.NotificationService
             proxy.Respond(notification.GetNotification());
         }
 
-        public static void ParseNotificationResponse(string input, NotificationResponse response)
+        public static void ParseNotificationResponse(string input, NotificationResponse response, string URL)
         {
             if (input.Length <= 0)
             {
                 return;
             }
 
-            JsonNotificationPacket packet = new JsonNotificationPacket(input);
+            JsonNotificationPacket packet;
+
+            try
+            {
+                packet = new JsonNotificationPacket(input);
+            }
+            catch (Exception)
+            {
+                if (input.Contains(NotificationType.Invalid.ToString()))
+                    return;
+
+                response.Reply(Notification.Invalid());
+                return;
+            }
 
             response.Values = packet.Values;
             response.NotificationType = packet.NotificationType;
+            response.noreply = packet.noreply;
+
+            string ssid = packet.SSID;
+
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+            {
+                response.SessionData = new SessionData(
+                    new List<string>(),
+                    new List<string>(),
+                    new List<string>(),
+                    new List<string>(),
+                    new List<KeyValuePair<string, string>> {new KeyValuePair<string, string>("ssid", ssid)},
+                    URL, URL, input, null, response.proxy.GetNetworkStream());
+            }
+            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
+            {
+                response.SessionData = new SessionData(
+                    new List<string>(),
+                    new List<string>(),
+                    new List<string> { "ssid" },
+                    new List<string> { ssid },
+                    new List<KeyValuePair<string, string>>(),
+                    URL, URL, input, null, response.proxy.GetNetworkStream());
+            }
+            else
+            {
+                throw new InvalidOperationException("The SessionID transmission type '" + SessionContainer.SessionIdTransmissionType + "' is not supported in NoificationResponse.ParseNotificationResponse()");
+            }
 
             switch(response.NotificationType)
             {
