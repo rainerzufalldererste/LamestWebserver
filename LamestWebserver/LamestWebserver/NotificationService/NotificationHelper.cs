@@ -47,6 +47,12 @@ namespace LamestWebserver.NotificationService
 #endif
                     "conn.send(window.JSON.stringify({" + JsonNotificationPacket.NotificationType_string + ": type," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}));};" +
                     "function " + sendMsgMethodName + " (msg){" + sendMsgMethodName + "_(\"" + NotificationType.Message + "\", msg);};" +
+                    "function " + sendMsgMethodName + " (msg, key, value) { var x = {" + JsonNotificationPacket.NotificationType_string + ": " + NotificationType.Message + "," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}; " +
+                    "x[key] = value;" +
+#if DEBUG
+                    "console.log({mode: \">> (from Client)\", type: type, message: x});" + 
+#endif
+                    "conn.send(window.JSON.stringify(x));};" +
                     "conn.onmessage = function(event) { var rcv = window.JSON.parse(event.data); var answer = true; if(rcv." + JsonNotificationPacket.NoReply_string + ") answer = false; " +
 #if DEBUG
                     "console.log({mode: \"<< (from Server)\", type: rcv." + JsonNotificationPacket.NotificationType_string + ", rcv});" +

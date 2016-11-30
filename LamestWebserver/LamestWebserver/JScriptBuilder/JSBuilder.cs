@@ -374,7 +374,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="value">the value to compare to</param>
         /// <returns>A piece of JavaScript code</returns>
-        public IJSValue IsEqualTo(IJSValue value)
+        public virtual IJSValue IsEqualTo(IJSValue value)
         {
             return new JSOperator(JSOperator.JSOperatorType.Equals, this, value);
         }
@@ -384,7 +384,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="value">the value to compare to</param>
         /// <returns>A piece of JavaScript code</returns>
-        public IJSValue IsNotEqualTo(IJSValue value)
+        public virtual IJSValue IsNotEqualTo(IJSValue value)
         {
             return new JSOperator(JSOperator.JSOperatorType.NotEquals, this, value);
         }
@@ -802,7 +802,19 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override IJSValue Set(IJSValue value)
         {
-            return new JSOperator(JSOperator.JSOperatorType.Set, this, value);
+            return new JSOperator(JSOperator.JSOperatorType.Set, new JSValue(content), value);
+        }
+
+        /// <inheritdoc />
+        public override IJSValue IsEqualTo(IJSValue value)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.Equals, new JSValue(content), value);
+        }
+
+        /// <inheritdoc />
+        public override IJSValue IsNotEqualTo(IJSValue value)
+        {
+            return new JSOperator(JSOperator.JSOperatorType.NotEquals, new JSValue(content), value);
         }
 
         /// <inheritdoc />

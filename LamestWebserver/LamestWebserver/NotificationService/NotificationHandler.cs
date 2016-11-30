@@ -60,6 +60,11 @@ namespace LamestWebserver.NotificationService
             return new ExecuteScriptNotification(script);
         }
 
+        public static Notification ExecuteScript(IJSPiece piece)
+        {
+            return new ExecuteScriptNotification(piece.getCode(SessionData.currentSessionData));
+        }
+
         public static Notification ReplaceDivWithContent(string divId, IJSValue content)
         {
             return
