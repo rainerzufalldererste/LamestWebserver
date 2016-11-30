@@ -71,7 +71,21 @@ namespace LamestWebserver.NotificationService
 
         public static Notification ReplaceDivWithContent(string divId, string content)
         {
-            return ReplaceDivWithContent(divId, (JSStringValue) content);
+            return ReplaceDivWithContent(divId, new JSValue(content.Base64Encode()));
+        }
+
+        public static Notification ReplaceBodyWithContent(IJSValue content)
+        {
+            return
+                new ExecuteScriptNotification(
+                    JSElement.Body
+                        .InnerHTML.Set(content)
+                        .getCode(SessionData.currentSessionData, CallingContext.Inner));
+        }
+
+        public static Notification ReplaceBodyWithContent(string content)
+        {
+            return ReplaceBodyWithContent(new JSValue(content.Base64Encode()));
         }
 
         public static Notification AddToDivContent(string divId, IJSValue content)
@@ -84,7 +98,7 @@ namespace LamestWebserver.NotificationService
 
         public static Notification AddToDivContent(string divId, string content)
         {
-            return AddToDivContent(divId, (JSStringValue) content);
+            return AddToDivContent(divId, new JSValue(content.Base64Encode()));
         }
 
         public static Notification ReploadPage()
@@ -104,7 +118,7 @@ namespace LamestWebserver.NotificationService
             return Redirect((JSStringValue) newPageUrl);
         }
 
-        public static Notification Invalid()
+        internal static Notification Invalid()
         {
             return new InvalidNotification();
         }
@@ -183,34 +197,28 @@ namespace LamestWebserver.NotificationService
         public Thread handlerThread = null;
 
         private bool running = true;
+        public readonly bool NotifyForKeepalives;
 
-        public NotificationHandler(string URL) : base(URL)
+        public NotificationHandler(string URL, bool notifyForKeepalives = false) : base(URL)
         {
+            NotifyForKeepalives = notifyForKeepalives;
             OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy, URL));
             OnConnect += proxy => connect(proxy);
             OnDisconnect += proxy => disconnect(proxy);
+
+            string methodName;
+            _jselement =
+                new JSPlainText("<script type='text/javascript'>" +
+                                NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL,
+                                    out methodName, ID) + "</script>");
+
+            SendingFunction = new JSFunction(methodName);
         }
 
         public event Action<NotificationResponse> OnNotification;
 
-        public JSElement JSElement
-        {
-            get
-            {
-                if (_jselement == null)
-                {
-                    string methodName;
-                    _jselement =
-                        new JSPlainText("<script type='text/javascript'>" +
-                                        NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL,
-                                            out methodName, ID) + "</script>");
-
-                    SendingFunction = new JSFunction(methodName);
-                }
-
-                return _jselement;
-            }
-        }
+        public JSElement JSElement => new JSPlainText("<script type='text/javascript'>" +
+                                NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL, ID) + "</script>");
 
         private JSElement _jselement = null;
 
@@ -258,7 +266,7 @@ namespace LamestWebserver.NotificationService
 
         public virtual void HandleResponse(NotificationResponse response)
         {
-            if (response.IsMessage)
+            if (response.IsMessage || (response.NotificationType == NotificationType.KeepAlive && NotifyForKeepalives))
                 OnNotification(response);
         }
 

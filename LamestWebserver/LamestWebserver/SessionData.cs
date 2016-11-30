@@ -19,6 +19,8 @@ namespace LamestWebserver
         private readonly IDictionary<string, object> PerFileVariables;
         private SessionContainer.UserInfo _userInfo;
 
+        private bool isWebsocketConnection = false;
+
         /// <summary>
         /// The SSID of the current Request
         /// </summary>
@@ -132,6 +134,11 @@ namespace LamestWebserver
             {
                 this.ssid = receivedCookiesTree["ssid"];
             }
+
+            if (this._tcpClient == null)
+                isWebsocketConnection = true;
+            // HACK: @FIXME: Don't do that... sorry... :(
+            // TODO: Remove!
 
             this.PerFileVariables = SessionContainer.GetFileDictionary(file);
             this._userInfo = SessionContainer.GetUserInfoFromSsid(ssid);

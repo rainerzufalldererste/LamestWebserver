@@ -109,33 +109,33 @@ namespace LamestWebserver
             if (condition && !conditionalCode(sessionData))
                 return InstantPageResponse.generateRedirectCode(referealURL, sessionData);
 
-            string ret = "<html>\n<head>\n<title>" + title + "</title>\n";
+            string ret = "<html> <head> <title>" + title + "</title>";
 
             if (!string.IsNullOrWhiteSpace(favicon))
-                ret += "<link rel=\"shortcut icon\" href='" + favicon + "'>\n<link rel=\"icon\" sizes=\"any\" mask=\"\" href=" + favicon + ">\n";
+                ret += "<link rel=\"shortcut icon\" href='" + favicon + "'> <link rel=\"icon\" sizes=\"any\" mask=\"\" href=" + favicon + ">";
 
             for (int i = 0; i < stylesheetLinks.Count; i++)
             {
-                ret += "<link rel=\"stylesheet\" href='" + stylesheetLinks[i] + "'>\n";
+                ret += "<link rel=\"stylesheet\" href='" + stylesheetLinks[i] + "'>";
             }
 
             for (int i = 0; i < scripts.Count; i++)
             {
-                ret += "<script type=\"text/javascript\">" + scripts[i] + "</script>\n";
+                ret += "<script type=\"text/javascript\">" + scripts[i] + "</script>";
             }
 
             for (int i = 0; i < scriptLinks.Count; i++)
             {
-                ret += "<script type=\"text/javascript\" src=\"" + scriptLinks[i] + "\"></script>\n";
+                ret += "<script type=\"text/javascript\" src=\"" + scriptLinks[i] + "\"></script>";
             }
 
             if (!string.IsNullOrWhiteSpace(stylesheetCode))
-                ret += "<style type=\"text/css\">" + stylesheetCode + "</style>\n";
+                ret += "<style type=\"text/css\">" + stylesheetCode + "</style>";
 
             if (!string.IsNullOrWhiteSpace(additionalHeadArguments))
-                ret += additionalHeadArguments + "\n";
+                ret += additionalHeadArguments + " ";
 
-            ret += "</head>\n<body ";
+            ret += "</head> <body ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -155,17 +155,17 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n";
+            ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += text.Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text);
 
             for (int i = 0; i < base.elements.Count; i++)
             {
                 ret += base.elements[i].getContent(sessionData);
             }
 
-            ret += "</body>\n</html>";
+            ret += "</body> </html>";
 
             return ret;
         }
@@ -291,7 +291,7 @@ namespace LamestWebserver
         /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
-            return "\n<br>\n";
+            return "<br>";
         }
     }
 
@@ -307,12 +307,12 @@ namespace LamestWebserver
         /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
-            string ret = "\n<hr ";
+            string ret = "<hr ";
 
             if (!string.IsNullOrWhiteSpace(Style))
                 ret += "style=\"" + Style + "\" ";
 
-            return ret + ">\n";
+            return ret + ">";
         }
     }
 
@@ -451,9 +451,9 @@ namespace LamestWebserver
             ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += text.Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text);
 
-            ret += "</a>\n";
+            ret += "</a>";
 
             return ret;
         }
@@ -510,7 +510,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n";
+            ret += ">";
 
             return ret;
         }
@@ -567,7 +567,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n" + System.Web.HttpUtility.HtmlEncode(text) + "\n</p>\n";
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(text) + "</p>";
 
             return ret;
         }
@@ -634,7 +634,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n" + text.Replace("\n", "<br>") + "\n</h" + level + ">\n";
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(text) + "</h" + level + ">";
 
             return ret;
         }
@@ -705,7 +705,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n";
+            ret += ">";
 
             return ret;
         }
@@ -888,17 +888,17 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n";
+            ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += text.Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text);
 
             for (int i = 0; i < elements.Count; i++)
             {
                 ret += elements[i].getContent(sessionData);
             }
 
-            ret += "\n</div>\n";
+            ret += "</div>";
 
             return ret;
         }
@@ -1016,22 +1016,22 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags + " ";
 
-            ret += "method='POST' >\n";
+            ret += "method='POST' >";
 
             if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
             {
-                ret += "<input type='hidden' name='ssid' value='" + sessionData.ssid + "'>\n";
+                ret += "<input type='hidden' name='ssid' value='" + sessionData.ssid + "'>";
             }
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += text.Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text);
 
             for (int i = 0; i < elements.Count; i++)
             {
                 ret += elements[i].getContent(sessionData);
             }
 
-            ret += "\n</form>\n";
+            ret += "</form>";
 
             return ret;
         }
@@ -1157,17 +1157,17 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags + " ";
 
-            ret += ">\n";
+            ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += text.Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text);
 
             for (int i = 0; i < elements.Count; i++)
             {
                 ret += elements[i].getContent(sessionData);
             }
 
-            ret += "\n</button>\n";
+            ret += "</button>";
 
             return ret;
         }
@@ -1331,7 +1331,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n";
+            ret += ">";
 
             if(options != null)
             {
@@ -1346,7 +1346,7 @@ namespace LamestWebserver
                 }
             }
 
-            ret += "\n</select>\n";
+            ret += "</select>";
 
             return ret;
         }
@@ -1422,17 +1422,17 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n";
+            ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += text.Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text);
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += "<li>\n" + elements[i].getContent(sessionData) + "</li>\n";
+                ret += "<li>" + elements[i].getContent(sessionData) + "</li>";
             }
 
-            ret += "</" + (listType == EListType.OrderedList ? "ol" : "ul") + ">\n";
+            ret += "</" + (listType == EListType.OrderedList ? "ol" : "ul") + ">";
 
             return ret;
         }
@@ -1511,38 +1511,38 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n";
+            ret += ">";
 
             if (elements != null)
             {
                 foreach (ICollection<HElement> outer in elements)
                 {
-                    ret += "<tr>\n";
+                    ret += "<tr>";
 
                     foreach (HElement element in outer)
                     {
-                        ret += "<td>\n" + element.getContent(sessionData) + "</td>\n";
+                        ret += "<td>" + element.getContent(sessionData) + "</td>";
                     }
 
-                    ret += "</tr>\n";
+                    ret += "</tr>";
                 }
             }
             else
             {
                 foreach (IEnumerable<object> outer in data)
                 {
-                    ret += "<tr>\n";
+                    ret += "<tr>";
 
                     foreach (object obj in outer)
                     {
-                        ret += "<td>\n" + obj + "</td>\n";
+                        ret += "<td>" + obj + "</td>";
                     }
 
-                    ret += "</tr>\n";
+                    ret += "</tr>";
                 }
             }
 
-            ret += "</table>\n";
+            ret += "</table>";
 
             return ret;
         }
@@ -1605,19 +1605,19 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">\n";
+            ret += ">";
 
             if (hasContent)
             {
                 if (!string.IsNullOrWhiteSpace(text))
-                    ret += text.Replace("\n", "<br>");
+                    ret += System.Web.HttpUtility.HtmlEncode(text);
 
                 for (int i = 0; i < elements.Count; i++)
                 {
                     ret += elements[i].getContent(sessionData);
                 }
 
-                ret += "\n</" + tagName  + ">\n";
+                ret += "</" + tagName  + ">";
             }
 
             return ret;
@@ -1660,7 +1660,7 @@ namespace LamestWebserver
         /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
-            return "<script type\"text/javascript\">\n" + (dynamic ? scriptFunction(sessionData, arguments) : script) + "\n</script>\n";
+            return "<script type\"text/javascript\">" + (dynamic ? scriptFunction(sessionData, arguments) : script) + "</script>";
         }
     }
 
@@ -1690,7 +1690,7 @@ namespace LamestWebserver
         /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
-            return "<script type\"text/javascript\" src=\"" + URL + "\"></script>\n";
+            return "<script type\"text/javascript\" src=\"" + URL + "\"></script>";
         }
     }
 

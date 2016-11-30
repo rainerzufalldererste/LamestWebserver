@@ -596,7 +596,7 @@ namespace LamestWebserver.JScriptBuilder
                     throw new InvalidOperationException("The operator '" + _operatorType + "' is not handled in getCode()");
             }
 
-            return ret + _b.getCode(sessionData, CallingContext.Inner) + (context == CallingContext.Default ? ";" : " ");
+            return ret + _b.getCode(sessionData, CallingContext.Inner).EvalBase64() + (context == CallingContext.Default ? ";" : " ");
         }
 
         /// <summary>

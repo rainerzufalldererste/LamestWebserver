@@ -14,7 +14,7 @@ namespace LamestWebserver
     {
         private uint readCounter = 0;
         private Mutex readMutex = new Mutex();
-        private SemaphoreSlim writeSemaphore = new SemaphoreSlim(0, 1024);
+        private SemaphoreSlim writeSemaphore = new SemaphoreSlim(1, 1);
         private readonly string ID = SessionContainer.generateHash();
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace LamestWebserver
             if(readCounter == 0)
             {
                 readMutex.ReleaseMutex();
-
+                
                 writeSemaphore.Wait();
 
                 readMutex.WaitOne();
@@ -158,7 +158,9 @@ namespace LamestWebserver
                 writeLock.readCounter--;
 
                 if (writeLock.readCounter == 0)
+                {
                     writeLock.writeSemaphore.Release();
+                }
 
                 writeLock.readMutex.ReleaseMutex();
             }

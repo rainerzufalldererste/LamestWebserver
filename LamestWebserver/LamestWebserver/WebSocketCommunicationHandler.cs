@@ -2,6 +2,7 @@
 using Fleck.Handlers;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
@@ -225,7 +226,7 @@ namespace LamestWebserver
                 {
                     return;
                 }
-                catch (Exception e)
+                catch (IOException e)
                 {
                 }
             }

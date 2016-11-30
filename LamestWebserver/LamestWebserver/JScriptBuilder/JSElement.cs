@@ -24,7 +24,14 @@ namespace LamestWebserver.JScriptBuilder
         {
             ID = SessionContainer.generateHash();
         }
-        
+
+        /// <summary>
+        /// Retrieves the Body of the currentDocument
+        /// </summary>
+        public static JSElementValue Body {
+            get { return new JSElementValue("document.body"); }
+        }
+
         /// <summary>
         /// Inserts this Element into the document body.
         /// </summary>

@@ -56,6 +56,13 @@ namespace LamestWebserver.NotificationService
                     " } };" +
                     "conn.onopen = function (event) { " + sendMsgMethodName + "_(\"" + NotificationType.KeepAlive + "\") };";
         }
+
+        internal static string JsonNotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID)
+        {
+            string sendMsgMethodName = "";
+
+            return JsonNotificationCode(sessionData, destinationURL, out sendMsgMethodName, NotificationHandlerID);
+        }
     }
 
     internal class JsonNotificationPacket
