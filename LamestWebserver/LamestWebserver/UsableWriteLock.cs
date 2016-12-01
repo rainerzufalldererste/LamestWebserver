@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace LamestWebserver
 {
@@ -16,6 +13,8 @@ namespace LamestWebserver
         private Mutex readMutex = new Mutex();
         private SemaphoreSlim writeSemaphore = new SemaphoreSlim(1, 1);
         private readonly string ID = SessionContainer.generateHash();
+        private uint writePending = 0;
+        private SemaphoreSlim writePendingSemaphore = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// Locks the WriteLock for reading
@@ -24,6 +23,16 @@ namespace LamestWebserver
         public UsableWriteLockDisposable_read LockRead()
         {
             readMutex.WaitOne();
+
+            if (writePending > 0)
+            {
+                readMutex.ReleaseMutex();
+
+                writePendingSemaphore.Wait();
+                writePendingSemaphore.Release();
+
+                readMutex.WaitOne();
+            }
 
             if(readCounter == 0)
             {
@@ -47,9 +56,17 @@ namespace LamestWebserver
         /// <returns>An IDisposable Object to be used in a using statement</returns>
         public UsableWriteLockDisposable_write LockWrite()
         {
+            readMutex.WaitOne();
+
+            writePending++;
+
+            writePendingSemaphore.Wait();
+
+            readMutex.ReleaseMutex();
+
             writeSemaphore.Wait();
 
-            return new UsableWriteLockDisposable_write(writeSemaphore);
+            return new UsableWriteLockDisposable_write(this);
         }
 
         /// <summary>
@@ -73,11 +90,12 @@ namespace LamestWebserver
 
                     if (lockys[i] == null)
                         currentIndex = j;
-                    else if (lockys[i].ID.CompareTo(locks[j].ID) < 0)
+                    else if (string.Compare(lockys[i].ID, locks[j].ID, StringComparison.Ordinal) < 0)
                         currentIndex = j;
                 }
 
                 lockys[i] = locks[currentIndex];
+                lockys[i].LockRead();
                 disposables[i] = locks[currentIndex].LockRead();
             }
 
@@ -105,11 +123,12 @@ namespace LamestWebserver
 
                     if (lockys[i] == null)
                         currentIndex = j;
-                    else if (lockys[i].ID.CompareTo(locks[j].ID) < 0)
+                    else if (string.Compare(lockys[i].ID, locks[j].ID, StringComparison.Ordinal) < 0)
                         currentIndex = j;
                 }
 
                 lockys[i] = locks[currentIndex];
+                lockys[i].LockWrite();
                 disposables[i] = locks[currentIndex].LockWrite();
             }
 
@@ -121,11 +140,11 @@ namespace LamestWebserver
         /// </summary>
         public class UsableWriteLockDisposable_write : IDisposable
         {
-            private SemaphoreSlim semaphore;
+            private UsableWriteLock writeLock;
 
-            internal UsableWriteLockDisposable_write(SemaphoreSlim semaphore)
+            internal UsableWriteLockDisposable_write(UsableWriteLock writeLock)
             {
-                this.semaphore = semaphore;
+                this.writeLock = writeLock;
             }
 
             /// <summary>
@@ -133,7 +152,13 @@ namespace LamestWebserver
             /// </summary>
             public void Dispose()
             {
-                semaphore.Release();
+                writeLock.writeSemaphore.Release();
+
+                writeLock.readMutex.WaitOne();
+                writeLock.writePending--;
+                writeLock.readMutex.ReleaseMutex();
+
+                writeLock.writePendingSemaphore.Release();
             }
         }
 
@@ -142,11 +167,11 @@ namespace LamestWebserver
         /// </summary>
         public class UsableWriteLockDisposable_read : IDisposable
         {
-            private UsableWriteLock writeLock;
+            private readonly UsableWriteLock _writeLock;
 
             internal UsableWriteLockDisposable_read(UsableWriteLock writeLock)
             {
-                this.writeLock = writeLock;
+                this._writeLock = writeLock;
             }
 
             /// <summary>
@@ -154,33 +179,33 @@ namespace LamestWebserver
             /// </summary>
             public void Dispose()
             {
-                writeLock.readMutex.WaitOne();
-                writeLock.readCounter--;
+                _writeLock.readMutex.WaitOne();
+                _writeLock.readCounter--;
 
-                if (writeLock.readCounter == 0)
+                if (_writeLock.readCounter == 0)
                 {
-                    writeLock.writeSemaphore.Release();
+                    _writeLock.writeSemaphore.Release();
                 }
 
-                writeLock.readMutex.ReleaseMutex();
+                _writeLock.readMutex.ReleaseMutex();
             }
         }
     }
 
     /// <summary>
-    /// A wrapper class for a semaphore to be used in a using statement
+    /// A wrapper class for a writeLock to be used in a using statement
     /// </summary>
     public class UsableSemaphore : IDisposable
     {
-        private SemaphoreSlim semaphore;
+        private readonly SemaphoreSlim _semaphore;
 
         /// <summary>
         /// Constructs a new UsableSemaphore. The Semaphore is not locked and will not be locked until you call Lock().
         /// </summary>
-        /// <param name="semaphore">the semaphore</param>
+        /// <param name="semaphore">the writeLock</param>
         public UsableSemaphore(SemaphoreSlim semaphore)
         {
-            this.semaphore = semaphore;
+            this._semaphore = semaphore;
         }
 
         /// <summary>
@@ -188,7 +213,7 @@ namespace LamestWebserver
         /// </summary>
         public void Lock()
         {
-            this.semaphore.Wait();
+            this._semaphore.Wait();
         }
 
         /// <summary>
@@ -196,7 +221,7 @@ namespace LamestWebserver
         /// </summary>
         public void Dispose()
         {
-            semaphore.Release();
+            _semaphore.Release();
         }
     }
 
@@ -205,7 +230,7 @@ namespace LamestWebserver
     /// </summary>
     public class MultiDisposer : IDisposable
     {
-        private IDisposable[] disposables;
+        private readonly IDisposable[] _disposables;
 
         /// <summary>
         /// Creates a MultiDisposer.
@@ -213,7 +238,7 @@ namespace LamestWebserver
         /// <param name="disposables">the IDisposable objects to dispose on dispose.</param>
         public MultiDisposer(params IDisposable[] disposables)
         {
-            this.disposables = disposables;
+            this._disposables = disposables;
         }
 
         /// <summary>
@@ -221,9 +246,9 @@ namespace LamestWebserver
         /// </summary>
         public void Dispose()
         {
-            for (int i = disposables.Length - 1; i >= 0; i--)
+            for (int i = _disposables.Length - 1; i >= 0; i--)
             {
-                disposables[i].Dispose();
+                _disposables[i].Dispose();
             }
         }
     }

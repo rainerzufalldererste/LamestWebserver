@@ -61,10 +61,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Fleck\Fleck.csproj">
-      <Project>{8B12D929-AFA9-4307-BEFF-2ED0F1070FEE}</Project>
-      <Name>Fleck</Name>
-    </ProjectReference>
     <ProjectReference Include="..\LamestWebserver\LamestWebserver.csproj">
       <Project>{2e0e1f99-3de7-4636-9e18-93e5cb837965}</Project>
       <Name>LamestWebserver</Name>

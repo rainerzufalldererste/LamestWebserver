@@ -5,23 +5,18 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-/// <summary>
-/// A regular Mutex, but disposable if Lock() is called.
-/// This let's you use it within a using statement
-/// 
-/// Syntax:
-/// 
-/// using (usableMutex.Lock())
-/// {
-///     // Your Code.
-/// }
-/// 
-/// </summary>
 namespace LamestWebserver
 {
     /// <summary>
-    /// Wrapper for a Mutex.
-    /// Supports Lock(), an operation to help using mutexes throug "using" statements and UsableMutex.Lock() for sorted locking to prevent deadlocks.
+    /// A regular Mutex, but disposable if Lock() is called, making it available in using statements
+    /// UsableMutex.Lock() is also available for sorted locking to prevent deadlocks.
+    /// 
+    /// <example>
+    /// using (usableMutex.Lock())
+    /// {
+    ///     // Your Code.
+    /// }
+    /// </example>
     /// </summary>
     public class UsableMutex
     {

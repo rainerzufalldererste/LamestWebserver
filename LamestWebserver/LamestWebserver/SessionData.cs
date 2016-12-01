@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using LamestWebserver.Collections;
 
 namespace LamestWebserver
