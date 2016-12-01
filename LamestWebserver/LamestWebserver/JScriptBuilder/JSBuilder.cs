@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Web;
-
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using JSFunctionCall = LamestWebserver.JScriptBuilder.JSPMethodCall;
 
 namespace LamestWebserver.JScriptBuilder
@@ -173,7 +173,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of this Function as JSValue
         /// </summary>
-        public IJSValue FunctionPointer { get { return new JSValue(content); } }
+        public IJSValue FunctionPointer => new JSValue(content);
 
         /// <summary>
         /// Constructs a new JSFunction
@@ -255,7 +255,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "function " + content + " ( ";
 
@@ -271,7 +271,7 @@ namespace LamestWebserver.JScriptBuilder
 
             for (int i = 0; i < pieces.Count; i++)
             {
-                ret += pieces[i].getCode(sessionData, CallingContext.Default);
+                ret += pieces[i].getCode(sessionData);
             }
 
             return ret + "}";
@@ -280,12 +280,19 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// Calls the given Function
         /// </summary>
-        /// <param name="values">the parameters to input in this call</param>
+        /// <param name="values">the parameters to input in to this call</param>
         /// <returns>A piece of JavaScript code</returns>
         public JSFunctionCall callFunction(params IJSValue[] values)
         {
             return new JSFunctionCall(this.content, values);
         }
+
+        /// <summary>
+        /// Calls the Function with the given parameters
+        /// </summary>
+        /// <param name="values">the values to call the function with</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public JSFunctionCall this[params IJSValue[] values] => callFunction(values);
 
         /// <summary>
         /// Defines and Calls this Function at the same time.
@@ -329,9 +336,9 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "(" + _function.getCode(sessionData, CallingContext.Default) + ")()" + (context == CallingContext.Default ? ";" : " ");
+            return "(" + _function.getCode(sessionData) + ")()" + (context == CallingContext.Default ? ";" : " ");
         }
     }
 
@@ -678,7 +685,7 @@ namespace LamestWebserver.JScriptBuilder
         public override string content => "\"" + _content + "\"";
 
         /// <inheritdoc />
-        public override string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return "\"" + _content.JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
@@ -756,7 +763,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return content + (context == CallingContext.Default ? ";" : " ");
         }
@@ -796,6 +803,7 @@ namespace LamestWebserver.JScriptBuilder
         {
             if (string.IsNullOrWhiteSpace(name))
                 this._content = "_var" + SessionContainer.generateHash();
+            else this._content = name;
         }
 
         /// <inheritdoc />
@@ -817,7 +825,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return "var " + content + (context == CallingContext.Default ? ";" : " ");
         }
@@ -858,7 +866,7 @@ namespace LamestWebserver.JScriptBuilder
         }
         
         /// <inheritdoc />
-        public override string getCode(SessionData sessionData, CallingContext context)
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = _methodName + "(";
 

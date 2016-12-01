@@ -50,7 +50,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public string getCode(SessionData sessionData, CallingContext context)
+        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return "\"" + getContent(sessionData, CallingContext.Inner).JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
@@ -129,7 +129,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context)
+        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return Contents;
         }
@@ -164,7 +164,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context)
+        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string _content = "";
 
@@ -221,7 +221,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context)
+        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return "<button type='" + buttonType + "' " + GetDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText) + "</button>";
         }
@@ -241,7 +241,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSText(string content) { _content = content; }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context)
+        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return "<p " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content) + "</p>";
         }
@@ -276,7 +276,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context)
+        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value) + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
         }
@@ -380,7 +380,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context)
+        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "<textarea " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
 
@@ -496,7 +496,7 @@ namespace LamestWebserver.JScriptBuilder
         }
         
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context)
+        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "<select " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
 
@@ -584,7 +584,7 @@ namespace LamestWebserver.JScriptBuilder
     public abstract class JSInteractableElement : JSElement
     {
         /// <inheritdoc />
-        public abstract override string getContent(SessionData sessionData, CallingContext context);
+        public abstract override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default);
 
         // #AREYOUREADYFORTHEWEB?
 
@@ -1018,7 +1018,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="sessionData">the sessionData</param>
         /// <param name="context">the current Calling Context</param>
         /// <returns>the event attributes as string</returns>
-        public string getEventAttributes(SessionData sessionData, CallingContext context)
+        public string getEventAttributes(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             // #AREYOUREADYFORTHEWEB?
 
