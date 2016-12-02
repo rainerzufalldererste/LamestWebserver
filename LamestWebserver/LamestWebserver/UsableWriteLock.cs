@@ -58,11 +58,11 @@ namespace LamestWebserver
         {
             readMutex.WaitOne();
 
-            writePending++;
-
-            writePendingSemaphore.Wait();
+            writePending++;;
 
             readMutex.ReleaseMutex();
+
+            writePendingSemaphore.Wait();
 
             writeSemaphore.Wait();
 
@@ -95,7 +95,6 @@ namespace LamestWebserver
                 }
 
                 lockys[i] = locks[currentIndex];
-                lockys[i].LockRead();
                 disposables[i] = locks[currentIndex].LockRead();
             }
 
@@ -128,7 +127,6 @@ namespace LamestWebserver
                 }
 
                 lockys[i] = locks[currentIndex];
-                lockys[i].LockWrite();
                 disposables[i] = locks[currentIndex].LockWrite();
             }
 
@@ -156,7 +154,6 @@ namespace LamestWebserver
 
                 writeLock.readMutex.WaitOne();
                 writeLock.writePending--;
-                writeLock.readMutex.ReleaseMutex();
 
                 writeLock.writePendingSemaphore.Release();
             }

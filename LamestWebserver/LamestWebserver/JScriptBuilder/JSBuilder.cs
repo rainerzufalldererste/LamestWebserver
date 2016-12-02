@@ -895,6 +895,16 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <summary>
+        /// Encodes a URI component to a formatted string.
+        /// </summary>
+        /// <param name="value">the value to encode</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public static IJSValue EncodeURIComponent(IJSValue value)
+        {
+            return new JSValue("encodeURIComponent(" + value.content + ")");
+        }
+
+        /// <summary>
         /// Requests a page from the predefinded URL. This can be used as Notification to the Server without any response.
         /// </summary>
         /// <param name="URL">The URL to request</param>

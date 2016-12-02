@@ -344,7 +344,7 @@ namespace LamestWebserver.JScriptBuilder
                 default:
                     return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
                         + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })).Invoke()
-                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value,true);xmlhttp.send();")).DefineAndCall();
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSPMethodCall.EncodeURIComponent(getByID(ID).Value).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value,true);xmlhttp.send();")).DefineAndCall();
             }
         }
     }
@@ -572,7 +572,7 @@ namespace LamestWebserver.JScriptBuilder
 
             return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
                 + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })).Invoke()
-                + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
+                + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSPMethodCall.EncodeURIComponent(new JSValue("elem.selectedOptions[0].value")).getCode(SessionData.currentSessionData, CallingContext.Inner) + "+ \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += " + JSPMethodCall.EncodeURIComponent(new JSValue("elem.selectedOptions[i].value")).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
         }
     }
 
