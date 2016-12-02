@@ -197,18 +197,14 @@ namespace LamestWebserver.NotificationService
         private bool running = true;
         public readonly bool NotifyForKeepalives;
 
-        public NotificationHandler(string URL, bool notifyForKeepalives = false) : base(URL)
+        public NotificationHandler(string URL, bool notifyForKeepalives = false, TimeSpan? maximumLastMessageTime = null) : base(URL, maximumLastMessageTime)
         {
             NotifyForKeepalives = notifyForKeepalives;
             OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy, URL));
             OnConnect += proxy => connect(proxy);
             OnDisconnect += proxy => disconnect(proxy);
 
-            string methodName;
-            _jselement =
-                new JSPlainText("<script type='text/javascript'>" +
-                                NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL,
-                                    out methodName, ID) + "</script>");
+            string methodName = NotificationHelper.GetFunctionName(ID);
 
             SendingFunction = new JSFunction(methodName);
         }
@@ -235,7 +231,7 @@ namespace LamestWebserver.NotificationService
                         }
 
                         if ((DateTime.UtcNow - proxies[i].lastMessageSent) >
-                            WebSocketHandlerProxy.MaximumLastMessageTime)
+                            this.MaximumLastMessageTime)
                             proxies[i].Respond(new KeepAliveNotification().GetNotification());
                     }
                 }

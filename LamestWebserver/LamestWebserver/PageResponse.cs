@@ -28,11 +28,11 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="URL">the URL of this page</param>
         /// <param name="register">shall this page automatically be registered?</param>
-        public PageResponse(string URL, bool register = true)
+        protected PageResponse(string URL, bool register = true)
         {
             this.URL = URL;
 
-            if(register)
+            if (register)
                 Master.addFuntionToServer(URL, getContents);
         }
 
@@ -64,7 +64,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="URL">the URL of this Page</param>
         /// <param name="register">shall this page be automatically registered?</param>
-        public SyncronizedPageResponse(string URL, bool register = true) : base(URL, false)
+        protected SyncronizedPageResponse(string URL, bool register = true) : base(URL, false)
         {
             if (register)
                 Master.addFuntionToServer(URL, getContentSyncronously);
@@ -83,7 +83,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected override abstract string getContents(SessionData sessionData);
+        protected abstract override string getContents(SessionData sessionData);
     }
 
     /// <summary>
@@ -101,7 +101,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="URL">the URL of this page</param>
         /// <param name="register">shall this page be automatically registered?</param>
-        public ElementResponse(string URL, bool register = true)
+        protected ElementResponse(string URL, bool register = true)
         {
             this.URL = URL;
 
@@ -142,7 +142,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="URL">the URL of this page</param>
         /// <param name="register">shall this page be automatically registered at the server?</param>
-        public SyncronizedElementResponse(string URL, bool register = true) : base(URL, false)
+        protected SyncronizedElementResponse(string URL, bool register = true) : base(URL, false)
         {
             if (register)
                 Master.addFuntionToServer(URL, getContents);
@@ -161,7 +161,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected override abstract HElement getElement(SessionData sessionData);
+        protected abstract override HElement getElement(SessionData sessionData);
     }
 
     /// <summary>
@@ -216,10 +216,10 @@ namespace LamestWebserver
         /// </summary>
         public static void addRedirect(string originURL, string destinationURL, bool copyPOST = false)
         {
-            addInstantPageResponse(originURL, (SessionData sessionData) => 
-                {
-                    return generateRedirectCode(destinationURL, sessionData, copyPOST);
-                });
+            addInstantPageResponse(originURL, (SessionData sessionData) =>
+            {
+                return generateRedirectCode(destinationURL, sessionData, copyPOST);
+            });
         }
 
         /// <summary>
@@ -228,10 +228,10 @@ namespace LamestWebserver
         public static void addRedirectWithCode(string originURL, string destinationURL, Action<SessionData> action, bool copyPOST = false)
         {
             addInstantPageResponse(originURL, (SessionData sessionData) =>
-                {
-                    action(sessionData);
-                    return generateRedirectCode(destinationURL, sessionData, copyPOST);
-                });
+            {
+                action(sessionData);
+                return generateRedirectCode(destinationURL, sessionData, copyPOST);
+            });
         }
 
         /// <summary>
@@ -240,12 +240,12 @@ namespace LamestWebserver
         public static void addConditionalRedirect(string originalURL, string destinationURLifTRUE, string destinationURLifFALSE, Func<SessionData, bool> conditionalCode, bool copyPOST = false)
         {
             addInstantPageResponse(originalURL, (SessionData sessionData) =>
-                {
-                    if (conditionalCode(sessionData))
-                        return generateRedirectCode(destinationURLifTRUE, sessionData, copyPOST);
+            {
+                if (conditionalCode(sessionData))
+                    return generateRedirectCode(destinationURLifTRUE, sessionData, copyPOST);
 
-                    return generateRedirectCode(destinationURLifFALSE, sessionData, copyPOST);
-                });
+                return generateRedirectCode(destinationURLifFALSE, sessionData, copyPOST);
+            });
         }
 
         /// <summary>
@@ -271,10 +271,10 @@ namespace LamestWebserver
         /// <returns>the name at which this temporary page will be available at.</returns>
         public static string addOneTimeRedirect(string destinationURL, bool instantlyRemove, bool copyPOST = false)
         {
-            return addOneTimeInstantPageResponse((SessionData sessionData) => 
-                {
-                    return generateRedirectCode(destinationURL, sessionData, copyPOST);
-                }
+            return addOneTimeInstantPageResponse((SessionData sessionData) =>
+            {
+                return generateRedirectCode(destinationURL, sessionData, copyPOST);
+            }
                 , instantlyRemove);
         }
 
@@ -325,12 +325,12 @@ namespace LamestWebserver
         public static string addOneTimeConditionalRedirect(string destinationURLifTRUE, string destinationURLifFALSE, bool instantlyRemove, Func<SessionData, bool> conditionalCode, bool copyPOST = false)
         {
             return addOneTimeInstantPageResponse((SessionData sessionData) =>
-                {
-                    if (conditionalCode(sessionData))
-                        return generateRedirectCode(destinationURLifTRUE, sessionData, copyPOST);
+            {
+                if (conditionalCode(sessionData))
+                    return generateRedirectCode(destinationURLifTRUE, sessionData, copyPOST);
 
-                    return generateRedirectCode(destinationURLifFALSE, sessionData, copyPOST);
-                }
+                return generateRedirectCode(destinationURLifFALSE, sessionData, copyPOST);
+            }
                 , instantlyRemove);
         }
 

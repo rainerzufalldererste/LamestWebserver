@@ -11,10 +11,11 @@ namespace Demos
 {
     public sealed class jsconn : ElementResponse
     {
-        NotificationHandler handler = new NotificationHandler("jsconn");
+        NotificationHandler handler;
 
         public jsconn() : base("jsconn")
         {
+            handler = new NotificationHandler("jsconn");
             handler.OnNotification +=
                     (NotificationResponse response) =>
                     {

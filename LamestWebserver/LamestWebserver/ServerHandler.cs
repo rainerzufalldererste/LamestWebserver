@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 
 namespace LamestWebserver
 {
@@ -9,24 +11,14 @@ namespace LamestWebserver
 
         public static void Main(string[] args)
         {
-            System.Threading.Thread outp = new System.Threading.Thread(new System.Threading.ThreadStart(ServerHandler.showMsgs));
-            // outp.Start();
+            Thread outp = new Thread(showMsgs);
+
+            explicitLogging = true;
+            outp.Start();
 
             Console.WriteLine("\n=== === === === LAMEST WEBSERVER === === === ===\n");
-
-
-            if (args.Length < 1)
-            {
-                /*
-                try
-                {
-                    Console.WriteLine("Please specify ports in param... trying to use 8080... i will fail - or not - yes - true!  - example: \"lws 8080\"");
-                    ports.Add(new WebServer(8080, "./web", true));
-                }
-                catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
-                */
-            }
-            else if (args.Length == 1)
+            
+            if (args.Length == 1)
             {
                 if (args[0] == "-clean")
                 {
@@ -36,20 +28,20 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        RunningServers.Add(new WebServer(Int32.Parse(args[0]), "./web", true)); //does stuff
+                        RunningServers.Add(new WebServer(Int32.Parse(args[0]), "./web", true));
                     }
-                    catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
+                    catch (Exception e) { Console.WriteLine("Something went wrong.\n" + e.Message); };
                 }
             }
-            else
+            else if(args.Length < 1)
             {
                 for (int i = 0; i < args.Length; i+=2)
                 {
                     try
                     {
-                        RunningServers.Add(new WebServer(Int32.Parse(args[i]), args[i + 1], true)); //does stuff
+                        RunningServers.Add(new WebServer(Int32.Parse(args[i]), args[i + 1], true));
                     }
-                    catch (Exception e) { Console.WriteLine("I Hate Servers! " + e.Message); };
+                    catch (Exception e) { Console.WriteLine("Something went wrong.\n" + e.Message); };
                 }
             }
 
@@ -169,7 +161,7 @@ namespace LamestWebserver
                                     {
                                         if (outp.ThreadState == System.Threading.ThreadState.Aborted || outp.ThreadState == System.Threading.ThreadState.Unstarted)
                                         {
-                                            outp = new System.Threading.Thread(new System.Threading.ThreadStart(ServerHandler.showMsgs));
+                                            outp = new System.Threading.Thread(showMsgs);
                                             outp.Start();
                                         }
                                     }
@@ -192,7 +184,7 @@ namespace LamestWebserver
                                 {
                                     lock (output)
                                     {
-                                        output = new List<string>();
+                                        output = new List<Output>();
                                     }
                                     Console.WriteLine("Done!");
                                 }
@@ -321,26 +313,54 @@ namespace LamestWebserver
                             readme = true_;
                             break;
 
+                        case "explicitlog":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    explicitLogging = true;
+                                    Console.WriteLine("Success! Logging now explicitly!");
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
+                            };
+                            readme = true_;
+                            break;
+
+                        case "litelog":
+                            {
+                                readme = false_;
+                                try
+                                {
+                                    explicitLogging = false;
+                                    Console.WriteLine("Success! Logging now not explicitly!");
+                                }
+                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
+                            };
+                            readme = true_;
+                            break;
+
                         case "help":
                             {
                                 readme = false_;
                                 try
                                 {
                                     true_ = false;
-                                    Console.WriteLine("ports     -    List all running servers");
-                                    Console.WriteLine("kill      -    Shut a running server off");
-                                    Console.WriteLine("new       -    Create a new server on port x");
-                                    Console.WriteLine("tstep     -    set log refreshing timestep");
-                                    Console.WriteLine("silent    -    hides the log");
-                                    Console.WriteLine("unsilent  -    shows the log");
-                                    Console.WriteLine("cls       -    deletes the log");
-                                    Console.WriteLine("autocls   -    deletes the log automatically at sizes");
-                                    Console.WriteLine("cache     -    enables the cache of a port");
-                                    Console.WriteLine("uncache   -    disables the cache of a port");
-                                    Console.WriteLine("frefresh  -    refreshes the file cache of a port");
-                                    Console.WriteLine("cachesz   -    sets the maximum file cache of a port");
-                                    Console.WriteLine("help      -    Displays this list of cmds");
-                                    Console.WriteLine("exit      -    ");
+                                    Console.WriteLine("ports        -    List all running servers");
+                                    Console.WriteLine("kill         -    Shut a running server off");
+                                    Console.WriteLine("new          -    Create a new server on port x");
+                                    Console.WriteLine("tstep        -    set log refreshing timestep");
+                                    Console.WriteLine("silent       -    hides the log");
+                                    Console.WriteLine("unsilent     -    shows the log");
+                                    Console.WriteLine("explicitlog  -    shows the caller in the log");
+                                    Console.WriteLine("litelog      -    hides the caller in the log");
+                                    Console.WriteLine("cls          -    deletes the log");
+                                    Console.WriteLine("autocls      -    deletes the log automatically at sizes");
+                                    Console.WriteLine("cache        -    enables the cache of a port");
+                                    Console.WriteLine("uncache      -    disables the cache of a port");
+                                    Console.WriteLine("frefresh     -    refreshes the file cache of a port");
+                                    //Console.WriteLine("cachesz      -    sets the maximum file cache of a port");
+                                    Console.WriteLine("help         -    Displays this list of cmds");
+                                    Console.WriteLine("exit         -    ");
                                 }
                                 catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
@@ -354,27 +374,76 @@ namespace LamestWebserver
             }
         }
 
-        private static List<string> output = new List<string>();
+        private static List<Output> output = new List<Output>();
         private static int cmdsleep = 300;
         private static bool readme = true;
         private static bool true_ = true, false_ = false;
         private static int autocls = 1000, autocls_s = 250;
+        private static bool explicitLogging = false;
 
-        public static void addToStuff(string s)
+        class Output
         {
-            lock (output)
-            {
-                output.Add(s);
+            internal string msg;
+            internal string caller;
 
-                if(output.Count > autocls)
-                {
-                    try
+            internal Output(string msg, StackTrace stackTrace)
+            {
+                this.msg = msg;
+
+                if (stackTrace != null && stackTrace.GetFrame(4).GetMethod().DeclaringType.Namespace.Contains("LamestWebserver"))
+                    for (int i = 4; i < stackTrace.FrameCount; i++)
                     {
-                        output.RemoveRange(0, autocls_s);
+                        var frame = stackTrace.GetFrame(i);
+
+                        if (frame.GetMethod() == null || frame.HasNativeImage() || frame.GetMethod().DeclaringType.Namespace.Contains("LamestWebserver"))
+                        {
+                            continue;
+                        }
+
+                        this.caller = stackTrace.ToString().Split(new[] { "\r\n"}, StringSplitOptions.None)[i];
+
+                        break;
                     }
-                    catch (Exception) { }
+            }
+
+            internal void Print()
+            {
+                Console.ResetColor();
+                Console.WriteLine(msg);
+
+                if (explicitLogging && this.caller != null)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine(caller);
                 }
             }
+        }
+
+        public static void LogMessage(string message)
+        {
+            StackTrace stackTrace = null;
+
+            if (explicitLogging)
+                stackTrace = new StackTrace();
+
+            new Thread(() =>
+            {
+                lock (output)
+                {
+                    output.Add(new Output(message, stackTrace));
+
+                    if (output.Count > autocls)
+                    {
+                        try
+                        {
+                            output.RemoveRange(0, autocls_s);
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+                }
+            }).Start();
         }
 
         private static void showMsgs()
@@ -393,7 +462,7 @@ namespace LamestWebserver
                             {
                                 if (readme)
                                 {
-                                    Console.WriteLine(output[0]);
+                                    output[0].Print();
 
                                     output.RemoveAt(0);
                                 }

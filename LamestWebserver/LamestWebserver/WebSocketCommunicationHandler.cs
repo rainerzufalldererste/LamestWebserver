@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace LamestWebserver
@@ -12,11 +13,18 @@ namespace LamestWebserver
 
     public class WebSocketCommunicationHandler : IURLIdentifyable
     {
+        public static TimeSpan DefaultMaximumLastMessageTime = TimeSpan.FromSeconds(2d);
+        public readonly TimeSpan MaximumLastMessageTime = DefaultMaximumLastMessageTime;
+
         public string URL { get; private set; }
 
-        public WebSocketCommunicationHandler(string URL)
+        public WebSocketCommunicationHandler(string URL, TimeSpan? maximumLastMessageTime = null)
         {
             this.URL = URL;
+
+            if(maximumLastMessageTime.HasValue)
+                MaximumLastMessageTime = maximumLastMessageTime.Value;
+
             _OnMessage = message => callOnMessage(message, WebSocketHandlerProxy.currentProxy);
             _OnClose = () => OnDisconnect(WebSocketHandlerProxy.currentProxy);
             _OnPing = data => WebSocketHandlerProxy.currentProxy.RespondPong(data);
@@ -69,8 +77,6 @@ namespace LamestWebserver
 
     public class WebSocketHandlerProxy
     {
-        public static TimeSpan MaximumLastMessageTime = TimeSpan.FromSeconds(2d);
-
         private NetworkStream networkStream;
         private WebSocketCommunicationHandler handler;
         private ComposableHandler websocketHandler;
@@ -108,6 +114,10 @@ namespace LamestWebserver
             {
                 isActive = false;
                 return;
+            }
+            catch (Exception e)
+            {
+                ServerHandler.LogMessage("A critical Error occured on Responding via Websocket. The connection might already have closed.\n" + e);
             }
         }
 
@@ -176,7 +186,11 @@ namespace LamestWebserver
 
             while (true)
             {
-                var token = new CancellationTokenSource(10000).Token;
+#if DEBUG
+                var token = new CancellationTokenSource(240000).Token;
+#else
+                var token = new CancellationTokenSource(15000).Token;
+#endif
                 responseNum++;
                 int innerResponseNum = responseNum;
 
@@ -184,7 +198,15 @@ namespace LamestWebserver
                 {
                     if (isActive && responseNum == innerResponseNum)
                     {
-                        networkStream.Close();
+                        try
+                        {
+                            networkStream.Close();
+                        }
+                        catch (Exception e)
+                        {
+                            ServerHandler.LogMessage("Exception in WebSocket token for timed connection-closing. The connection might already have closed.\n" + e);
+                            return;
+                        }
                         isActive = false;
                         networkStream = null;
                     }
@@ -222,6 +244,7 @@ namespace LamestWebserver
                 }
                 catch (IOException e)
                 {
+                    ServerHandler.LogMessage("Exception in WebSocket. The connection might already have closed.\n" + e);
                 }
             }
 
@@ -237,7 +260,15 @@ namespace LamestWebserver
             {
                 if (isActive)
                 {
-                    networkStream.Close();
+                    try
+                    {
+                        networkStream.Close();
+                    }
+                    catch (Exception e)
+                    {
+                        ServerHandler.LogMessage("Exception in WebSocket token for timed connection-closing in ReadAsync(). The connection might already have closed.\n" + e);
+                        return;
+                    }
                     isActive = false;
                     networkStream = null;
                 }
@@ -274,8 +305,9 @@ namespace LamestWebserver
             {
                 throw new InvalidOperationException("WebSocketHandlerProxy.ReadAsync does not support SocketManagementOvertakeFlagExceptions.", e);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                ServerHandler.LogMessage("Exception in WebSocket. The connection might already have closed.\n" + e);
             }
 
             return true;

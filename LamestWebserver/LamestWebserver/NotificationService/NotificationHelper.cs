@@ -6,11 +6,12 @@ namespace LamestWebserver.NotificationService
 {
     internal static class NotificationHelper
     {
-        internal static string NotificationCode(SessionData sessionData, string destinationURL, out string sendMsgMethodName, string NotificationHandlerID)
+        [Obsolete]
+        internal static string NotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID)
         {
             destinationURL = destinationURL.TrimStart('/', ' ');
 
-            sendMsgMethodName = "func_send_" + NotificationHandlerID;
+            string sendMsgMethodName = GetFunctionName(NotificationHandlerID);
 
             return "var conn = new WebSocket('ws://" + sessionData._localEndPoint.ToString() + "/" + destinationURL + "');" +
                     "function " + sendMsgMethodName + " (type, msg){conn.send(type + \"\\n\\n\" + msg)};" +
@@ -27,11 +28,11 @@ namespace LamestWebserver.NotificationService
                     "conn.onopen = function (event) { conn.send(\"" + NotificationType.KeepAlive + "\") };";
         }
 
-        internal static string JsonNotificationCode(SessionData sessionData, string destinationURL, out string sendMsgMethodName, string NotificationHandlerID)
+        internal static string JsonNotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID)
         {
             destinationURL = destinationURL.TrimStart('/', ' ');
 
-            sendMsgMethodName = "func_send_" + NotificationHandlerID;
+            string sendMsgMethodName = GetFunctionName(NotificationHandlerID);
 
             return "var conn = new WebSocket('ws://" + sessionData._localEndPoint.ToString() + "/" + destinationURL + "');" +
                     "function " + sendMsgMethodName + "_ (type, msg){" +
@@ -40,10 +41,10 @@ namespace LamestWebserver.NotificationService
 #endif
                     "conn.send(window.JSON.stringify({" + JsonNotificationPacket.NotificationType_string + ": type," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}));};" +
                     "function " + sendMsgMethodName + " (msg){" + sendMsgMethodName + "_(\"" + NotificationType.Message + "\", msg);};" +
-                    "function " + sendMsgMethodName + " (msg, key, value) { var x = {" + JsonNotificationPacket.NotificationType_string + ": " + NotificationType.Message + "," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}; " +
+                    "function " + sendMsgMethodName + " (msg, key, value) { var x = {" + JsonNotificationPacket.NotificationType_string + ": \"" + NotificationType.Message + "\"," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid + "\", msg: msg}; " +
                     "x[key] = value;" +
 #if DEBUG
-                    "console.log({mode: \">> (from Client)\", type: type, message: x});" + 
+                    "console.log({mode: \">> (from Client)\", type: \"" + NotificationType.Message + "\", message: x});" + 
 #endif
                     "conn.send(window.JSON.stringify(x));};" +
                     "conn.onmessage = function(event) { var rcv = window.JSON.parse(event.data); var answer = true; if(rcv." + JsonNotificationPacket.NoReply_string + ") answer = false; " +
@@ -56,12 +57,7 @@ namespace LamestWebserver.NotificationService
                     "conn.onopen = function (event) { " + sendMsgMethodName + "_(\"" + NotificationType.KeepAlive + "\") };";
         }
 
-        internal static string JsonNotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID)
-        {
-            string sendMsgMethodName = "";
-
-            return JsonNotificationCode(sessionData, destinationURL, out sendMsgMethodName, NotificationHandlerID);
-        }
+        internal static string GetFunctionName(string NotificationHandlerID) => "func_send_" + NotificationHandlerID;
     }
 
     internal class JsonNotificationPacket

@@ -169,6 +169,7 @@ namespace LamestWebserver
         {
             cleanMutex.WaitOne();
 
+            int threadCount = threads.Count;
             int i = 0;
 
             while (i < threads.Count)
@@ -192,32 +193,46 @@ namespace LamestWebserver
                 }
             }
 
+            int threadCountAfter = threads.Count;
+
             cleanMutex.ReleaseMutex();
+
+            ServerHandler.LogMessage("Cleaning up threads. Before: " + threadCount + ", After: " + threadCountAfter + ".");
         }
 
-        public void AddFunction(string hash, Master.getContents getc)
+        public void AddFunction(string URL, Master.getContents getc)
         {
-            pageResponses.Add(hash, getc);
+            pageResponses.Add(URL, getc);
+
+            ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi)");
         }
 
-        public void AddOneTimeFunction(string hash, Master.getContents getc)
+        public void AddOneTimeFunction(string URL, Master.getContents getc)
         {
-            oneTimePageResponses.Add(hash, getc);
+            oneTimePageResponses.Add(URL, getc);
+
+            ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi/OneTimeFunction)");
         }
 
-        public void RemoveFunction(string hash)
+        public void RemoveFunction(string URL)
         {
-            pageResponses.Remove(hash);
+            pageResponses.Remove(URL);
+
+            ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (WebserverApi)");
         }
 
         public void AddWebsocketHandler(WebSocketCommunicationHandler handler)
         {
             webSocketResponses.Add(handler.URL, handler);
+
+            ServerHandler.LogMessage("The URL '" + handler.URL + "' is now assigned to a Page. (Websocket)");
         }
 
         public void RemoveWebsocketHandler(string URL)
         {
             webSocketResponses.Remove(URL);
+
+            ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
         }
 
         private void HandleTcpListener()
@@ -240,7 +255,7 @@ namespace LamestWebserver
                     Thread t = new Thread(handleClient);
                     threads.Add(t);
                     t.Start((object)tcpClient);
-                    ServerHandler.addToStuff("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
+                    ServerHandler.LogMessage("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
                     if (threads.Count % 25 == 0)
                     {
@@ -280,7 +295,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.addToStuff("An error occured in the client handler:  " + e);
+                    ServerHandler.LogMessage("An error occured in the client handler:  " + e);
                     break;
                 }
 
@@ -317,6 +332,8 @@ namespace LamestWebserver
 
                             buffer = htp_.getPackage(enc);
                             nws.Write(buffer, 0, buffer.Length);
+
+                            ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested an empty URL. We sent Error 501.");
                         }
                         else
                         {
@@ -330,6 +347,19 @@ namespace LamestWebserver
                             Master.getContents currentRequest = pageResponses[htp.requestData];
                             WebSocketCommunicationHandler currentWebSocketHandler;
 
+                            if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.requestData, out currentWebSocketHandler))
+                            {
+                                var handler = (Fleck.Handlers.ComposableHandler)Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose, currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
+                                msg = handler.CreateHandshake();
+                                nws.Write(msg, 0, msg.Length);
+
+                                ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (WebSocket Upgrade Request)");
+
+                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler);
+
+                                return;
+                            }
+                            
                             if (currentRequest == null)
                             {
                                 currentRequest = oneTimePageResponses[htp.requestData];
@@ -338,19 +368,11 @@ namespace LamestWebserver
                                     oneTimePageResponses.Remove(htp.requestData);
                             }
 
-                            if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.requestData, out currentWebSocketHandler))
-                            {
-                                var handler = (Fleck.Handlers.ComposableHandler)Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose, currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
-                                msg = handler.CreateHandshake();
-                                nws.Write(msg, 0, msg.Length);
-
-                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler);
-
-                                return;
-                            }
-                            else if (currentRequest != null)
+                            if (currentRequest != null)
                             {
                                 HTTP_Packet htp_ = new HTTP_Packet();
+
+                                Exception error = null;
 
                                 try
                                 {
@@ -368,14 +390,22 @@ namespace LamestWebserver
                                         + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
                                         + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                         + msg_.Replace("\r\n", "<br>") + "</div></p>"));
+
+                                    error = e;
                                 }
 
                                 buffer = htp_.getPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
+                                
+                                if(error == null)
+                                    ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (C# WebserverApi)");
+                                else
+                                    ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
                             }
                             else if (htp.requestData.Length > 3 && htp.requestData.Substring(htp.requestData.Length - 4).ToLower() == ".hcs" && File.Exists((folder != "/" ? folder : "") + "/" + htp.requestData))
                             {
                                 string result = "";
+                                Exception error = null;
 
                                 try
                                 {
@@ -387,6 +417,8 @@ namespace LamestWebserver
                                         + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
                                         + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                         + msg_.Replace("\r\n", "<br>") + "</div></p>");
+
+                                    error = e;
                                 }
 
                                 HTTP_Packet htp_ = new HTTP_Packet() { binaryData = enc.GetBytes(result) };
@@ -395,13 +427,21 @@ namespace LamestWebserver
 
                                 buffer = null;
                                 result = null;
+
+                                if (error == null)
+                                    ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (C# Script)");
+                                else
+                                    ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (C# Script)\nThe URL crashed with the following Exception:\n" + error);
                             }
                             else
                             {
+
                                 buffer = GetFile(htp.requestData, htp, enc, msg_).getPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
 
                                 buffer = null;
+
+                                ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'.");
                             }
                         }
                     }
@@ -411,7 +451,7 @@ namespace LamestWebserver
                     }
                     catch (Exception e)
                     {
-                        ServerHandler.addToStuff("An error occured in the client handler: " + e);
+                        ServerHandler.LogMessage("An error occured in the client handler: " + e);
                     }
                 }
                 catch (ThreadAbortException)
@@ -420,7 +460,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.addToStuff("An error occured in the client handler: " + e);
+                    ServerHandler.LogMessage("An error occured in the client handler: " + e);
                 }
             }
         }
