@@ -39,7 +39,7 @@ namespace LamestWebserver.NotificationService
 #if DEBUG
                    "console.log({mode: \">> (from Client)\", type: type, message: msg});" +
 #else
-                   (trace ? "if(msg != \"" + NotificationType.KeepAlive + "\" || msg != \"" + NotificationType.Acknowledge + "\") {console.log({mode: \">> (from Client)\", message: msg});}" : "") + 
+                   (trace ? "if(msg != \"\" && msg != \"" + NotificationType.KeepAlive + "\" && msg != \"" + NotificationType.Acknowledge + "\") {console.log({mode: \">> (from Client)\", message: msg});}" : "") + 
 #endif
                    "conn.send(window.JSON.stringify({" + JsonNotificationPacket.NotificationType_string + ": type," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid +
                    "\", msg: msg}));};" +
