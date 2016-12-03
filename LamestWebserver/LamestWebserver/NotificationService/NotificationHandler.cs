@@ -196,7 +196,7 @@ namespace LamestWebserver.NotificationService
 
         private bool running = true;
         public readonly bool NotifyForKeepalives;
-        private readonly bool TraceMessagesClient;
+        internal readonly bool TraceMessagesClient;
 
         public event Action<NotificationResponse> OnNotification;
 
