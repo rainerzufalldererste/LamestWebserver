@@ -156,6 +156,7 @@ namespace LamestWebserver
                 writeLock.writePending--;
 
                 writeLock.writePendingSemaphore.Release();
+                writeLock.readMutex.ReleaseMutex();
             }
         }
 

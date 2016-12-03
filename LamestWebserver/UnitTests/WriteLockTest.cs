@@ -50,6 +50,7 @@ namespace UnitTests
 
         UsableWriteLock wla = new UsableWriteLock(), wlb = new UsableWriteLock(), wlc = new UsableWriteLock();
         private int ia = 0, ib = 0, ic = 0;
+        private bool ba = false, bb = false, bc = false;
         UsableWriteLock console = new UsableWriteLock();
 
         private void Read(bool a, bool b, bool c)
@@ -58,30 +59,54 @@ namespace UnitTests
             {
                 using (wla.LockRead())
                 {
+                    Assert.IsFalse(ba);
+
+                    string s = " | " + (ba ? "1" : "0");
+
                     using (console.LockWrite())
                     {
-                        Console.WriteLine("a is " + ia);
+                        Console.WriteLine("a is " + ia + s);
                     }
+
+                    Assert.IsFalse(ba);
                 }
             }
             else if (b)
             {
                 using (UsableWriteLock.LockRead(wla, wlb))
                 {
+                    Assert.IsFalse(ba);
+                    Assert.IsFalse(bb);
+
+                    string s = " | " + (ba ? "1" : "0") + " | " + (bb ? "1" : "0");
+
                     using (console.LockWrite())
                     {
-                        Console.WriteLine("a is " + ia + ", b is " + ib);
+                        Console.WriteLine("a is " + ia + ", b is " + ib + s);
                     }
+
+                    Assert.IsFalse(ba);
+                    Assert.IsFalse(bb);
                 }
             }
             else if (c)
             {
                 using (UsableWriteLock.LockRead(wla, wlb, wlc))
                 {
+                    Assert.IsFalse(ba);
+                    Assert.IsFalse(bb);
+                    Assert.IsFalse(bc);
+
+                    string s = " | " + (ba ? "1":"0") + " | " + (bb ? "1" : "0") + " | " + (bc ? "1" : "0");
+
                     using (console.LockWrite())
                     {
-                        Console.WriteLine("a is " + ia + ", b is " + ib + ", c is " + ic);
+                        Console.WriteLine("a is " + ia + ", b is " + ib + ", c is " + ic + s);
                     }
+
+                    Assert.IsFalse(ba);
+                    Assert.IsFalse(bb);
+                    Assert.IsFalse(bc);
                 }
             }
         }
@@ -92,39 +117,57 @@ namespace UnitTests
             {
                 using (wla.LockWrite())
                 {
+                    ba = true;
+
+                    ia++;
+
                     using (console.LockWrite())
                     {
-                        ia++;
-
                         Console.WriteLine("a => " + ia);
                     }
+
+                    ba = false;
                 }
             }
             else if (b)
             {
                 using (UsableWriteLock.LockWrite(wla, wlb))
                 {
+                    ba = true;
+                    bb = true;
+
+                    ia++;
+                    ib++;
+
                     using (console.LockWrite())
                     {
-                        ia++;
-                        ib++;
-
                         Console.WriteLine("a => " + ia + ", b => " + ib);
                     }
+
+                    ba = false;
+                    bb = false;
                 }
             }
             else if (c)
             {
-                using (UsableWriteLock.LockRead(wla, wlb, wlc))
+                using (UsableWriteLock.LockWrite(wla, wlb, wlc))
                 {
+                    ba = true;
+                    bb = true;
+                    bc = true;
+
+                    ia++;
+                    ib++;
+                    ic++;
+
                     using (console.LockWrite())
                     {
-                        ia++;
-                        ib++;
-                        ic++;
-
                         Console.WriteLine("a => " + ia + ", b => " + ib + ", c => " + ic);
                     }
+
+                    ba = false;
+                    bb = false;
+                    bc = false;
                 }
             }
         }
