@@ -1658,7 +1658,7 @@ namespace LamestWebserver
         /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
-            return "<script type\"text/javascript\">" + (dynamic ? scriptFunction(sessionData, arguments) : script) + "</script>";
+            return "<script type=\"text/javascript\">" + (dynamic ? scriptFunction(sessionData, arguments) : script) + "</script>";
         }
     }
 
@@ -1688,7 +1688,7 @@ namespace LamestWebserver
         /// <returns>the element as string</returns>
         public override string getContent(SessionData sessionData)
         {
-            return "<script type\"text/javascript\" src=\"" + URL + "\"></script>";
+            return "<script type=\"text/javascript\" src=\"" + URL + "\"></script>";
         }
     }
 

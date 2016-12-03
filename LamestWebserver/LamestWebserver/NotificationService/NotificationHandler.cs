@@ -196,10 +196,15 @@ namespace LamestWebserver.NotificationService
 
         private bool running = true;
         public readonly bool NotifyForKeepalives;
+        private readonly bool TraceMessagesClient;
 
-        public NotificationHandler(string URL, bool notifyForKeepalives = false, TimeSpan? maximumLastMessageTime = null) : base(URL, maximumLastMessageTime)
+        public event Action<NotificationResponse> OnNotification;
+
+        public NotificationHandler(string URL, bool notifyForKeepalives = false, bool traceMessagesClient = false, TimeSpan? maximumLastMessageTime = null) : base(URL, maximumLastMessageTime)
         {
             NotifyForKeepalives = notifyForKeepalives;
+            TraceMessagesClient = traceMessagesClient;
+
             OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy, URL));
             OnConnect += proxy => connect(proxy);
             OnDisconnect += proxy => disconnect(proxy);
@@ -209,10 +214,8 @@ namespace LamestWebserver.NotificationService
             SendingFunction = new JSFunction(methodName);
         }
 
-        public event Action<NotificationResponse> OnNotification;
-
         public JSElement JSElement => new JSPlainText("<script type='text/javascript'>" +
-                                NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL, ID) + "</script>");
+                                NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL, ID, TraceMessagesClient) + "</script>");
 
         private JSElement _jselement = null;
 

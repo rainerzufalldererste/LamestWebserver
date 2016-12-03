@@ -39,10 +39,10 @@ namespace LamestWebserver
         internal Action<byte[]> _OnPing { get; set; }
         internal Action<byte[]> _OnPong { get; set; }
 
-        public event Action<string, WebSocketHandlerProxy> OnMessage = delegate { };
-        public event Action OnResponded = delegate { };
-        public event Action<WebSocketHandlerProxy> OnConnect = delegate { };
-        public event Action<WebSocketHandlerProxy> OnDisconnect = delegate { };
+        protected event Action<string, WebSocketHandlerProxy> OnMessage = delegate { };
+        protected event Action OnResponded = delegate { };
+        protected event Action<WebSocketHandlerProxy> OnConnect = delegate { };
+        protected event Action<WebSocketHandlerProxy> OnDisconnect = delegate { };
 
         protected void register()
         {
