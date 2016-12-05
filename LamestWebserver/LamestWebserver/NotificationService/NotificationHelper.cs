@@ -39,7 +39,7 @@ namespace LamestWebserver.NotificationService
 #if DEBUG
                    "console.log({mode: \">> (from Client)\", type: type, message: msg});" +
 #else
-                   (trace ? "if(msg != \"\" && msg != \"" + NotificationType.KeepAlive + "\" && msg != \"" + NotificationType.Acknowledge + "\") {console.log({mode: \">> (from Client)\", message: msg});}" : "") + 
+                   (trace ? "if(msg && msg != \"\" && msg != \"" + NotificationType.KeepAlive + "\" && msg != \"" + NotificationType.Acknowledge + "\") {console.log({mode: \">> (from Client)\", message: msg});}" : "") + 
 #endif
                    "conn.send(window.JSON.stringify({" + JsonNotificationPacket.NotificationType_string + ": type," + JsonNotificationPacket.SSID_string + ": \"" + sessionData.ssid +
                    "\", msg: msg}));};" +
@@ -50,7 +50,7 @@ namespace LamestWebserver.NotificationService
 #if DEBUG
                    "console.log({mode: \">> (from Client)\", type: \"" + NotificationType.Message + "\", message: x});" +
 #else
-                   (trace ? "if(msg != \"" + NotificationType.KeepAlive + "\" || msg != \"" + NotificationType.Acknowledge + "\") {console.log({mode: \">> (from Client)\", message: x});}" : "") + 
+                   (trace ? "if(msg && msg != \"" + NotificationType.KeepAlive + "\" || msg != \"" + NotificationType.Acknowledge + "\") {console.log({mode: \">> (from Client)\", message: x});}" : "") + 
 #endif
                    "conn.send(window.JSON.stringify(x));};" +
                    "conn.onmessage = function(event) { var rcv = window.JSON.parse(event.data); var answer = true; if(rcv." + JsonNotificationPacket.NoReply_string +

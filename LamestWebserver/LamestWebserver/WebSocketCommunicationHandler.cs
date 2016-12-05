@@ -181,58 +181,44 @@ namespace LamestWebserver
             handler.callOnConnect(this);
 
             byte[] currentBuffer = new byte[4096];
-            byte[] trimmedBuffer;
-            int responseNum = 0;
 
             while (true)
             {
-#if DEBUG
-                var token = new CancellationTokenSource(240000).Token;
-#else
-                var token = new CancellationTokenSource(15000).Token;
-#endif
-                responseNum++;
-                int innerResponseNum = responseNum;
-
-                token.Register(() =>
-                {
-                    if (isActive && responseNum == innerResponseNum)
-                    {
-                        try
-                        {
-                            networkStream.Close();
-                        }
-                        catch (Exception e)
-                        {
-                            ServerHandler.LogMessage("Exception in WebSocket token for timed connection-closing. The connection might already have closed.\n" + e);
-                            return;
-                        }
-                        isActive = false;
-                        networkStream = null;
-                    }
-                });
-
                 try
                 {
                     if (networkStream == null)
-                        break;
+                        return;
 
-                    var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096, token);
-                    byteCount.Wait();
+                    var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096);
 
-                    if (byteCount.IsCanceled || networkStream == null)
-                        break;
+                    if(
+#if DEBUG
+                    byteCount.Wait(24000)
+#else
+                    byteCount.Wait(15000)
+#endif
+                       )
+                    {
+                        if (byteCount.IsCanceled || networkStream == null)
+                            break;
 
-                    if (byteCount.Result == 0)
-                        break;
+                        if (byteCount.Result == 0)
+                            break;
 
-                    lastMessageReceived = DateTime.UtcNow;
+                        lastMessageReceived = DateTime.UtcNow;
 
-                    trimmedBuffer = new byte[byteCount.Result];
+                        var trimmedBuffer = new byte[byteCount.Result];
 
-                    Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
+                        Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
 
-                    websocketHandler.Receive(trimmedBuffer);
+                        websocketHandler.Receive(trimmedBuffer);
+                    }
+                    else
+                    {
+                        isActive = false;
+                        networkStream = null;
+                        return;
+                    }
                 }
                 catch (ThreadAbortException)
                 {
@@ -254,47 +240,43 @@ namespace LamestWebserver
 
         public bool ReadAsync()
         {
-            byte[] currentBuffer = new byte[4096], trimmedBuffer;
-            var token = new CancellationTokenSource(10000).Token;
-            token.Register(() =>
-            {
-                if (isActive)
-                {
-                    try
-                    {
-                        networkStream.Close();
-                    }
-                    catch (Exception e)
-                    {
-                        ServerHandler.LogMessage("Exception in WebSocket token for timed connection-closing in ReadAsync(). The connection might already have closed.\n" + e);
-                        return;
-                    }
-                    isActive = false;
-                    networkStream = null;
-                }
-            });
+            byte[] currentBuffer = new byte[4096];
 
             try
             {
                 if (networkStream == null)
                     return false;
 
-                var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096, token);
-                byteCount.Wait();
+                var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096);
 
-                if (byteCount.IsCanceled || networkStream == null)
+                if (
+#if DEBUG
+                    byteCount.Wait(24000)
+#else
+                    byteCount.Wait(15000)
+#endif
+                       )
+                {
+                    if (byteCount.IsCanceled || networkStream == null)
+                        return false;
+
+                    if (byteCount.Result == 0)
+                        return false;
+
+                    lastMessageReceived = DateTime.UtcNow;
+
+                    var trimmedBuffer = new byte[byteCount.Result];
+
+                    Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
+
+                    websocketHandler.Receive(trimmedBuffer);
+                }
+                else
+                {
+                    isActive = false;
+                    networkStream = null;
                     return false;
-
-                if (byteCount.Result == 0)
-                    return false;
-
-                lastMessageReceived = DateTime.UtcNow;
-
-                trimmedBuffer = new byte[byteCount.Result];
-
-                Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
-
-                websocketHandler.Receive(trimmedBuffer);
+                }
             }
             catch (ThreadAbortException e)
             {
