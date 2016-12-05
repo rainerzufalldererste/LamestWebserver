@@ -86,6 +86,8 @@ namespace LamestWebserver
         public DateTime lastMessageReceived = DateTime.UtcNow;
         public DateTime lastMessageSent = DateTime.UtcNow;
 
+        private int exceptedTries = 0;
+
         [ThreadStatic] internal static WebSocketHandlerProxy currentProxy;
 
         internal WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler)
@@ -109,15 +111,19 @@ namespace LamestWebserver
                 await networkStream.WriteAsync(buffer, 0, buffer.Length);
                 lastMessageSent = DateTime.UtcNow;
                 handler.callOnResponded();
+                exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
                 isActive = false;
                 return;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                ServerHandler.LogMessage("A critical Error occured on Responding via Websocket. The connection might already have closed.\n" + e);
+                exceptedTries++;
+
+                if (exceptedTries > 2)
+                    isActive = false;
             }
         }
 
@@ -131,11 +137,19 @@ namespace LamestWebserver
                 byte[] buffer = websocketHandler.PongFrame.Invoke(bytes);
                 networkStream.WriteAsync(buffer, 0, buffer.Length);
                 lastMessageSent = DateTime.UtcNow;
+                exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
                 isActive = false;
                 return;
+            }
+            catch (Exception)
+            {
+                exceptedTries++;
+
+                if (exceptedTries > 2)
+                    isActive = false;
             }
         }
 
@@ -149,11 +163,19 @@ namespace LamestWebserver
                 byte[] buffer = websocketHandler.PingFrame.Invoke(bytes);
                 networkStream.WriteAsync(buffer, 0, buffer.Length);
                 lastMessageSent = DateTime.UtcNow;
+                exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
                 isActive = false;
                 return;
+            }
+            catch (Exception)
+            {
+                exceptedTries++;
+
+                if (exceptedTries > 2)
+                    isActive = false;
             }
         }
 
@@ -168,11 +190,19 @@ namespace LamestWebserver
                 networkStream.WriteAsync(buffer, 0, buffer.Length);
                 lastMessageSent = DateTime.UtcNow;
                 handler.callOnResponded();
+                exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
                 isActive = false;
                 return;
+            }
+            catch (Exception)
+            {
+                exceptedTries++;
+
+                if (exceptedTries > 2)
+                    isActive = false;
             }
         }
 
@@ -212,6 +242,8 @@ namespace LamestWebserver
                         Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
 
                         websocketHandler.Receive(trimmedBuffer);
+
+                        exceptedTries = 0;
                     }
                     else
                     {
@@ -251,7 +283,7 @@ namespace LamestWebserver
 
                 if (
 #if DEBUG
-                    byteCount.Wait(24000)
+                    byteCount.Wait(240000)
 #else
                     byteCount.Wait(15000)
 #endif
@@ -270,6 +302,8 @@ namespace LamestWebserver
                     Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
 
                     websocketHandler.Receive(trimmedBuffer);
+
+                    exceptedTries = 0;
                 }
                 else
                 {
