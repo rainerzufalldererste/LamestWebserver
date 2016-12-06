@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace LamestWebserver
@@ -55,13 +56,7 @@ namespace LamestWebserver
 
                 if (s == "exit")
                 {
-                    Console.WriteLine("You don't want to exit the server.");
-                    y++;
-
-                    if (y > 2)
-                    {
-                        break;
-                    }
+                    RunningServers.ForEach(srv => srv.StopServer());
                 }
                 else
                 {
@@ -400,7 +395,29 @@ namespace LamestWebserver
                             continue;
                         }
 
-                        this.caller = stackTrace.ToString().Split(new[] { "\r\n"}, StringSplitOptions.None)[i];
+                        var trace_ = stackTrace.ToString().Split(new[] { "\r\n" }, StringSplitOptions.None);
+
+                        string trace = null;
+                        bool started = false;
+
+                        for (int j = 1; j <= trace_.Length; j++)
+                        {
+                            if (!trace_[j].Contains("LamestWebserver"))
+                            {
+                                if (string.IsNullOrEmpty(trace))
+                                    trace = trace_[j];
+                                else
+                                    trace += "\n" + trace_[j];
+
+                                started = true;
+                            }
+                            else if (started)
+                            {
+                                break;
+                            }
+                        }
+
+                        this.caller = trace;
 
                         break;
                     }

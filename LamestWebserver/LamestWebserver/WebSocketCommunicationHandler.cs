@@ -266,8 +266,8 @@ namespace LamestWebserver
                 }
             }
 
-            ConnectionClosed();
             isActive = false;
+            ConnectionClosed();
         }
 
         public bool ReadAsync()

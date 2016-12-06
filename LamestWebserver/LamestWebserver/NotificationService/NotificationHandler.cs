@@ -120,6 +120,11 @@ namespace LamestWebserver.NotificationService
         {
             return new InvalidNotification();
         }
+
+        internal static Notification Invalid(string text)
+        {
+            return new InvalidNotificationInfo(text);
+        }
     }
 
     public class KeepAliveNotification : Notification
@@ -143,6 +148,20 @@ namespace LamestWebserver.NotificationService
         public override string GetNotification()
         {
             return base.ToString();
+        }
+    }
+
+    public class InvalidNotificationInfo : Notification
+    {
+        private readonly string _text;
+        public InvalidNotificationInfo(string text) : base(NotificationType.Invalid)
+        {
+            _text = text;
+        }
+
+        public override string GetNotification()
+        {
+            return base.ToString(new KeyValuePair<string, string>("info", _text));
         }
     }
 
@@ -263,8 +282,25 @@ namespace LamestWebserver.NotificationService
 
         public virtual void HandleResponse(NotificationResponse response)
         {
-            if (response.IsMessage || (response.NotificationType == NotificationType.KeepAlive && NotifyForKeepalives))
-                OnNotification(response);
+            try
+            {
+                if (response.IsMessage || (response.NotificationType == NotificationType.KeepAlive && NotifyForKeepalives))
+                    OnNotification(response);
+            }
+            catch (Exception e)
+            {
+                if (TraceMessagesClient)
+                {
+                    try
+                    {
+                        response.Reply(Notification.Invalid());
+                    }
+                    catch (Exception)
+                    {
+                        return;
+                    }
+                }
+            }
         }
 
         private void connect(WebSocketHandlerProxy proxy)
