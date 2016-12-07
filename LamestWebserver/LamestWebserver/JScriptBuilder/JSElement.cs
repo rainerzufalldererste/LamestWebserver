@@ -344,7 +344,7 @@ namespace LamestWebserver.JScriptBuilder
                 default:
                     return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
                         + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })).Invoke()
-                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSPMethodCall.EncodeURIComponent(getByID(ID).Value).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value,true);xmlhttp.send();")).DefineAndCall();
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSPMethodCall.EncodeURIComponent(getByID(ID).Value).getCode(SessionData.currentSessionData, CallingContext.Inner) + ",true);xmlhttp.send();")).DefineAndCall();
             }
         }
     }
