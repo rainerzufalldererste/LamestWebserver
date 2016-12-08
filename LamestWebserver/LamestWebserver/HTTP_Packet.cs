@@ -378,7 +378,7 @@ namespace LamestWebserver
                         // Chris: search for it
                         for (int j = i + 1; j < linput.Length; j++)
                         {
-                            if(linput[j].Substring(0, 16) == "Content-Length: ")
+                            if(linput[j].Length >= 16 && linput[j].Substring(0, 16) == "Content-Length: ")
                             {
                                 if(int.TryParse(linput[j].Substring(16), out h.contentLength))
                                     contlfound = true;

@@ -118,12 +118,32 @@ namespace LamestWebserver
                 isActive = false;
                 return;
             }
-            catch (Exception)
+            catch (ThreadAbortException e)
             {
+                throw e;
+            }
+            catch (IOException)
+            {
+                isActive = false;
+
+                try
+                {
+                    networkStream.Dispose();
+                }
+                finally
+                {
+                    networkStream = null;
+                }
+
+                /*
                 exceptedTries++;
 
                 if (exceptedTries > 2)
-                    isActive = false;
+                    isActive = false;*/
+            }
+            catch (Exception e)
+            {
+                ServerHandler.LogMessage("Critical Exception in Websocket Responding:\n" + e);
             }
         }
 
@@ -144,12 +164,32 @@ namespace LamestWebserver
                 isActive = false;
                 return;
             }
-            catch (Exception)
+            catch (ThreadAbortException e)
             {
+                throw e;
+            }
+            catch (IOException)
+            {
+                isActive = false;
+
+                try
+                {
+                    networkStream.Dispose();
+                }
+                finally
+                {
+                    networkStream = null;
+                }
+
+                /*
                 exceptedTries++;
 
                 if (exceptedTries > 2)
-                    isActive = false;
+                    isActive = false;*/
+            }
+            catch (Exception e)
+            {
+                ServerHandler.LogMessage("Critical Exception in Websocket Responding:\n" + e);
             }
         }
 
@@ -170,12 +210,32 @@ namespace LamestWebserver
                 isActive = false;
                 return;
             }
-            catch (Exception)
+            catch (ThreadAbortException e)
             {
+                throw e;
+            }
+            catch (IOException)
+            {
+                isActive = false;
+
+                try
+                {
+                    networkStream.Dispose();
+                }
+                finally
+                {
+                    networkStream = null;
+                }
+
+                /*
                 exceptedTries++;
 
                 if (exceptedTries > 2)
-                    isActive = false;
+                    isActive = false;*/
+            }
+            catch (Exception e)
+            {
+                ServerHandler.LogMessage("Critical Exception in Websocket Responding:\n" + e);
             }
         }
 
@@ -197,12 +257,32 @@ namespace LamestWebserver
                 isActive = false;
                 return;
             }
-            catch (Exception)
+            catch (ThreadAbortException e)
             {
+                throw e;
+            }
+            catch (IOException)
+            {
+                isActive = false;
+
+                try
+                {
+                    networkStream.Dispose();
+                }
+                finally
+                {
+                    networkStream = null;
+                }
+
+                /*
                 exceptedTries++;
 
                 if (exceptedTries > 2)
-                    isActive = false;
+                    isActive = false;*/
+            }
+            catch (Exception e)
+            {
+                ServerHandler.LogMessage("Critical Exception in Websocket Responding:\n" + e);
             }
         }
 
@@ -247,9 +327,7 @@ namespace LamestWebserver
                     }
                     else
                     {
-                        isActive = false;
-                        networkStream = null;
-                        return;
+                        break;
                     }
                 }
                 catch (ThreadAbortException)
@@ -263,6 +341,7 @@ namespace LamestWebserver
                 catch (IOException e)
                 {
                     ServerHandler.LogMessage("Exception in WebSocket. The connection might already have closed.\n" + e);
+                    break;
                 }
             }
 
@@ -324,6 +403,9 @@ namespace LamestWebserver
             catch (Exception e)
             {
                 ServerHandler.LogMessage("Exception in WebSocket. The connection might already have closed.\n" + e);
+                isActive = false;
+                networkStream = null;
+                return false;
             }
 
             return true;
