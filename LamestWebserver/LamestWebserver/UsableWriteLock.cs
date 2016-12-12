@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
@@ -15,6 +16,7 @@ namespace LamestWebserver
         private readonly string ID = SessionContainer.generateHash();
         private uint writePending = 0;
         private SemaphoreSlim writePendingSemaphore = new SemaphoreSlim(1, 1);
+        private List<Thread> writePendingThreads = new List<Thread>();
 
         /// <summary>
         /// Locks the WriteLock for reading
@@ -58,7 +60,12 @@ namespace LamestWebserver
         {
             readMutex.WaitOne();
 
-            writePending++;;
+            if(this.writePendingThreads.Contains(Thread.CurrentThread))
+                throw new InvalidOperationException("The current WriteLock is already blocked by the current Thread.");
+
+            this.writePendingThreads.Add(Thread.CurrentThread);
+
+            writePending++;
 
             readMutex.ReleaseMutex();
 
@@ -154,6 +161,7 @@ namespace LamestWebserver
 
                 writeLock.readMutex.WaitOne();
                 writeLock.writePending--;
+                writeLock.writePendingThreads.Remove(Thread.CurrentThread);
 
                 writeLock.writePendingSemaphore.Release();
                 writeLock.readMutex.ReleaseMutex();
