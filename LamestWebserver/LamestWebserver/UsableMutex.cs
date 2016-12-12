@@ -22,8 +22,6 @@ namespace LamestWebserver
     {
         private Mutex innerMutex;
         private readonly string ID = SessionContainer.generateHash();
-        private List<Thread> threads;
-        private Mutex threadIDMutex = new Mutex();
 
         public UsableMutex()
         {
@@ -77,10 +75,7 @@ namespace LamestWebserver
 
         public void ReleaseMutex()
         {
-            threadIDMutex.WaitOne();
-            threads.Remove(Thread.CurrentThread);
             innerMutex.ReleaseMutex();
-            threadIDMutex.ReleaseMutex();
         }
 
         /// <summary>
@@ -89,15 +84,6 @@ namespace LamestWebserver
         /// <returns></returns>
         public UsableMutexLocker Lock()
         {
-            threadIDMutex.WaitOne();
-
-            if (threads.Contains(Thread.CurrentThread))
-                throw new InvalidOperationException("The current Mutex is already blocked by the current thread");
-
-            threads.Add(Thread.CurrentThread);
-
-            threadIDMutex.ReleaseMutex();
-            
             return new UsableMutexLocker(innerMutex);
         }
 

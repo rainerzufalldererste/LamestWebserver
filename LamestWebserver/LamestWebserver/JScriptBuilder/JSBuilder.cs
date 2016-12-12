@@ -85,7 +85,10 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>the encoded string</returns>
         public static string JSEncode(this string input)
         {
-            return HttpUtility.HtmlEncode(input).Replace("&lt;", "<").Replace("&gt;", ">");
+            if((from char c in input where c > 127 select true).Any())
+                return HttpUtility.HtmlEncode(input).Replace("&lt;", "<").Replace("&gt;", ">");
+
+            return input.Replace("&", "&amp;").Replace("\"", "&quot;");
         }
 
         /// <summary>
@@ -602,7 +605,7 @@ namespace LamestWebserver.JScriptBuilder
                     throw new InvalidOperationException("The operator '" + _operatorType + "' is not handled in getCode()");
             }
 
-            return ret + _b.getCode(sessionData, CallingContext.Inner).EvalBase64() + (context == CallingContext.Default ? ";" : " ");
+            return ret + (_b is JSStringValue ?_b.getCode(sessionData, CallingContext.Inner).EvalBase64() : _b.getCode(sessionData, CallingContext.Inner)) + (context == CallingContext.Default ? ";" : " ");
         }
 
         /// <summary>
@@ -698,6 +701,37 @@ namespace LamestWebserver.JScriptBuilder
         public static implicit operator JSStringValue(string value)
         {
             return new JSStringValue(value);
+        }
+    }
+
+    /// <summary>
+    /// Represents an already masked string value. A JSUnmaskedStringValue will not be encoded when processing.
+    /// </summary>
+    public class JSUnmaskedStringValue : JSStringValue
+    {
+
+        /// <summary>
+        /// Constructs a new JSUnmaskedStringValue.
+        /// </summary>
+        /// <param name="value"></param>
+        public JSUnmaskedStringValue(string value) : base(value)
+        {
+        }
+
+        /// <inheritdoc />
+        public override string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            return "\"" + _content.Replace("&quot;", "&amp;quot;").Replace("\"", "&quot;") + "\"" + (context == CallingContext.Default ? ";" : " ");
+        }
+
+        /// <summary>
+        /// Casts a string to a JSUnmaskedStringValue
+        /// </summary>
+        /// <param name="value">the string being casted</param>
+        /// <returns>the string as JSUnmaskedStringValue</returns>
+        public static implicit operator JSUnmaskedStringValue(string value)
+        {
+            return new JSUnmaskedStringValue(value);
         }
     }
 

@@ -10,13 +10,8 @@ namespace LamestWebserver
     /// </summary>
     public class UsableWriteLock
     {
-        private uint readCounter = 0;
-        private Mutex readMutex = new Mutex();
-        private SemaphoreSlim writeSemaphore = new SemaphoreSlim(1, 1);
+        private ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly string ID = SessionContainer.generateHash();
-        private uint writePending = 0;
-        private SemaphoreSlim writePendingSemaphore = new SemaphoreSlim(1, 1);
-        private List<Thread> writePendingThreads = new List<Thread>();
 
         /// <summary>
         /// Locks the WriteLock for reading
@@ -24,31 +19,7 @@ namespace LamestWebserver
         /// <returns>An IDisposable Object to be used in a using statement</returns>
         public UsableWriteLockDisposable_read LockRead()
         {
-            readMutex.WaitOne();
-
-            if (writePending > 0)
-            {
-                readMutex.ReleaseMutex();
-
-                writePendingSemaphore.Wait();
-                writePendingSemaphore.Release();
-
-                readMutex.WaitOne();
-            }
-
-            if(readCounter == 0)
-            {
-                readMutex.ReleaseMutex();
-                
-                writeSemaphore.Wait();
-
-                readMutex.WaitOne();
-            }
-
-            readCounter++;
-
-            readMutex.ReleaseMutex();
-
+            rwLock.EnterReadLock();
             return new UsableWriteLockDisposable_read(this);
         }
 
@@ -58,21 +29,7 @@ namespace LamestWebserver
         /// <returns>An IDisposable Object to be used in a using statement</returns>
         public UsableWriteLockDisposable_write LockWrite()
         {
-            readMutex.WaitOne();
-
-            if(this.writePendingThreads.Contains(Thread.CurrentThread))
-                throw new InvalidOperationException("The current WriteLock is already blocked by the current Thread.");
-
-            this.writePendingThreads.Add(Thread.CurrentThread);
-
-            writePending++;
-
-            readMutex.ReleaseMutex();
-
-            writePendingSemaphore.Wait();
-
-            writeSemaphore.Wait();
-
+            rwLock.EnterWriteLock();
             return new UsableWriteLockDisposable_write(this);
         }
 
@@ -157,14 +114,7 @@ namespace LamestWebserver
             /// </summary>
             public void Dispose()
             {
-                writeLock.writeSemaphore.Release();
-
-                writeLock.readMutex.WaitOne();
-                writeLock.writePending--;
-                writeLock.writePendingThreads.Remove(Thread.CurrentThread);
-
-                writeLock.writePendingSemaphore.Release();
-                writeLock.readMutex.ReleaseMutex();
+                writeLock.rwLock.ExitWriteLock();
             }
         }
 
@@ -185,15 +135,7 @@ namespace LamestWebserver
             /// </summary>
             public void Dispose()
             {
-                _writeLock.readMutex.WaitOne();
-                _writeLock.readCounter--;
-
-                if (_writeLock.readCounter == 0)
-                {
-                    _writeLock.writeSemaphore.Release();
-                }
-
-                _writeLock.readMutex.ReleaseMutex();
+                this._writeLock.rwLock.ExitReadLock();
             }
         }
     }

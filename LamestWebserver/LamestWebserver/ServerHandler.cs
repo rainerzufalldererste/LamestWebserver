@@ -46,7 +46,7 @@ namespace LamestWebserver
                 }
             }
 
-            Console.WriteLine("Type Help to get help. Don't type exit.\n");
+            Console.WriteLine("Type Help to get help. Type exit to quit.\n");
 
             int y = 0;
 
@@ -381,9 +381,9 @@ namespace LamestWebserver
             internal string msg;
             internal string caller;
 
-            internal Output(string msg, StackTrace stackTrace)
+            internal Output(string msg, StackTrace stackTrace, string endpoint)
             {
-                this.msg = msg;
+                this.msg = $"[{DateTime.Now}] @{endpoint ?? "<?>"} " + msg;
 
                 if (stackTrace != null && stackTrace.GetFrame(4).GetMethod().DeclaringType.Namespace.Contains("LamestWebserver"))
                     for (int i = 4; i < stackTrace.FrameCount; i++)
@@ -439,6 +439,7 @@ namespace LamestWebserver
         public static void LogMessage(string message)
         {
             StackTrace stackTrace = null;
+            string endpoint = WebServer.CurrentClientRemoteEndpoint;
 
             if (explicitLogging)
                 stackTrace = new StackTrace();
@@ -447,7 +448,7 @@ namespace LamestWebserver
             {
                 lock (output)
                 {
-                    output.Add(new Output(message, stackTrace));
+                    output.Add(new Output(message, stackTrace, endpoint));
 
                     if (output.Count > autocls)
                     {

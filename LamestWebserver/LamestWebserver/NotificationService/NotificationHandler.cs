@@ -125,6 +125,16 @@ namespace LamestWebserver.NotificationService
         {
             return new InvalidNotificationInfo(text);
         }
+
+        public static string Log(Notification notification)
+        {
+            string ret = notification.NotificationType.ToString();
+
+            if (notification is ExecuteScriptNotification)
+                ret += "\n\t" + ((ExecuteScriptNotification) notification).script;
+
+            return ret;
+        }
     }
 
     public class KeepAliveNotification : Notification
@@ -224,7 +234,7 @@ namespace LamestWebserver.NotificationService
             NotifyForKeepalives = notifyForKeepalives;
             TraceMessagesClient = traceMessagesClient;
 
-            OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy, URL));
+            OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy, URL, this));
             OnConnect += proxy => connect(proxy);
             OnDisconnect += proxy => disconnect(proxy);
 
@@ -284,6 +294,9 @@ namespace LamestWebserver.NotificationService
         {
             try
             {
+                if(TraceMessagesClient && response.NotificationType != NotificationType.KeepAlive && response.NotificationType != NotificationType.Acknowledge)
+                    ServerHandler.LogMessage("WebSocket: Server << Client: " + NotificationResponse.Log(response));
+
                 if (response.IsMessage || (response.NotificationType == NotificationType.KeepAlive && NotifyForKeepalives))
                     OnNotification(response);
             }
@@ -300,6 +313,8 @@ namespace LamestWebserver.NotificationService
                         return;
                     }
                 }
+
+                ServerHandler.LogMessage("Invalid WebSocket Response from Client\n" + e);
             }
         }
 
@@ -349,19 +364,24 @@ namespace LamestWebserver.NotificationService
         public WebSocketHandlerProxy proxy;
         internal NotificationType NotificationType;
         private Dictionary<string, string> Values = new Dictionary<string, string>();
+        private NotificationHandler notificationHandler;
         private bool noreply = false;
 
         public SessionData SessionData { get; private set; }
 
-        internal NotificationResponse(string input, WebSocketHandlerProxy proxy, string URL)
+        internal NotificationResponse(string input, WebSocketHandlerProxy proxy, string URL, NotificationHandler notificationHanlder)
         {
             this.proxy = proxy;
+            this.notificationHandler = notificationHanlder;
 
             ParseNotificationResponse(input, this, URL);
         }
 
         public void Reply(Notification notification)
         {
+            if(notificationHandler.TraceMessagesClient && notification.NotificationType != NotificationType.KeepAlive)
+                ServerHandler.LogMessage("WebSocket: Server >> Client: " + Notification.Log(notification));
+
             proxy.Respond(notification.GetNotification());
         }
 
@@ -434,6 +454,22 @@ namespace LamestWebserver.NotificationService
         public string GetValue(string key)
         {
             return Values.ContainsKey(key) ? Values[key] : null;
+        }
+
+        public static string Log(NotificationResponse response)
+        {
+            string ret = response.Message;
+
+            if (response.Values.Count > 2)
+            {
+                foreach (var value in response.Values)
+                {
+                    if (value.Key != "ssid" && value.Key != "type")
+                        ret += $"\n\t'{value.Key}' : '{value.Value}'";
+                }
+            }
+
+            return ret;
         }
     }
 }

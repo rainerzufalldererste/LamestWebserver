@@ -16,6 +16,9 @@ namespace LamestWebserver
 {
     public class WebServer
     {
+        [ThreadStatic]
+        public static string CurrentClientRemoteEndpoint = "";
+        
         TcpListener tcpListener;
         List<Thread> threads = new List<Thread>();
         Thread mThread;
@@ -281,6 +284,7 @@ namespace LamestWebserver
             NetworkStream nws = client.GetStream();
             UTF8Encoding enc = new UTF8Encoding();
             string lastmsg = null;
+            WebServer.CurrentClientRemoteEndpoint = client.Client.RemoteEndPoint.ToString();
 
             byte[] msg;
             int bytes = 0;
