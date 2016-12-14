@@ -124,6 +124,7 @@ namespace LamestWebserver
     public class UsableMultiMutexLocker : IDisposable
     {
         private Mutex[] mutexes;
+        private bool[] locked;
 
         /// <summary>
         /// constructs a new UsableMultiMutexLocker and already locks all given mutexes.
@@ -132,10 +133,17 @@ namespace LamestWebserver
         public UsableMultiMutexLocker(params Mutex[] mutexes)
         {
             this.mutexes = mutexes;
+            this.locked = new bool[mutexes.Length];
 
             for (int i = 0; i < mutexes.Length; i++)
             {
-                mutexes[i].WaitOne();
+                if (!mutexes[i].WaitOne(100))
+                {
+                    Dispose();
+                    throw new MutexRetryException();
+                }
+
+                locked[i] = true;
             }
         }
 
@@ -146,8 +154,13 @@ namespace LamestWebserver
         {
             for (int i = mutexes.Length - 1; i >= 0; i--)
             {
-                mutexes[i].ReleaseMutex();
+                if(locked[i])
+                    mutexes[i].ReleaseMutex();
             }
         }
+    }
+
+    internal class MutexRetryException : Exception
+    {
     }
 }

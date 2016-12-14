@@ -60,7 +60,6 @@ namespace LamestWebserver
                 }
                 else
                 {
-
                     switch (s)
                     {
                         case "ports": { readme = false_; for (int i = 0; i < RunningServers.Count; i++) { Console.WriteLine("Port: " + RunningServers[i].port + " Folder: " + RunningServers[i].folder + " Threads: " + RunningServers[i].GetThreadCount()); } };

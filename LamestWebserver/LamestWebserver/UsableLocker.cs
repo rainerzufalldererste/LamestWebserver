@@ -44,16 +44,20 @@ namespace LamestWebserver
     public class UsableMutexLocker : IDisposable
     {
         private Mutex mutex;
+        private bool locked = false;
 
         public UsableMutexLocker(Mutex mutex)
         {
             this.mutex = mutex;
-            mutex.WaitOne();
+            if(!mutex.WaitOne(100))
+                throw new MutexRetryException();
+            locked = true;
         }
 
         public void Dispose()
         {
-            mutex.ReleaseMutex();
+            if (locked)
+                mutex.ReleaseMutex();
         }
 
         /// <summary>

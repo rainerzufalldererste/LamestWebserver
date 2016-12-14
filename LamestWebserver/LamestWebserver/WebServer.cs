@@ -17,7 +17,7 @@ namespace LamestWebserver
     public class WebServer
     {
         [ThreadStatic]
-        public static string CurrentClientRemoteEndpoint = "";
+        public static string CurrentClientRemoteEndpoint = "<?>";
         
         TcpListener tcpListener;
         List<Thread> threads = new List<Thread>();
@@ -42,6 +42,8 @@ namespace LamestWebserver
 
         private readonly byte[] crlf = new UTF8Encoding().GetBytes("\r\n");
         private Task<TcpClient> tcpRcvTask;
+
+        private Random random = new Random();
 
         public WebServer(int port, string folder, bool silent = false) : this(port, folder, true, silent)
         { }
@@ -337,7 +339,7 @@ namespace LamestWebserver
                             buffer = htp_.getPackage(enc);
                             nws.Write(buffer, 0, buffer.Length);
 
-                            ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested an empty URL. We sent Error 501.");
+                            ServerHandler.LogMessage("Client requested an empty URL. We sent Error 501.");
                         }
                         else
                         {
@@ -357,7 +359,7 @@ namespace LamestWebserver
                                 msg = handler.CreateHandshake();
                                 nws.Write(msg, 0, msg.Length);
 
-                                ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (WebSocket Upgrade Request)");
+                                ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'. (WebSocket Upgrade Request)");
 
                                 var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler);
 
@@ -378,15 +380,37 @@ namespace LamestWebserver
 
                                 Exception error = null;
 
+                                int tries = 0;
+                                RetryGetData:
                                 try
                                 {
-                                    SessionData sessionData = new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, htp.cookies, folder, htp.requestData, msg_, client, nws);
+                                    SessionData sessionData = new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, htp.cookies, folder,
+                                        htp.requestData, msg_, client, nws);
                                     htp_.binaryData = enc.GetBytes(currentRequest.Invoke(sessionData));
 
                                     if (sessionData.Cookies.Count > 0)
                                     {
                                         htp_.cookies = sessionData.Cookies;
                                     }
+                                }
+                                catch (MutexRetryException e)
+                                {
+                                    ServerHandler.LogMessage("MutexRetryException. Retrying...");
+
+                                    if (tries >= 10)
+                                    {
+                                        htp_.binaryData = enc.GetBytes(Master.getErrorMsg("Exception in Page Response for '"
+                                        + htp.requestData + "'", $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
+                                        + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + msg_.Replace("\r\n", "<br>") + "</div></p>"));
+                                        
+                                        error = e;
+                                        goto SendPackage;
+                                    }
+
+                                    tries++;
+                                    Thread.Sleep(random.Next(25 * tries));
+                                    goto RetryGetData;
                                 }
                                 catch (Exception e)
                                 {
@@ -398,13 +422,15 @@ namespace LamestWebserver
                                     error = e;
                                 }
 
+                                SendPackage:
+
                                 buffer = htp_.getPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
                                 
                                 if(error == null)
-                                    ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (C# WebserverApi)");
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'. (C# WebserverApi)");
                                 else
-                                    ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
                             }
                             else if (htp.requestData.Length > 3 && htp.requestData.Substring(htp.requestData.Length - 4).ToLower() == ".hcs" && File.Exists((folder != "/" ? folder : "") + "/" + htp.requestData))
                             {
@@ -433,19 +459,18 @@ namespace LamestWebserver
                                 result = null;
 
                                 if (error == null)
-                                    ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (C# Script)");
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'. (C# Script)");
                                 else
-                                    ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'. (C# Script)\nThe URL crashed with the following Exception:\n" + error);
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'. (C# Script)\nThe URL crashed with the following Exception:\n" + error);
                             }
                             else
                             {
-
                                 buffer = GetFile(htp.requestData, htp, enc, msg_).getPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
 
                                 buffer = null;
 
-                                ServerHandler.LogMessage("Client '" + client.Client.RemoteEndPoint + "' requested the URL '" + htp.requestData + "'.");
+                                ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'.");
                             }
                         }
                     }
