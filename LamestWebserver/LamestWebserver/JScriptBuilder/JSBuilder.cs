@@ -929,6 +929,19 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <summary>
+        /// Sets the outerHTML of an Element to the contents of a predefinded URL
+        /// </summary>
+        /// <param name="value">the element to set the new content to</param>
+        /// <param name="URL">the URL where the new contents come from</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public static JSValue SetOuterHTMLAsync(IJSValue value, string URL, params IJSPiece[] executeOnComplete)
+        {
+            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".outerHTML=this.responseText;"
+                + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })).Invoke()
+                + " } }; xmlhttp.open(\"GET\",\"" + URL + "\",true);xmlhttp.send();");
+        }
+
+        /// <summary>
         /// Encodes a URI component to a formatted string.
         /// </summary>
         /// <param name="value">the value to encode</param>
