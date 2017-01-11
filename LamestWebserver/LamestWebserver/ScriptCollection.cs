@@ -65,7 +65,7 @@ namespace LamestWebserver
                 throw new ArgumentException("the argument has to be an object[1] containing one string");
 
             if (sessionData == null || string.IsNullOrWhiteSpace(sessionData.ssid))
-                return "window.location = '" + arguments[0] + ";'";
+                return "window.location = '" + arguments[0] + "';";
 
             string ret = "onload = function() {var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','"
                         + arguments[0] + "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','"
