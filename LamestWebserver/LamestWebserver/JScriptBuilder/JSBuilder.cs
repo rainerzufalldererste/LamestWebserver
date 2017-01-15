@@ -1079,6 +1079,11 @@ namespace LamestWebserver.JScriptBuilder
         public JSValue OuterText => new JSValue(content + ".outerText");
 
         /// <summary>
+        /// The 'selectedOptions[0].value' attribute of this Element
+        /// </summary>
+        public JSValue FirstSelected => new JSValue(content + ".selectedOptions[0].value");
+
+        /// <summary>
         /// Displays (display = 'block') this Element
         /// </summary>
         public IJSPiece Show => JSFunctionCall.DisplayElementByID(ID.content);

@@ -99,7 +99,7 @@ namespace LamestWebserver.NotificationService
             return AddToDivContent(divId, new JSValue(content.Base64Encode()));
         }
 
-        public static Notification ReploadPage()
+        public static Notification ReloadPage()
         {
             return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(JSValue.CurrentBrowserURL)
                 .getCode(SessionData.currentSessionData, CallingContext.Inner));
@@ -213,7 +213,7 @@ namespace LamestWebserver.NotificationService
 
     public class NotificationHandler : WebSocketCommunicationHandler, INotificationHandler
     {
-        private UsableMutex listMutex = new UsableMutex();
+        private UsableWriteLock listWriteLock = new UsableWriteLock();
 
         private List<WebSocketHandlerProxy> proxies = new List<WebSocketHandlerProxy>();
 
@@ -252,7 +252,7 @@ namespace LamestWebserver.NotificationService
         {
             while (running)
             {
-                using (listMutex.Lock())
+                using (listWriteLock.LockWrite())
                 {
                     for (int i = proxies.Count - 1; i >= 0; i--)
                     {
@@ -268,7 +268,7 @@ namespace LamestWebserver.NotificationService
                     }
                 }
 
-                Thread.Sleep(1);
+                Thread.Sleep(2);
             }
         }
 
@@ -279,10 +279,15 @@ namespace LamestWebserver.NotificationService
 
         public void Notify(Notification notification)
         {
-            string notificationText = notification.GetNotification();
+            Thread t = new Thread(() =>
+            {
+                string notificationText = notification.GetNotification();
 
-            using (listMutex.Lock())
-                proxies.ForEach(proxy => proxy.Respond(notificationText));
+                using (listWriteLock.LockRead())
+                    proxies.ForEach(proxy => proxy.Respond(notificationText));
+            });
+
+            t.Start();
         }
 
         public void Unregister()
@@ -320,7 +325,7 @@ namespace LamestWebserver.NotificationService
 
         private void connect(WebSocketHandlerProxy proxy)
         {
-            using (listMutex.Lock())
+            using (listWriteLock.LockWrite())
             {
                 ConnectedClients++;
                 proxies.Add(proxy);
@@ -337,7 +342,7 @@ namespace LamestWebserver.NotificationService
 
         private void disconnect(WebSocketHandlerProxy proxy)
         {
-            using (listMutex.Lock())
+            using (listWriteLock.LockWrite())
             {
                 ConnectedClients--;
                 proxies.Remove(proxy);
