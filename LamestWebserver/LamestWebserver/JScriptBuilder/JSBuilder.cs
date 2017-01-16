@@ -916,6 +916,27 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <summary>
+        /// Returns and starts an interval in which a function is called
+        /// </summary>
+        /// <param name="function">The function to start</param>
+        /// <param name="milliseconds">The TimeSpan in Milliseconds at which the Function will be called</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public static JSValue SetInterval(JSFunction function, int milliseconds)
+        {
+            return new JSValue($"setInterval({function.FunctionPointer.getCode(SessionData.currentSessionData, CallingContext.Inner)}, {milliseconds});");
+        }
+
+        /// <summary>
+        /// Stops an interval.
+        /// </summary>
+        /// <param name="variable">The Variable the Interval has been stored in</param>
+        /// <returns>A piece of JavaScript code</returns>
+        public static JSValue ClearInterval(JSVariable variable)
+        {
+            return new JSValue("clearInterval(" + variable + ");");
+        }
+
+        /// <summary>
         /// Sets the innerHTML of an Element to the contents of a predefinded URL
         /// </summary>
         /// <param name="value">the element to set the new content to</param>
