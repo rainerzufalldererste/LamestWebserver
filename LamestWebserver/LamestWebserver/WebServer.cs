@@ -585,6 +585,8 @@ namespace LamestWebserver
                         {
                             cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, isBinary));
                         }
+                        
+                        ServerHandler.LogMessage("The URL '" + URL + "' is now available through the cache.");
                     }
                 }
                 else
@@ -802,6 +804,8 @@ namespace LamestWebserver
                         cache["/" + e.Name] = oldfile;
                     }
                 }
+
+                ServerHandler.LogMessage("The URL '" + e.OldName + "' has been renamed to '" + e.Name + "' in the cache and filesystem.");
             };
 
             fileSystemWatcher.Deleted += (object sender, FileSystemEventArgs e) =>
@@ -810,6 +814,8 @@ namespace LamestWebserver
                 {
                     cache.Remove("/" + e.Name);
                 }
+
+                ServerHandler.LogMessage("The URL '" + e.Name + "' has been deleted from the cache and filesystem.");
             };
 
             fileSystemWatcher.Changed += (object sender, FileSystemEventArgs e) =>
@@ -829,6 +835,8 @@ namespace LamestWebserver
                     }
                     catch (Exception) { };
                 }
+                
+                ServerHandler.LogMessage("The cache of the URL '" + e.Name + "' has been updated.");
             };
 
             fileSystemWatcher.EnableRaisingEvents = true;

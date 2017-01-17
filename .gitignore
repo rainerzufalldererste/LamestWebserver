@@ -191,3 +191,7 @@ ModelManifest.xml
 /LamestWebserver/packages
 
 *.zip
+/container
+/qtree
+/tree
+/hashmap

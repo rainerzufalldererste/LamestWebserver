@@ -333,6 +333,16 @@ namespace LamestWebserver
                             readme = true_;
                             break;
 
+                        case "log":
+                            nolog = false;
+                            Console.WriteLine("Logging is now turned on.");
+                            break;
+
+                        case "nolog":
+                            nolog = true;
+                            Console.WriteLine("Logging is now turned off.");
+                            break;
+
                         case "help":
                             {
                                 readme = false_;
@@ -347,6 +357,8 @@ namespace LamestWebserver
                                     Console.WriteLine("unsilent     -    shows the log");
                                     Console.WriteLine("explicitlog  -    shows the caller in the log");
                                     Console.WriteLine("litelog      -    hides the caller in the log");
+                                    Console.WriteLine("log          -    enables logging");
+                                    Console.WriteLine("nolog        -    disables logging");
                                     Console.WriteLine("cls          -    deletes the log");
                                     Console.WriteLine("autocls      -    deletes the log automatically at sizes");
                                     Console.WriteLine("cache        -    enables the cache of a port");
@@ -374,6 +386,7 @@ namespace LamestWebserver
         private static bool true_ = true, false_ = false;
         private static int autocls = 1000, autocls_s = 250;
         private static bool explicitLogging = false;
+        private static bool nolog = false;
 
         class Output
         {
@@ -437,6 +450,9 @@ namespace LamestWebserver
 
         public static void LogMessage(string message)
         {
+            if (nolog)
+                return;
+
             StackTrace stackTrace = null;
             string endpoint = WebServer.CurrentClientRemoteEndpoint;
 

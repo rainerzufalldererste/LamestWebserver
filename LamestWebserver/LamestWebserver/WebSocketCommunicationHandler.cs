@@ -44,6 +44,8 @@ namespace LamestWebserver
         protected event Action<WebSocketHandlerProxy> OnConnect = delegate { };
         protected event Action<WebSocketHandlerProxy> OnDisconnect = delegate { };
 
+        private Random random = new Random();
+
         protected void register()
         {
             Master.AddWebsocketHandler(this);
@@ -56,7 +58,25 @@ namespace LamestWebserver
 
         internal void callOnMessage(string message, WebSocketHandlerProxy proxy)
         {
-            OnMessage(message, proxy);
+            int tries = 0;
+
+            RETRY:
+
+            try
+            {
+                OnMessage(message, proxy);
+            }
+            catch (MutexRetryException e)
+            {
+                if (tries > 10)
+                    throw e;
+
+                ServerHandler.LogMessage("MutexRetryException in Websocket - retrying...");
+
+                tries++;
+                Thread.Sleep(random.Next(5 * tries));
+                goto RETRY;
+            }
         }
 
         internal void callOnResponded()
