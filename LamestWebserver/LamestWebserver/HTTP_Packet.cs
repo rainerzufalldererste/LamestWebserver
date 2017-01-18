@@ -179,7 +179,7 @@ namespace LamestWebserver
             for (int i = 0; i < linput.Length; i++)
             {
 
-                if(linput[i].Substring(0,"GET ".Length) == "GET ")
+                if(linput[i].Length > 4 && linput[i].Substring(0,"GET ".Length) == "GET ")
                 {
                     h.type = HTTP_Type.GET;
                     int index = 4;
