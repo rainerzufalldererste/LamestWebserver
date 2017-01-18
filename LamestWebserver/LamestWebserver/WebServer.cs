@@ -11,6 +11,7 @@ using System.IO.Compression;
 using LamestWebserver.ScriptHook;
 using LamestWebserver.Collections;
 using System.IO;
+using System.Windows.Forms;
 
 namespace LamestWebserver
 {

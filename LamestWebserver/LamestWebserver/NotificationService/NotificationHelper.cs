@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using Newtonsoft.Json;
 
 namespace LamestWebserver.NotificationService
@@ -7,13 +8,13 @@ namespace LamestWebserver.NotificationService
     internal static class NotificationHelper
     {
         [Obsolete]
-        internal static string NotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID)
+        internal static string NotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID, IPAddress address)
         {
             destinationURL = destinationURL.TrimStart('/', ' ');
 
             string sendMsgMethodName = GetFunctionName(NotificationHandlerID);
 
-            return "var conn = new WebSocket('ws://" + sessionData._localEndPoint.ToString() + "/" + destinationURL + "');" +
+            return "var conn = new WebSocket('ws://" + (address?.ToString() ?? sessionData._localEndPoint.ToString()) + "/" + destinationURL + "');" +
                     "function " + sendMsgMethodName + " (type, msg){conn.send(type + \"\\n\\n\" + msg)};" +
                     "function " + sendMsgMethodName + " (msg){conn.send(\"" + NotificationType.Message + "\\\n\\n\" + msg)};" +
                     "conn.onmessage = function(event) { var answer = true; if(event.data.includes(\"\\n\\r\") && event.data.split(\"\\n\\r\", 2)[1] == \"" + NotificationOption.NoReply + "\") answer = false; " +
@@ -28,7 +29,7 @@ namespace LamestWebserver.NotificationService
                     "conn.onopen = function (event) { conn.send(\"" + NotificationType.KeepAlive + "\") };";
         }
 
-        internal static string JsonNotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID, bool trace = false, int timeKeepaliveClientside = 8000)
+        internal static string JsonNotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID, IPAddress address, bool trace = false, int timeKeepaliveClientside = 8000)
         {
             destinationURL = destinationURL.TrimStart('/', ' ');
 
@@ -40,7 +41,7 @@ namespace LamestWebserver.NotificationService
 #else
                    (trace ? "console.log(\"+> Trying to open new Connection... (from Client)\");" : "") + 
 #endif
-                   " try{ conn = new WebSocket('ws://" + sessionData._localEndPoint.ToString() + "/" + destinationURL + 
+                   " try{ conn = new WebSocket('ws://" + (address?.ToString() ?? sessionData._localEndPoint.ToString()) + "/" + destinationURL + 
                    "'); conn.onmessage = function(event) { var rcv = window.JSON.parse(event.data); var answer = true; if(rcv." + JsonNotificationPacket.NoReply_string +
                    ") answer = false; " +
 #if DEBUG

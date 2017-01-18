@@ -1,6 +1,7 @@
 ﻿using LamestWebserver.JScriptBuilder;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 
 namespace LamestWebserver.NotificationService
@@ -220,6 +221,7 @@ namespace LamestWebserver.NotificationService
         public JSFunction SendingFunction { get; private set; }
         public string ID { get; private set; } = SessionContainer.generateHash();
         public uint ConnectedClients { get; private set; } = 0;
+        private IPAddress externalAddress = null;
 
         public Thread handlerThread = null;
 
@@ -229,10 +231,12 @@ namespace LamestWebserver.NotificationService
 
         public event Action<NotificationResponse> OnNotification;
 
-        public NotificationHandler(string URL, bool notifyForKeepalives = false, bool traceMessagesClient = false, TimeSpan? maximumLastMessageTime = null) : base(URL, maximumLastMessageTime)
+        public NotificationHandler(string URL, bool notifyForKeepalives = false, IPAddress externalAddress = null, bool traceMessagesClient = false, TimeSpan? maximumLastMessageTime = null) : base(URL, maximumLastMessageTime)
         {
             NotifyForKeepalives = notifyForKeepalives;
             TraceMessagesClient = traceMessagesClient;
+
+            this.externalAddress = externalAddress;
 
             OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy, URL, this));
             OnConnect += proxy => connect(proxy);
@@ -244,7 +248,7 @@ namespace LamestWebserver.NotificationService
         }
 
         public JSElement JSElement => new JSPlainText("<script type='text/javascript'>" +
-                                NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL, ID, TraceMessagesClient) + "</script>");
+                                NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL, ID, externalAddress, TraceMessagesClient) + "</script>");
 
         private JSElement _jselement = null;
 
