@@ -23,6 +23,9 @@ namespace LamestWebserver
         private Mutex innerMutex;
         private readonly string ID = SessionContainer.generateHash();
 
+        private Mutex helperMutex = new Mutex();
+        private DateTime? lastLocked = null;
+
         public UsableMutex()
         {
             innerMutex = new Mutex();
@@ -48,34 +51,92 @@ namespace LamestWebserver
             innerMutex = new Mutex(initiallyOwned, name, out createdNew, mutexSecurity);
         }
 
+        /// <summary>
+        /// Checks if the lastLocked time is to far away, so that we should ignore the value of it and release the mutex
+        /// </summary>
+        private void HandleTimer()
+        {
+            helperMutex.WaitOne();
+
+            if (lastLocked != null && (DateTime.Now - lastLocked.Value).TotalMilliseconds > 250)
+            {
+                try
+                {
+                    innerMutex.ReleaseMutex();
+                }
+                catch (Exception)
+                {
+                    ServerHandler.LogMessage($"Usable Mutex '{ID}' was locked longer than 250 millis");
+                }
+
+                lastLocked = null;
+            }
+
+            helperMutex.ReleaseMutex();
+        }
+
+        /// <summary>
+        /// Sets the current Time as lastLocked time
+        /// </summary>
+        /// <param name="passThroughValue">a value that is passed through (like Mutex.WaitOne return value)</param>
+        /// <returns>the passThroughValue</returns>
+        private bool StartTimer(bool passThroughValue = true)
+        {
+            helperMutex.WaitOne();
+
+            lastLocked = DateTime.Now;
+
+            helperMutex.ReleaseMutex();
+
+            return passThroughValue;
+        }
+
+        /// <summary>
+        /// Sets the current Thread as not locked
+        /// </summary>
+        private void StopTimer()
+        {
+            helperMutex.WaitOne();
+
+            lastLocked = null;
+
+            helperMutex.ReleaseMutex();
+        }
+
         public bool WaitOne()
         {
-            return innerMutex.WaitOne();
+            HandleTimer();
+            return StartTimer(innerMutex.WaitOne());
         }
 
         public bool WaitOne(int millisecondsTimeout)
         {
-            return innerMutex.WaitOne(millisecondsTimeout);
+            HandleTimer();
+            return StartTimer(innerMutex.WaitOne(millisecondsTimeout));
         }
 
         public bool WaitOne(TimeSpan timeout)
         {
-            return innerMutex.WaitOne(timeout);
+            HandleTimer();
+            return StartTimer(innerMutex.WaitOne(timeout));
         }
 
         public bool WaitOne(int millisecondsTimeout, bool exitContext)
         {
-            return innerMutex.WaitOne(millisecondsTimeout, exitContext);
+            HandleTimer();
+            return StartTimer(innerMutex.WaitOne(millisecondsTimeout, exitContext));
         }
 
         public bool WaitOne(TimeSpan timeout, bool exitContext)
         {
-            return innerMutex.WaitOne(timeout, exitContext);
+            HandleTimer();
+            return StartTimer(innerMutex.WaitOne(timeout, exitContext));
         }
 
         public void ReleaseMutex()
         {
             innerMutex.ReleaseMutex();
+            StopTimer();
         }
 
         /// <summary>
@@ -92,9 +153,9 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="mutexes">the usablemutexes to lock</param>
         /// <returns>a UsableMutliMutexLocker, that already locked the given mutexes</returns>
-        public static UsableMultiMutexLocker Lock(params UsableMutex[] mutexes)
+        public static UsableMultiUsableMutexLocker Lock(params UsableMutex[] mutexes)
         {
-            Mutex[] mut = new Mutex[mutexes.Length];
+            UsableMutex[] mut = new UsableMutex[mutexes.Length];
 
             for (int i = 0; i < mutexes.Length; i++)
             {
@@ -102,7 +163,7 @@ namespace LamestWebserver
 
                 for (int j = 0; j < mutexes.Length; j++)
                 {
-                    if (mut.Contains(mutexes[j].innerMutex))
+                    if (mut.Contains(mutexes[j]))
                         continue;
 
                     if (mut[i] == null)
@@ -111,10 +172,10 @@ namespace LamestWebserver
                         currentIndex = j;
                 }
 
-                mut[i] = mutexes[currentIndex].innerMutex;
+                mut[i] = mutexes[currentIndex];
             }
 
-            return new UsableMultiMutexLocker(mut.ToArray());
+            return new UsableMultiUsableMutexLocker(mut.ToArray());
         }
     }
 
@@ -155,6 +216,48 @@ namespace LamestWebserver
             for (int i = mutexes.Length - 1; i >= 0; i--)
             {
                 if(locked[i])
+                    mutexes[i].ReleaseMutex();
+            }
+        }
+    }
+
+    /// <summary>
+    /// A MutexLocker for multiple UsableMutexes
+    /// </summary>
+    public class UsableMultiUsableMutexLocker : IDisposable
+    {
+        private UsableMutex[] mutexes;
+        private bool[] locked;
+
+        /// <summary>
+        /// constructs a new UsableMultiUsableMutexLocker and already locks all given mutexes.
+        /// </summary>
+        /// <param name="mutexes">the usableMutexes to lock</param>
+        public UsableMultiUsableMutexLocker(params UsableMutex[] mutexes)
+        {
+            this.mutexes = mutexes;
+            this.locked = new bool[mutexes.Length];
+
+            for (int i = 0; i < mutexes.Length; i++)
+            {
+                if (!mutexes[i].WaitOne(100))
+                {
+                    Dispose();
+                    throw new MutexRetryException();
+                }
+
+                locked[i] = true;
+            }
+        }
+
+        /// <summary>
+        /// Releases all locked UsableMutexes in opposite locking order.
+        /// </summary>
+        public void Dispose()
+        {
+            for (int i = mutexes.Length - 1; i >= 0; i--)
+            {
+                if (locked[i])
                     mutexes[i].ReleaseMutex();
             }
         }
