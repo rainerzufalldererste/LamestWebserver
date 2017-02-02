@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -62,6 +63,8 @@ namespace LamestWebserver
         /// </summary>
         public static int UserHashMapSize = 128;
 
+        public static int MaxUsers = 256;
+
         private static UsableMutex mutex = new UsableMutex();
 
         private static AVLTree<string, AVLTree<string, object>> PerFileObjects = new AVLTree<string, AVLTree<string, object>>();
@@ -73,6 +76,11 @@ namespace LamestWebserver
 
         internal class UserInfo
         {
+            /// <summary>
+            /// The utc time this info was retrieved the last time.
+            /// </summary>
+            internal DateTime lastPullUtcTime = DateTime.UtcNow;
+
             internal string ID;
             internal string UserName;
             internal AVLHashMap<string, object> UserGlobalVariables = new AVLHashMap<string, object>(512);
@@ -101,6 +109,8 @@ namespace LamestWebserver
                 UserInfos.Add(userInfo.ID, userInfo);
                 UserInfosByName.Add(userInfo.UserName, userInfo);
 
+                userCleanup();
+
                 mutex.ReleaseMutex();
 
                 isNewSSID = true;
@@ -118,6 +128,8 @@ namespace LamestWebserver
                     userInfo.ID = generateUnusedHash();
                     UserInfos[userInfo.ID] = userInfo;
 
+                    userCleanup();
+
                     mutex.ReleaseMutex();
 
                     isNewSSID = true;
@@ -132,6 +144,8 @@ namespace LamestWebserver
                     userInfo.ID = generateUnusedHash();
                     UserInfos[userInfo.ID] = userInfo;
 
+                    userCleanup();
+
                     mutex.ReleaseMutex();
 
                     isNewSSID = true;
@@ -140,10 +154,37 @@ namespace LamestWebserver
                 else
                 {
                     userInfo = UserInfosByName[user];
+
+                    if(userInfo != null)
+                        userInfo.lastPullUtcTime = DateTime.UtcNow;
                 }
             }
 
             return hash;
+        }
+
+        private static void userCleanup()
+        {
+            if (UserInfos.Count > MaxUsers)
+            {
+                DateTime oldestTime = DateTime.UtcNow;
+                string oldestIndex = null;
+
+                foreach (var userInfoPair in UserInfos)
+                {
+                    if (userInfoPair.Value.lastPullUtcTime < oldestTime)
+                    {
+                        oldestTime = userInfoPair.Value.lastPullUtcTime;
+                        oldestIndex = userInfoPair.Key;
+                    }
+                }
+
+                if (oldestIndex != null)
+                {
+                    UserInfosByName.Remove(UserInfos[oldestIndex].UserName);
+                    UserInfos.Remove(oldestIndex);
+                }
+            }
         }
 
         internal static string ForceGetNextSSID(string user)
@@ -287,7 +328,17 @@ namespace LamestWebserver
 
         internal static UserInfo GetUserInfoFromSsid(string ssid)
         {
-            return UserInfos[ssid];
+            var userInfo = UserInfos[ssid];
+
+            if(userInfo != null)
+                userInfo.lastPullUtcTime = DateTime.UtcNow;
+
+            return userInfo;
+        }
+
+        internal static object GetUserInfoFromName(string userName)
+        {
+            return UserInfosByName[userName];
         }
 
         internal static AVLTree<string, object> GetFileDictionary(string fileName)
@@ -301,11 +352,6 @@ namespace LamestWebserver
             }
 
             return ret;
-        }
-
-        internal static object GetUserInfoFromName(string userName)
-        {
-            return UserInfosByName[userName];
         }
     }
 }

@@ -18,7 +18,7 @@ namespace LamestWebserver
         /// Source: http://codereview.stackexchange.com/questions/24861/caching-xmlserializer-in-appdomain
         /// </summary>
         /// <param name="type">type parameter of the Serializer</param>
-        /// <returns></returns>
+        /// <returns>An XML-Serializer created with the given type argument</returns>
         public static XmlSerializer GetXmlSerializer(Type type)
         {
             var cache = AppDomain.CurrentDomain;

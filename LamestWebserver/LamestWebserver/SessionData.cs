@@ -137,7 +137,7 @@ namespace LamestWebserver
             if (this._tcpClient == null)
                 isWebsocketConnection = true;
             // HACK: @FIXME: Don't do that... sorry... :(
-            // TODO: Remove!
+            // TODO: Remove! and create new SessionData-like thing for Websockets!
 
             this.PerFileVariables = SessionContainer.GetFileDictionary(file);
             this._userInfo = SessionContainer.GetUserInfoFromSsid(ssid);

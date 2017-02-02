@@ -54,7 +54,7 @@ namespace LamestWebserver
             if (!TcpPortIsUnused(port))
             {
                 if (!silent)
-                    Console.WriteLine("Failed to start the WebServer. The tcp port " + port + " is currently used.");
+                    Console.WriteLine("Failed to start the WebServer. The tcp port " + port + " is currently used by another application.");
 
                 throw new InvalidOperationException("The tcp port " + port + " is currently used.");
             }

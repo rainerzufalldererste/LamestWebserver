@@ -366,7 +366,7 @@ namespace LamestWebserver
                                     Console.WriteLine("frefresh     -    refreshes the file cache of a port");
                                     //Console.WriteLine("cachesz      -    sets the maximum file cache of a port");
                                     Console.WriteLine("help         -    Displays this list of cmds");
-                                    Console.WriteLine("exit         -    ");
+                                    Console.WriteLine("exit         -    Exit the ServerHandler");
                                 }
                                 catch (Exception e) { Console.WriteLine("Failed!" + e); }
                             };
