@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -10,17 +12,52 @@ namespace LamestWebserver
 {
     public static class Serializer
     {
+        /// <summary>
+        /// Caches XMLSerializers to prevent MemoryLeaks.
+        /// 
+        /// Source: http://codereview.stackexchange.com/questions/24861/caching-xmlserializer-in-appdomain
+        /// </summary>
+        /// <param name="type">type parameter of the Serializer</param>
+        /// <returns></returns>
+        public static XmlSerializer GetXmlSerializer(Type type)
+        {
+            var cache = AppDomain.CurrentDomain;
+            var key = string.Format(CultureInfo.InvariantCulture, "CachedXmlSerializer:{0}", type);
+
+            var serializer = cache.GetData(key) as XmlSerializer;
+
+            if (serializer == null)
+            {
+                serializer = new XmlSerializer(type);
+                cache.SetData(key, serializer);
+            }
+
+            return serializer;
+        }
+
+        /// <summary>
+        /// Retrieves XML-Serialized data from a file.
+        /// </summary>
+        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
+        /// <param name="filename">The name of the file</param>
+        /// <returns>The deserialized object</returns>
         public static T getData<T>(string filename)
         {
             string xmlString = File.ReadAllText(filename);
 
             using (MemoryStream memStream = new MemoryStream(Encoding.Unicode.GetBytes(xmlString))) // Yes, it actually seems like this is all really necessary here :/
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(T));
+                XmlSerializer serializer = GetXmlSerializer(typeof(T));
                 return (T)serializer.Deserialize(memStream);
             }
         }
 
+        /// <summary>
+        /// Writes an Object to an XML-File.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        /// <param name="filename">The name of the file to write</param>
         public static void writeData<T>(T data, string filename)
         {
             if(!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
@@ -32,12 +69,19 @@ namespace LamestWebserver
 
             using (StringWriter textWriter = new StringWriter(output))
             {
-                XmlSerializer serializer = new XmlSerializer(typeof(T));
+                XmlSerializer serializer = GetXmlSerializer(typeof(T));
                 serializer.Serialize(textWriter, data);
             }
 
-            System.IO.File.WriteAllText(filename, output.ToString());
+            File.WriteAllText(filename, output.ToString());
         }
+
+        /// <summary>
+        /// Retrieves Binary-Serialized data from a file.
+        /// </summary>
+        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
+        /// <param name="filename">The name of the file</param>
+        /// <returns>The deserialized object</returns>
         public static T getBinaryData<T>(string filename)
         {
             byte[] binaryData = File.ReadAllBytes(filename);
@@ -50,6 +94,12 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// Writes an Object to a Binary-File.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        /// <param name="filename">The name of the file to write</param>
         public static void writeBinaryData<T>(T data, string filename)
         {
             if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))

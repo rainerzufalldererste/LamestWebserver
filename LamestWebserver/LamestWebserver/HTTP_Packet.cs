@@ -53,7 +53,7 @@ namespace LamestWebserver
         /// <summary>
         /// The contents of the request package
         /// </summary>
-        public string requestData;
+        public string requestData = "";
 
         /// <summary>
         /// The cookies, that were set in the request or shall be set in the response
