@@ -18,7 +18,7 @@ namespace LamestWebserver
             outp.Start();
 
             Console.WriteLine("\n=== === === === LAMEST WEBSERVER === === === ===\n");
-            
+
             if (args.Length == 1)
             {
                 if (args[0] == "-clean")
@@ -31,18 +31,26 @@ namespace LamestWebserver
                     {
                         RunningServers.Add(new WebServer(Int32.Parse(args[0]), "./web", true));
                     }
-                    catch (Exception e) { Console.WriteLine("Something went wrong.\n" + e.Message); };
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Something went wrong.\n" + e.Message);
+                    }
+                    ;
                 }
             }
-            else if(args.Length < 1)
+            else if (args.Length < 1)
             {
-                for (int i = 0; i < args.Length; i+=2)
+                for (int i = 0; i < args.Length; i += 2)
                 {
                     try
                     {
                         RunningServers.Add(new WebServer(Int32.Parse(args[i]), args[i + 1], true));
                     }
-                    catch (Exception e) { Console.WriteLine("Something went wrong.\n" + e.Message); };
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Something went wrong.\n" + e.Message);
+                    }
+                    ;
                 }
             }
 
@@ -62,15 +70,25 @@ namespace LamestWebserver
                 {
                     switch (s)
                     {
-                        case "ports": { readme = false_; for (int i = 0; i < RunningServers.Count; i++) { Console.WriteLine("Port: " + RunningServers[i].port + " Folder: " + RunningServers[i].folder + " Threads: " + RunningServers[i].GetThreadCount()); } };
-                            Console.WriteLine("Done!"); readme = true_;
+                        case "ports":
+                        {
+                            using (outputMutex.Lock())
+                            {
+                                for (int i = 0; i < RunningServers.Count; i++)
+                                {
+                                    Console.WriteLine("Port: " + RunningServers[i].port + " Folder: " + RunningServers[i].folder + " Threads: " + RunningServers[i].GetThreadCount());
+                                }
+                                Console.WriteLine("Done!");
+                            }
                             break;
+                        }
 
                         case "kill":
+                        {
+                            using (outputMutex.Lock())
                             {
                                 try
                                 {
-                                    readme = false_;
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
                                     for (int i = 0; i < RunningServers.Count; i++)
@@ -80,19 +98,22 @@ namespace LamestWebserver
                                             RunningServers[i].StopServer();
                                             RunningServers.RemoveAt(i);
                                             Console.WriteLine("Done!");
-                                            readme = true_;
                                             break;
                                         }
                                     }
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
                         case "new":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
                                     Console.WriteLine("Port:");
@@ -102,14 +123,18 @@ namespace LamestWebserver
                                     RunningServers.Add(new WebServer(Int32.Parse(prt), fld, true));
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
                         case "tstep":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
                                     Console.WriteLine("New TimeStep in ms:");
@@ -117,39 +142,50 @@ namespace LamestWebserver
                                     cmdsleep = Int32.Parse(prt);
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
+
 
                         case "silent":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
-                                    true_ = false;
-                                    Console.WriteLine("silence is now " + (true_?"OFF":"ON"));
+                                    silent = true;
+                                    Console.WriteLine("silence is now " + (silent ? "OFF" : "ON"));
                                     try
                                     {
                                         if (outp.ThreadState == System.Threading.ThreadState.Running)
                                             outp.Abort();
                                     }
-                                    catch (Exception) { }
+                                    catch (Exception)
+                                    {
+                                    }
 
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
                         case "unsilent":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
-                                    true_ = true;
-                                    Console.WriteLine("silence is now " + (true_ ? "OFF" : "ON"));
+                                    silent = false;
+                                    Console.WriteLine("silence is now " + (silent ? "OFF" : "ON"));
 
                                     try
                                     {
@@ -166,14 +202,18 @@ namespace LamestWebserver
 
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
                         case "cls":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
                                     lock (output)
@@ -182,15 +222,19 @@ namespace LamestWebserver
                                     }
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
 
                         case "autocls":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
                                     Console.WriteLine("At which size should the log be cut off");
@@ -207,14 +251,18 @@ namespace LamestWebserver
                                     }
                                     Console.WriteLine("Done!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
                         case "frefresh":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
                                     Console.WriteLine("Port: ");
@@ -232,39 +280,18 @@ namespace LamestWebserver
                                         }
                                     }
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
-                            break;
-                            
-                            /*
-                        case "cachesz":
-                            {
-                                readme = false_;
-                                try
+                                catch (Exception e)
                                 {
-                                    Console.WriteLine("Port: ");
-                                    string id = Console.ReadLine();
-                                    for (int i = 0; i < RunningServers.Count; i++)
-                                    {
-                                        if (RunningServers[i].port == Int32.Parse(id))
-                                        {
-                                            Console.WriteLine("Maximum Size: ");
-                                            RunningServers[i].max_cache = Int32.Parse(Console.ReadLine());
-                                            Console.WriteLine("Done!");
-                                            break;
-                                        }
-                                    }
+                                    Console.WriteLine("Failed!" + e);
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                            }
                             break;
-                            */
+                        }
 
                         case "cache":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
                                     Console.WriteLine("Port: ");
@@ -279,14 +306,18 @@ namespace LamestWebserver
                                         }
                                     }
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
                         case "uncache":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
                                     Console.WriteLine("Port: ");
@@ -302,53 +333,74 @@ namespace LamestWebserver
                                         }
                                     }
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
                         case "explicitlog":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
                                     explicitLogging = true;
                                     Console.WriteLine("Success! Logging now explicitly!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
                         case "litelog":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
                                     explicitLogging = false;
                                     Console.WriteLine("Success! Logging now not explicitly!");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
                         case "log":
-                            nolog = false;
-                            Console.WriteLine("Logging is now turned on.");
+                        {
+                            using (outputMutex.Lock())
+                            {
+                                nolog = false;
+                                Console.WriteLine("Logging is now turned on.");
+                            }
                             break;
+                        }
 
                         case "nolog":
-                            nolog = true;
-                            Console.WriteLine("Logging is now turned off.");
+                        {
+                            using (outputMutex.Lock())
+                            {
+                                nolog = true;
+                                Console.WriteLine("Logging is now turned off.");
+                            }
                             break;
+                        }
 
                         case "help":
+                        {
+                            using (outputMutex.Lock())
                             {
-                                readme = false_;
                                 try
                                 {
-                                    true_ = false;
                                     Console.WriteLine("ports        -    List all running servers");
                                     Console.WriteLine("kill         -    Shut a running server off");
                                     Console.WriteLine("new          -    Create a new server on port x");
@@ -368,13 +420,22 @@ namespace LamestWebserver
                                     Console.WriteLine("help         -    Displays this list of cmds");
                                     Console.WriteLine("exit         -    Exit the ServerHandler");
                                 }
-                                catch (Exception e) { Console.WriteLine("Failed!" + e); }
-                            };
-                            readme = true_;
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine("Failed!" + e);
+                                }
+                            }
                             break;
+                        }
 
-                        default: { Console.WriteLine("Invalid command '" + s + "'! If you need help, type 'help'."); }
+                        default:
+                        {
+                            using (outputMutex.Lock())
+                            {
+                                Console.WriteLine("Invalid command '" + s + "'! If you need help, type 'help'.");
+                            }
                             break;
+                        }
                     }
                 }
             }
@@ -382,11 +443,11 @@ namespace LamestWebserver
 
         private static List<Output> output = new List<Output>();
         private static int cmdsleep = 300;
-        private static bool readme = true;
-        private static bool true_ = true, false_ = false;
         private static int autocls = 1000, autocls_s = 250;
         private static bool explicitLogging = false;
         private static bool nolog = false;
+        private static UsableMutexSlim outputMutex = new UsableMutexSlim();
+        private static bool silent = false;
 
         class Output
         {
@@ -407,7 +468,7 @@ namespace LamestWebserver
                             continue;
                         }
 
-                        var trace_ = stackTrace.ToString().Split(new[] { "\r\n" }, StringSplitOptions.None);
+                        var trace_ = stackTrace.ToString().Split(new[] {"\r\n"}, StringSplitOptions.None);
 
                         string trace = null;
                         bool started = false;
@@ -448,6 +509,10 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// Logs a message to the ServerLog
+        /// </summary>
+        /// <param name="message">the message to log</param>
         public static void LogMessage(string message)
         {
             if (nolog)
@@ -483,7 +548,7 @@ namespace LamestWebserver
         {
             while (true)
             {
-                if (readme)
+                using (outputMutex.Lock())
                 {
                     while (output.Count > 0)
                     {
@@ -493,23 +558,18 @@ namespace LamestWebserver
 
                             for (int i = 0; i < c; i++)
                             {
-                                if (readme)
-                                {
-                                    output[0].Print();
+                                output[0].Print();
 
-                                    output.RemoveAt(0);
-                                }
-                                else
-                                {
-                                    break;
-                                }
+                                output.RemoveAt(0);
                             }
                         }
-                        catch (Exception) { }
+                        catch (Exception)
+                        {
+                        }
                     }
                 }
 
-                System.Threading.Thread.Sleep(cmdsleep);
+                Thread.Sleep(cmdsleep);
             }
         }
     }

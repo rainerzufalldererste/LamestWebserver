@@ -334,7 +334,11 @@ namespace LamestWebserver
                                 status = "501 Not Implemented",
                                 binaryData = enc.GetBytes(Master.getErrorMsg(
                                     "Error 501: Not Implemented",
-                                            "<p>The Feature that you were trying to use is not yet implemented.</p><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + "</div></p>"))
+                                            "<p>The Feature that you were trying to use is not yet implemented.</p>" +
+#if DEBUG
+                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + 
+#endif
+                                            "</div></p>"))
                             };
 
                             buffer = htp_.getPackage(enc);
@@ -356,7 +360,10 @@ namespace LamestWebserver
 
                             if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.requestData, out currentWebSocketHandler))
                             {
-                                var handler = (Fleck.Handlers.ComposableHandler)Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose, currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
+                                var handler =
+                                    (Fleck.Handlers.ComposableHandler)
+                                    Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose,
+                                        currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
                                 msg = handler.CreateHandshake();
                                 nws.Write(msg, 0, msg.Length);
 
@@ -366,7 +373,7 @@ namespace LamestWebserver
 
                                 return;
                             }
-                            
+
                             if (currentRequest == null)
                             {
                                 currentRequest = oneTimePageResponses[htp.requestData];
@@ -402,23 +409,31 @@ namespace LamestWebserver
                                     {
                                         htp_.binaryData = enc.GetBytes(Master.getErrorMsg("Exception in Page Response for '"
                                         + htp.requestData + "'", $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
-                                        + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                        + msg_.Replace("\r\n", "<br>") + "</div></p>"));
+                                        + e.ToString().Replace("\r\n", "<br>")
+#if DEBUG
+                                        + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + msg_.Replace("\r\n", "<br>")
+#endif
+                                        + "</div></p>"));
                                         
                                         error = e;
                                         goto SendPackage;
                                     }
 
                                     tries++;
-                                    Thread.Sleep(random.Next(25 * tries));
+                                    Thread.Sleep(random.Next((25) * tries));
                                     goto RetryGetData;
                                 }
                                 catch (Exception e)
                                 {
                                     htp_.binaryData = enc.GetBytes(Master.getErrorMsg("Exception in Page Response for '"
                                         + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
-                                        + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                        + msg_.Replace("\r\n", "<br>") + "</div></p>"));
+                                        + e.ToString().Replace("\r\n", "<br>")
+#if DEBUG
+                                        + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + msg_.Replace("\r\n", "<br>")
+#endif
+                                        + "</div></p>"));
 
                                     error = e;
                                 }
@@ -446,8 +461,12 @@ namespace LamestWebserver
                                 {
                                     result = Master.getErrorMsg("Exception in C# Script for '"
                                         + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
-                                        + e.ToString() + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                        + msg_.Replace("\r\n", "<br>") + "</div></p>");
+                                        + e.ToString().Replace("\r\n", "<br>")
+#if DEBUG
+                                        + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + msg_.Replace("\r\n", "<br>")
+#endif
+                                        + "</div></p>");
 
                                     error = e;
                                 }
@@ -551,7 +570,11 @@ namespace LamestWebserver
                             status = "403 Forbidden",
                             binaryData = enc.GetBytes(Master.getErrorMsg(
                                 "Error 403: Forbidden",
-                                "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p>"))
+                                "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
+#if DEBUG
+                                "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + 
+#endif
+                                "</div></p>"))
                         };
                     }
                 }
@@ -597,7 +620,11 @@ namespace LamestWebserver
                         status = "404 File Not Found",
                         binaryData = enc.GetBytes(Master.getErrorMsg(
                             "Error 404: Page Not Found",
-                            "<p>The URL you requested did not match any page or file on the server.</p><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div></p>"))
+                            "<p>The URL you requested did not match any page or file on the server.</p>" +
+#if DEBUG
+                                "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + 
+#endif
+                                "</div></p>"))
                     };
                 }
 
@@ -617,7 +644,12 @@ namespace LamestWebserver
                     status = "500 Internal Server Error",
                     binaryData = enc.GetBytes(Master.getErrorMsg(
                         "Error 500: Internal Server Error",
-                        "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + e.ToString().Replace("\r\n", "<br>") + "</div><br><hr><br><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + "</div>"))
+                        "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                        + e.ToString().Replace("\r\n", "<br>") + "</div><br>"
+#if DEBUG
+                        + "<hr><br><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>")
+#endif
+                        + "</div>"))
                 };
             }
         }

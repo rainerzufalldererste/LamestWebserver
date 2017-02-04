@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace LamestWebserver
 {
     /// <summary>
-    /// A regular Mutex, but disposable if Lock() is called, making it available in using statements
+    /// Like a regular Mutex, but disposable if Lock() is called, making it available in using statements
     /// UsableMutex.Lock() is also available for sorted locking to prevent deadlocks.
     /// 
     /// <example>
@@ -20,7 +20,10 @@ namespace LamestWebserver
     /// </summary>
     public class UsableMutex
     {
-        private Mutex innerMutex;
+        public static int MutexWaitMillis = 100;
+        public static int MutexSelfRelease = 200;
+
+        private ReaderWriterLockSlim innerMutex;
         private readonly string ID = SessionContainer.generateHash();
 
         private Mutex helperMutex = new Mutex();
@@ -28,27 +31,7 @@ namespace LamestWebserver
 
         public UsableMutex()
         {
-            innerMutex = new Mutex();
-        }
-
-        public UsableMutex(bool initiallyOwned)
-        {
-            innerMutex = new Mutex(initiallyOwned);
-        }
-
-        public UsableMutex(bool initiallyOwned, string name)
-        {
-            innerMutex = new Mutex(initiallyOwned, name);
-        }
-
-        public UsableMutex(bool initiallyOwned, string name, out bool createdNew)
-        {
-            innerMutex = new Mutex(initiallyOwned, name, out createdNew);
-        }
-
-        public UsableMutex(bool initiallyOwned, string name, out bool createdNew, System.Security.AccessControl.MutexSecurity mutexSecurity)
-        {
-            innerMutex = new Mutex(initiallyOwned, name, out createdNew, mutexSecurity);
+            innerMutex = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         }
 
         /// <summary>
@@ -58,15 +41,15 @@ namespace LamestWebserver
         {
             helperMutex.WaitOne();
 
-            if (lastLocked != null && (DateTime.Now - lastLocked.Value).TotalMilliseconds > 250)
+            if (lastLocked != null && (DateTime.Now - lastLocked.Value).TotalMilliseconds > MutexSelfRelease)
             {
                 try
                 {
-                    innerMutex.ReleaseMutex();
+                    innerMutex.ExitWriteLock();
                 }
                 catch (Exception)
                 {
-                    ServerHandler.LogMessage($"Usable Mutex '{ID}' was locked longer than 250 millis");
+                    ServerHandler.LogMessage($"Usable Mutex '{ID}' was locked longer than {MutexSelfRelease} millis");
                 }
 
                 lastLocked = null;
@@ -76,19 +59,22 @@ namespace LamestWebserver
         }
 
         /// <summary>
-        /// Sets the current Time as lastLocked time
+        /// Sets the current Time as lastLocked time if the execute value is true
         /// </summary>
-        /// <param name="passThroughValue">a value that is passed through (like Mutex.WaitOne return value)</param>
-        /// <returns>the passThroughValue</returns>
-        private bool StartTimer(bool passThroughValue = true)
+        /// <param name="execute">is only executed if true - this value is passed through (like Mutex.WaitOne return value)</param>
+        /// <returns>the execute value</returns>
+        private bool StartTimer(bool execute = true)
         {
-            helperMutex.WaitOne();
+            if (execute)
+            {
+                helperMutex.WaitOne();
 
-            lastLocked = DateTime.Now;
+                lastLocked = DateTime.Now;
 
-            helperMutex.ReleaseMutex();
+                helperMutex.ReleaseMutex();
+            }
 
-            return passThroughValue;
+            return execute;
         }
 
         /// <summary>
@@ -106,36 +92,21 @@ namespace LamestWebserver
         public bool WaitOne()
         {
             HandleTimer();
-            return StartTimer(innerMutex.WaitOne());
-        }
 
-        public bool WaitOne(int millisecondsTimeout)
-        {
-            HandleTimer();
-            return StartTimer(innerMutex.WaitOne(millisecondsTimeout));
-        }
-
-        public bool WaitOne(TimeSpan timeout)
-        {
-            HandleTimer();
-            return StartTimer(innerMutex.WaitOne(timeout));
-        }
-
-        public bool WaitOne(int millisecondsTimeout, bool exitContext)
-        {
-            HandleTimer();
-            return StartTimer(innerMutex.WaitOne(millisecondsTimeout, exitContext));
-        }
-
-        public bool WaitOne(TimeSpan timeout, bool exitContext)
-        {
-            HandleTimer();
-            return StartTimer(innerMutex.WaitOne(timeout, exitContext));
+            return StartTimer(innerMutex.TryEnterWriteLock(MutexWaitMillis));
         }
 
         public void ReleaseMutex()
         {
-            innerMutex.ReleaseMutex();
+            try
+            {
+                innerMutex.ExitWriteLock();
+            }
+            catch (SynchronizationLockException)
+            {
+                ServerHandler.LogMessage($"The time-canceled Mutex '{ID}' has been released");
+            }
+
             StopTimer();
         }
 
@@ -143,9 +114,9 @@ namespace LamestWebserver
         /// Locks the innerMutex in a way, so that it can be used through a using statement (IDisposable)
         /// </summary>
         /// <returns></returns>
-        public UsableMutexLocker Lock()
+        public UsableMultiUsableMutexLocker Lock()
         {
-            return new UsableMutexLocker(innerMutex);
+            return new UsableMultiUsableMutexLocker(this);
         }
 
         /// <summary>
@@ -198,7 +169,7 @@ namespace LamestWebserver
 
             for (int i = 0; i < mutexes.Length; i++)
             {
-                if (!mutexes[i].WaitOne(100))
+                if (!mutexes[i].WaitOne(UsableMutex.MutexWaitMillis))
                 {
                     Dispose();
                     throw new MutexRetryException();
@@ -240,7 +211,7 @@ namespace LamestWebserver
 
             for (int i = 0; i < mutexes.Length; i++)
             {
-                if (!mutexes[i].WaitOne(100))
+                if (!mutexes[i].WaitOne())
                 {
                     Dispose();
                     throw new MutexRetryException();
@@ -265,5 +236,29 @@ namespace LamestWebserver
 
     internal class MutexRetryException : Exception
     {
+    }
+
+    public class UsableMutexSlim
+    {
+        private readonly Mutex innerMutex = new Mutex();
+
+        public UsableSlimMutexLocker Lock() => new UsableSlimMutexLocker(this);
+
+        public class UsableSlimMutexLocker : IDisposable
+        {
+            private readonly UsableMutexSlim innerMutex;
+
+            internal UsableSlimMutexLocker(UsableMutexSlim innerMutex)
+            {
+                this.innerMutex = innerMutex;
+                innerMutex.innerMutex.WaitOne();
+            }
+
+            /// <inheritdoc />
+            public void Dispose()
+            {
+                innerMutex.innerMutex.ReleaseMutex();
+            }
+        }
     }
 }
