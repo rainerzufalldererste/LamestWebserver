@@ -45,7 +45,7 @@ namespace LamestWebserver
             {
                 try
                 {
-                    innerMutex.ExitWriteLock();
+                    innerMutex = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
                 }
                 catch (Exception)
                 {
@@ -234,7 +234,7 @@ namespace LamestWebserver
         }
     }
 
-    internal class MutexRetryException : Exception
+    public class MutexRetryException : Exception
     {
     }
 
