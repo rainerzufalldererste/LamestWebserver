@@ -526,21 +526,25 @@ namespace LamestWebserver
 
             new Thread(() =>
             {
-                lock (output)
+                try
                 {
-                    output.Add(new Output(message, stackTrace, endpoint));
-
-                    if (output.Count > autocls)
+                    lock (output)
                     {
-                        try
+                        output.Add(new Output(message, stackTrace, endpoint));
+
+                        if (output.Count > autocls)
                         {
-                            output.RemoveRange(0, autocls_s);
-                        }
-                        catch (Exception)
-                        {
+                            try
+                            {
+                                output.RemoveRange(0, autocls_s);
+                            }
+                            catch (Exception)
+                            {
+                            }
                         }
                     }
                 }
+                catch (Exception) { }
             }).Start();
         }
 
