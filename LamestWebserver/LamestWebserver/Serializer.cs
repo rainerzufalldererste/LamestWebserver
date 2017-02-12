@@ -1,35 +1,40 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LamestWebserver
 {
     public static class Serializer
     {
+        private readonly static Hashtable _cachedXmlSerialiazers = new Hashtable();
+
         /// <summary>
         /// Caches XMLSerializers to prevent MemoryLeaks.
         /// 
-        /// Source: http://codereview.stackexchange.com/questions/24861/caching-xmlserializer-in-appdomain
+        /// Source: http://codereview.stackexchange.com/questions/24861/caching-xmlserializer-in-appdomain & https://msdn.microsoft.com/en-us/library/system.xml.serialization.xmlserializer(v=vs.110).aspx
         /// </summary>
         /// <param name="type">type parameter of the Serializer</param>
         /// <returns>An XML-Serializer created with the given type argument</returns>
         public static XmlSerializer GetXmlSerializer(Type type)
         {
-            var cache = AppDomain.CurrentDomain;
-            var key = string.Format(CultureInfo.InvariantCulture, "CachedXmlSerializer:{0}", type);
+            var key = type;
 
-            var serializer = cache.GetData(key) as XmlSerializer;
+            var serializer = _cachedXmlSerialiazers[key] as XmlSerializer;
 
             if (serializer == null)
             {
                 serializer = new XmlSerializer(type);
-                cache.SetData(key, serializer);
+                _cachedXmlSerialiazers[key] = serializer;
             }
 
             return serializer;
@@ -74,6 +79,35 @@ namespace LamestWebserver
             }
 
             File.WriteAllText(filename, output.ToString());
+        }
+
+        /// <summary>
+        /// Retrieves JSON-Serialized data from a file.
+        /// </summary>
+        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
+        /// <param name="filename">The name of the file</param>
+        /// <returns>The deserialized object</returns>
+        public static T getJsonData<T>(string filename) where T : new()
+        {
+            string jsonString = File.ReadAllText(filename);
+
+            return (T) JsonConvert.DeserializeObject(jsonString, typeof(T));
+        }
+
+        /// <summary>
+        /// Writes an Object to an JSON-File.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        /// <param name="filename">The name of the file to write</param>
+        public static void writeJsonData<T>(T data, string filename)
+        {
+            if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(filename));
+            }
+
+            File.WriteAllText(filename, JsonConvert.SerializeObject(data));
         }
 
         /// <summary>

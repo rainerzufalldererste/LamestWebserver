@@ -10,6 +10,7 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new CollectionSerializerTests().testCollectionJsonSerialisazion();
             new UsableMutexTest().TestUsableMutexes();
             new WriteLockTest().TestWriteLock();
             new CollectionUnitTests().testSerializeMultiple();

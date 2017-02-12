@@ -8,6 +8,7 @@ using System.Xml.Serialization;
 
 namespace LamestWebserver.Collections
 {
+    [Serializable]
     public class AVLTree<TKey, TValue> : IDictionary<TKey, TValue>, ISerializable, IXmlSerializable where TKey : IComparable, IEquatable<TKey>
     {
         internal AVLNode head;
@@ -245,11 +246,35 @@ namespace LamestWebserver.Collections
             return ret;
         }
 
-        [OnSerializing]
+        //[OnSerializing]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(nameof(count), count);
-            info.AddValue(nameof(head), head);
+            Entry[] elements = new Entry[this.count];
+            int index = 0;
+
+            if (head != null)
+                foreach (var element in head.getAllData())
+                    elements[index++] = element;
+
+            info.AddValue(nameof(elements), elements);
+        }
+
+        [OnDeserializing]
+        void OnDeserializing(StreamingContext context)
+        {
+
+        }
+
+        public AVLTree()
+        { }
+
+        public AVLTree(SerializationInfo info, StreamingContext context)
+        {
+            Entry[] elements;
+            elements = (Entry[])info.GetValue(nameof(elements), typeof(Entry[]));
+
+            foreach (var e in elements)
+                this[e.key] = e.value;
         }
 
         public void Validate()

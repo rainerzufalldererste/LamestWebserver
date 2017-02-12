@@ -41,6 +41,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -62,6 +63,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PacketUnitTest.cs" />
     <Compile Include="PasswordTest.cs" />
+    <Compile Include="CollectionSerializerTests.cs" />
     <Compile Include="UsableMutexTest.cs" />
     <Compile Include="WriteLockTest.cs" />
   </ItemGroup>
