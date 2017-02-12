@@ -46,7 +46,7 @@ namespace LamestWebserver
             /// Transmitts the SessionIDs via HTTP POST
             /// </summary>
             [Obsolete]
-            POST,
+            HttpPost,
             /// <summary>
             /// Transmitts the SessionID via Cookie
             /// </summary>

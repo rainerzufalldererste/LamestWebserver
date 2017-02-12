@@ -46,14 +46,14 @@ namespace LamestWebserver
 
             try
             {
-                ret = System.IO.File.ReadAllText(sessionData.path + "\\" + URL);
+                ret = System.IO.File.ReadAllText(((SessionData)sessionData).ServerWorkingPath + "\\" + URL);
 
-                processData(sessionData, ref ret);
+                processData(((SessionData)sessionData), ref ret);
 
                 if (replaceHREFs)
-                    processHREFs(ref ret, sessionData);
+                    processHREFs(ref ret, ((SessionData)sessionData));
 
-                processInsertions(ref ret, sessionData);
+                processInsertions(ref ret, ((SessionData)sessionData));
             }
             catch(Exception e)
             {
@@ -66,10 +66,10 @@ namespace LamestWebserver
         private void processInsertions(ref string ret, SessionData sessionData)
         {
             // <ISSID> to a hidden input containing the SSID
-            ret = ret.Replace("<ISSID>","<input type='hidden' name='ssid' value='" + sessionData.ssid + "'>");
+            ret = ret.Replace("<ISSID>","<input type='hidden' name='ssid' value='" + sessionData.Ssid + "'>");
 
             // <SSID> to the SSID
-            ret = ret.Replace("<SSID>", sessionData.ssid);
+            ret = ret.Replace("<SSID>", sessionData.Ssid);
 
             // <HREF(xyz)> to a link to xyz containing the SSID
             for (int i = 2; i < ret.Length - 9; i++)
@@ -83,7 +83,7 @@ namespace LamestWebserver
                             string href = ret.Substring(i + 6, (j + 1) - i - 7);
                             ret = ret.Remove(i, (j + 1) - i);
                             ret = ret.Insert(i, " href=\"#\" onclick=\"var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','" + href +
-                                "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','" + sessionData.ssid +
+                                "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','" + sessionData.Ssid +
                                 "');f.appendChild(i);document.body.appendChild(f);f.submit();document.body.remove(f);\"");
 
                             i = j + 1;
@@ -189,7 +189,7 @@ namespace LamestWebserver
                                         + hash + ".setAttribute('type','hidden');i_"
                                         + hash + ".setAttribute('name','ssid');i_"
                                         + hash + ".setAttribute('value','"
-                                        + sessionData.ssid + "');f_"
+                                        + sessionData.Ssid + "');f_"
                                         + hash + ".appendChild(i_"
                                         + hash + ");document.body.appendChild(f_"
                                         + hash + ");f_"
@@ -220,7 +220,7 @@ namespace LamestWebserver
                                     string add = "#\" onclick =\"var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','"
                                         + ret.Substring(linkStartPos, linkEndPos - linkStartPos + 1)
                                         + "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','ssid');i.setAttribute('value','"
-                                        + sessionData.ssid
+                                        + sessionData.Ssid
                                         + "');f.appendChild(i);document.body.appendChild(f);f.submit();document.body.remove(f);";
 
                                     ret = ret.Remove(linkStartPos, linkEndPos - linkStartPos + 1);

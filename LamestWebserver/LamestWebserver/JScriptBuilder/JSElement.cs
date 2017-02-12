@@ -36,7 +36,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public IJSValue CreateNew()
         {
-            return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + getContent(SessionData.currentSessionData, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + getContent(ISessionIdentificator.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
         }
 
         /// <summary>
@@ -46,11 +46,11 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public IJSValue CreateNew(string intoID)
         {
-            return new JSInstantFunction(new JSValue("document.getElementById(\"" + intoID + "\").insertAdjacentHTML(\"beforeend\", " + getContent(SessionData.currentSessionData, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("document.getElementById(\"" + intoID + "\").insertAdjacentHTML(\"beforeend\", " + getContent(ISessionIdentificator.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
         }
 
         /// <inheritdoc />
-        public string getCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public string getCode(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             return "\"" + getContent(sessionData, CallingContext.Inner).JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
@@ -90,10 +90,10 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="context">the current CallingContext</param>
         /// <returns></returns>
-        public abstract string getContent(SessionData sessionData, CallingContext context = CallingContext.Default);
+        public abstract string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default);
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData)
+        public override string getContent(ISessionIdentificator sessionData)
         {
             return getContent(sessionData);
         }
@@ -105,7 +105,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns></returns>
         public static JSElementValue getByID(string id)
         {
-            return new JSElementValue(new JSPMethodCall("document.getElementById", new JSStringValue(id)));
+            return new JSElementValue(new JSFunctionCall("document.getElementById", new JSStringValue(id)));
         }
     }
 
@@ -129,7 +129,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             return Contents;
         }
@@ -164,7 +164,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             string _content = "";
 
@@ -221,7 +221,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             return "<button type='" + buttonType + "' " + GetDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText).Replace("\n", "<br>") + "</button>";
         }
@@ -241,7 +241,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSText(string content) { _content = content; }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             return "<p " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content).Replace("\n", "<br>") + "</p>";
         }
@@ -276,7 +276,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>") + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
         }
@@ -305,10 +305,10 @@ namespace LamestWebserver.JScriptBuilder
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
                     URL += HttpUtility.UrlEncode(Value) + "&checked=";
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".checked, true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ".checked, true);xmlhttp.send();")).DefineAndCall();
 
                 default:
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".value, true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ".value, true);xmlhttp.send();")).DefineAndCall();
             }
         }
 
@@ -337,14 +337,14 @@ namespace LamestWebserver.JScriptBuilder
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
                     URL += HttpUtility.UrlEncode(Value) + "&checked=";
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
-                        + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })).Invoke()
-                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                        + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(ISessionIdentificator.CurrentSession)); return ret; })).Invoke()
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
 
                 default:
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
-                        + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })).Invoke()
-                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSPMethodCall.EncodeURIComponent(getByID(ID).Value).getCode(SessionData.currentSessionData, CallingContext.Inner) + ",true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                        + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(ISessionIdentificator.CurrentSession)); return ret; })).Invoke()
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSFunctionCall.EncodeURIComponent(getByID(ID).Value).getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ",true);xmlhttp.send();")).DefineAndCall();
             }
         }
     }
@@ -380,7 +380,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "<textarea " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
 
@@ -496,7 +496,7 @@ namespace LamestWebserver.JScriptBuilder
         }
         
         /// <inheritdoc />
-        public override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "<select " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
 
@@ -547,7 +547,7 @@ namespace LamestWebserver.JScriptBuilder
                 URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
             }
 
-            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
         }
 
         /// <summary>
@@ -570,9 +570,9 @@ namespace LamestWebserver.JScriptBuilder
                 URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
             }
 
-            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(SessionData.currentSessionData, CallingContext.Inner) + ".innerHTML=this.responseText;"
-                + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData)); return ret; })).Invoke()
-                + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSPMethodCall.EncodeURIComponent(new JSValue("elem.selectedOptions[0].value")).getCode(SessionData.currentSessionData, CallingContext.Inner) + "+ \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += " + JSPMethodCall.EncodeURIComponent(new JSValue("elem.selectedOptions[i].value")).getCode(SessionData.currentSessionData, CallingContext.Inner) + ";if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(ISessionIdentificator.CurrentSession)); return ret; })).Invoke()
+                + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSFunctionCall.EncodeURIComponent(new JSValue("elem.selectedOptions[0].value")).getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + "+ \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += " + JSFunctionCall.EncodeURIComponent(new JSValue("elem.selectedOptions[i].value")).getCode(ISessionIdentificator.CurrentSession, CallingContext.Inner) + ";if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
         }
     }
 
@@ -584,7 +584,7 @@ namespace LamestWebserver.JScriptBuilder
     public abstract class JSInteractableElement : JSElement
     {
         /// <inheritdoc />
-        public abstract override string getContent(SessionData sessionData, CallingContext context = CallingContext.Default);
+        public abstract override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default);
 
         // #AREYOUREADYFORTHEWEB?
 
@@ -1018,7 +1018,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="sessionData">the sessionData</param>
         /// <param name="context">the current Calling Context</param>
         /// <returns>the event attributes as string</returns>
-        public string getEventAttributes(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public string getEventAttributes(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             // #AREYOUREADYFORTHEWEB?
 

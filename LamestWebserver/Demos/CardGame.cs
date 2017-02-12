@@ -38,9 +38,9 @@ namespace Demos
                                 {
                                     descriptionTags = "style='color: #aa5555;background-color:#FFEBEB;margin: 0;'",
                                     text = "This Username has already been taken <i>(or you forgot your secret key)</i>."
-                                }, (SessionData sessionData) =>
+                                }, (sessionData) =>
                                 {
-                                    if (sessionData.getHTTP_HEAD_Value("failed") != null)
+                                    if (sessionData is SessionData && (sessionData as SessionData).GetHttpHeadValue("failed") != null)
                                         return false;
 
                                     return true;
@@ -50,22 +50,22 @@ namespace Demos
 
                             new HForm(InstantPageResponse.addOneTimeConditionalRedirect("/cgame/lobby", "/cgame/?failed", false, (SessionData sessionData) => 
                                 {
-                                    string userName = sessionData.getHTTP_POST_Value("user");
-                                    string key = sessionData.getHTTP_POST_Value("key");
+                                    string userName = sessionData.GetHttpPostValue("user");
+                                    string key = sessionData.GetHttpPostValue("key");
 
                                     if(string.IsNullOrWhiteSpace(userName))
                                         return false;
                                     else if(string.IsNullOrWhiteSpace(key))
                                         return false;
 
-                                    string id = sessionData.ssid;
+                                    string id = sessionData.Ssid;
                                     
-                                    if (sessionData.knownUser)
+                                    if (sessionData.KnownUser)
                                     {
                                         if(secretKeys[id] == key)
                                         {
-                                            sessionData.registerUser(userName);
-                                            sessionData.setUserVariable("cycles", (int?)6);
+                                            sessionData.RegisterUser(userName);
+                                            sessionData.SetUserVariable("cycles", (int?)6);
                                             return true;
                                         }
 
@@ -73,9 +73,9 @@ namespace Demos
                                     }
                                     else
                                     {
-                                        sessionData.registerUser(userName);
-                                        secretKeys.Add(sessionData.ssid, key);
-                                        sessionData.setUserVariable("cycles", (int?)6);
+                                        sessionData.RegisterUser(userName);
+                                        secretKeys.Add(sessionData.Ssid, key);
+                                        sessionData.SetUserVariable("cycles", (int?)6);
                                         return true;
                                     }
                                 }))
@@ -116,17 +116,17 @@ namespace Demos
                             {
                                 new HScript(ScriptCollection.getPageReloadWithFullPOSTInMilliseconds, 2500),
                                 new HText("Searching for a lobby... <i>(The Page might reload a couple of times)</i>"),
-                                new HSyncronizedRuntimeCode((SessionData sessionData) => 
+                                new HSyncronizedRuntimeCode((sessionData) => 
                                     {
-                                        int? cycles = sessionData.getUserVariable<int?>(nameof(cycles));
+                                        int? cycles = sessionData.GetUserVariable<int?>(nameof(cycles));
 
                                         if(cycles.HasValue)
                                         {
-                                            if(cycles < 2 && !findingPlayers.Contains(sessionData.ssid))
+                                            if(cycles < 2 && !findingPlayers.Contains(sessionData.Ssid))
                                             {
                                                 // make sure your next game doesn't start with cycle < 2.
-                                                sessionData.setUserVariable<object>(nameof(cycles), null); // clears the variable space for "cycles" & removes it.
-                                                searchingPlayers.Remove(sessionData.ssid);
+                                                sessionData.SetUserVariable<object>(nameof(cycles), null); // clears the variable space for "cycles" & removes it.
+                                                searchingPlayers.Remove(sessionData.Ssid);
 
                                                 return new HScript(
                                                     ScriptCollection.getPageReferalToX,
@@ -136,10 +136,10 @@ namespace Demos
                                             {
                                                 if(cycles == 6)
                                                 {
-                                                    searchingPlayers.Add(sessionData.ssid);
+                                                    searchingPlayers.Add(sessionData.Ssid);
                                                 }
                                                 
-                                                if (findingPlayers.Contains(sessionData.ssid))
+                                                if (findingPlayers.Contains(sessionData.Ssid))
                                                 {
                                                     if(nextGameHash == "")
                                                     {
@@ -147,9 +147,9 @@ namespace Demos
                                                         currentGame.setSize(findingPlayers.Count);
                                                     }
                                                     
-                                                    findingPlayers.Remove(sessionData.ssid);
-                                                    searchingPlayers.Remove(sessionData.ssid);
-                                                    sessionData.setUserVariable<object>(nameof(cycles), null);
+                                                    findingPlayers.Remove(sessionData.Ssid);
+                                                    searchingPlayers.Remove(sessionData.Ssid);
+                                                    sessionData.SetUserVariable<object>(nameof(cycles), null);
 
                                                     string lastgamehash = nextGameHash;
 
@@ -160,7 +160,7 @@ namespace Demos
 
                                                     return new HScript(ScriptCollection.getPageReferalToX, lastgamehash).getContent(sessionData); // <- without operator overloading
                                                 }
-                                                else if(searchingPlayers.Contains(sessionData.ssid))
+                                                else if(searchingPlayers.Contains(sessionData.Ssid))
                                                 {
                                                     if(searchingPlayers.Count >= cycles)
                                                     {
@@ -173,24 +173,24 @@ namespace Demos
                                                     else
                                                     {
                                                         cycles--;
-                                                        sessionData.setUserVariable(nameof(cycles), cycles);
+                                                        sessionData.SetUserVariable(nameof(cycles), cycles);
                                                     }
                                                 }
                                                 else
                                                 {
                                                     cycles = 5;
-                                                    sessionData.setUserVariable(nameof(cycles), cycles);
-                                                    searchingPlayers.Add(sessionData.ssid);
+                                                    sessionData.SetUserVariable(nameof(cycles), cycles);
+                                                    searchingPlayers.Add(sessionData.Ssid);
                                                 }
                                             }
                                         }
                                         else
                                         {
                                             cycles = 6;
-                                            sessionData.setUserVariable(nameof(cycles), cycles);
+                                            sessionData.SetUserVariable(nameof(cycles), cycles);
                                         }
 
-                                        return "[ " + cycles + " | " + searchingPlayers.GetIndex(sessionData.ssid) + " ]" + new HTable( findingPlayers.Cast<object>(), searchingPlayers.Cast<object>() ).getContent(sessionData);
+                                        return "[ " + cycles + " | " + searchingPlayers.GetIndex(sessionData.Ssid) + " ]" + new HTable( findingPlayers.Cast<object>(), searchingPlayers.Cast<object>() ).getContent(sessionData);
                                     }),
                             }
                         },
@@ -199,7 +199,7 @@ namespace Demos
                             new HScript(ScriptCollection.getPageReferalToXInMilliseconds, "/cgame/", 2500),
                             new HLink("you have to login first. click here to log in.", "/cgame/") } }
                         ,
-                        (SessionData sessionData) => sessionData.knownUser ));
+                        (sessionData) => sessionData.KnownUser ));
             }
 
             private void registerNextGame()
@@ -334,15 +334,15 @@ namespace Demos
 
             protected override string getContents(SessionData sessionData)
             {
-                if (!sessionData.knownUser)
+                if (!sessionData.KnownUser)
                     return "YOU ARE NOT LOGGED IN!";
 
                 if (joinedUserIDs.Count == 0)
                     activePlayer = 0;
 
-                if (!joinedUserIDs.Contains(sessionData.ssid))
+                if (!joinedUserIDs.Contains(sessionData.Ssid))
                 {
-                    joinedUserIDs.Add(sessionData.ssid);
+                    joinedUserIDs.Add(sessionData.Ssid);
                     players.Add(new Player() { cards = new List<Card>() { new Card(), new Card(), new Card(), new Card(), new Card(), new Card(), new Card(), new Card() } });
                 }
 
@@ -350,7 +350,7 @@ namespace Demos
 
                 for (int i = 0; i < joinedUserIDs.Count; i++)
                 {
-                    if(joinedUserIDs[i] == sessionData.ssid)
+                    if(joinedUserIDs[i] == sessionData.Ssid)
                     {
                         thisplayer = i;
                         break;
@@ -360,7 +360,7 @@ namespace Demos
                 if (thisplayer == -1)
                     return "THIS IS NOT YOUR GAME!";
 
-                string postvalue = sessionData.getHTTP_POST_Value("card");
+                string postvalue = sessionData.GetHttpPostValue("card");
 
                 if(players.Count <= 1 && joinedUserIDs.Count > 1)
                 {
@@ -405,7 +405,7 @@ namespace Demos
                     }
                 }
 
-                postvalue = sessionData.getHTTP_POST_Value("draw");
+                postvalue = sessionData.GetHttpPostValue("draw");
 
                 if(thisplayer == activePlayer && postvalue != null && postvalue == "1")
                 {
@@ -458,7 +458,7 @@ namespace Demos
 
                 output += "</div>";
 
-                return "wow, dude, i'm a game! (" + sessionData.ssid + ")" + new HNewLine() * sessionData + "[" + joinedUserIDs.GetIndex(sessionData.ssid) + ": (" + joinedUserIDs.Count + "/" + size + ")] " + new HTable(joinedUserIDs.Cast<object>()) * sessionData + "<hr>" + output;
+                return "wow, dude, i'm a game! (" + sessionData.Ssid + ")" + new HNewLine() * sessionData + "[" + joinedUserIDs.GetIndex(sessionData.Ssid) + ": (" + joinedUserIDs.Count + "/" + size + ")] " + new HTable(joinedUserIDs.Cast<object>()) * sessionData + "<hr>" + output;
             }
 
             internal void setSize(int size)

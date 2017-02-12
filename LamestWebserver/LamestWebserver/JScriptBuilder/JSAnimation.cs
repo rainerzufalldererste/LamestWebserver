@@ -91,11 +91,11 @@ namespace LamestWebserver.JScriptBuilder
                                     + ((Func<string>) (() =>
                                     {
                                         string ret = "";
-                                        executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData));
+                                        executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.CurrentSession));
                                         return ret;
                                     })).Invoke()
                                     + " } } var interval0 = setInterval(move, 10); } "
-                                    + "var obj0 = " + element.getCode(SessionData.currentSessionData, CallingContext.Default) +
+                                    + "var obj0 = " + element.getCode(SessionData.CurrentSession, CallingContext.Default) +
                                     " var oldsize = obj0.getBoundingClientRect().height;  obj0.style.overflow = \"auto\"; obj0.style.height = \"auto\"; changesize(obj0, oldsize, obj0.getBoundingClientRect().height);"))
                     .DefineAndCall();
         }
@@ -121,11 +121,11 @@ namespace LamestWebserver.JScriptBuilder
                                 + ((Func<string>) (() =>
                                 {
                                     string ret = "";
-                                    executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.currentSessionData));
+                                    executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(SessionData.CurrentSession));
                                     return ret;
                                 })).Invoke()
                                 + " } } var interval0 = setInterval(move, 10); } "
-                                + "var obj0 = " + element.getCode(SessionData.currentSessionData, CallingContext.Default) +
+                                + "var obj0 = " + element.getCode(SessionData.CurrentSession, CallingContext.Default) +
                                 " var oldsize = obj0.getBoundingClientRect().height;  obj0.style.overflow = \"auto\"; obj0.style.height = \"auto\"; changesize(obj0, oldsize, 0);")).DefineAndCall();
         }
     }

@@ -74,8 +74,8 @@ namespace Demos
             {
                 elements = new List<HElement>()
                 {
-                    HRuntimeCode.getConditionalRuntimeCode(new HText("DESERIALIZATION FAILED!\n"), new HText(), (SessionData sessionData) => { return (sessionData.getHTTP_HEAD_Value("fail") != null); }),
-                    HRuntimeCode.getConditionalRuntimeCode(new HText("SERIALIZATION FAILED!\n"), new HText(), (SessionData sessionData) => { return (sessionData.getHTTP_HEAD_Value("sfail") != null); }),
+                    HRuntimeCode.getConditionalRuntimeCode(new HText("DESERIALIZATION FAILED!\n"), new HText(), (sessionData) => { return (sessionData is SessionData && (sessionData as SessionData).GetHttpHeadValue("fail") != null); }),
+                    HRuntimeCode.getConditionalRuntimeCode(new HText("SERIALIZATION FAILED!\n"), new HText(), (sessionData) => { return (sessionData is SessionData && (sessionData as SessionData).GetHttpHeadValue("sfail") != null); }),
                     new HLink("add element", "xmladd"),
                     new HNewLine(),
                     new HLink("serialize",
@@ -86,7 +86,7 @@ namespace Demos
                         InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?fail", false, (SessionData sessionData) =>
                             { try { dataValues = Serializer.getData<List<dataPiece>>("xmltest.xml"); return true; } catch(Exception) { return false; } })),
                     new HNewLine(),
-                    new HRuntimeCode((SessionData sessionData) =>
+                    new HRuntimeCode((sessionData) =>
                         {
                             string s = "";
 
@@ -111,9 +111,9 @@ namespace Demos
                 {
                     int age = -1;
 
-                    if (sessionData_.getHTTP_POST_Value("name") != null && int.TryParse(sessionData_.getHTTP_POST_Value("age"), out age) && sessionData_.getHTTP_POST_Value("data") != null)
+                    if (sessionData_.GetHttpPostValue("name") != null && int.TryParse(sessionData_.GetHttpPostValue("age"), out age) && sessionData_.GetHttpPostValue("data") != null)
                     {
-                        dataValues.Add(new dataPiece(sessionData_.getHTTP_POST_Value("name"), sessionData_.getHTTP_POST_Value("data"), age));
+                        dataValues.Add(new dataPiece(sessionData_.GetHttpPostValue("name"), sessionData_.GetHttpPostValue("data"), age));
                     }
                 }))
                 {

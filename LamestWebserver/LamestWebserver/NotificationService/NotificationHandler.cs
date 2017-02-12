@@ -56,7 +56,7 @@ namespace LamestWebserver.NotificationService
 
         public static Notification ExecuteScript(IJSPiece piece)
         {
-            return new ExecuteScriptNotification(piece.getCode(SessionData.currentSessionData));
+            return new ExecuteScriptNotification(piece.getCode(SessionData.CurrentSession));
         }
 
         public static Notification ReplaceDivWithContent(string divId, IJSValue content)
@@ -65,7 +65,7 @@ namespace LamestWebserver.NotificationService
                 new ExecuteScriptNotification(
                     JSElement.getByID(divId)
                         .InnerHTML.Set(content)
-                        .getCode(SessionData.currentSessionData, CallingContext.Inner));
+                        .getCode(SessionData.CurrentSession, CallingContext.Inner));
         }
 
         public static Notification ReplaceDivWithContent(string divId, string content)
@@ -79,7 +79,7 @@ namespace LamestWebserver.NotificationService
                 new ExecuteScriptNotification(
                     JSElement.Body
                         .InnerHTML.Set(content)
-                        .getCode(SessionData.currentSessionData, CallingContext.Inner));
+                        .getCode(SessionData.CurrentSession, CallingContext.Inner));
         }
 
         public static Notification ReplaceBodyWithContent(string content)
@@ -92,7 +92,7 @@ namespace LamestWebserver.NotificationService
             return new ExecuteScriptNotification(
                 JSElement.getByID(divId).InnerHTML.Set(
                     JSElement.getByID(divId).InnerHTML + content
-                ).getCode(SessionData.currentSessionData, CallingContext.Inner));
+                ).getCode(SessionData.CurrentSession, CallingContext.Inner));
         }
 
         public static Notification AddToDivContent(string divId, string content)
@@ -103,13 +103,13 @@ namespace LamestWebserver.NotificationService
         public static Notification ReloadPage()
         {
             return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(JSValue.CurrentBrowserURL)
-                .getCode(SessionData.currentSessionData, CallingContext.Inner));
+                .getCode(SessionData.CurrentSession, CallingContext.Inner));
         }
 
         public static Notification Redirect(IJSValue newPageUrl)
         {
             return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(newPageUrl)
-                .getCode(SessionData.currentSessionData, CallingContext.Inner));
+                .getCode(SessionData.CurrentSession, CallingContext.Inner));
         }
 
         public static Notification Redirect(string newPageUrl)
@@ -248,7 +248,7 @@ namespace LamestWebserver.NotificationService
         }
 
         public JSElement JSElement => new JSPlainText("<script type='text/javascript'>" +
-                                NotificationHelper.JsonNotificationCode(SessionData.currentSessionData, URL, ID, externalAddress, TraceMessagesClient) + "</script>");
+                                NotificationHelper.JsonNotificationCode(SessionData.CurrentSession, URL, ID, externalAddress, TraceMessagesClient) + "</script>");
 
         private JSElement _jselement = null;
 
@@ -357,7 +357,7 @@ namespace LamestWebserver.NotificationService
         {
             return
                 SendingFunction.callFunction(
-                    new JSValue(messageGetter.getCode(SessionData.currentSessionData, CallingContext.Inner)));
+                    new JSValue(messageGetter.getCode(SessionData.CurrentSession, CallingContext.Inner)));
         }
 
         public IJSPiece SendMessage(string message)
@@ -430,9 +430,9 @@ namespace LamestWebserver.NotificationService
                     new List<string>(),
                     new List<string>(),
                     new List<KeyValuePair<string, string>> {new KeyValuePair<string, string>("ssid", ssid)},
-                    URL, URL, input, null, response.proxy.GetNetworkStream());
+                    "", URL, input, null, response.proxy.GetNetworkStream());
             }
-            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.POST)
+            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
             {
                 response.SessionData = new SessionData(
                     new List<string>(),
@@ -440,7 +440,7 @@ namespace LamestWebserver.NotificationService
                     new List<string> { "ssid" },
                     new List<string> { ssid },
                     new List<KeyValuePair<string, string>>(),
-                    URL, URL, input, null, response.proxy.GetNetworkStream());
+                    "", URL, input, null, response.proxy.GetNetworkStream());
             }
             else
             {

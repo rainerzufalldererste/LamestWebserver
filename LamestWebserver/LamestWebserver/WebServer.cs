@@ -396,9 +396,9 @@ namespace LamestWebserver
                                         htp.requestData, msg_, client, nws);
                                     htp_.binaryData = enc.GetBytes(currentRequest.Invoke(sessionData));
 
-                                    if (sessionData.Cookies.Count > 0)
+                                    if (sessionData.SetCookies.Count > 0)
                                     {
-                                        htp_.cookies = sessionData.Cookies;
+                                        htp_.cookies = sessionData.SetCookies;
                                     }
                                 }
                                 catch (MutexRetryException e)
