@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Xml;
 using System.Xml.Schema;
@@ -6,7 +7,7 @@ using System.Xml.Serialization;
 
 namespace LamestWebserver.Security
 {
-    public class Password : IXmlSerializable
+    public class Password : IXmlSerializable, ISerializable
     {
         private byte[] hash;
         private byte[] salt;
@@ -17,6 +18,12 @@ namespace LamestWebserver.Security
         public Password()
         {
 
+        }
+
+        public Password(SerializationInfo info, StreamingContext context)
+        {
+            hash = (byte[])info.GetValue(nameof(this.hash), typeof(byte[]));
+            salt = (byte[])info.GetValue(nameof(this.salt), typeof(byte[]));
         }
 
         public Password(string password)
@@ -81,6 +88,13 @@ namespace LamestWebserver.Security
         {
             writer.WriteElement("hash", hash);
             writer.WriteElement("salt", salt);
+        }
+
+        /// <inheritdoc />
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue(nameof(this.hash), hash);
+            info.AddValue(nameof(this.salt), salt);
         }
     }
 }
