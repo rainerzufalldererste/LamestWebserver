@@ -251,7 +251,7 @@ namespace LamestWebserver
 
                     return getCookiesAndModified(h, linput);
                 }
-                else if(linput[i].Substring(0, "POST ".Length) == "POST ")
+                else if(linput[i].StartsWith("POST "))
                 {
                     h.type = HTTP_Type.POST;
                     int index = 5;
