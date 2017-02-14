@@ -77,6 +77,7 @@ namespace LamestWebserver
             mThread = new Thread(new ThreadStart(HandleTcpListener));
             mThread.Start();
             this.silent = silent;
+            this.folder = folder;
 
             if (useCache)
                 setupFileSystemWatcher();

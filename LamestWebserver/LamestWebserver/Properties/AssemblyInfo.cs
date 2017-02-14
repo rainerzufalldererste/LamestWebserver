@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 // Attribute gesteuert. Ändern Sie diese Attributwerte, um die Informationen zu ändern,
 // die mit einer Assembly verknüpft sind.
 [assembly: AssemblyTitle("LamestWebserver")]
-[assembly: AssemblyDescription("Yeah!k.")]
-[assembly: AssemblyConfiguration("nullConfig - http. yes.")]
+[assembly: AssemblyDescription("LamestWebserver")]
+[assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Christoph Stiller")]
 [assembly: AssemblyProduct("LamestWebserver")]
 [assembly: AssemblyCopyright("Copyright © Christoph Stiller; 2015")]
-[assembly: AssemblyTrademark("nope (tm)")]
+[assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
 // Durch Festlegen von ComVisible auf "false" werden die Typen in dieser Assembly unsichtbar 
