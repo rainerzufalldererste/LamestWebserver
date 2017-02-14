@@ -89,7 +89,7 @@ namespace lwshostcore
                 file = newFileName;
                 newDir = true;
 
-                ServerHandler.LogMessage("Created a local copy at " + newFileName);
+                ServerHandler.LogMessage("[lwshost] [File Load] Created a local copy at " + newFileName);
             }
             catch (Exception) { }
 
@@ -102,63 +102,75 @@ namespace lwshostcore
 
                 foreach (var type in types)
                 {
+                    bool HostIgnore = false;
+
                     try
                     {
-                        foreach (var interface_ in type.GetInterfaces())
+                        foreach (var attribute in type.GetCustomAttributes())
+                            HostIgnore |= (attribute is HostIgnore);
+
+                        if (!HostIgnore)
                         {
-                            try
+                            foreach (var interface_ in type.GetInterfaces())
                             {
-                                if (interface_ == typeof(IURLIdentifyable))
+                                try
                                 {
-                                    var constructor = type.GetConstructor(new Type[] {});
-
-                                    if (constructor == null)
-                                        continue;
-
-                                    if (constructor != null && !addedAnything && TypesPerFile.ContainsKey(file))
+                                    if (interface_ == typeof(IURLIdentifyable))
                                     {
-                                        foreach (var type_ in TypesPerFile[file])
+                                        var constructor = type.GetConstructor(new Type[] {});
+
+                                        if (constructor == null)
+                                            continue;
+
+                                        if (constructor != null && !addedAnything && TypesPerFile.ContainsKey(file))
                                         {
-                                            foreach (var method_ in type_.GetMethods())
+                                            foreach (var type_ in TypesPerFile[file])
                                             {
-                                                try
+                                                foreach (var method_ in type_.GetMethods())
                                                 {
-                                                    if (method_.IsStatic && method_.IsPublic)
+                                                    try
                                                     {
-                                                        foreach (var attribute in method_.GetCustomAttributes())
+                                                        if (method_.IsStatic && method_.IsPublic)
                                                         {
-                                                            if (attribute is ExecuteOnUnload)
+                                                            foreach (var attribute in method_.GetCustomAttributes())
                                                             {
-                                                                method_.Invoke(null, ((ExecuteOnUnload) attribute).Args);
+                                                                if (attribute is ExecuteOnUnload)
+                                                                {
+                                                                    method_.Invoke(null, ((ExecuteOnUnload) attribute).Args);
 
-                                                                ServerHandler.LogMessage(
-                                                                    $"[lwshost] [File Unload] Execute on Unload: {type.Namespace} {type_.Name} {method_.Name} (in {file})");
+                                                                    ServerHandler.LogMessage(
+                                                                        $"[lwshost] [File Load] Execute on Unload: {type.Namespace}.{type_.Name}.{method_.Name} (in {file})");
 
-                                                                break;
+                                                                    break;
+                                                                }
                                                             }
                                                         }
                                                     }
-                                                }
-                                                catch (Exception)
-                                                {
+                                                    catch (Exception)
+                                                    {
 
+                                                    }
                                                 }
                                             }
+
+                                            TypesPerFile.Remove(file);
                                         }
 
-                                        TypesPerFile.Remove(file);
+                                        constructor.Invoke(new object[0]);
+                                        addedAnything = true;
+
+                                        ServerHandler.LogMessage("[lwshost] [Added/Updated] " + type.Namespace + "." + type.Name);
                                     }
+                                }
+                                catch (Exception)
+                                {
 
-                                    constructor.Invoke(new object[0]);
-                                    addedAnything = true;
-
-                                    ServerHandler.LogMessage("[lwshost] [Added/Updated] " + type.Namespace + " " + type.Name);
                                 }
                             }
-                            catch (Exception)
-                            {
-
-                            }
+                        }
+                        else
+                        {
+                            ServerHandler.LogMessage($"[lwshost] [HostIgnore] Ignoring: {type.Namespace}.{type.Name}");
                         }
                     }
                     catch (Exception)
@@ -181,7 +193,7 @@ namespace lwshostcore
                                     {
                                         method_.Invoke(null, ((ExecuteOnLoad) attribute).Args);
 
-                                        ServerHandler.LogMessage($"[lwshost] [File Load] Execute on Load: {type.Namespace} {type.Name} {method_.Name} (in {file})");
+                                        ServerHandler.LogMessage($"[lwshost] [File Load] Execute on Load: {type.Namespace}.{type.Name}.{method_.Name} (in {file})");
 
                                         break;
                                     }
