@@ -42,9 +42,9 @@ namespace lwshostsvc
 #endif
                 try
                 {
-                    System.IO.Directory.Delete(Directory.GetCurrentDirectory() + "\\currentRun", true);
+                    Directory.Delete(Directory.GetCurrentDirectory() + "\\lwshost\\CurrentRun", true);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     
                 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.ServiceProcess;
 using System.Text;
@@ -22,6 +23,15 @@ namespace lwshostsvc
 
         protected override void OnStart(string[] args)
         {
+            try
+            {
+                Directory.Delete(Directory.GetCurrentDirectory() + "\\lwshost\\CurrentRun", true);
+            }
+            catch (Exception)
+            {
+
+            }
+
             foreach (var port in lwshostcore.HostConfig.CurrentHostConfig.Ports)
             {
                 try

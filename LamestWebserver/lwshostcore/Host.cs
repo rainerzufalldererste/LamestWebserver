@@ -79,10 +79,10 @@ namespace lwshostcore
 
             try
             {
-                string newFileName = Directory.GetCurrentDirectory() + "\\currentRun\\" + ID + file.Replace(directoryPath, "");
+                string newFileName = Directory.GetCurrentDirectory() + "\\lwshost\\CurrentRun\\" + ID + file.Replace(directoryPath, "");
 
-                if (!Directory.Exists("currentRun\\" + ID))
-                    Directory.CreateDirectory("currentRun\\" + ID);
+                if (!Directory.Exists("lwshost\\CurrentRun\\" + ID))
+                    Directory.CreateDirectory("lwshost\\CurrentRun\\" + ID);
 
                 File.Copy(file, newFileName);
                 Thread.Sleep(100);

@@ -14,7 +14,7 @@ namespace lwshostcore
         public int[] Ports = new[] {80};
         public string WebserverFileDirectory = "\\web";
 
-        private const string configFile = "lwsconfig.json";
+        private const string configFile = "lwshost\\lwsconfig.json";
 
 
         private static HostConfig _currentConfig = null;
