@@ -142,7 +142,12 @@ namespace LamestWebserver.Security
                 proc.Verb = "runas";
 
                 string args = "";
-                Environment.GetCommandLineArgs().ToList().ForEach(arg => args += arg + " ");
+                int num = 0; // Ignore the First Argument because it's just the executable name
+
+                Environment.GetCommandLineArgs().ToList().ForEach(arg =>
+                {
+                    if (num++ > 0) args += arg + " ";
+                });
 
                 if (args.Length > 0)
                     args.Remove(args.Length - 1);
