@@ -123,6 +123,7 @@
     <Compile Include="PageFiller.cs" />
     <Compile Include="PageResponse.cs" />
     <Compile Include="ScriptCollection.cs" />
+    <Compile Include="Security\ElevateRightsWindows.cs" />
     <Compile Include="Security\Password.cs" />
     <Compile Include="Serializer.cs" />
     <Compile Include="SessionContainer.cs" />

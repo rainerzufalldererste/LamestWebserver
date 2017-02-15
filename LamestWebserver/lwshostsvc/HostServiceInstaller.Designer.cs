@@ -2,7 +2,7 @@
 
 namespace lwshostsvc
 {
-    partial class ProjectInstaller
+    partial class HostServiceInstaller
     {
         /// <summary>
         /// Erforderliche Designervariable.
@@ -40,8 +40,9 @@ namespace lwshostsvc
             // 
             // serviceInstaller1
             // 
+            this.serviceInstaller1.DisplayName = "LamestWebserver Host Service";
             this.serviceInstaller1.ServiceName = "LamestWebserver Host Service";
-            this.serviceInstaller1.Description = "A Service for easier deployment and development using LamestWebserver";
+            this.serviceInstaller1.Description = "A Service for easier integration, deployment and development using LamestWebserver";
             this.serviceProcessInstaller1.Account = ServiceAccount.LocalSystem;
             // 
             // ProjectInstaller
