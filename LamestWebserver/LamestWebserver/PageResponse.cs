@@ -165,6 +165,82 @@ namespace LamestWebserver
     }
 
     /// <summary>
+    /// A direct response as string to the client directory / directory item request
+    /// </summary>
+    public abstract class DirectoryResponse : IURLIdentifyable
+    {
+        /// <inheritdoc />
+        public string URL { get; }
+
+        /// <summary>
+        /// Constructs a new Directory Response object
+        /// </summary>
+        /// <param name="URL">the URLL of the directory</param>
+        /// <param name="register">shall this directory be automatically registered at the server?</param>
+        public DirectoryResponse(string URL, bool register = true)
+        {
+            this.URL = URL;
+
+            if(register)
+                Master.addDirectoryPageToServer(this.URL, getContent);
+        }
+
+        /// <summary>
+        /// Retrieves the content of this Directory as string to the response
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <param name="subUrl">the requested Sub-URL of the request</param>
+        /// <returns></returns>
+        protected abstract string getContent(SessionData sessionData, string subUrl);
+        
+        /// <summary>
+        /// Removes this DirectoryResponse from the Server.
+        /// </summary>
+        protected void removeFromServer()
+        {
+            Master.removeDirectoryPageFromServer(URL);
+        }
+    }
+
+    /// <summary>
+    /// A direct response as HElement to the client directory / directory item request
+    /// </summary>
+    public abstract class DirectoryElementResponse : IURLIdentifyable
+    {
+        /// <inheritdoc />
+        public string URL { get; }
+
+        /// <summary>
+        /// Constructs a new Directory Element Response object
+        /// </summary>
+        /// <param name="URL">the URLL of the directory</param>
+        /// <param name="register">shall this directory be automatically registered at the server?</param>
+        public DirectoryElementResponse(string URL, bool register = true)
+        {
+            this.URL = URL;
+
+            if (register)
+                Master.addDirectoryPageToServer(this.URL, (sessionData, subURL) => getContent(sessionData, subURL)*sessionData);
+        }
+
+        /// <summary>
+        /// Retrieves the content of this Directory as HElement to the response
+        /// </summary>
+        /// <param name="sessionData">the current SessionData</param>
+        /// <param name="subUrl">the requested Sub-URL of the request</param>
+        /// <returns></returns>
+        protected abstract HElement getContent(SessionData sessionData, string subUrl);
+
+        /// <summary>
+        /// Removes this DirectoryElementResponse from the Server.
+        /// </summary>
+        protected void removeFromServer()
+        {
+            Master.removeDirectoryPageFromServer(URL);
+        }
+    }
+
+    /// <summary>
     /// This Helper-Class is Used to quickly define new pages at the server
     /// </summary>
     public static class InstantPageResponse

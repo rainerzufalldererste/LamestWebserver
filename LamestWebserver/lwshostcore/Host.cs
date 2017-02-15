@@ -17,14 +17,17 @@ namespace lwshostcore
         private FileSystemWatcher fileSystemWatcher;
         private string ID = SessionContainer.generateHash();
         private string directoryPath;
-        private bool removePlaceholderUrlOnContent;
 
         public AVLHashMap<string, IEnumerable<Type>> TypesPerFile = new AVLHashMap<string, IEnumerable<Type>>();
 
-        public Host(string directory, bool removePlaceholderUrlOnContent = false)
+        public event Action<string> OnPageRegister = (s) => { }; 
+
+        public Host(string directory, Action<string> OnPageRegister = null)
         {
             directoryPath = directory;
-            this.removePlaceholderUrlOnContent = removePlaceholderUrlOnContent;
+
+            if (OnPageRegister != null)
+                this.OnPageRegister = OnPageRegister;
 
             ServerHandler.LogMessage("Reading Directory...");
 
@@ -158,11 +161,7 @@ namespace lwshostcore
                                             TypesPerFile.Remove(file);
                                         }
 
-                                        if (removePlaceholderUrlOnContent)
-                                        {
-                                            Master.removeDirectoryPageFromServer("/");
-                                            removePlaceholderUrlOnContent = false;
-                                        }
+                                        OnPageRegister(type.Namespace + "." + type.Name);
 
                                         constructor.Invoke(new object[0]);
                                         addedAnything = true;

@@ -153,13 +153,24 @@ namespace lwshostsvc
 
             LamestWebserver.Master.addDirectoryPageToServer("/",
                 (data, url) => new PageBuilder("LamestWebserver Host Service")
-                               {
-                                   elements = {new HContainer() {elements = {new HHeadline("No pages have been added to the Host Service yet.")}}}
-                               }*data);
+                {
+                    elements = { new HContainer() { elements = { new HHeadline("No pages have been added to the Host Service yet.") } } }
+                } * data);
+
+            bool removed = false;
+
+            Action<string> onRegister = s =>
+            {
+                if (!removed)
+                    LamestWebserver.Master.removeDirectoryPageFromServer("/");
+
+                removed = true;
+            };
 
             foreach (var hostDirectory in lwshostcore.HostConfig.CurrentHostConfig.BinaryDirectories)
             {
-                hosts.Add(new Host(hostDirectory, true));
+                var host = new Host(hostDirectory, onRegister);
+                hosts.Add(host);
             }
 #endif
         }
