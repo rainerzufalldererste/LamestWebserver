@@ -9,6 +9,7 @@ using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
 using lwshostcore;
+using LamestWebserver;
 
 namespace lwshostsvc
 {
@@ -44,9 +45,15 @@ namespace lwshostsvc
                 }
             }
 
+            LamestWebserver.Master.addDirectoryPageToServer("/",
+                (data, url) => new PageBuilder("LamestWebserver Host Service")
+                               {
+                                   elements = {new HContainer() {elements = {new HHeadline("No pages have been added to the Host Service yet.")}}}
+                               }*data);
+
             foreach (var hostDirectory in lwshostcore.HostConfig.CurrentHostConfig.BinaryDirectories)
             {
-                hosts.Add(new Host(hostDirectory));
+                hosts.Add(new Host(hostDirectory, true));
             }
         }
 

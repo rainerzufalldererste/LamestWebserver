@@ -16,17 +16,32 @@ namespace LamestWebserver
         public delegate string getContents(SessionData data);
 
         /// <summary>
-        /// the prototype for adding new pages in servers.
+        /// The prototype for a response of a directory page from the server.
         /// </summary>
-        /// <param name="hash">the URL</param>
+        /// <param name="data">the current SessionData</param>
+        /// <param name="subUrl">the sub-URL of this directory request</param>
+        /// <returns>the response as string</returns>
+        public delegate string getDirectoryContents(SessionData data, string subUrl);
+
+        /// <summary>
+        /// the prototype for adding new pages to the servers.
+        /// </summary>
+        /// <param name="url">the URL</param>
         /// <param name="function">the code to execute</param>
-        public delegate void addFunction(string hash, getContents function);
+        public delegate void addFunction(string url, getContents function);
+
+        /// <summary>
+        /// The prototype for adding new directory pages to the servers.
+        /// </summary>
+        /// <param name="url">the url of the directory</param>
+        /// <param name="function">the function to add</param>
+        public delegate void addDirectoryFunction(string url, getDirectoryContents function);
 
         /// <summary>
         /// the prototype for removing a page from the server 
         /// </summary>
-        /// <param name="hash">the URL of the page</param>
-        public delegate void removeFunction(string hash);
+        /// <param name="url">the URL of the page</param>
+        public delegate void removeFunction(string url);
 
         /// <summary>
         /// the event, that raises if a page is added
@@ -44,32 +59,73 @@ namespace LamestWebserver
         public static event addFunction addOneTimeFunctionEvent;
 
         /// <summary>
+        /// the event, that raises if a directory page is added
+        /// </summary>
+        public static event addDirectoryFunction addDirectoryFunctionEvent = (url, function) => {};
+
+        /// <summary>
+        /// the event, thath raises if a directory page is removed
+        /// </summary>
+        public static event removeFunction removeDirectoryFunctionEvent = (url) => {};
+
+        /// <summary>
         /// Adds an arbitrary response to the listening servers
         /// </summary>
-        /// <param name="URL">the url of the page to add</param>
-        /// <param name="getc">the code of the page</param>
-        public static void addFuntionToServer(string URL, getContents getc)
+        /// <param name="url">the url of the page to add</param>
+        /// <param name="function">the code of the page</param>
+        public static void addFuntionToServer(string url, getContents function)
         {
-            addFunctionEvent(URL, getc);
+            addFunctionEvent(url, function);
         }
 
         /// <summary>
         /// removes an arbitrary response from the listening servers
         /// </summary>
-        /// <param name="URL">the URL of the page to remove</param>
-        public static void removeFunctionFromServer(string URL)
+        /// <param name="url">the URL of the page to remove</param>
+        public static void removeFunctionFromServer(string url)
         {
-            removeFunctionEvent(URL);
+            removeFunctionEvent(url);
         }
 
         /// <summary>
         /// Adds a function to all listening servers, which will only be available once
         /// </summary>
-        /// <param name="hash">the URL at which this page will be available</param>
-        /// <param name="code">the code to execute</param>
-        public static void addOneTimeFuntionToServer(string hash, getContents code)
+        /// <param name="url">the URL at which this page will be available</param>
+        /// <param name="function">the code to execute</param>
+        public static void addOneTimeFuntionToServer(string url, getContents function)
         {
-            addOneTimeFunctionEvent(hash, code);
+            addOneTimeFunctionEvent(url, function);
+        }
+
+        /// <summary>
+        /// Adds a directory function to all listening servers
+        /// </summary>
+        /// <param name="url">the URL at which this directory page will be available</param>
+        /// <param name="function">the code to execute</param>
+        public static void addDirectoryPageToServer(string url, getDirectoryContents function)
+        {
+            if (!url.EndsWith("/"))
+                url += "/";
+
+            if (url.StartsWith("/"))
+                url = url.Substring(1);
+
+            addDirectoryFunctionEvent(url, function);
+        }
+
+        /// <summary>
+        /// Removes a directory function from all listening servers
+        /// </summary>
+        /// <param name="url">the URL at which this directory page is available</param>
+        public static void removeDirectoryPageFromServer(string url)
+        {
+            if (!url.EndsWith("/"))
+                url += "/";
+
+            if (url.StartsWith("/"))
+                url = url.Substring(1);
+
+            removeDirectoryFunctionEvent(url);
         }
 
         /// <summary>

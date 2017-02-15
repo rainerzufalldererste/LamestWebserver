@@ -104,6 +104,7 @@ namespace lwshostsvc
 
                     case "-?":
                     default:
+                        Console.WriteLine("\n===========================================\n|||                                     |||\n|||     LamestWebserver Host Service    |||\n|||                                     |||\n===========================================\n");
                         Console.WriteLine("-i   (--install)      Install the Service");
                         Console.WriteLine("-u   (--uninstall)    Uninstall the Service");
                         return;
@@ -150,9 +151,15 @@ namespace lwshostsvc
                 }
             }
 
+            LamestWebserver.Master.addDirectoryPageToServer("/",
+                (data, url) => new PageBuilder("LamestWebserver Host Service")
+                               {
+                                   elements = {new HContainer() {elements = {new HHeadline("No pages have been added to the Host Service yet.")}}}
+                               }*data);
+
             foreach (var hostDirectory in lwshostcore.HostConfig.CurrentHostConfig.BinaryDirectories)
             {
-                hosts.Add(new Host(hostDirectory));
+                hosts.Add(new Host(hostDirectory, true));
             }
 #endif
         }

@@ -31,6 +31,7 @@ namespace LamestWebserver
         private AVLHashMap<string, Master.getContents> pageResponses = new AVLHashMap<string, Master.getContents>(256);
         private QueuedAVLTree<string, Master.getContents> oneTimePageResponses = new QueuedAVLTree<string, Master.getContents>(4096);
         private AVLHashMap<string, WebSocketCommunicationHandler> webSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(64);
+        private AVLTree<string, Master.getDirectoryContents> directoryResponses = new AVLTree<string, Master.getDirectoryContents>();
 
         private bool csharp_bridge = true;
         internal bool useCache = true;
@@ -66,6 +67,8 @@ namespace LamestWebserver
                 Master.addFunctionEvent += AddFunction;
                 Master.removeFunctionEvent += RemoveFunction;
                 Master.addOneTimeFunctionEvent += AddOneTimeFunction;
+                Master.addDirectoryFunctionEvent += AddDirectoryFunction;
+                Master.removeDirectoryFunctionEvent += RemoveDirectoryFunction;
             }
 
             // Websockets
@@ -93,6 +96,8 @@ namespace LamestWebserver
                 Master.addFunctionEvent -= AddFunction;
                 Master.removeFunctionEvent -= RemoveFunction;
                 Master.addOneTimeFunctionEvent -= AddOneTimeFunction;
+                Master.addDirectoryFunctionEvent -= AddDirectoryFunction;
+                Master.removeDirectoryFunctionEvent -= RemoveDirectoryFunction;
             }
 
             try
@@ -226,6 +231,20 @@ namespace LamestWebserver
             pageResponses.Remove(URL);
 
             ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (WebserverApi)");
+        }
+        
+        public void AddDirectoryFunction(string URL, Master.getDirectoryContents function)
+        {
+            directoryResponses.Add(URL, function);
+
+            ServerHandler.LogMessage("The Directory with the URL '" + URL+ "' is now available at the Webserver. (WebserverApi)");
+        }
+
+        private void RemoveDirectoryFunction(string URL)
+        {
+            directoryResponses.Remove(URL);
+
+            ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
         }
 
         public void AddWebsocketHandler(WebSocketCommunicationHandler handler)
@@ -449,30 +468,32 @@ namespace LamestWebserver
                                 else
                                     ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
                             }
-                            else if (htp.requestData.Length > 3 && htp.requestData.Substring(htp.requestData.Length - 4).ToLower() == ".hcs" && File.Exists((folder != "/" ? folder : "") + "/" + htp.requestData))
+                            else if (htp.requestData.ToLower().EndsWith(".hcs") && File.Exists((folder != "/" ? folder : "") + "/" + htp.requestData))
                             {
                                 string result = "";
                                 Exception error = null;
 
                                 try
                                 {
-                                    result = Hook.resolveScriptFromFile(folder + htp.requestData, new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, htp.cookies, folder, htp.requestData, msg_, client, nws));
+                                    result = Hook.resolveScriptFromFile(folder + htp.requestData,
+                                        new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, htp.cookies, folder, htp.requestData, msg_, client,
+                                            nws));
                                 }
                                 catch (Exception e)
                                 {
                                     result = Master.getErrorMsg("Exception in C# Script for '"
-                                        + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
-                                        + e.ToString().Replace("\r\n", "<br>")
+                                                                + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
+                                                                                         + e.ToString().Replace("\r\n", "<br>")
 #if DEBUG
                                         + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                         + msg_.Replace("\r\n", "<br>")
 #endif
-                                        + "</div></p>");
+                                                                                         + "</div></p>");
 
                                     error = e;
                                 }
 
-                                HTTP_Packet htp_ = new HTTP_Packet() { binaryData = enc.GetBytes(result) };
+                                HTTP_Packet htp_ = new HTTP_Packet() {binaryData = enc.GetBytes(result)};
                                 buffer = htp_.getPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
 
@@ -482,16 +503,143 @@ namespace LamestWebserver
                                 if (error == null)
                                     ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'. (C# Script)");
                                 else
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'. (C# Script)\nThe URL crashed with the following Exception:\n" + error);
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'. (C# Script)\nThe URL crashed with the following Exception:\n" +
+                                                             error);
                             }
                             else
                             {
-                                buffer = GetFile(htp.requestData, htp, enc, msg_).getPackage(enc);
-                                nws.Write(buffer, 0, buffer.Length);
+                                var response = GetFile(htp.requestData, htp, enc, msg_);
 
-                                buffer = null;
+                                if (response != null)
+                                {
 
-                                ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'.");
+                                    buffer = response.getPackage(enc);
+                                    nws.Write(buffer, 0, buffer.Length);
+
+                                    buffer = null;
+
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "'.");
+                                }
+                                else
+                                {
+                                    Master.getDirectoryContents directory = null;
+                                    string bestDirectoryMatch = "";
+
+                                    foreach (var dir in directoryResponses)
+                                    {
+                                        if ((dir.Key.Length > bestDirectoryMatch.Length || dir.Key.Length == 0) && dir.Key.Length <= htp.requestData.Length &&
+                                            htp.requestData.StartsWith(dir.Key))
+                                        {
+                                            bestDirectoryMatch = dir.Key;
+                                            directory = dir.Value;
+                                        }
+                                    }
+
+                                    if (directory != null)
+                                    {
+                                        HTTP_Packet htp_ = new HTTP_Packet();
+
+                                        Exception error = null;
+
+                                        int tries = 0;
+                                        RetryGetData:
+                                        try
+                                        {
+                                            SessionData sessionData = new SessionData(htp.additionalHEAD, htp.additionalPOST, htp.valuesHEAD, htp.valuesPOST, htp.cookies, folder,
+                                                htp.requestData, msg_, client, nws);
+                                            htp_.binaryData = enc.GetBytes(directory.Invoke(sessionData, htp.requestData.Substring(bestDirectoryMatch.Length)));
+
+                                            if (sessionData.SetCookies.Count > 0)
+                                            {
+                                                htp_.cookies = sessionData.SetCookies;
+                                            }
+                                        }
+                                        catch (MutexRetryException e)
+                                        {
+                                            ServerHandler.LogMessage("MutexRetryException. Retrying...");
+
+                                            if (tries >= 10)
+                                            {
+                                                htp_.binaryData = enc.GetBytes(Master.getErrorMsg("Exception in Page Response for '"
+                                                                                                  + htp.requestData + "'",
+                                                    $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
+                                                    + e.ToString().Replace("\r\n", "<br>")
+#if DEBUG
+                                        + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + msg_.Replace("\r\n", "<br>")
+#endif
+                                                    + "</div></p>"));
+
+                                                error = e;
+                                                goto SendPackage;
+                                            }
+
+                                            tries++;
+                                            Thread.Sleep(random.Next((25)*tries));
+                                            goto RetryGetData;
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            htp_.binaryData = enc.GetBytes(Master.getErrorMsg("Exception in Page Response for '"
+                                                                                              + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
+                                                                                                                       + e.ToString().Replace("\r\n", "<br>")
+#if DEBUG
+                                        + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + msg_.Replace("\r\n", "<br>")
+#endif
+                                                                                                                       + "</div></p>"));
+
+                                            error = e;
+                                        }
+
+                                        SendPackage:
+
+                                        buffer = htp_.getPackage(enc);
+                                        nws.Write(buffer, 0, buffer.Length);
+
+                                        if (error == null)
+                                            ServerHandler.LogMessage("Client requested the Directory URL '" + htp.requestData + "' in Directory Page '" + bestDirectoryMatch +
+                                                                     "'. (C# WebserverApi)");
+                                        else
+                                            ServerHandler.LogMessage("Client requested the Directory URL '" + htp.requestData + "' in Directory Page '" + bestDirectoryMatch +
+                                                                     "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
+                                    }
+                                    else
+                                    {
+                                        if (htp.requestData.EndsWith("/"))
+                                        {
+                                            buffer = new HTTP_Packet()
+                                            {
+                                                status = "403 Forbidden",
+                                                binaryData = enc.GetBytes(Master.getErrorMsg(
+                                                    "Error 403: Forbidden",
+                                                    "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
+#if DEBUG
+                                                "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + 
+#endif
+                                                    "</div></p>"))
+                                            }.getPackage(enc);
+                                        }
+                                        else
+                                        {
+                                            buffer = new HTTP_Packet()
+                                            {
+                                                status = "404 File Not Found",
+                                                binaryData = enc.GetBytes(Master.getErrorMsg(
+                                                    "Error 404: Page Not Found",
+                                                    "<p>The URL you requested did not match any page or file on the server.</p>" +
+#if DEBUG
+                                                "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + msg_.Replace("\r\n", "<br>") + 
+#endif
+                                                    "</div></p>"))
+                                            }.getPackage(enc);
+                                        }
+
+                                        nws.Write(buffer, 0, buffer.Length);
+
+                                        ServerHandler.LogMessage("Client requested the URL '" + htp.requestData + "' which couldn't be found on the server. Retrieved Error 404.");
+                                    }
+                                }
                             }
                         }
                     }
@@ -566,17 +714,7 @@ namespace LamestWebserver
                     }
                     else
                     {
-                        return new HTTP_Packet()
-                        {
-                            status = "403 Forbidden",
-                            binaryData = enc.GetBytes(Master.getErrorMsg(
-                                "Error 403: Forbidden",
-                                "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
-#if DEBUG
-                                "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + 
-#endif
-                                "</div></p>"))
-                        };
+                        return null;
                     }
                 }
                 else if (useCache && getFromCache(fileName, out file))
@@ -616,17 +754,7 @@ namespace LamestWebserver
                 }
                 else
                 {
-                    return new HTTP_Packet()
-                    {
-                        status = "404 File Not Found",
-                        binaryData = enc.GetBytes(Master.getErrorMsg(
-                            "Error 404: Page Not Found",
-                            "<p>The URL you requested did not match any page or file on the server.</p>" +
-#if DEBUG
-                                "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" + fullPacketString.Replace("\r\n", "<br>") + 
-#endif
-                                "</div></p>"))
-                    };
+                    return null;
                 }
 
                 if (notModified)
