@@ -107,14 +107,14 @@ namespace lwshostcore
 
                 foreach (var type in types)
                 {
-                    bool HostIgnore = false;
+                    bool IgnoreDiscovery = false;
 
                     try
                     {
                         foreach (var attribute in type.GetCustomAttributes())
-                            HostIgnore |= (attribute is HostIgnore);
+                            IgnoreDiscovery |= (attribute is IgnoreDiscovery);
 
-                        if (!HostIgnore)
+                        if (!IgnoreDiscovery)
                         {
                             foreach (var interface_ in type.GetInterfaces())
                             {

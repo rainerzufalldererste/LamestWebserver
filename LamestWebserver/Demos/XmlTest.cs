@@ -136,7 +136,7 @@ namespace Demos
                         new HButton("Add", HButton.EButtonType.submit)
                     }
                 }
-                .getContent(sessionData);
+                .GetContent(sessionData);
             }
         }
     }

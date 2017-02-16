@@ -28,12 +28,12 @@ namespace Demos
         {
             PageBuilder _pb = new PageBuilder("jsconn");
 
-            _pb.addElement(handler.JSElement);
+            _pb.AddElement(handler.JSElement);
 
             JSInput input = new JSInput(HInput.EInputType.text, "text");
             input.onblur = handler.SendMessage(JSElement.getByID(input.ID).Value);
 
-            _pb.addElement(input);
+            _pb.AddElement(input);
 
             return _pb;
         }

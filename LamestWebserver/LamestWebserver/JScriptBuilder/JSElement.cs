@@ -36,7 +36,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public IJSValue CreateNew()
         {
-            return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + getContent(ISessionIdentificator.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + GetContent(ISessionIdentificator.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
         }
 
         /// <summary>
@@ -46,13 +46,13 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public IJSValue CreateNew(string intoID)
         {
-            return new JSInstantFunction(new JSValue("document.getElementById(\"" + intoID + "\").insertAdjacentHTML(\"beforeend\", " + getContent(ISessionIdentificator.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("document.getElementById(\"" + intoID + "\").insertAdjacentHTML(\"beforeend\", " + GetContent(ISessionIdentificator.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
         }
 
         /// <inheritdoc />
         public string getCode(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
-            return "\"" + getContent(sessionData, CallingContext.Inner).JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
+            return "\"" + GetContent(sessionData, CallingContext.Inner).JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
 
         /// <summary>
@@ -90,12 +90,12 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="context">the current CallingContext</param>
         /// <returns></returns>
-        public abstract string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default);
+        public abstract string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default);
 
         /// <inheritdoc />
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
-            return getContent(sessionData);
+            return GetContent(sessionData);
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             return Contents;
         }
@@ -164,13 +164,13 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             string _content = "";
 
             for (int i = 0; i < _elements.Count; i++)
             {
-                _content += _elements[i].getContent(sessionData, CallingContext.Default);
+                _content += _elements[i].GetContent(sessionData, CallingContext.Default);
             }
 
             string ret = "<div id=\"" + GlobalID + "\" class=\"" + GlobalID + "\" style=\"display: block;position: fixed;top: 0;right: 0;left: 0;bottom: 0;width: 100%;height: 100%;z-index: 100;background-color: rgba(33, 33, 33, 0.75);margin: 0px\"><div class=\"" + GlobalInnerID + "\" id=\"" + GlobalInnerID + "\" style=\"display: block;position: relative;margin: auto;background-color: #fff;max-width: 600px;overflow: auto;margin-top: 8em;\">";
@@ -221,7 +221,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             return "<button type='" + buttonType + "' " + GetDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText).Replace("\n", "<br>") + "</button>";
         }
@@ -241,7 +241,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSText(string content) { _content = content; }
 
         /// <inheritdoc />
-        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             return "<p " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content).Replace("\n", "<br>") + "</p>";
         }
@@ -276,7 +276,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>") + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
         }
@@ -380,7 +380,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "<textarea " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
 
@@ -496,7 +496,7 @@ namespace LamestWebserver.JScriptBuilder
         }
         
         /// <inheritdoc />
-        public override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "<select " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
 
@@ -584,7 +584,7 @@ namespace LamestWebserver.JScriptBuilder
     public abstract class JSInteractableElement : JSElement
     {
         /// <inheritdoc />
-        public abstract override string getContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default);
+        public abstract override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default);
 
         // #AREYOUREADYFORTHEWEB?
 

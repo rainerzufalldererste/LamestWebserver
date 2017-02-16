@@ -16,7 +16,7 @@ namespace LamestWebserver.Attributes
         }
     }
     
-    public class HostIgnore : Attribute
+    public class IgnoreDiscovery : Attribute
     {
         
     }

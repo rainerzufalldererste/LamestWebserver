@@ -39,7 +39,7 @@ namespace LamestWebserver
         /// <summary>
         /// This method removes the current page from the server (as URL identifyable object)
         /// </summary>
-        protected void removeFromServer()
+        protected void RemoveFromServer()
         {
             Master.removeFunctionFromServer(URL);
         }
@@ -112,7 +112,7 @@ namespace LamestWebserver
         /// <summary>
         /// This method is used to remove the current page from the server (as URL identifyable object)
         /// </summary>
-        protected void removeFromServer()
+        protected void RemoveFromServer()
         {
             Master.removeFunctionFromServer(URL);
         }
@@ -182,7 +182,7 @@ namespace LamestWebserver
             this.URL = URL;
 
             if(register)
-                Master.addDirectoryPageToServer(this.URL, getContent);
+                Master.addDirectoryPageToServer(this.URL, GetContent);
         }
 
         /// <summary>
@@ -191,12 +191,12 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="subUrl">the requested Sub-URL of the request</param>
         /// <returns></returns>
-        protected abstract string getContent(SessionData sessionData, string subUrl);
+        protected abstract string GetContent(SessionData sessionData, string subUrl);
         
         /// <summary>
         /// Removes this DirectoryResponse from the Server.
         /// </summary>
-        protected void removeFromServer()
+        protected void RemoveFromServer()
         {
             Master.removeDirectoryPageFromServer(URL);
         }
@@ -220,7 +220,7 @@ namespace LamestWebserver
             this.URL = URL;
 
             if (register)
-                Master.addDirectoryPageToServer(this.URL, (sessionData, subURL) => getContent(sessionData, subURL)*sessionData);
+                Master.addDirectoryPageToServer(this.URL, (sessionData, subURL) => GetContent(sessionData, subURL)*sessionData);
         }
 
         /// <summary>
@@ -229,12 +229,12 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="subUrl">the requested Sub-URL of the request</param>
         /// <returns></returns>
-        protected abstract HElement getContent(SessionData sessionData, string subUrl);
+        protected abstract HElement GetContent(SessionData sessionData, string subUrl);
 
         /// <summary>
         /// Removes this DirectoryElementResponse from the Server.
         /// </summary>
-        protected void removeFromServer()
+        protected void RemoveFromServer()
         {
             Master.removeDirectoryPageFromServer(URL);
         }

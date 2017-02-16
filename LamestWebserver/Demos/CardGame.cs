@@ -27,7 +27,7 @@ namespace Demos
             {
                 stylesheetCode = stylesheet;
 
-                addElement(
+                AddElement(
                     new HContainer()
                     {
                         elements = new List<HElement>()
@@ -110,7 +110,7 @@ namespace Demos
 
                 stylesheetCode = stylesheet;
 
-                addElement(
+                AddElement(
                     HRuntimeCode.getConditionalRuntimeCode(
                         new HContainer() { elements = new List<HElement>()
                             {
@@ -130,7 +130,7 @@ namespace Demos
 
                                                 return new HScript(
                                                     ScriptCollection.getPageReferalToX,
-                                                    InstantPageResponse.addOneTimeTimedRedirect("/cgame/", "Sorry.\nWe couldn't find a game for you.", 5000, true)) * sessionData; // <- operator overloading can be fishy. this executes HScript.getContent(sessionData);
+                                                    InstantPageResponse.addOneTimeTimedRedirect("/cgame/", "Sorry.\nWe couldn't find a game for you.", 5000, true)) * sessionData; // <- operator overloading can be fishy. this executes HScript.GetContent(sessionData);
                                             }
                                             else
                                             {
@@ -158,7 +158,7 @@ namespace Demos
                                                         nextGameHash = "";
                                                     }
 
-                                                    return new HScript(ScriptCollection.getPageReferalToX, lastgamehash).getContent(sessionData); // <- without operator overloading
+                                                    return new HScript(ScriptCollection.getPageReferalToX, lastgamehash).GetContent(sessionData); // <- without operator overloading
                                                 }
                                                 else if(searchingPlayers.Contains(sessionData.Ssid))
                                                 {
@@ -190,7 +190,7 @@ namespace Demos
                                             sessionData.SetUserVariable(nameof(cycles), cycles);
                                         }
 
-                                        return "[ " + cycles + " | " + searchingPlayers.GetIndex(sessionData.Ssid) + " ]" + new HTable( findingPlayers.Cast<object>(), searchingPlayers.Cast<object>() ).getContent(sessionData);
+                                        return "[ " + cycles + " | " + searchingPlayers.GetIndex(sessionData.Ssid) + " ]" + new HTable( findingPlayers.Cast<object>(), searchingPlayers.Cast<object>() ).GetContent(sessionData);
                                     }),
                             }
                         },
@@ -364,7 +364,7 @@ namespace Demos
 
                 if(players.Count <= 1 && joinedUserIDs.Count > 1)
                 {
-                    removeFromServer();
+                    RemoveFromServer();
 
                     return new HScript(ScriptCollection.getPageReferalToX, InstantPageResponse.addOneTimeTimedRedirect("/cgame/lobby", "You have lost the game!", 2500, true)) * sessionData;
                 }

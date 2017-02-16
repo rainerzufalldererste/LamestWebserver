@@ -15,7 +15,7 @@ namespace LamestWebserver
         private string referealURL;
 
         /// <summary>
-        /// a function pointer to the executed method on getContent(ISessionIdentificator sessionData)
+        /// a function pointer to the executed method on GetContent(ISessionIdentificator sessionData)
         /// </summary>
         public Func<ISessionIdentificator, string> getContentMethod;
 
@@ -160,7 +160,7 @@ namespace LamestWebserver
 
             for (int i = 0; i < base.elements.Count; i++)
             {
-                ret += base.elements[i].getContent(sessionData);
+                ret += base.elements[i].GetContent(sessionData);
             }
 
             ret += "</body> </html>";
@@ -173,7 +173,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the contents as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret;
 
@@ -191,13 +191,13 @@ namespace LamestWebserver
 
         private void register()
         {
-            Master.addFuntionToServer(URL, getContent);
+            Master.addFuntionToServer(URL, GetContent);
         }
 
         /// <summary>
         /// via this method you can "unregister" this pages url (if this pageBuilder is registered) at the server.
         /// </summary>
-        protected void removeFromServer()
+        protected void RemoveFromServer()
         {
             Master.removeFunctionFromServer(URL);
         }
@@ -238,15 +238,15 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">sessionData of the currentUser</param>
         /// <returns></returns>
-        public abstract string getContent(ISessionIdentificator sessionData);
+        public abstract string GetContent(ISessionIdentificator sessionData);
 
         /// <summary>
         /// FISHY FISHY FISHY FISH, TASE A PIECE OF WISHY DISH
         /// </summary>
-        /// <returns>element getContent(sessionData)</returns>
+        /// <returns>element GetContent(sessionData)</returns>
         public static string operator * (HElement element, ISessionIdentificator sessionData)
         {
-            return element.getContent(sessionData);
+            return element.GetContent(sessionData);
         }
         
         /// <summary>
@@ -255,7 +255,7 @@ namespace LamestWebserver
         /// <returns>this element as string</returns>
         public override string ToString()
         {
-            return this.getContent(ISessionIdentificator.CurrentSession);
+            return this.GetContent(ISessionIdentificator.CurrentSession);
         }
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             return "<br>";
         }
@@ -303,7 +303,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<hr ";
 
@@ -338,7 +338,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             return text;
         }
@@ -374,7 +374,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<a ";
 
@@ -483,7 +483,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<img ";
 
@@ -543,7 +543,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<p ";
 
@@ -610,7 +610,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<h" + level + " ";
 
@@ -676,7 +676,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<input ";
 
@@ -854,7 +854,7 @@ namespace LamestWebserver
         /// Adds an element to the element list
         /// </summary>
         /// <param name="element">the element</param>
-        public void addElement(HElement element)
+        public void AddElement(HElement element)
         {
             elements.Add(element);
         }
@@ -864,7 +864,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<div ";
 
@@ -893,7 +893,7 @@ namespace LamestWebserver
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += elements[i].getContent(sessionData);
+                ret += elements[i].GetContent(sessionData);
             }
 
             ret += "</div>";
@@ -905,11 +905,11 @@ namespace LamestWebserver
         /// Adds a bunch of elements to the element list
         /// </summary>
         /// <param name="list">a list of elements</param>
-        public void addElements(List<HElement> list)
+        public void AddElements(IEnumerable<HElement> list)
         {
-            for(int i = 0; i < list.Count; i++)
+            foreach(var element in list)
             {
-                addElement(list[i]);
+                AddElement(element);
             }
         }
 
@@ -917,11 +917,11 @@ namespace LamestWebserver
         /// adds a bunch of elements to the elementlist
         /// </summary>
         /// <param name="list">a few elements</param>
-        public void addElements(params HElement[] list)
+        public void AddElements(params HElement[] list)
         {
             for (int i = 0; i < list.Length; i++)
             {
-                addElement(list[i]);
+                AddElement(list[i]);
             }
         }
     }
@@ -982,7 +982,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<form ";
 
@@ -1026,7 +1026,7 @@ namespace LamestWebserver
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += elements[i].getContent(sessionData);
+                ret += elements[i].GetContent(sessionData);
             }
 
             ret += "</form>";
@@ -1077,7 +1077,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<button type='" + type + "' ";
 
@@ -1162,7 +1162,7 @@ namespace LamestWebserver
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += elements[i].getContent(sessionData);
+                ret += elements[i].GetContent(sessionData);
             }
 
             ret += "</button>";
@@ -1299,7 +1299,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<select ";
 
@@ -1398,7 +1398,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<" + (listType == EListType.OrderedList ? "ol" : "ul") + " ";
 
@@ -1427,7 +1427,7 @@ namespace LamestWebserver
 
             for (int i = 0; i < elements.Count; i++)
             {
-                ret += "<li>" + elements[i].getContent(sessionData) + "</li>";
+                ret += "<li>" + elements[i].GetContent(sessionData) + "</li>";
             }
 
             ret += "</" + (listType == EListType.OrderedList ? "ol" : "ul") + ">";
@@ -1487,7 +1487,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<table ";
 
@@ -1519,7 +1519,7 @@ namespace LamestWebserver
 
                     foreach (HElement element in outer)
                     {
-                        ret += "<td>" + element.getContent(sessionData) + "</td>";
+                        ret += "<td>" + element.GetContent(sessionData) + "</td>";
                     }
 
                     ret += "</tr>";
@@ -1581,7 +1581,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<" + tagName + " ";
 
@@ -1612,7 +1612,7 @@ namespace LamestWebserver
 
                 for (int i = 0; i < elements.Count; i++)
                 {
-                    ret += elements[i].getContent(sessionData);
+                    ret += elements[i].GetContent(sessionData);
                 }
 
                 ret += "</" + tagName  + ">";
@@ -1656,7 +1656,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             return "<script type=\"text/javascript\">" + (dynamic ? scriptFunction(sessionData, arguments) : script) + "</script>";
         }
@@ -1686,7 +1686,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             return "<script type=\"text/javascript\" src=\"" + URL + "\"></script>";
         }
@@ -1702,7 +1702,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<canvas ";
 
@@ -1768,7 +1768,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string ret = "<textarea ";
 
@@ -1824,7 +1824,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             return runtimeCode.Invoke(sessionData);
         }
@@ -1859,9 +1859,9 @@ namespace LamestWebserver
             return new HRuntimeCode((ISessionIdentificator sessionData) =>
             {
                 if (conditionalCode(sessionData))
-                    return elementIfTRUE == null ? "" : elementIfTRUE.getContent(sessionData);
+                    return elementIfTRUE == null ? "" : elementIfTRUE.GetContent(sessionData);
 
-                return elementIfFALSE == null ? "" : elementIfFALSE.getContent(sessionData);
+                return elementIfFALSE == null ? "" : elementIfFALSE.GetContent(sessionData);
             });
         }
     }
@@ -1892,7 +1892,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string getContent(ISessionIdentificator sessionData)
+        public override string GetContent(ISessionIdentificator sessionData)
         {
             string s = "";
 
@@ -1941,9 +1941,9 @@ namespace LamestWebserver
             return new HSyncronizedRuntimeCode((ISessionIdentificator sessionData) =>
             {
                 if (conditionalCode(sessionData))
-                    return elementIfTRUE == null ? "" : elementIfTRUE.getContent(sessionData);
+                    return elementIfTRUE == null ? "" : elementIfTRUE.GetContent(sessionData);
 
-                return elementIfFALSE == null ? "" : elementIfFALSE.getContent(sessionData);
+                return elementIfFALSE == null ? "" : elementIfFALSE.GetContent(sessionData);
             });
         }
     }

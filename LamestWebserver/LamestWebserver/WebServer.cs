@@ -600,8 +600,8 @@ namespace LamestWebserver
                                         }
                                         catch (Exception e)
                                         {
-                                            htp_.binaryData = enc.GetBytes(Master.getErrorMsg("Exception in Page Response for '"
-                                                                                              + htp.requestData + "'", "<b>An Error occured while processing the output</b><br>"
+                                            htp_.binaryData = enc.GetBytes(Master.getErrorMsg("Exception in Directory Response for '"
+                                                                                              + htp.requestData + "' in Directory Response '" + bestDirectoryMatch + "'", "<b>An Error occured while processing the output</b><br>"
                                                                                                                        + e.ToString().Replace("\r\n", "<br>")
 #if DEBUG
                                                                                                                        +

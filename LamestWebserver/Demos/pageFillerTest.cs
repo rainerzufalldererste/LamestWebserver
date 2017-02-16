@@ -16,7 +16,7 @@ namespace Demos
             setValue("head", sessionData.GetHttpHeadValue("head"), ref output);
             setValue("last", "I AM REPLACED", ref output);
             setValue("middle", "let me be in the middle!", ref output);
-            setValue("content", new HNewLine().getContent(sessionData) + new HButton("button one", "pftest.html").getContent(sessionData) + new HButton("button two", "#").getContent(sessionData), ref output);
+            setValue("content", new HNewLine().GetContent(sessionData) + new HButton("button one", "pftest.html").GetContent(sessionData) + new HButton("button two", "#").GetContent(sessionData), ref output);
 
             if(!sessionData.KnownUser)
                 sessionData.RegisterUser("");

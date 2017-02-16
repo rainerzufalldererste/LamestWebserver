@@ -151,11 +151,7 @@ namespace lwshostsvc
                 }
             }
 
-            LamestWebserver.Master.addDirectoryPageToServer("/",
-                (data, url) => new PageBuilder("LamestWebserver Host Service")
-                {
-                    elements = { new HContainer() { elements = { new HHeadline("No pages have been added to the Host Service yet.") } } }
-                } * data);
+            Master.DiscoverPages();
 
             bool removed = false;
 

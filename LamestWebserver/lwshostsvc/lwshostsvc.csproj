@@ -55,6 +55,7 @@
     <Compile Include="HostService.Designer.cs">
       <DependentUpon>HostService.cs</DependentUpon>
     </Compile>
+    <Compile Include="HostServiceDefaultResponse.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="HostServiceInstaller.cs">
       <SubType>Component</SubType>

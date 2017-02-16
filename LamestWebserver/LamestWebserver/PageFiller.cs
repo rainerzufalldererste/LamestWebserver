@@ -35,7 +35,7 @@ namespace LamestWebserver
         /// <summary>
         /// A Method to remove this page from the server
         /// </summary>
-        protected void removeFromServer()
+        protected void RemoveFromServer()
         {
             Master.removeFunctionFromServer(URL);
         }

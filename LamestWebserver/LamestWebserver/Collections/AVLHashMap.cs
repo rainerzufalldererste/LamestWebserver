@@ -418,15 +418,24 @@ namespace LamestWebserver.Collections
             return list.GetEnumerator();
         }
 
-        [OnSerializing]
+        //[OnSerializing]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(nameof(size), size);
-            info.AddValue(nameof(elementCount), elementCount);
-            info.AddValue(nameof(HashMap), HashMap);
+            Entry[] elements = new Entry[this.Count];
+            int index = 0;
+
+            foreach (var element in this)
+                elements[index++] = element;
+
+            info.AddValue(nameof(elements), elements);
         }
 
-        
+        [OnDeserializing]
+        void OnDeserializing(StreamingContext context)
+        {
+
+        }
+
         public XmlSchema GetSchema()
         {
             return null;
@@ -499,9 +508,11 @@ namespace LamestWebserver.Collections
 
         public AVLHashMap(SerializationInfo info, StreamingContext context)
         {
-            size = info.GetInt32(nameof(size));
-            elementCount = info.GetInt32(nameof(elementCount));
-            HashMap = (object[])info.GetValue(nameof(HashMap), typeof(object[]));
+            Entry[] elements;
+            elements = (Entry[])info.GetValue(nameof(elements), typeof(Entry[]));
+
+            foreach (var e in elements)
+                this[e.key] = e.value;
         }
 
         [Serializable, XmlRoot("AVLNode")]
