@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 
 namespace LamestWebserver
@@ -14,8 +15,42 @@ namespace LamestWebserver
         /// </summary>
         public static void DiscoverPages()
         {
-            Assembly asm = Assembly.GetCallingAssembly();
+            DiscoverPages(Assembly.GetCallingAssembly());
+        }
+        
+        /// <summary>
+        /// Automatically discovers pages in the specified assembly file
+        /// <param name="filename">the assembly file path to load</param>
+        /// </summary>
+        public static void DiscoverPagesFromFile(string filename)
+        {
+            DiscoverPages(Assembly.LoadFile(filename));
+        }
 
+        /// <summary>
+        /// Automatically discovers pages in the specified assembly-directory
+        /// <param name="path">the assembly directory path to load</param>
+        /// </summary>
+        public static void DiscoverPagesFromDirectory(string path)
+        {
+            foreach (var filename in Directory.GetFiles(path))
+            {
+                try
+                {
+                    if (filename.EndsWith(".exe") || filename.EndsWith(".dll"))
+                        DiscoverPages(Assembly.LoadFile(filename));
+                }
+                catch { }
+            }
+        }
+
+        /// <summary>
+        /// Automatically discovers pages in the specified Assembly
+        /// </summary>
+        /// <param name="asm">the assembly to discover pages in</param>
+        /// <param name="onPageFound">the code to be executed on every page found (Parameter is the Name of the Type)</param>
+        public static void DiscoverPages(Assembly asm, Action<string> onPageFound = null)
+        {
             foreach (var type in asm.GetTypes())
             {
                 bool IgnoreDiscovery = false;
@@ -33,7 +68,7 @@ namespace LamestWebserver
                             {
                                 if (interface_ == typeof(IURLIdentifyable))
                                 {
-                                    var constructor = type.GetConstructor(new Type[] {});
+                                    var constructor = type.GetConstructor(new Type[] { });
 
                                     if (constructor == null)
                                         continue;
@@ -189,7 +224,7 @@ namespace LamestWebserver
             return "<head><title>" + title
                    +
                    "</title><style type=\"text/css\">hr{border:solid;border-width:3;color:#efefef;} p {overflow:overlay;}</style></head><body style='background-color: #f1f1f1;margin: 0;'><div style='font-family: \"Segoe UI\" ,sans-serif;width: 70%;max-width: 1200px;margin: 0em auto;font-size: 16pt;background-color: #fdfdfd;padding: 4em 8em;color: #4e4e4e;'><h1 style='font-weight: lighter;font-size: 50pt;'>"
-                   + title + "</h1><hr>" + message.Replace("\n", "<br>") + "<img style='position: fixed;bottom: 1em;right: 1em;' src=\"" + lwsLogoBase64 + "\"/></p></body>";
+                   + title + "</h1><hr>" + message.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "<img style='position: fixed;bottom: 1em;right: 1em;' src=\"" + lwsLogoBase64 + "\"/></p></body>";
         }
 
         /// <summary>

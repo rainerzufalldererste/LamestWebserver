@@ -223,7 +223,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<button type='" + buttonType + "' " + GetDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText).Replace("\n", "<br>") + "</button>";
+            return "<button type='" + buttonType + "' " + GetDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</button>";
         }
     }
 
@@ -243,7 +243,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<p " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content).Replace("\n", "<br>") + "</p>";
+            return "<p " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
         }
     }
 
@@ -278,7 +278,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(ISessionIdentificator sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>") + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
+            return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
         }
 
         /// <summary>
@@ -390,7 +390,7 @@ namespace LamestWebserver.JScriptBuilder
             if (rows.HasValue)
                 ret += "rows='" + rows.Value + "' ";
 
-            ret += ">" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>") + "</textarea>";
+            ret += ">" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</textarea>";
 
             return ret;
         }
@@ -519,7 +519,7 @@ namespace LamestWebserver.JScriptBuilder
                     if (selectedIndexes.Contains(i))
                         ret += "selected=\"selected\" ";
 
-                    ret += ">" + HttpUtility.HtmlEncode(_options[i].Item1).Replace("\n", "<br>") + "</option>";
+                    ret += ">" + HttpUtility.HtmlEncode(_options[i].Item1).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</option>";
                 }
             }
 

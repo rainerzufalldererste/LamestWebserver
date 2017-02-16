@@ -94,7 +94,7 @@ namespace LamestWebserver.ScriptHook
                         }
                         catch (Exception) { }
 
-                        string text = e_.Replace("\n", "<br>") + "<hr>Code:<br><br><div style='font-family:monospace;'>";
+                        string text = e_.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "<hr>Code:<br><br><div style='font-family:monospace;'>";
 
                         string[] lines = scripts[i].Replace("\r", "").Split('\n');
 
@@ -133,7 +133,7 @@ namespace LamestWebserver.ScriptHook
             }
             catch(Exception e)
             {
-                return "<h2>ScriptHook Error:</h2> <br>" + e.ToString().Replace("\n", "<br>") + "<br><br>Exiting";
+                return "<h2>ScriptHook Error:</h2> <br>" + e.ToString().Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "<br><br>Exiting";
             }
         }
     }

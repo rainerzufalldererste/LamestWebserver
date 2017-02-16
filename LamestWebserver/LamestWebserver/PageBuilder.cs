@@ -156,7 +156,7 @@ namespace LamestWebserver
             ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
             for (int i = 0; i < base.elements.Count; i++)
             {
@@ -449,7 +449,7 @@ namespace LamestWebserver
             ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
             ret += "</a>";
 
@@ -565,7 +565,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">" + System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>") + "</p>";
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
 
             return ret;
         }
@@ -632,7 +632,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            ret += ">" + System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>") + "</h" + level + ">";
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</h" + level + ">";
 
             return ret;
         }
@@ -889,7 +889,7 @@ namespace LamestWebserver
             ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
             for (int i = 0; i < elements.Count; i++)
             {
@@ -1022,7 +1022,7 @@ namespace LamestWebserver
             }
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
             for (int i = 0; i < elements.Count; i++)
             {
@@ -1158,7 +1158,7 @@ namespace LamestWebserver
             ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
             for (int i = 0; i < elements.Count; i++)
             {
@@ -1340,7 +1340,7 @@ namespace LamestWebserver
                     if (selectedIndexes.Contains(i))
                         ret += "selected=\"selected\" ";
 
-                    ret += ">" + System.Web.HttpUtility.HtmlEncode(options[i].Item1).Replace("\n", "<br>") + "</option>";
+                    ret += ">" + System.Web.HttpUtility.HtmlEncode(options[i].Item1).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</option>";
                 }
             }
 
@@ -1423,7 +1423,7 @@ namespace LamestWebserver
             ret += ">";
 
             if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>");
+                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
             for (int i = 0; i < elements.Count; i++)
             {
@@ -1608,7 +1608,7 @@ namespace LamestWebserver
             if (hasContent)
             {
                 if (!string.IsNullOrWhiteSpace(text))
-                    ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>");
+                    ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
                 for (int i = 0; i < elements.Count; i++)
                 {
@@ -1796,7 +1796,7 @@ namespace LamestWebserver
             if (!string.IsNullOrWhiteSpace(descriptionTags))
                 ret += descriptionTags;
 
-            return ret + ">" + System.Web.HttpUtility.HtmlEncode(value).Replace("\n", "<br>") + "</textarea>";
+            return ret + ">" + System.Web.HttpUtility.HtmlEncode(value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</textarea>";
         }
     }
 

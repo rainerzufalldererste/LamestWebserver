@@ -163,10 +163,20 @@ namespace lwshostcore
 
                                         OnPageRegister(type.Namespace + "." + type.Name);
 
-                                        constructor.Invoke(new object[0]);
-                                        addedAnything = true;
+                                        new Thread(() =>
+                                        {
+                                            try
+                                            {
+                                                constructor.Invoke(new object[0]);
+                                                ServerHandler.LogMessage("[lwshost] [Added/Updated] " + type.Namespace + "." + type.Name);
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                ServerHandler.LogMessage("[lwshost] [Error] Failed to add '" + type.Namespace + "." + type.Name +  "'\n" + e);
+                                            }
+                                        }).Start();
 
-                                        ServerHandler.LogMessage("[lwshost] [Added/Updated] " + type.Namespace + "." + type.Name);
+                                        addedAnything = true;
                                     }
                                 }
                                 catch (Exception)
