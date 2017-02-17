@@ -85,8 +85,6 @@ namespace LamestWebserver
         /// </summary>
         public List<string> ValuesPOST = new List<string>();
 
-        private const bool isShortPackageLineFeeds = true;
-
         /// <summary>
         /// Is the sent package a upgradeRequest to a WebSocket?
         /// </summary>
@@ -104,43 +102,41 @@ namespace LamestWebserver
         /// <returns>the contents as byte array</returns>
         public byte[] GetPackage(UTF8Encoding enc)
         {
-            string rets = "";
-
-            rets += Version + " " + Status + "\r\n";
-            rets += "Host: " + Host + "\r\n";
-            rets += "Date: " + Date + "\r\n";
-            rets += "Server: LamestWebserver (LameOS)\r\n";
+            StringBuilder sb = new StringBuilder();
+            
+            sb.Append(Version + " " + Status + "\r\n");
+            sb.Append("Host: " + Host + "\r\n");
+            sb.Append("Date: " + Date + "\r\n");
+            sb.Append("Server: LamestWebserver (LameOS)\r\n");
 
             if (Cookies != null)
             {
-                rets += "Set-Cookie: ";
+                sb.Append("Set-Cookie: ");
 
                 for (int i = 0; i < Cookies.Count; i++)
                 {
-                    rets += Cookies[i].Key + "=" + Cookies[i].Value + "; Path=/";
+                    sb.Append(Cookies[i].Key + "=" + Cookies[i].Value + "; Path=/");
 
                     if (i + 1 < Cookies.Count)
-                        rets += "\n";
+                        sb.Append("\n");
                     else
-                        rets += "\r\n";
+                        sb.Append("\r\n");
                 }
             }
 
             if(ModifiedDate.HasValue)
             {
-                rets += "Last-Modified: " + ModifiedDate.Value.ToString(HtmlDateFormat) + "\r\n";
+                sb.Append("Last-Modified: " + ModifiedDate.Value.ToString(HtmlDateFormat) + "\r\n");
             }
 
-            rets += "Connection: Keep-Alive\r\n";
+            sb.Append("Connection: Keep-Alive\r\n");
 
-            if(ContentType != null)
-                rets += "Content-Type: " + ContentType + "; charset=UTF-8\r\n";
+            if (ContentType != null)
+                sb.Append("Content-Type: " + ContentType + "; charset=UTF-8\r\n");
 
-            rets += "Content-Length: " + _contentLength + (isShortPackageLineFeeds?"\r\n\r\n":"\r\n\r\n\r\n");
-            //ret += "Keep-Alive: timeout=10, max=100\r\n";
-            //ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n\r\n";
+            sb.Append("Content-Length: " + _contentLength + "\r\n\r\n");
 
-            byte[] ret0 = enc.GetBytes(rets);
+            byte[] ret0 = enc.GetBytes(sb.ToString());
             byte[] ret = new byte[ret0.Length + BinaryData.Length];
 
             Array.Copy(ret0, ret, ret0.Length);
@@ -154,7 +150,6 @@ namespace LamestWebserver
         /// </summary>
         public HttpPacket()
         {
-            //default constructor
             Date = DateTime.Now.ToString(HtmlDateFormat);
         }
 
@@ -205,7 +200,7 @@ namespace LamestWebserver
                                 add = add.Remove(add.Length - 1);
 
                             h.RequestBaseUrl = h.RequestBaseUrl.Remove(k);
-                            add = add.Replace('+', ' '); // HttpUtility.HtmlDecode(linput[k]);
+                            add = add.Replace('+', ' ');
 
                             for (int it = 0; it < add.Length - 1; it++)
                             {
@@ -277,7 +272,7 @@ namespace LamestWebserver
                                 add = add.Remove(add.Length - 1);
 
                             h.RequestBaseUrl = h.RequestBaseUrl.Remove(k);
-                            add = add.Replace('+', ' '); //HttpUtility.HtmlDecode(linput[k]);
+                            add = add.Replace('+', ' ');
 
                             for (int it = 0; it < add.Length - 1; it++)
                             {
@@ -329,7 +324,7 @@ namespace LamestWebserver
                             {
                                 for (int k = j; k < linput.Length; k++)
                                 {
-                                    string[] s = /*HttpUtility.HtmlDecode(*/linput[k].Replace('+',' ')/*)*/.Split('&');
+                                    string[] s = linput[k].Replace('+',' ').Split('&');
 
                                     for (int l = 0; l < s.Length; l++)
                                     {
@@ -369,13 +364,13 @@ namespace LamestWebserver
                         h.VariablesPOST[j] = HttpUtility.UrlDecode(h.VariablesPOST[j]);
                     }
 
-                    // Chris: Crazy hack for Chrome POST packets
+                    // Crazy hack for Chrome POST packets
                     if(h.VariablesPOST.Count == 0)
                     {
-                        // Chris: is there a content-length?
+                        // is there a content-length?
                         bool contlfound = false;
 
-                        // Chris: search for it
+                        // search for it
                         for (int j = i + 1; j < linput.Length; j++)
                         {
                             if(linput[j].Length >= 16 && linput[j].Substring(0, 16) == "Content-Length: ")
@@ -398,8 +393,8 @@ namespace LamestWebserver
 
             if (!found)
             {
-                // Chris: Crazy chrome POST hack
-                // Chris: Resolve Endpoint and append input to that input, then delete
+                // Crazy chrome POST hack
+                // Resolve Endpoint and append input to that input, then delete
 
                 if (lastPacket != null)
                     input = lastPacket + input;
@@ -413,8 +408,7 @@ namespace LamestWebserver
         }
 
         private const string ifmodifiedsince = "If-Modified-Since: ",
-            cookie = "Cookie: "/*,
-            ifunmodifiedsince = "If-Unmodified-Since: "*/;
+            cookie = "Cookie: ";
 
         private static HttpPacket GetCookiesAndModified(HttpPacket packet, string[] linput)
         {
