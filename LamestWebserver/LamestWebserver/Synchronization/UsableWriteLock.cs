@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace LamestWebserver
+namespace LamestWebserver.Synchronization
 {
     /// <summary>
     /// A safe and fast way to read and write from shared ressources without blocking everything.

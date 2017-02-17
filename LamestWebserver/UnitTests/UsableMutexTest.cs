@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LamestWebserver;
 using System.Threading;
+using LamestWebserver.Synchronization;
 
 namespace UnitTests
 {

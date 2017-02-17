@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using LamestWebserver.UI;
 
 namespace LamestWebserver
 {
@@ -92,7 +93,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="data">the current SessionData</param>
         /// <returns>the response as string</returns>
-        public delegate string getContents(SessionData data);
+        public delegate string GetContents(SessionData data);
 
         /// <summary>
         /// The prototype for a response of a directory page from the server.
@@ -100,70 +101,70 @@ namespace LamestWebserver
         /// <param name="data">the current SessionData</param>
         /// <param name="subUrl">the sub-URL of this directory request</param>
         /// <returns>the response as string</returns>
-        public delegate string getDirectoryContents(SessionData data, string subUrl);
+        public delegate string GetDirectoryContents(SessionData data, string subUrl);
 
         /// <summary>
         /// the prototype for adding new pages to the servers.
         /// </summary>
         /// <param name="url">the URL</param>
         /// <param name="function">the code to execute</param>
-        public delegate void addFunction(string url, getContents function);
+        public delegate void AddFunction(string url, GetContents function);
 
         /// <summary>
         /// The prototype for adding new directory pages to the servers.
         /// </summary>
         /// <param name="url">the url of the directory</param>
         /// <param name="function">the function to add</param>
-        public delegate void addDirectoryFunction(string url, getDirectoryContents function);
+        public delegate void AddDirectoryFunction(string url, GetDirectoryContents function);
 
         /// <summary>
         /// the prototype for removing a page from the server 
         /// </summary>
         /// <param name="url">the URL of the page</param>
-        public delegate void removeFunction(string url);
+        public delegate void RemoveFunction(string url);
 
         /// <summary>
         /// the event, that raises if a page is added
         /// </summary>
-        public static event addFunction addFunctionEvent;
+        public static event AddFunction AddFunctionEvent;
 
         /// <summary>
         /// the event, that raises if a page is removed
         /// </summary>
-        public static event removeFunction removeFunctionEvent;
+        public static event RemoveFunction RemoveFunctionEvent;
 
         /// <summary>
         /// the event, that raises if a page, which is only available for one request, is added
         /// </summary>
-        public static event addFunction addOneTimeFunctionEvent;
+        public static event AddFunction AddOneTimeFunctionEvent;
 
         /// <summary>
         /// the event, that raises if a directory page is added
         /// </summary>
-        public static event addDirectoryFunction addDirectoryFunctionEvent = (url, function) => { };
+        public static event AddDirectoryFunction AddDirectoryFunctionEvent = (url, function) => { };
 
         /// <summary>
         /// the event, thath raises if a directory page is removed
         /// </summary>
-        public static event removeFunction removeDirectoryFunctionEvent = (url) => { };
+        public static event RemoveFunction RemoveDirectoryFunctionEvent = (url) => { };
 
         /// <summary>
         /// Adds an arbitrary response to the listening servers
         /// </summary>
         /// <param name="url">the url of the page to add</param>
         /// <param name="function">the code of the page</param>
-        public static void addFuntionToServer(string url, getContents function)
+        public static void AddFuntionToServer(string url, GetContents function)
         {
-            addFunctionEvent(url, function);
+            AddFunctionEvent(url, function);
         }
 
         /// <summary>
         /// removes an arbitrary response from the listening servers
         /// </summary>
         /// <param name="url">the URL of the page to remove</param>
-        public static void removeFunctionFromServer(string url)
+        public static void RemoveFunctionFromServer(string url)
         {
-            removeFunctionEvent(url);
+            RemoveFunctionEvent(url);
         }
 
         /// <summary>
@@ -171,9 +172,9 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="url">the URL at which this page will be available</param>
         /// <param name="function">the code to execute</param>
-        public static void addOneTimeFuntionToServer(string url, getContents function)
+        public static void AddOneTimeFuntionToServer(string url, GetContents function)
         {
-            addOneTimeFunctionEvent(url, function);
+            AddOneTimeFunctionEvent(url, function);
         }
 
         /// <summary>
@@ -181,7 +182,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="url">the URL at which this directory page will be available</param>
         /// <param name="function">the code to execute</param>
-        public static void addDirectoryPageToServer(string url, getDirectoryContents function)
+        public static void AddDirectoryPageToServer(string url, GetDirectoryContents function)
         {
             if (!url.EndsWith("/"))
                 url += "/";
@@ -189,14 +190,14 @@ namespace LamestWebserver
             if (url.StartsWith("/"))
                 url = url.Substring(1);
 
-            addDirectoryFunctionEvent(url, function);
+            AddDirectoryFunctionEvent(url, function);
         }
 
         /// <summary>
         /// Removes a directory function from all listening servers
         /// </summary>
         /// <param name="url">the URL at which this directory page is available</param>
-        public static void removeDirectoryPageFromServer(string url)
+        public static void RemoveDirectoryPageFromServer(string url)
         {
             if (!url.EndsWith("/"))
                 url += "/";
@@ -204,7 +205,7 @@ namespace LamestWebserver
             if (url.StartsWith("/"))
                 url = url.Substring(1);
 
-            removeDirectoryFunctionEvent(url);
+            RemoveDirectoryFunctionEvent(url);
         }
 
         /// <summary>
@@ -219,7 +220,7 @@ namespace LamestWebserver
         /// <param name="title">the title of the error message</param>
         /// <param name="message">the error message</param>
         /// <returns>a complete html page as string</returns>
-        public static string getErrorMsg(string title, string message)
+        public static string GetErrorMsg(string title, string message)
         {
             return "<head><title>" + title
                    +
@@ -232,7 +233,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="s">the string</param>
         /// <returns>the string as HElement</returns>
-        public static HElement toHElement(this string s)
+        public static HElement ToHElement(this string s)
         {
             return new HPlainText(s);
         }
@@ -242,7 +243,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="i">the int</param>
         /// <returns>the int as string as HElement</returns>
-        public static HElement toHElement(this int i)
+        public static HElement ToHElement(this int i)
         {
             return new HPlainText(i.ToString());
         }
@@ -303,20 +304,14 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="input">the input</param>
         /// <returns>the input encoded as HTTP URL</returns>
-        public static string FormatTo_HTTP_URL(string input)
-        {
-            return System.Web.HttpUtility.HtmlEncode(input);
-        }
+        public static string FormatToHttpUrl(string input) => System.Web.HttpUtility.HtmlEncode(input);
 
         /// <summary>
         /// HTML encodes a given input
         /// </summary>
         /// <param name="text">the input</param>
         /// <returns>the input encoded as HTML</returns>
-        public static string FormatTo_HTML(string text)
-        {
-            return new System.Web.HtmlString(text).ToHtmlString();
-        }
+        public static string FormatToHtml(string text) => new System.Web.HtmlString(text).ToHtmlString();
 
         /// <summary>
         /// Gets the index of an Element from a List
@@ -341,7 +336,7 @@ namespace LamestWebserver
             return null;
         }
 
-        internal static char[] hexLut = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        internal static char[] hexCharLut = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
         /// <summary>
         /// Converts a byte[] to a hex string
@@ -354,8 +349,8 @@ namespace LamestWebserver
 
             for (int i = 0; i < bytes.Length; i++)
             {
-                s[i*2] = hexLut[bytes[i] & 0x0F];
-                s[i*2 + 1] = hexLut[(bytes[i] & 0xF0) >> 4];
+                s[i*2] = hexCharLut[bytes[i] & 0x0F];
+                s[i*2 + 1] = hexCharLut[(bytes[i] & 0xF0) >> 4];
             }
 
             return new string(s);
@@ -383,7 +378,7 @@ namespace LamestWebserver
         }
 
         [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, ControlThread = true)]
-        internal static void forceQuitThread(System.Threading.Thread thread)
+        internal static void ForceQuitThread(System.Threading.Thread thread)
         {
             thread.Abort();
         }

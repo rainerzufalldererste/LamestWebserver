@@ -139,6 +139,8 @@ namespace lwshostsvc
                 ServerHandler.Main(new string[0]);
             }).Start();
 
+            lwshostcore.HostConfig.CurrentHostConfig.ApplyConfig();
+
             foreach (var port in lwshostcore.HostConfig.CurrentHostConfig.Ports)
             {
                 try
@@ -151,6 +153,7 @@ namespace lwshostsvc
                 }
             }
 
+            // Discover the HostServiceDefaultResponse
             Master.DiscoverPages();
 
             bool removed = false;
@@ -158,7 +161,7 @@ namespace lwshostsvc
             Action<string> onRegister = s =>
             {
                 if (!removed)
-                    LamestWebserver.Master.removeDirectoryPageFromServer("/");
+                    LamestWebserver.Master.RemoveDirectoryPageFromServer("/");
 
                 removed = true;
             };

@@ -9,81 +9,81 @@ namespace LamestWebserver
     /// <summary>
     /// Represents a decoded HTTP Packet or is used for packing data into a HTTP Packet for sending
     /// </summary>
-    public class HTTP_Packet
+    public class HttpPacket
     {
         /// <summary>
         /// An expression used for DateTime.ToString to parse into correct HTTP DateFormat
         /// </summary>
-        public const string htmldateformat = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
+        public const string HtmlDateFormat = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
         
         /// <summary>
         /// The HTTP Version of the Response
         /// </summary>
-        public string version = "HTTP/1.1";
+        public string Version = "HTTP/1.1";
 
         /// <summary>
         /// The HTTP Status Code and Status of the Response
         /// </summary>
-        public string status = "200 OK";
+        public string Status = "200 OK";
 
         /// <summary>
         /// The current date in HTTP DateFormat
         /// </summary>
-        public string date; //Tue, 21 Apr 2015 22:51:19 GMT
+        public string Date; //Tue, 21 Apr 2015 22:51:19 GMT
 
         /// <summary>
         /// if the request packet contains a modified date it is contained in here
         /// </summary>
-        public DateTime? modified = null;
+        public DateTime? ModifiedDate = null;
 
-        private int contentLength = 0;
+        private int _contentLength = 0;
 
         /// <summary>
         /// The content-type of the response
         /// </summary>
-        public string contentType = "text/html";
+        public string ContentType = "text/html";
 
         /// <summary>
         /// the binary data contained in the request
         /// Also sets the contentLength.
         /// </summary>
-        public byte[] binaryData { get { return _binaryData; } set { _binaryData = value; contentLength = _binaryData.Length; } }
+        public byte[] BinaryData { get { return _binaryData; } set { _binaryData = value; _contentLength = _binaryData.Length; } }
         private byte[] _binaryData;
 
         /// <summary>
         /// The contents of the request package
         /// </summary>
-        public string requestData = "";
+        public string RequestBaseUrl = "";
 
         /// <summary>
         /// The cookies, that were set in the request or shall be set in the response
         /// </summary>
-        public List<KeyValuePair<string, string>> cookies = null;
+        public List<KeyValuePair<string, string>> Cookies = null;
 
         /// <summary>
         /// the host attribute of the http package
         /// </summary>
-        public string host = "localhost";
+        public string Host = "localhost";
 
         /// <summary>
         /// HEAD variables set or mentioned in the request
         /// </summary>
-        public List<string> additionalHEAD = new List<string>();
+        public List<string> VariablesHEAD = new List<string>();
 
         /// <summary>
         /// the values of the set HEAD values
         /// </summary>
-        public List<string> valuesHEAD = new List<string>();
+        public List<string> ValuesHEAD = new List<string>();
         
         /// <summary>
         /// POST variables set or mentioned in the request
         /// </summary>
-        public List<string> additionalPOST = new List<string>();
+        public List<string> VariablesPOST = new List<string>();
         
         /// <summary>
         /// the values of the set HEAD values
         /// </summary>
-        public List<string> valuesPOST = new List<string>();
+        public List<string> ValuesPOST = new List<string>();
 
         private const bool isShortPackageLineFeeds = true;
 
@@ -95,56 +95,56 @@ namespace LamestWebserver
         /// <summary>
         /// the HTTP type of the request (GET, POST)
         /// </summary>
-        public HTTP_Type type;
+        public HttpType HttpType;
 
         /// <summary>
         /// returns the contents of the complete package to be sent via tcp to the client 
         /// </summary>
         /// <param name="enc">a UTF8Encoding</param>
         /// <returns>the contents as byte array</returns>
-        public byte[] getPackage(UTF8Encoding enc)
+        public byte[] GetPackage(UTF8Encoding enc)
         {
             string rets = "";
 
-            rets += version + " " + status + "\r\n";
-            rets += "Host: " + host + "\r\n";
-            rets += "Date: " + date + "\r\n"; //do we need that?!
+            rets += Version + " " + Status + "\r\n";
+            rets += "Host: " + Host + "\r\n";
+            rets += "Date: " + Date + "\r\n";
             rets += "Server: LamestWebserver (LameOS)\r\n";
 
-            if (cookies != null)
+            if (Cookies != null)
             {
                 rets += "Set-Cookie: ";
 
-                for (int i = 0; i < cookies.Count; i++)
+                for (int i = 0; i < Cookies.Count; i++)
                 {
-                    rets += cookies[i].Key + "=" + cookies[i].Value + "; Path=/";
+                    rets += Cookies[i].Key + "=" + Cookies[i].Value + "; Path=/";
 
-                    if (i + 1 < cookies.Count)
+                    if (i + 1 < Cookies.Count)
                         rets += "\n";
                     else
                         rets += "\r\n";
                 }
             }
 
-            if(modified.HasValue)
+            if(ModifiedDate.HasValue)
             {
-                rets += "Last-Modified: " + modified.Value.ToString(htmldateformat) + "\r\n";
+                rets += "Last-Modified: " + ModifiedDate.Value.ToString(HtmlDateFormat) + "\r\n";
             }
 
             rets += "Connection: Keep-Alive\r\n";
 
-            if(contentType != null)
-                rets += "Content-Type: " + contentType + "; charset=UTF-8\r\n";
+            if(ContentType != null)
+                rets += "Content-Type: " + ContentType + "; charset=UTF-8\r\n";
 
-            rets += "Content-Length: " + contentLength + (isShortPackageLineFeeds?"\r\n\r\n":"\r\n\r\n\r\n");
+            rets += "Content-Length: " + _contentLength + (isShortPackageLineFeeds?"\r\n\r\n":"\r\n\r\n\r\n");
             //ret += "Keep-Alive: timeout=10, max=100\r\n";
             //ret += "Content-Type: " + contentType + "; charset=UTF-8\r\n\r\n";
 
             byte[] ret0 = enc.GetBytes(rets);
-            byte[] ret = new byte[ret0.Length + binaryData.Length];
+            byte[] ret = new byte[ret0.Length + BinaryData.Length];
 
             Array.Copy(ret0, ret, ret0.Length);
-            Array.Copy(binaryData, 0, ret, ret0.Length, binaryData.Length);
+            Array.Copy(BinaryData, 0, ret, ret0.Length, BinaryData.Length);
 
             return ret;
         }
@@ -152,10 +152,10 @@ namespace LamestWebserver
         /// <summary>
         /// the default constructor for a HTTP Response
         /// </summary>
-        public HTTP_Packet()
+        public HttpPacket()
         {
             //default constructor
-            date = DateTime.Now.ToString(htmldateformat);
+            Date = DateTime.Now.ToString(HtmlDateFormat);
         }
 
         /// <summary>
@@ -166,9 +166,9 @@ namespace LamestWebserver
         /// <param name="endp">the ipendpoint of the client for strange chrome POST hacks</param>
         /// <param name="lastPacket">the string contents of the last packet (Chrome POST packets are split in two packets)</param>
         /// <returns>the corresponding HTTP Packet</returns>
-        public static HTTP_Packet Constructor(ref string input, EndPoint endp, string lastPacket)
+        public static HttpPacket Constructor(ref string input, EndPoint endp, string lastPacket)
         {
-            HTTP_Packet h = new HTTP_Packet();
+            HttpPacket h = new HttpPacket();
             
             string[] linput = null;
 
@@ -181,7 +181,7 @@ namespace LamestWebserver
 
                 if(linput[i].Length > 4 && linput[i].Substring(0,"GET ".Length) == "GET ")
                 {
-                    h.type = HTTP_Type.GET;
+                    h.HttpType = HttpType.Get;
                     int index = 4;
 
                     for (int j = 4; j < linput[i].Length; j++)
@@ -193,67 +193,67 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.requestData = linput[i].Substring(4, index - 4);
+                    h.RequestBaseUrl = linput[i].Substring(4, index - 4);
 
-                    for (int k = 0; k < h.requestData.Length - 1; k++)
+                    for (int k = 0; k < h.RequestBaseUrl.Length - 1; k++)
                     {
-                        if (h.requestData[k] == '?')
+                        if (h.RequestBaseUrl[k] == '?')
                         {
-                            string add = h.requestData.Substring(k + 1);
+                            string add = h.RequestBaseUrl.Substring(k + 1);
 
                             if (add[add.Length - 1] == ' ')
                                 add = add.Remove(add.Length - 1);
 
-                            h.requestData = h.requestData.Remove(k);
+                            h.RequestBaseUrl = h.RequestBaseUrl.Remove(k);
                             add = add.Replace('+', ' '); // HttpUtility.HtmlDecode(linput[k]);
 
                             for (int it = 0; it < add.Length - 1; it++)
                             {
                                 if(add[it] == '&')
                                 {
-                                    h.additionalHEAD.Add(add.Substring(0, it));
-                                    h.valuesHEAD.Add("");
+                                    h.VariablesHEAD.Add(add.Substring(0, it));
+                                    h.ValuesHEAD.Add("");
                                     add = add.Remove(0, it + 1);
                                     it = 0;
                                 }
                             }
 
-                            h.additionalHEAD.Add(add);
-                            h.valuesHEAD.Add("");
+                            h.VariablesHEAD.Add(add);
+                            h.ValuesHEAD.Add("");
                         }
                     }
 
-                    for (int j = 0; j < h.additionalHEAD.Count; j++)
+                    for (int j = 0; j < h.VariablesHEAD.Count; j++)
                     {
-                        for (int k = 0; k < h.additionalHEAD[j].Length; k++)
+                        for (int k = 0; k < h.VariablesHEAD[j].Length; k++)
                         {
-                            if (h.additionalHEAD[j][k] == '=')
+                            if (h.VariablesHEAD[j][k] == '=')
                             {
-                                if (k + 1 < h.additionalHEAD[j].Length)
+                                if (k + 1 < h.VariablesHEAD[j].Length)
                                 {
-                                    h.valuesHEAD[j] = h.additionalHEAD[j].Substring(k + 1);
-                                    h.additionalHEAD[j] = h.additionalHEAD[j].Substring(0, k);
+                                    h.ValuesHEAD[j] = h.VariablesHEAD[j].Substring(k + 1);
+                                    h.VariablesHEAD[j] = h.VariablesHEAD[j].Substring(0, k);
                                 }
                             }
                         }
 
-                        if(h.additionalHEAD[j][h.additionalHEAD[j].Length - 1] == '=')
+                        if(h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '=')
                         {
-                            h.additionalHEAD[j] = h.additionalHEAD[j].Remove(h.additionalHEAD[j].Length - 1);
+                            h.VariablesHEAD[j] = h.VariablesHEAD[j].Remove(h.VariablesHEAD[j].Length - 1);
                         }
 
-                        h.valuesHEAD[j] = HttpUtility.UrlDecode(h.valuesHEAD[j]);
-                        h.additionalHEAD[j] = HttpUtility.UrlDecode(h.additionalHEAD[j]);
+                        h.ValuesHEAD[j] = HttpUtility.UrlDecode(h.ValuesHEAD[j]);
+                        h.VariablesHEAD[j] = HttpUtility.UrlDecode(h.VariablesHEAD[j]);
                     }
 
-                    h.version = linput[i].Substring(index + 1);
+                    h.Version = linput[i].Substring(index + 1);
                     found = true;
 
-                    return getCookiesAndModified(h, linput);
+                    return GetCookiesAndModified(h, linput);
                 }
                 else if(linput[i].StartsWith("POST "))
                 {
-                    h.type = HTTP_Type.POST;
+                    h.HttpType = HttpType.Post;
                     int index = 5;
 
                     for (int j = 5; j < linput[i].Length; j++)
@@ -265,60 +265,60 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.requestData = linput[i].Substring(4, index - 4);
+                    h.RequestBaseUrl = linput[i].Substring(4, index - 4);
 
-                    for (int k = 0; k < h.requestData.Length - 1; k++)
+                    for (int k = 0; k < h.RequestBaseUrl.Length - 1; k++)
                     {
-                        if (h.requestData[k] == '?')
+                        if (h.RequestBaseUrl[k] == '?')
                         {
-                            string add = h.requestData.Substring(k + 1);
+                            string add = h.RequestBaseUrl.Substring(k + 1);
 
                             if (add[add.Length - 1] == ' ')
                                 add = add.Remove(add.Length - 1);
 
-                            h.requestData = h.requestData.Remove(k);
+                            h.RequestBaseUrl = h.RequestBaseUrl.Remove(k);
                             add = add.Replace('+', ' '); //HttpUtility.HtmlDecode(linput[k]);
 
                             for (int it = 0; it < add.Length - 1; it++)
                             {
                                 if (add[it] == '&')
                                 {
-                                    h.additionalHEAD.Add(add.Substring(0, it));
-                                    h.valuesHEAD.Add("");
+                                    h.VariablesHEAD.Add(add.Substring(0, it));
+                                    h.ValuesHEAD.Add("");
                                     add = add.Remove(0, it + 1);
                                     it = 0;
                                 }
                             }
 
-                            h.additionalHEAD.Add(add);
-                            h.valuesHEAD.Add("");
+                            h.VariablesHEAD.Add(add);
+                            h.ValuesHEAD.Add("");
                         }
                     }
 
-                    for (int j = 0; j < h.additionalHEAD.Count; j++)
+                    for (int j = 0; j < h.VariablesHEAD.Count; j++)
                     {
-                        for (int k = 0; k < h.additionalHEAD[j].Length; k++)
+                        for (int k = 0; k < h.VariablesHEAD[j].Length; k++)
                         {
-                            if(h.additionalHEAD[j][k] == '=')
+                            if(h.VariablesHEAD[j][k] == '=')
                             {
-                                if (k + 1 < h.additionalHEAD[j].Length)
+                                if (k + 1 < h.VariablesHEAD[j].Length)
                                 {
-                                    h.valuesHEAD[j] = h.additionalHEAD[j].Substring(k + 1);
-                                    h.additionalHEAD[j] = h.additionalHEAD[j].Substring(0, k);
+                                    h.ValuesHEAD[j] = h.VariablesHEAD[j].Substring(k + 1);
+                                    h.VariablesHEAD[j] = h.VariablesHEAD[j].Substring(0, k);
                                 }
                             }
                         }
 
-                        if (h.additionalHEAD[j][h.additionalHEAD[j].Length - 1] == '=')
+                        if (h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '=')
                         {
-                            h.additionalHEAD[j] = h.additionalHEAD[j].Remove(h.additionalHEAD[j].Length - 1);
+                            h.VariablesHEAD[j] = h.VariablesHEAD[j].Remove(h.VariablesHEAD[j].Length - 1);
                         }
 
-                        h.valuesHEAD[j] = HttpUtility.UrlDecode(h.valuesHEAD[j]);
-                        h.additionalHEAD[j] = HttpUtility.UrlDecode(h.additionalHEAD[j]);
+                        h.ValuesHEAD[j] = HttpUtility.UrlDecode(h.ValuesHEAD[j]);
+                        h.VariablesHEAD[j] = HttpUtility.UrlDecode(h.VariablesHEAD[j]);
                     }
 
-                    h.version = linput[i].Substring(index + 1);
+                    h.Version = linput[i].Substring(index + 1);
                     found = true;
 
                     for (int j = i; j < linput.Length; j++)
@@ -333,10 +333,10 @@ namespace LamestWebserver
 
                                     for (int l = 0; l < s.Length; l++)
                                     {
-                                        h.valuesPOST.Add("");
+                                        h.ValuesPOST.Add("");
                                     }
 
-                                    h.additionalPOST.AddRange(s);
+                                    h.VariablesPOST.AddRange(s);
                                 }
 
                                 goto SEARCHINGFORPOSTBODY_DONE;
@@ -346,31 +346,31 @@ namespace LamestWebserver
 
                     SEARCHINGFORPOSTBODY_DONE:
 
-                    for (int j = 0; j < h.additionalPOST.Count; j++)
+                    for (int j = 0; j < h.VariablesPOST.Count; j++)
                     {
-                        for (int k = 0; k < h.additionalPOST[j].Length; k++)
+                        for (int k = 0; k < h.VariablesPOST[j].Length; k++)
                         {
-                            if (h.additionalPOST[j][k] == '=')
+                            if (h.VariablesPOST[j][k] == '=')
                             {
-                                if (k + 1 < h.additionalPOST[j].Length)
+                                if (k + 1 < h.VariablesPOST[j].Length)
                                 {
-                                    h.valuesPOST[j] = h.additionalPOST[j].Substring(k + 1);
-                                    h.additionalPOST[j] = h.additionalPOST[j].Substring(0, k);
+                                    h.ValuesPOST[j] = h.VariablesPOST[j].Substring(k + 1);
+                                    h.VariablesPOST[j] = h.VariablesPOST[j].Substring(0, k);
                                 }
                             }
                         }
 
-                        if (h.additionalPOST[j][h.additionalPOST[j].Length - 1] == '=')
+                        if (h.VariablesPOST[j][h.VariablesPOST[j].Length - 1] == '=')
                         {
-                            h.additionalPOST[j] = h.additionalPOST[j].Remove(h.additionalPOST[j].Length - 1);
+                            h.VariablesPOST[j] = h.VariablesPOST[j].Remove(h.VariablesPOST[j].Length - 1);
                         }
 
-                        h.valuesPOST[j] = HttpUtility.UrlDecode(h.valuesPOST[j]);
-                        h.additionalPOST[j] = HttpUtility.UrlDecode(h.additionalPOST[j]);
+                        h.ValuesPOST[j] = HttpUtility.UrlDecode(h.ValuesPOST[j]);
+                        h.VariablesPOST[j] = HttpUtility.UrlDecode(h.VariablesPOST[j]);
                     }
 
                     // Chris: Crazy hack for Chrome POST packets
-                    if(h.additionalPOST.Count == 0)
+                    if(h.VariablesPOST.Count == 0)
                     {
                         // Chris: is there a content-length?
                         bool contlfound = false;
@@ -380,19 +380,19 @@ namespace LamestWebserver
                         {
                             if(linput[j].Length >= 16 && linput[j].Substring(0, 16) == "Content-Length: ")
                             {
-                                if(int.TryParse(linput[j].Substring(16), out h.contentLength))
+                                if(int.TryParse(linput[j].Substring(16), out h._contentLength))
                                     contlfound = true;
                                 break;
                             }
                         }
 
-                        if(contlfound && h.contentLength > 0 && linput[linput.Length - 1] == "" && linput[linput.Length - 2] == "")
+                        if(contlfound && h._contentLength > 0 && linput[linput.Length - 1] == "" && linput[linput.Length - 2] == "")
                         {
-                            return new HTTP_Packet() { version = null };
+                            return new HttpPacket() { Version = null };
                         }
                     }
 
-                    return getCookiesAndModified(h, linput);
+                    return GetCookiesAndModified(h, linput);
                 }
             }
 
@@ -404,7 +404,7 @@ namespace LamestWebserver
                 if (lastPacket != null)
                     input = lastPacket + input;
                 else
-                    return getCookiesAndModified(h, linput);
+                    return GetCookiesAndModified(h, linput);
 
                 return Constructor(ref input, endp, null);
             }
@@ -412,26 +412,26 @@ namespace LamestWebserver
             return h;
         }
 
-        const string ifmodifiedsince = "If-Modified-Since: ",
-            cookie_ = "Cookie: "/*,
+        private const string ifmodifiedsince = "If-Modified-Since: ",
+            cookie = "Cookie: "/*,
             ifunmodifiedsince = "If-Unmodified-Since: "*/;
 
-        private static HTTP_Packet getCookiesAndModified(HTTP_Packet packet, string[] linput)
+        private static HttpPacket GetCookiesAndModified(HttpPacket packet, string[] linput)
         {
             for (int i = 0; i < linput.Length; i++)
             {
-                if(!packet.modified.HasValue && linput[i].Length > ifmodifiedsince.Length && linput[i].Substring(0, ifmodifiedsince.Length) == ifmodifiedsince)
+                if(!packet.ModifiedDate.HasValue && linput[i].Length > ifmodifiedsince.Length && linput[i].Substring(0, ifmodifiedsince.Length) == ifmodifiedsince)
                 {
                     DateTime mod;
 
                     if (DateTime.TryParse(linput[i].Substring(ifmodifiedsince.Length), out mod))
-                        packet.modified = mod;
+                        packet.ModifiedDate = mod;
                 }
-                else if(packet.cookies == null && linput[i].Length > cookie_.Length && linput[i].Substring(0, cookie_.Length) == cookie_)
+                else if(packet.Cookies == null && linput[i].Length > cookie.Length && linput[i].Substring(0, cookie.Length) == cookie)
                 {
                     List<KeyValuePair<string, string>> cookies = new List<KeyValuePair<string, string>>();
 
-                    string[] pairs = linput[i].Substring(cookie_.Length).Split(';');
+                    string[] pairs = linput[i].Substring(cookie.Length).Split(';');
 
                     for (int j = 0; j < pairs.Length; j++)
                     {
@@ -462,7 +462,7 @@ namespace LamestWebserver
                         }
                     }
 
-                    packet.cookies = cookies;
+                    packet.Cookies = cookies;
                 }
                 else if(!packet.IsWebsocketUpgradeRequest && linput[i] == "Upgrade: websocket")
                 {
@@ -477,16 +477,16 @@ namespace LamestWebserver
     /// <summary>
     /// The different kinds of HTTP Requests we allow
     /// </summary>
-    public enum HTTP_Type
+    public enum HttpType
     {
         /// <summary>
         /// A GET Request
         /// </summary>
-        GET,
+        Get,
 
         /// <summary>
         /// A POST Request containing values
         /// </summary>
-        POST
+        Post
     }
 }

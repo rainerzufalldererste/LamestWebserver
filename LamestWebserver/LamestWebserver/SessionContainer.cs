@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using LamestWebserver.Collections;
+using LamestWebserver.Synchronization;
 
 namespace LamestWebserver
 {
@@ -63,6 +64,9 @@ namespace LamestWebserver
         /// </summary>
         public static int UserHashMapSize = 128;
 
+        /// <summary>
+        /// The maximum count of users being online at one time
+        /// </summary>
         public static int MaxUsers = 256;
 
         private static UsableMutex mutex = new UsableMutex();

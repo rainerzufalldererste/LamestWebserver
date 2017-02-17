@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LamestWebserver
+namespace LamestWebserver.UI
 {
     /// <summary>
     /// A Container for a complete WebPage with html, head and body tags.
@@ -105,7 +105,7 @@ namespace LamestWebserver
         protected string buildContent(ISessionIdentificator sessionData)
         {
             if (condition && !conditionalCode(sessionData))
-                return InstantPageResponse.generateRedirectCode(referealURL, sessionData);
+                return InstantPageResponse.GenerateRedirectCode(referealURL, sessionData);
 
             string ret = "<html> <head> <title>" + title + "</title>";
 
@@ -183,7 +183,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                ret = Master.getErrorMsg("Exception in PageBuilder '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.ToString());
+                ret = Master.GetErrorMsg("Exception in PageBuilder '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.ToString());
             }
 
             return ret;
@@ -191,7 +191,7 @@ namespace LamestWebserver
 
         private void register()
         {
-            Master.addFuntionToServer(URL, GetContent);
+            Master.AddFuntionToServer(URL, GetContent);
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace LamestWebserver
         /// </summary>
         protected void RemoveFromServer()
         {
-            Master.removeFunctionFromServer(URL);
+            Master.RemoveFunctionFromServer(URL);
         }
     }
 
@@ -993,7 +993,7 @@ namespace LamestWebserver
             }
             else
             {
-                ret += "action='" + InstantPageResponse.addOneTimeConditionalRedirect(redirectTRUE, redirectFALSE, true, conditionalCode) + "' ";
+                ret += "action='" + InstantPageResponse.AddOneTimeConditionalRedirect(redirectTRUE, redirectFALSE, true, conditionalCode) + "' ";
             }
 
             if (!string.IsNullOrWhiteSpace(ID))
@@ -1377,7 +1377,7 @@ namespace LamestWebserver
 
             foreach(string s in input)
             {
-                data.Add(s.toHElement());
+                data.Add(s.ToHElement());
             }
 
             this.elements = data;

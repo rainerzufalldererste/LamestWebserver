@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
+using LamestWebserver.Synchronization;
 
 namespace LamestWebserver.NotificationService
 {

@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LamestWebserver;
 using LamestWebserver.Collections;
 using System.Collections.Generic;
+using LamestWebserver.Serialization;
 
 namespace UnitTests
 {
@@ -48,10 +49,10 @@ namespace UnitTests
             }
 
             Console.WriteLine("Serializing...");
-            Serializer.writeData(tree, "tree");
+            Serializer.WriteXmlData(tree, "tree");
 
             Console.WriteLine("Deserializing...");
-            tree = Serializer.getData<AVLTree<Person, Couple>>("tree");
+            tree = Serializer.ReadXmlData<AVLTree<Person, Couple>>("tree");
 
             Console.WriteLine("Validating...");
             for (int i = 0; i < count; i++)
@@ -82,10 +83,10 @@ namespace UnitTests
             }
 
             Console.WriteLine("Serializing...");
-            Serializer.writeData(hashmap, "hashmap");
+            Serializer.WriteXmlData(hashmap, "hashmap");
 
             Console.WriteLine("Deserializing...");
-            hashmap = Serializer.getData<AVLHashMap<Person, Couple>>("hashmap");
+            hashmap = Serializer.ReadXmlData<AVLHashMap<Person, Couple>>("hashmap");
 
             Console.WriteLine("Validating...");
             for (int i = 0; i < count; i++)
@@ -116,10 +117,10 @@ namespace UnitTests
             }
 
             Console.WriteLine("Serializing...");
-            Serializer.writeData(qtree, "qtree");
+            Serializer.WriteXmlData(qtree, "qtree");
 
             Console.WriteLine("Deserializing...");
-            qtree = Serializer.getData<QueuedAVLTree<Person, Couple>>("qtree");
+            qtree = Serializer.ReadXmlData<QueuedAVLTree<Person, Couple>>("qtree");
 
             Console.WriteLine("Validating...");
             for (int i = 0; i < count; i++)
@@ -164,11 +165,11 @@ namespace UnitTests
             container.qtree.Add(diane, new Couple() { man = diane, woman = anna });
 
             Console.WriteLine("Serializing...");
-            Serializer.writeData(container, "container");
+            Serializer.WriteXmlData(container, "container");
 
             Console.WriteLine("Deserializing...");
             container = null;
-            container = Serializer.getData<ContainerClass>("container");
+            container = Serializer.ReadXmlData<ContainerClass>("container");
 
             Console.WriteLine("Validating...");
 
@@ -346,8 +347,8 @@ namespace UnitTests
 
             hashmap.Validate();
 
-            Serializer.writeData(hashmap, nameof(hashmap));
-            hashmap = Serializer.getData<AVLHashMap<string, string>>(nameof(hashmap));
+            Serializer.WriteXmlData(hashmap, nameof(hashmap));
+            hashmap = Serializer.ReadXmlData<AVLHashMap<string, string>>(nameof(hashmap));
 
             hashmap.Validate();
 
@@ -379,8 +380,8 @@ namespace UnitTests
                 hashmap.Validate();
             }
 
-            Serializer.writeData(hashmap, nameof(hashmap));
-            hashmap = Serializer.getData<AVLHashMap<string, string>>(nameof(hashmap));
+            Serializer.WriteXmlData(hashmap, nameof(hashmap));
+            hashmap = Serializer.ReadXmlData<AVLHashMap<string, string>>(nameof(hashmap));
 
             hashmap.Validate();
         }
@@ -494,8 +495,8 @@ namespace UnitTests
                 tree.Validate();
             }
 
-            Serializer.writeData(tree, nameof(tree));
-            tree = Serializer.getData<AVLTree<string, string>>(nameof(tree));
+            Serializer.WriteXmlData(tree, nameof(tree));
+            tree = Serializer.ReadXmlData<AVLTree<string, string>>(nameof(tree));
 
             tree.Validate();
         }

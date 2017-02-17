@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using LamestWebserver;
 using System.Threading;
 using LamestWebserver.Collections;
+using LamestWebserver.UI;
 
 namespace Demos
 {
@@ -48,7 +49,7 @@ namespace Demos
 
                             new HHeadline("Login:", 1),
 
-                            new HForm(InstantPageResponse.addOneTimeConditionalRedirect("/cgame/lobby", "/cgame/?failed", false, (SessionData sessionData) => 
+                            new HForm(InstantPageResponse.AddOneTimeConditionalRedirect("/cgame/lobby", "/cgame/?failed", false, (SessionData sessionData) => 
                                 {
                                     string userName = sessionData.GetHttpPostValue("user");
                                     string key = sessionData.GetHttpPostValue("key");
@@ -130,7 +131,7 @@ namespace Demos
 
                                                 return new HScript(
                                                     ScriptCollection.getPageReferalToX,
-                                                    InstantPageResponse.addOneTimeTimedRedirect("/cgame/", "Sorry.\nWe couldn't find a game for you.", 5000, true)) * sessionData; // <- operator overloading can be fishy. this executes HScript.GetContent(sessionData);
+                                                    InstantPageResponse.AddOneTimeTimedRedirect("/cgame/", "Sorry.\nWe couldn't find a game for you.", 5000, true)) * sessionData; // <- operator overloading can be fishy. this executes HScript.GetContent(sessionData);
                                             }
                                             else
                                             {
@@ -332,7 +333,7 @@ namespace Demos
 
             }
 
-            protected override string getContents(SessionData sessionData)
+            protected override string GetContents(SessionData sessionData)
             {
                 if (!sessionData.KnownUser)
                     return "YOU ARE NOT LOGGED IN!";
@@ -366,7 +367,7 @@ namespace Demos
                 {
                     RemoveFromServer();
 
-                    return new HScript(ScriptCollection.getPageReferalToX, InstantPageResponse.addOneTimeTimedRedirect("/cgame/lobby", "You have lost the game!", 2500, true)) * sessionData;
+                    return new HScript(ScriptCollection.getPageReferalToX, InstantPageResponse.AddOneTimeTimedRedirect("/cgame/lobby", "You have lost the game!", 2500, true)) * sessionData;
                 }
 
                 if (thisplayer == activePlayer && postvalue != null)
@@ -391,7 +392,7 @@ namespace Demos
                                 activePlayer = 0;
                             }
 
-                            return new HScript(ScriptCollection.getPageReferalToX, InstantPageResponse.addOneTimeTimedRedirect("/cgame/lobby", "You have won the game!", 2500, true)) * sessionData;
+                            return new HScript(ScriptCollection.getPageReferalToX, InstantPageResponse.AddOneTimeTimedRedirect("/cgame/lobby", "You have won the game!", 2500, true)) * sessionData;
                         }
 
                         activePlayer++;

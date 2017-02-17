@@ -29,7 +29,7 @@ namespace LamestWebserver
 
         private void register()
         {
-            Master.addFuntionToServer(URL, this.getContents);
+            Master.AddFuntionToServer(URL, this.getContents);
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace LamestWebserver
         /// </summary>
         protected void RemoveFromServer()
         {
-            Master.removeFunctionFromServer(URL);
+            Master.RemoveFunctionFromServer(URL);
         }
 
         private string getContents(SessionData sessionData)
@@ -57,7 +57,7 @@ namespace LamestWebserver
             }
             catch(Exception e)
             {
-                ret = Master.getErrorMsg("Exception in PageFiller '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.ToString());
+                ret = Master.GetErrorMsg("Exception in PageFiller '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.ToString());
             }
 
             return ret;

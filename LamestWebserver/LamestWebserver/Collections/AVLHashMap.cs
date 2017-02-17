@@ -5,6 +5,7 @@ using System.Runtime.Serialization;
 using System.Xml.Schema;
 using System.Xml;
 using System.Xml.Serialization;
+using LamestWebserver.Serialization;
 
 namespace LamestWebserver.Collections
 {

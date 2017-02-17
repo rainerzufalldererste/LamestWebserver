@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace LamestWebserver
+namespace LamestWebserver.Synchronization
 {
     public class UsableLocker : IDisposable
     {

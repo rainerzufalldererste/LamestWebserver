@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LamestWebserver.Security;
 using LamestWebserver;
+using LamestWebserver.Serialization;
 
 namespace UnitTests
 {
@@ -54,9 +55,9 @@ namespace UnitTests
                     Assert.IsFalse(password.IsValid(SessionContainer.generateComplexHash()));
                 }
 
-                Serializer.writeData(new Password[] { password, password, new Password(" ") }, "pw");
+                Serializer.WriteXmlData(new Password[] { password, password, new Password(" ") }, "pw");
 
-                Password[] pws = Serializer.getData<Password[]>("pw");
+                Password[] pws = Serializer.ReadXmlData<Password[]>("pw");
                 
                 Assert.IsTrue(pws.Length == 3);
 

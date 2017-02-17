@@ -5,6 +5,8 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using LamestWebserver.Serialization;
+using LamestWebserver.UI;
 
 namespace Demos
 {
@@ -79,12 +81,12 @@ namespace Demos
                     new HLink("add element", "xmladd"),
                     new HNewLine(),
                     new HLink("serialize",
-                        InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?sfail", false, (SessionData sessionData) =>
-                            { try { Serializer.writeData(dataValues, "xmltest.xml"); return true; } catch(Exception) { return false; } })),
+                        InstantPageResponse.AddOneTimeConditionalRedirect("xmltest", "xmltest?sfail", false, (SessionData sessionData) =>
+                            { try { Serializer.WriteXmlData(dataValues, "xmltest.xml"); return true; } catch(Exception) { return false; } })),
                     new HNewLine(),
                     new HLink("deserialize",
-                        InstantPageResponse.addOneTimeConditionalRedirect("xmltest", "xmltest?fail", false, (SessionData sessionData) =>
-                            { try { dataValues = Serializer.getData<List<dataPiece>>("xmltest.xml"); return true; } catch(Exception) { return false; } })),
+                        InstantPageResponse.AddOneTimeConditionalRedirect("xmltest", "xmltest?fail", false, (SessionData sessionData) =>
+                            { try { dataValues = Serializer.ReadXmlData<List<dataPiece>>("xmltest.xml"); return true; } catch(Exception) { return false; } })),
                     new HNewLine(),
                     new HRuntimeCode((sessionData) =>
                         {
@@ -92,7 +94,7 @@ namespace Demos
 
                             for(int i = 0; i < dataValues.Count; i++)
                             {
-                                s += new HList(HList.EListType.UnorderedList, dataValues[i].name.toHElement(), dataValues[i].age.toHElement(), dataValues[i].data.toHElement(), new HList(HList.EListType.OrderedList, dataValues[i].ancestors)) * sessionData;
+                                s += new HList(HList.EListType.UnorderedList, dataValues[i].name.ToHElement(), dataValues[i].age.ToHElement(), dataValues[i].data.ToHElement(), new HList(HList.EListType.OrderedList, dataValues[i].ancestors)) * sessionData;
                             }
 
                             return s;
@@ -105,9 +107,9 @@ namespace Demos
         {
             public Adder() : base("xmladd") { }
 
-            protected override string getContents(SessionData sessionData)
+            protected override string GetContents(SessionData sessionData)
             {
-                return new HForm(InstantPageResponse.addOneTimeRedirectWithCode("xmltest", true, (SessionData sessionData_) =>
+                return new HForm(InstantPageResponse.AddOneTimeRedirectWithCode("xmltest", true, (SessionData sessionData_) =>
                 {
                     int age = -1;
 

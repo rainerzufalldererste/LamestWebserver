@@ -119,7 +119,7 @@ namespace LamestWebserver.ScriptHook
 
                         text += "</div>";
 
-                        scripts[i] = Master.getErrorMsg("Script Error (in Script " + (i+1) + ")", text);
+                        scripts[i] = Master.GetErrorMsg("Script Error (in Script " + (i+1) + ")", text);
                         return scripts[i];
                     }
                 }

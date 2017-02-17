@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LamestWebserver.UI;
 
 namespace Demos
 {
@@ -24,7 +25,7 @@ namespace Demos
                     };
         }
 
-        protected override HElement getElement(SessionData sessionData)
+        protected override HElement GetElement(SessionData sessionData)
         {
             PageBuilder _pb = new PageBuilder("jsconn");
 

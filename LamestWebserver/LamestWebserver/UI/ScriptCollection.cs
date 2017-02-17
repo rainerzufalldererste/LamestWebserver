@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LamestWebserver
+namespace LamestWebserver.UI
 {
     public static class ScriptCollection
     {

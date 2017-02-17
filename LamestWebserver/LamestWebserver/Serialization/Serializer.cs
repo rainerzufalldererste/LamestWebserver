@@ -12,11 +12,123 @@ using System.Xml.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace LamestWebserver
+namespace LamestWebserver.Serialization
 {
     public static class Serializer
     {
-        private readonly static Hashtable _cachedXmlSerialiazers = new Hashtable();
+        /// <summary>
+        /// Retrieves XML-Serialized data from a file.
+        /// </summary>
+        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
+        /// <param name="filename">The name of the file</param>
+        /// <returns>The deserialized object</returns>
+        public static T ReadXmlData<T>(string filename)
+        {
+            string xmlString = File.ReadAllText(filename);
+
+            using (MemoryStream memStream = new MemoryStream(Encoding.Unicode.GetBytes(xmlString))) // Yes, it actually seems like this is all really necessary here :/
+            {
+                XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(typeof(T));
+                return (T)serializer.Deserialize(memStream);
+            }
+        }
+
+        /// <summary>
+        /// Writes an Object to an XML-File.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        /// <param name="filename">The name of the file to write</param>
+        public static void WriteXmlData<T>(T data, string filename)
+        {
+            if(!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(filename));
+            }
+
+            StringBuilder output = new StringBuilder();
+
+            using (StringWriter textWriter = new StringWriter(output))
+            {
+                XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(typeof(T));
+                serializer.Serialize(textWriter, data);
+            }
+
+            File.WriteAllText(filename, output.ToString());
+        }
+
+        /// <summary>
+        /// Retrieves JSON-Serialized data from a file.
+        /// </summary>
+        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
+        /// <param name="filename">The name of the file</param>
+        /// <returns>The deserialized object</returns>
+        public static T ReadJsonData<T>(string filename) where T : new()
+        {
+            string jsonString = File.ReadAllText(filename);
+
+            return (T) JsonConvert.DeserializeObject(jsonString, typeof(T));
+        }
+
+        /// <summary>
+        /// Writes an Object to an JSON-File.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        /// <param name="filename">The name of the file to write</param>
+        public static void WriteJsonData<T>(T data, string filename)
+        {
+            if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(filename));
+            }
+
+            File.WriteAllText(filename, JsonConvert.SerializeObject(data));
+        }
+
+        /// <summary>
+        /// Retrieves Binary-Serialized data from a file.
+        /// </summary>
+        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
+        /// <param name="filename">The name of the file</param>
+        /// <returns>The deserialized object</returns>
+        public static T ReadBinaryData<T>(string filename)
+        {
+            byte[] binaryData = File.ReadAllBytes(filename);
+
+            using (MemoryStream memStream = new MemoryStream(binaryData))
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                return (T)formatter.Deserialize(memStream);
+            }
+        }
+
+        /// <summary>
+        /// Writes an Object to a Binary-File.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        /// <param name="filename">The name of the file to write</param>
+        public static void WriteBinaryData<T>(T data, string filename)
+        {
+            if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(filename));
+            }
+
+            using (FileStream fs = new FileStream(filename, FileMode.Create))
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                formatter.Serialize(fs, data);
+            }
+        }
+    }
+
+    public static class XmlSerializationTools
+    {
+        private static readonly Hashtable _cachedXmlSerialiazers = new Hashtable();
 
         /// <summary>
         /// Caches XMLSerializers to prevent MemoryLeaks.
@@ -38,115 +150,6 @@ namespace LamestWebserver
             }
 
             return serializer;
-        }
-
-        /// <summary>
-        /// Retrieves XML-Serialized data from a file.
-        /// </summary>
-        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
-        /// <param name="filename">The name of the file</param>
-        /// <returns>The deserialized object</returns>
-        public static T getData<T>(string filename)
-        {
-            string xmlString = File.ReadAllText(filename);
-
-            using (MemoryStream memStream = new MemoryStream(Encoding.Unicode.GetBytes(xmlString))) // Yes, it actually seems like this is all really necessary here :/
-            {
-                XmlSerializer serializer = GetXmlSerializer(typeof(T));
-                return (T)serializer.Deserialize(memStream);
-            }
-        }
-
-        /// <summary>
-        /// Writes an Object to an XML-File.
-        /// </summary>
-        /// <typeparam name="T">The Type of the Object</typeparam>
-        /// <param name="data">The Object</param>
-        /// <param name="filename">The name of the file to write</param>
-        public static void writeData<T>(T data, string filename)
-        {
-            if(!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(filename));
-            }
-
-            StringBuilder output = new StringBuilder();
-
-            using (StringWriter textWriter = new StringWriter(output))
-            {
-                XmlSerializer serializer = GetXmlSerializer(typeof(T));
-                serializer.Serialize(textWriter, data);
-            }
-
-            File.WriteAllText(filename, output.ToString());
-        }
-
-        /// <summary>
-        /// Retrieves JSON-Serialized data from a file.
-        /// </summary>
-        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
-        /// <param name="filename">The name of the file</param>
-        /// <returns>The deserialized object</returns>
-        public static T getJsonData<T>(string filename) where T : new()
-        {
-            string jsonString = File.ReadAllText(filename);
-
-            return (T) JsonConvert.DeserializeObject(jsonString, typeof(T));
-        }
-
-        /// <summary>
-        /// Writes an Object to an JSON-File.
-        /// </summary>
-        /// <typeparam name="T">The Type of the Object</typeparam>
-        /// <param name="data">The Object</param>
-        /// <param name="filename">The name of the file to write</param>
-        public static void writeJsonData<T>(T data, string filename)
-        {
-            if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(filename));
-            }
-
-            File.WriteAllText(filename, JsonConvert.SerializeObject(data));
-        }
-
-        /// <summary>
-        /// Retrieves Binary-Serialized data from a file.
-        /// </summary>
-        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
-        /// <param name="filename">The name of the file</param>
-        /// <returns>The deserialized object</returns>
-        public static T getBinaryData<T>(string filename)
-        {
-            byte[] binaryData = File.ReadAllBytes(filename);
-
-            using (MemoryStream memStream = new MemoryStream(binaryData))
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-
-                return (T)formatter.Deserialize(memStream);
-            }
-        }
-
-        /// <summary>
-        /// Writes an Object to a Binary-File.
-        /// </summary>
-        /// <typeparam name="T">The Type of the Object</typeparam>
-        /// <param name="data">The Object</param>
-        /// <param name="filename">The name of the file to write</param>
-        public static void writeBinaryData<T>(T data, string filename)
-        {
-            if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(filename));
-            }
-
-            using (FileStream fs = new FileStream(filename, FileMode.Create))
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-
-                formatter.Serialize(fs, data);
-            }
         }
 
         /// <summary>
@@ -224,41 +227,12 @@ namespace LamestWebserver
         {
             while (name != null && reader.Name != name)
             {
-                /*
-                Console.Write("Searching for '" + name + "' at " + reader.Name + " (" + reader.NodeType + ") ");
-
-                for (int attInd = 0; attInd < reader.AttributeCount; attInd++)
-                {
-                    reader.MoveToAttribute(attInd);
-                    Console.Write("(" + reader.Name + " | ");
-                    Console.Write(reader.Value + "),");
-                }
-
-                Console.WriteLine();
-
-                reader.MoveToElement();*/
-                
                 if (!reader.Read())
                     return default(T);
             }
 
-            /*
-            Console.Write("Found '" + name + "' at " + reader.Name + " (" + reader.NodeType + ") ");
-
-            for (int attInd = 0; attInd < reader.AttributeCount; attInd++)
-            {
-                reader.MoveToAttribute(attInd);
-                Console.Write("(" + reader.Name + " | ");
-                Console.Write(reader.Value + "),");
-            }
-
-            Console.WriteLine();
-
-            reader.MoveToElement();*/
-
             if (reader.GetAttribute("xsi:nil") == "true")
             {
-                // Console.WriteLine("Was NULL.");
                 return default(T);
             }
 
@@ -285,7 +259,7 @@ namespace LamestWebserver
             else
             {
                 reader.Read();
-                
+
                 T ret = (T)reader.ReadContentAs(typeof(T), null);
 
                 reader.Read();
@@ -294,6 +268,11 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// Reads an XmlReader to a specified EndElement
+        /// </summary>
+        /// <param name="reader">the XmlReader</param>
+        /// <param name="endElement">the name of the EndElement tag</param>
         public static void ReadToEndElement(this XmlReader reader, string endElement)
         {
             if (reader.Name != null && reader.NodeType == XmlNodeType.EndElement && reader.Name == endElement)
@@ -302,39 +281,7 @@ namespace LamestWebserver
                 return;
             }
 
-            while (reader.Read() && !(reader.NodeType == XmlNodeType.EndElement && reader.Name == endElement))
-                /*Console.WriteLine("Searching for EndElement '" + endElement + "' only found '" + reader.Name + "' (" + reader.NodeType + ")")*/;
-
             reader.ReadEndElement();
         }
-
-        /*
-
-        public static void WriteElementToList<T>(this XmlWriter writer, string name, T value, List<SerializableKeyValuePair<string, object>> list)
-        {
-            list.Add(new SerializableKeyValuePair<string, object>(name, value));
-        }
-
-        public static void WriteElementList(this XmlWriter writer, List<SerializableKeyValuePair<string, object>> list)
-        {
-            WriteElement(writer, "list", list);
-        }
-
-        public static T GetElementFromList<T>(this XmlReader reader, string name)
-        {
-            List<SerializableKeyValuePair<string, object>> list = new List<SerializableKeyValuePair<string, object>>();
-
-            list = reader.ReadElement<List<SerializableKeyValuePair<string, object>>>("list");
-
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (list[i].Key == name)
-                    return (T)list[i].Value;
-            }
-
-            return default(T);
-        }
-
-        */
     }
 }

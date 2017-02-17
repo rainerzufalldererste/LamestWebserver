@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using LamestWebserver;
+using LamestWebserver.Synchronization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTests

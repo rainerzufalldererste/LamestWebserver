@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using LamestWebserver;
 using LamestWebserver.Collections;
+using LamestWebserver.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTests
@@ -54,8 +55,8 @@ namespace UnitTests
                 referenceDictionary.Add(testKey, new TestValue() {testString = value, key = testKey});
             }
 
-            Serializer.writeBinaryData(avlTree, "avltree.bin");
-            avlTree = Serializer.getBinaryData<AVLTree<TestKey, TestValue>>("avltree.bin");
+            Serializer.WriteBinaryData(avlTree, "avltree.bin");
+            avlTree = Serializer.ReadBinaryData<AVLTree<TestKey, TestValue>>("avltree.bin");
 
             Assert.IsTrue(avlTree.Count == 1024);
 

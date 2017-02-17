@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LamestWebserver
+namespace LamestWebserver.Synchronization
 {
     /// <summary>
     /// Like a regular Mutex, but disposable if Lock() is called, making it available in using statements
