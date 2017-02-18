@@ -22,6 +22,7 @@ namespace lwshostcore
         public int PageResponseStorageHashMapSize = 256;
         public int OneTimePageResponsesStorageQueueSize = 4096;
         public int WebSocketResponsePageStorageHashMapSize = 64;
+        public int DirectoryResponseStorageHashMapSize = 128;
 
         private const string configFile = "lwshost\\lwsconfig.json";
         
@@ -40,7 +41,7 @@ namespace lwshostcore
 
                     try
                     {
-                        Serializer.WriteJsonData(_currentConfig, configFile);
+                        Serializer.WriteJsonData(_currentConfig, configFile, true);
                     }
                     catch
                     {
@@ -55,7 +56,7 @@ namespace lwshostcore
 
                     try
                     {
-                        Serializer.WriteJsonData(_currentConfig, configFile);
+                        Serializer.WriteJsonData(_currentConfig, configFile, true);
                     }
                     catch
                     {
@@ -93,6 +94,9 @@ namespace lwshostcore
 
             WebServer.WebSocketResponsePageStorageHashMapSize = WebSocketResponsePageStorageHashMapSize;
             ServerHandler.LogMessage($"[hostconfig] WebServer.WebSocketResponsePageStorageHashMapSize = {WebSocketResponsePageStorageHashMapSize}");
+
+            WebServer.DirectoryResponseStorageHashMapSize = DirectoryResponseStorageHashMapSize;
+            ServerHandler.LogMessage($"[hostconfig] WebServer.DirectoryResponseStorageHashMapSize = {DirectoryResponseStorageHashMapSize}");
 
         }
     }

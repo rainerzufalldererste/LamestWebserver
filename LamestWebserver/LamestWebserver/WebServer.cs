@@ -43,10 +43,15 @@ namespace LamestWebserver
         /// </summary>
         public static int WebSocketResponsePageStorageHashMapSize = 64;
 
+        /// <summary>
+        /// The size of the Directory Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
+        /// </summary>
+        public static int DirectoryResponseStorageHashMapSize = 128;
+
         private AVLHashMap<string, Master.GetContents> pageResponses = new AVLHashMap<string, Master.GetContents>(PageResponseStorageHashMapSize);
         private QueuedAVLTree<string, Master.GetContents> oneTimePageResponses = new QueuedAVLTree<string, Master.GetContents>(OneTimePageResponsesStorageQueueSize);
         private AVLHashMap<string, WebSocketCommunicationHandler> webSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(WebSocketResponsePageStorageHashMapSize);
-        private AVLTree<string, Master.GetDirectoryContents> directoryResponses = new AVLTree<string, Master.GetDirectoryContents>();
+        private AVLHashMap<string, Master.GetDirectoryContents> directoryResponses = new AVLHashMap<string, Master.GetDirectoryContents>(DirectoryResponseStorageHashMapSize);
 
         private bool csharp_bridge = true;
         internal bool useCache = true;
@@ -557,22 +562,37 @@ namespace LamestWebserver
                                 else
                                 {
                                     Master.GetDirectoryContents directory = null;
-                                    string bestDirectoryMatch = "";
+                                    string bestUrlMatch = htp.RequestBaseUrl;
 
-                                    foreach (var dir in directoryResponses)
+                                    while (true)
                                     {
-                                        if ((dir.Key.Length > bestDirectoryMatch.Length || dir.Key.Length == 0) && dir.Key.Length <= htp.RequestBaseUrl.Length &&
-                                            htp.RequestBaseUrl.StartsWith(dir.Key))
+                                        for (int i = bestUrlMatch.Length - 2; i >= 0; i--)
                                         {
-                                            bestDirectoryMatch = dir.Key;
-                                            directory = dir.Value;
+                                            if (bestUrlMatch[i] == '/')
+                                            {
+                                                bestUrlMatch = bestUrlMatch.Substring(0, i + 1);
+                                                break;
+                                            }
+
+                                            if (i == 0)
+                                            {
+                                                bestUrlMatch = "";
+                                                break;
+                                            }
+                                        }
+
+                                        directory = directoryResponses[bestUrlMatch];
+
+                                        if (directory != null)
+                                        {
+                                            break;
                                         }
                                     }
 
                                     if (directory != null)
                                     {
                                         HttpPacket htp_ = new HttpPacket();
-                                        string subDir = htp.RequestBaseUrl.Substring(bestDirectoryMatch.Length).TrimStart('/');
+                                        string subDir = htp.RequestBaseUrl.Substring(bestUrlMatch.Length).TrimStart('/');
 
                                         Exception error = null;
 
@@ -617,7 +637,7 @@ namespace LamestWebserver
                                         catch (Exception e)
                                         {
                                             htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Directory Response for '"
-                                                                                              + htp.RequestBaseUrl + "' in Directory Response '" + bestDirectoryMatch + "'", "<b>An Error occured while processing the output</b><br>"
+                                                                                              + htp.RequestBaseUrl + "' in Directory Response '" + bestUrlMatch + "'", "<b>An Error occured while processing the output</b><br>"
                                                                                                                        + e.ToString().Replace("\r\n", "<br>")
 #if DEBUG
                                                                                                                        +
@@ -635,10 +655,10 @@ namespace LamestWebserver
                                         nws.Write(buffer, 0, buffer.Length);
 
                                         if (error == null)
-                                            ServerHandler.LogMessage("Client requested the Directory URL '" + subDir + "' in Directory Page '" + bestDirectoryMatch +
+                                            ServerHandler.LogMessage("Client requested the Directory URL '" + subDir + "' in Directory Page '" + bestUrlMatch +
                                                                      "'. (C# WebserverApi)");
                                         else
-                                            ServerHandler.LogMessage("Client requested the Directory URL '" + subDir + "' in Directory Page '" + bestDirectoryMatch +
+                                            ServerHandler.LogMessage("Client requested the Directory URL '" + subDir + "' in Directory Page '" + bestUrlMatch +
                                                                      "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
                                     }
                                     else

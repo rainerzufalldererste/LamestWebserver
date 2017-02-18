@@ -232,7 +232,7 @@ namespace LamestWebserver
                             }
                         }
 
-                        if(h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '=')
+                        if(h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '=' || h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '&')
                         {
                             h.VariablesHEAD[j] = h.VariablesHEAD[j].Remove(h.VariablesHEAD[j].Length - 1);
                         }
@@ -304,7 +304,7 @@ namespace LamestWebserver
                             }
                         }
 
-                        if (h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '=')
+                        if (h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '=' || h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '&')
                         {
                             h.VariablesHEAD[j] = h.VariablesHEAD[j].Remove(h.VariablesHEAD[j].Length - 1);
                         }
@@ -355,7 +355,7 @@ namespace LamestWebserver
                             }
                         }
 
-                        if (h.VariablesPOST[j][h.VariablesPOST[j].Length - 1] == '=')
+                        if (h.VariablesPOST[j][h.VariablesPOST[j].Length - 1] == '=' || h.VariablesPOST[j][h.VariablesPOST[j].Length - 1] == '&')
                         {
                             h.VariablesPOST[j] = h.VariablesPOST[j].Remove(h.VariablesPOST[j].Length - 1);
                         }

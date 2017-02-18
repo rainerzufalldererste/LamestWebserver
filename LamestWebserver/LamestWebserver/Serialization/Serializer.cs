@@ -11,6 +11,7 @@ using System.Xml.Linq;
 using System.Xml.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace LamestWebserver.Serialization
 {
@@ -76,14 +77,26 @@ namespace LamestWebserver.Serialization
         /// <typeparam name="T">The Type of the Object</typeparam>
         /// <param name="data">The Object</param>
         /// <param name="filename">The name of the file to write</param>
-        public static void WriteJsonData<T>(T data, string filename)
+        /// <param name="humanReadable">Shall the file contain linefeeds</param>
+        public static void WriteJsonData<T>(T data, string filename, bool humanReadable)
         {
             if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(filename));
             }
 
-            File.WriteAllText(filename, JsonConvert.SerializeObject(data));
+            File.WriteAllText(filename, JsonConvert.SerializeObject(data, humanReadable ? Formatting.Indented : Formatting.None));
+        }
+
+        /// <summary>
+        /// Writes an Object to an JSON-File.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        /// <param name="filename">The name of the file to write</param>
+        public static void WriteJsonData<T>(T data, string filename)
+        {
+            WriteJsonData(data, filename, false);
         }
 
         /// <summary>
