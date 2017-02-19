@@ -31,9 +31,26 @@ namespace lwshostcore
 
             ServerHandler.LogMessage("Reading Directory...");
 
+            List<Thread> threads = new List<Thread>();
+
             foreach (var file in Directory.GetFiles(directory))
             {
-                ProcessFile(file);
+                Thread t = new Thread((obj) => {
+                    ProcessFile((string)file);
+                });
+
+                threads.Add(t);
+
+                t.Start(file);
+            }
+
+            foreach (Thread thread in threads)
+            {
+                try
+                {
+                    thread.Join();
+                }
+                catch { }
             }
 
             ServerHandler.LogMessage("Starting FileSystemWatcher...");
@@ -157,7 +174,8 @@ namespace lwshostcore
                                                                     catch (Exception e)
                                                                     {
                                                                         ServerHandler.LogMessage(
-                                                                            $"[lwshost] [File Load] Failed to execute on unload: {type.Namespace}.{type_.Name}.{method_.Name} (in {file})\n" + e);
+                                                                            $"[lwshost] [File Load] Failed to execute on unload: {type.Namespace}.{type_.Name}.{method_.Name} (in {file})\n" +
+                                                                            e);
                                                                     }
                                                                 }).Start();
 
@@ -227,7 +245,8 @@ namespace lwshostcore
                                             }
                                             catch (Exception e)
                                             {
-                                                ServerHandler.LogMessage($"[lwshost] [File Load] Failed to execute on Load: {type.Namespace}.{type.Name}.{method_.Name} (in {file})\n" + e);
+                                                ServerHandler.LogMessage(
+                                                    $"[lwshost] [File Load] Failed to execute on Load: {type.Namespace}.{type.Name}.{method_.Name} (in {file})\n" + e);
                                             }
                                         }).Start();
 
@@ -246,9 +265,21 @@ namespace lwshostcore
                 if (addedAnything)
                     TypesPerFile.Add(file, types);
             }
+            catch (ReflectionTypeLoadException e)
+            {
+                ServerHandler.LogMessage("[lwshost] Failed to load Assembly " + file + " (" + e.LoaderExceptions.Length + " Loader Exceptions)");
+
+                for(int i = 0; i < (e.LoaderExceptions.Length > 25 ? 20 : e.LoaderExceptions.Length); i++)
+                {
+                    ServerHandler.LogMessage($"[lwshost] ({(i+1)}/{e.LoaderExceptions.Length}) {e.LoaderExceptions[i].Message}");
+                }
+
+                if(e.LoaderExceptions.Length > 25)
+                    ServerHandler.LogMessage(" [...] " + (e.LoaderExceptions.Length - 20) + " more Loader Exceptions.");
+            }
             catch (Exception e)
             {
-                ServerHandler.LogMessage("[lwshost] Failed to load Assembly " + file);
+                ServerHandler.LogMessage("[lwshost] Failed to load Assembly " + file + "\n" + e);
             }
         }
     }

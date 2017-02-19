@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ using LamestWebserver.Collections;
 using System.IO;
 using System.Windows.Forms;
 using LamestWebserver.Synchronization;
+using ThreadState = System.Threading.ThreadState;
 
 namespace LamestWebserver
 {
@@ -48,7 +50,7 @@ namespace LamestWebserver
         /// </summary>
         public static int DirectoryResponseStorageHashMapSize = 128;
 
-        private UsableMutexSlim pageResponseWriteLock = new UsableMutexSlim();
+        private ReaderWriterLockSlim pageResponseWriteLock = new ReaderWriterLockSlim();
         private AVLHashMap<string, Master.GetContents> pageResponses = new AVLHashMap<string, Master.GetContents>(PageResponseStorageHashMapSize);
         private QueuedAVLTree<string, Master.GetContents> oneTimePageResponses = new QueuedAVLTree<string, Master.GetContents>(OneTimePageResponsesStorageQueueSize);
         private AVLHashMap<string, WebSocketCommunicationHandler> webSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(WebSocketResponsePageStorageHashMapSize);
@@ -161,7 +163,7 @@ namespace LamestWebserver
             {
                 tcpRcvTask.Dispose();
             }
-            catch (Exception)
+            catch
             {
             }
 
@@ -244,56 +246,63 @@ namespace LamestWebserver
 
         public void AddFunction(string URL, Master.GetContents getc)
         {
-            using (pageResponseWriteLock.Lock())
-                pageResponses.Add(URL, getc);
+            pageResponseWriteLock.EnterWriteLock();
+            pageResponses.Add(URL, getc);
+            pageResponseWriteLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi)");
         }
 
         public void AddOneTimeFunction(string URL, Master.GetContents getc)
         {
-            using (pageResponseWriteLock.Lock())
-                oneTimePageResponses.Add(URL, getc);
+            pageResponseWriteLock.EnterWriteLock();
+            oneTimePageResponses.Add(URL, getc);
+            pageResponseWriteLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi/OneTimeFunction)");
         }
 
         public void RemoveFunction(string URL)
         {
-            using (pageResponseWriteLock.Lock())
-                pageResponses.Remove(URL);
+            pageResponseWriteLock.EnterWriteLock();
+            pageResponses.Remove(URL);
+            pageResponseWriteLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (WebserverApi)");
         }
 
         public void AddDirectoryFunction(string URL, Master.GetDirectoryContents function)
         {
-            using (pageResponseWriteLock.Lock())
-                directoryResponses.Add(URL, function);
+            pageResponseWriteLock.EnterWriteLock();
+            directoryResponses.Add(URL, function);
+            pageResponseWriteLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is now available at the Webserver. (WebserverApi)");
         }
 
         private void RemoveDirectoryFunction(string URL)
         {
-            using (pageResponseWriteLock.Lock())
-                directoryResponses.Remove(URL);
+            pageResponseWriteLock.EnterWriteLock();
+            directoryResponses.Remove(URL);
+            pageResponseWriteLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
         }
 
         public void AddWebsocketHandler(WebSocketCommunicationHandler handler)
         {
-            using (pageResponseWriteLock.Lock())
-                webSocketResponses.Add(handler.URL, handler);
+            pageResponseWriteLock.EnterWriteLock();
+            webSocketResponses.Add(handler.URL, handler);
+            pageResponseWriteLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The URL '" + handler.URL + "' is now assigned to a Page. (Websocket)");
         }
 
         public void RemoveWebsocketHandler(string URL)
         {
-            using (pageResponseWriteLock.Lock())
-                webSocketResponses.Remove(URL);
+            pageResponseWriteLock.EnterWriteLock();
+            webSocketResponses.Remove(URL);
+            pageResponseWriteLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
         }
@@ -306,14 +315,12 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("The TcpListener couldn't be started. The Port is probably blocked.\n\n");
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine(e + "\n");
+                ServerHandler.LogMessage("The TcpListener couldn't be started. The Port is probably blocked.\n" + e);
+
+                if (!silent)
+                    Console.WriteLine("Failed to start TcpListener.\n" + e);
                 return;
             }
-            ;
-
 
             while (running)
             {
@@ -340,7 +347,7 @@ namespace LamestWebserver
                 catch (Exception e)
                 {
                     if (!silent)
-                        Console.WriteLine("The TcpListener failed.\n" + e + "\n");
+                        ServerHandler.LogMessage("The TcpListener failed.\n" + e);
                 }
             }
         }
@@ -388,7 +395,7 @@ namespace LamestWebserver
                         {
                             lastmsg = msg_;
                         }
-                        else if (htp.RequestBaseUrl == "")
+                        else if (htp.RequestUrl == "")
                         {
                             lastmsg = null;
 
@@ -414,42 +421,55 @@ namespace LamestWebserver
                         {
                             lastmsg = null;
 
-                            while (htp.RequestBaseUrl.Length >= 2 && (htp.RequestBaseUrl[0] == ' ' || htp.RequestBaseUrl[0] == '/'))
+                            while (htp.RequestUrl.Length >= 2 && (htp.RequestUrl[0] == ' ' || htp.RequestUrl[0] == '/'))
                             {
-                                htp.RequestBaseUrl = htp.RequestBaseUrl.Remove(0, 1);
+                                htp.RequestUrl = htp.RequestUrl.Remove(0, 1);
                             }
 
                             Master.GetContents currentRequest;
-                            
-                                currentRequest = pageResponses[htp.RequestBaseUrl];
+
+                            pageResponseWriteLock.EnterReadLock();
+                            currentRequest = pageResponses[htp.RequestUrl];
+                            pageResponseWriteLock.ExitReadLock();
 
                             WebSocketCommunicationHandler currentWebSocketHandler;
                             
+
+                            pageResponseWriteLock.EnterReadLock();
+
+                            if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.RequestUrl, out currentWebSocketHandler))
                             {
-                                if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.RequestBaseUrl, out currentWebSocketHandler))
-                                {
-                                    var handler =
-                                        (Fleck.Handlers.ComposableHandler)
-                                        Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose,
-                                            currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
-                                    msg = handler.CreateHandshake();
-                                    nws.Write(msg, 0, msg.Length);
+                                pageResponseWriteLock.ExitReadLock();
+                                var handler =
+                                    (Fleck.Handlers.ComposableHandler)
+                                    Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose,
+                                        currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
+                                msg = handler.CreateHandshake();
+                                nws.Write(msg, 0, msg.Length);
 
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestBaseUrl + "'. (WebSocket Upgrade Request)");
+                                ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (WebSocket Upgrade Request)");
 
-                                    var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler, (ushort)this.port);
+                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler, (ushort) this.port);
 
-                                    return;
-                                }
+                                return;
                             }
-
+                            else
+                            {
+                                pageResponseWriteLock.ExitReadLock();
+                            }
 
                             if (currentRequest == null)
                             {
-                                    currentRequest = oneTimePageResponses[htp.RequestBaseUrl];
+                                pageResponseWriteLock.EnterReadLock();
+                                currentRequest = oneTimePageResponses[htp.RequestUrl];
+                                pageResponseWriteLock.ExitReadLock();
 
                                 if (currentRequest != null)
-                                    oneTimePageResponses.Remove(htp.RequestBaseUrl);
+                                {
+                                    pageResponseWriteLock.EnterWriteLock();
+                                    oneTimePageResponses.Remove(htp.RequestUrl);
+                                    pageResponseWriteLock.ExitWriteLock();
+                                }
                             }
 
                             if (currentRequest != null)
@@ -465,7 +485,7 @@ namespace LamestWebserver
                                 try
                                 {
                                     SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                        htp.RequestBaseUrl, msg_, client, nws, (ushort)this.port);
+                                        htp.RequestUrl, msg_, client, nws, (ushort) this.port);
 
                                     htp_.BinaryData = enc.GetBytes(currentRequest.Invoke(sessionData));
 
@@ -481,7 +501,7 @@ namespace LamestWebserver
                                     if (tries >= 10)
                                     {
                                         htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
-                                                                                          + htp.RequestBaseUrl + "'",
+                                                                                          + htp.RequestUrl + "'",
                                             $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
                                             + e.ToString().Replace("\r\n", "<br>")
 #if DEBUG
@@ -501,14 +521,14 @@ namespace LamestWebserver
                                 catch (Exception e)
                                 {
                                     htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
-                                                                                      + htp.RequestBaseUrl + "'", "<b>An Error occured while processing the output</b><br>"
-                                                                                                               + e.ToString().Replace("\r\n", "<br>")
+                                                                                      + htp.RequestUrl + "'", "<b>An Error occured while processing the output</b><br>"
+                                                                                                                  + e.ToString().Replace("\r\n", "<br>")
 #if DEBUG
-                                                                                                               +
-                                                                                                               "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                                                                               + msg_.Replace("\r\n", "<br>")
+                                                                                                                  +
+                                                                                                                  "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                                                                                  + msg_.Replace("\r\n", "<br>")
 #endif
-                                                                                                               + "</div></p>"));
+                                                                                                                  + "</div></p>"));
 
                                     error = e;
                                 }
@@ -519,38 +539,38 @@ namespace LamestWebserver
                                 nws.Write(buffer, 0, buffer.Length);
 
                                 if (error == null)
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestBaseUrl + "'. (C# WebserverApi)");
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# WebserverApi)");
                                 else
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestBaseUrl +
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl +
                                                              "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
                             }
-                            else if (htp.RequestBaseUrl.ToLower().EndsWith(".hcs") && File.Exists((folder != "/" ? folder : "") + "/" + htp.RequestBaseUrl))
+                            else if (htp.RequestUrl.ToLower().EndsWith(".hcs") && File.Exists((folder != "/" ? folder : "") + "/" + htp.RequestUrl))
                             {
                                 string result = "";
                                 Exception error = null;
 
                                 try
                                 {
-                                    result = Hook.resolveScriptFromFile(folder + htp.RequestBaseUrl,
-                                        new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder, htp.RequestBaseUrl, msg_, client,
-                                            nws, (ushort)this.port));
+                                    result = Hook.resolveScriptFromFile(folder + htp.RequestUrl,
+                                        new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder, htp.RequestUrl, msg_, client,
+                                            nws, (ushort) this.port));
                                 }
                                 catch (Exception e)
                                 {
                                     result = Master.GetErrorMsg("Exception in C# Script for '"
-                                                                + htp.RequestBaseUrl + "'", "<b>An Error occured while processing the output</b><br>"
-                                                                                         + e.ToString().Replace("\r\n", "<br>")
+                                                                + htp.RequestUrl + "'", "<b>An Error occured while processing the output</b><br>"
+                                                                                            + e.ToString().Replace("\r\n", "<br>")
 #if DEBUG
-                                                                                         +
-                                                                                         "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                                                         + msg_.Replace("\r\n", "<br>")
+                                                                                            +
+                                                                                            "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                                                            + msg_.Replace("\r\n", "<br>")
 #endif
-                                                                                         + "</div></p>");
+                                                                                            + "</div></p>");
 
                                     error = e;
                                 }
 
-                                HttpPacket htp_ = new HttpPacket() {BinaryData = enc.GetBytes(result)};
+                                HttpPacket htp_ = new HttpPacket {BinaryData = enc.GetBytes(result)};
                                 buffer = htp_.GetPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
 
@@ -558,14 +578,14 @@ namespace LamestWebserver
                                 result = null;
 
                                 if (error == null)
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestBaseUrl + "'. (C# Script)");
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# Script)");
                                 else
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestBaseUrl + "'. (C# Script)\nThe URL crashed with the following Exception:\n" +
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# Script)\nThe URL crashed with the following Exception:\n" +
                                                              error);
                             }
                             else
                             {
-                                var response = GetFile(htp.RequestBaseUrl, htp, enc, msg_);
+                                var response = GetFile(htp.RequestUrl, htp, enc, msg_);
 
                                 if (response != null)
                                 {
@@ -574,12 +594,12 @@ namespace LamestWebserver
 
                                     buffer = null;
 
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestBaseUrl + "'.");
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'.");
                                 }
                                 else
                                 {
                                     Master.GetDirectoryContents directory = null;
-                                    string bestUrlMatch = htp.RequestBaseUrl;
+                                    string bestUrlMatch = htp.RequestUrl;
 
                                     if (bestUrlMatch.StartsWith("/"))
                                         bestUrlMatch = bestUrlMatch.Remove(0);
@@ -600,8 +620,10 @@ namespace LamestWebserver
                                                 break;
                                             }
                                         }
-                                        
-                                            directory = directoryResponses[bestUrlMatch];
+
+                                        pageResponseWriteLock.EnterReadLock();
+                                        directory = directoryResponses[bestUrlMatch];
+                                        pageResponseWriteLock.ExitReadLock();
 
                                         if (directory != null || bestUrlMatch.Length == 0)
                                         {
@@ -612,7 +634,7 @@ namespace LamestWebserver
                                     if (directory != null)
                                     {
                                         HttpPacket htp_ = new HttpPacket();
-                                        string subDir = htp.RequestBaseUrl.Substring(bestUrlMatch.Length).TrimStart('/');
+                                        string subDir = htp.RequestUrl.Substring(bestUrlMatch.Length).TrimStart('/');
 
                                         Exception error = null;
 
@@ -622,7 +644,7 @@ namespace LamestWebserver
                                         try
                                         {
                                             SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                                htp.RequestBaseUrl, msg_, client, nws, (ushort)this.port);
+                                                htp.RequestUrl, msg_, client, nws, (ushort) this.port);
 
                                             htp_.BinaryData = enc.GetBytes(directory.Invoke(sessionData, subDir));
 
@@ -638,7 +660,7 @@ namespace LamestWebserver
                                             if (tries >= 10)
                                             {
                                                 htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
-                                                                                                  + htp.RequestBaseUrl + "'",
+                                                                                                  + htp.RequestUrl + "'",
                                                     $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
                                                     + e.ToString().Replace("\r\n", "<br>")
 #if DEBUG
@@ -658,14 +680,15 @@ namespace LamestWebserver
                                         catch (Exception e)
                                         {
                                             htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Directory Response for '"
-                                                                                              + htp.RequestBaseUrl + "' in Directory Response '" + bestUrlMatch + "'", "<b>An Error occured while processing the output</b><br>"
-                                                                                                                       + e.ToString().Replace("\r\n", "<br>")
+                                                                                              + htp.RequestUrl + "' in Directory Response '" + bestUrlMatch + "'",
+                                                "<b>An Error occured while processing the output</b><br>"
+                                                + e.ToString().Replace("\r\n", "<br>")
 #if DEBUG
-                                                                                                                       +
-                                                                                                                       "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                                                                                       + msg_.Replace("\r\n", "<br>")
+                                                +
+                                                "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                + msg_.Replace("\r\n", "<br>")
 #endif
-                                                                                                                       + "</div></p>"));
+                                                + "</div></p>"));
 
                                             error = e;
                                         }
@@ -684,7 +707,7 @@ namespace LamestWebserver
                                     }
                                     else
                                     {
-                                        if (htp.RequestBaseUrl.EndsWith("/"))
+                                        if (htp.RequestUrl.EndsWith("/"))
                                         {
                                             buffer = new HttpPacket()
                                             {
@@ -717,7 +740,7 @@ namespace LamestWebserver
 
                                         nws.Write(buffer, 0, buffer.Length);
 
-                                        ServerHandler.LogMessage("Client requested the URL '" + htp.RequestBaseUrl + "' which couldn't be found on the server. Retrieved Error 404.");
+                                        ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 404.");
                                     }
                                 }
                             }

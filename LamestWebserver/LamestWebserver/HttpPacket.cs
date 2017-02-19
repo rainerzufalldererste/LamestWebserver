@@ -53,7 +53,7 @@ namespace LamestWebserver
         /// <summary>
         /// The contents of the request package
         /// </summary>
-        public string RequestBaseUrl = "";
+        public string RequestUrl = "";
 
         /// <summary>
         /// The cookies, that were set in the request or shall be set in the response
@@ -188,18 +188,18 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.RequestBaseUrl = linput[i].Substring(4, index - 4);
+                    h.RequestUrl = linput[i].Substring(4, index - 4);
 
-                    for (int k = 0; k < h.RequestBaseUrl.Length - 1; k++)
+                    for (int k = 0; k < h.RequestUrl.Length - 1; k++)
                     {
-                        if (h.RequestBaseUrl[k] == '?')
+                        if (h.RequestUrl[k] == '?')
                         {
-                            string add = h.RequestBaseUrl.Substring(k + 1);
+                            string add = h.RequestUrl.Substring(k + 1);
 
                             if (add[add.Length - 1] == ' ')
                                 add = add.Remove(add.Length - 1);
 
-                            h.RequestBaseUrl = h.RequestBaseUrl.Remove(k);
+                            h.RequestUrl = h.RequestUrl.Remove(k);
                             add = add.Replace('+', ' ');
 
                             for (int it = 0; it < add.Length - 1; it++)
@@ -260,18 +260,18 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.RequestBaseUrl = linput[i].Substring(4, index - 4);
+                    h.RequestUrl = linput[i].Substring(4, index - 4);
 
-                    for (int k = 0; k < h.RequestBaseUrl.Length - 1; k++)
+                    for (int k = 0; k < h.RequestUrl.Length - 1; k++)
                     {
-                        if (h.RequestBaseUrl[k] == '?')
+                        if (h.RequestUrl[k] == '?')
                         {
-                            string add = h.RequestBaseUrl.Substring(k + 1);
+                            string add = h.RequestUrl.Substring(k + 1);
 
                             if (add[add.Length - 1] == ' ')
                                 add = add.Remove(add.Length - 1);
 
-                            h.RequestBaseUrl = h.RequestBaseUrl.Remove(k);
+                            h.RequestUrl = h.RequestUrl.Remove(k);
                             add = add.Replace('+', ' ');
 
                             for (int it = 0; it < add.Length - 1; it++)
