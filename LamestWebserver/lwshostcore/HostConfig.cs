@@ -23,6 +23,7 @@ namespace lwshostcore
         public int OneTimePageResponsesStorageQueueSize = 4096;
         public int WebSocketResponsePageStorageHashMapSize = 64;
         public int DirectoryResponseStorageHashMapSize = 128;
+        public int RequestMaxPacketSize = 4096;
 
         private const string configFile = "lwshost\\lwsconfig.json";
         
@@ -97,6 +98,9 @@ namespace lwshostcore
 
             WebServer.DirectoryResponseStorageHashMapSize = DirectoryResponseStorageHashMapSize;
             ServerHandler.LogMessage($"[hostconfig] WebServer.DirectoryResponseStorageHashMapSize = {DirectoryResponseStorageHashMapSize}");
+
+            WebServer.RequestMaxPacketSize = RequestMaxPacketSize;
+            ServerHandler.LogMessage($"[hostconfig] WebServer.RequestMaxPacketSize = {RequestMaxPacketSize}");
 
         }
     }

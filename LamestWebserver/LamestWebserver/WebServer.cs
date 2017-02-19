@@ -50,6 +50,11 @@ namespace LamestWebserver
         /// </summary>
         public static int DirectoryResponseStorageHashMapSize = 128;
 
+        /// <summary>
+        /// The size that is read from the networkStream for each request.
+        /// </summary>
+        public static int RequestMaxPacketSize = 4096;
+
         private ReaderWriterLockSlim pageResponseWriteLock = new ReaderWriterLockSlim();
         private AVLHashMap<string, Master.GetContents> pageResponses = new AVLHashMap<string, Master.GetContents>(PageResponseStorageHashMapSize);
         private QueuedAVLTree<string, Master.GetContents> oneTimePageResponses = new QueuedAVLTree<string, Master.GetContents>(OneTimePageResponsesStorageQueueSize);
@@ -365,11 +370,11 @@ namespace LamestWebserver
 
             while (running)
             {
-                msg = new byte[4096];
+                msg = new byte[RequestMaxPacketSize];
 
                 try
                 {
-                    bytes = nws.Read(msg, 0, 4096);
+                    bytes = nws.Read(msg, 0, RequestMaxPacketSize);
                 }
                 catch (Exception e)
                 {
