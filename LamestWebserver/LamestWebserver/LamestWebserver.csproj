@@ -119,6 +119,7 @@
     <Compile Include="JScriptBuilder\JSAnimation.cs" />
     <Compile Include="JScriptBuilder\JSBuilder.cs" />
     <Compile Include="Master.cs" />
+    <Compile Include="ThreadedWorker.cs" />
     <Compile Include="UI\PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />
     <Compile Include="PageResponse.cs" />

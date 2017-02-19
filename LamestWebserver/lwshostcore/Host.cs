@@ -30,28 +30,15 @@ namespace lwshostcore
                 this.OnPageRegister = OnPageRegister;
 
             ServerHandler.LogMessage("Reading Directory...");
-
-            List<Thread> threads = new List<Thread>();
+            
+            ThreadedWorker worker = new ThreadedWorker();
 
             foreach (var file in Directory.GetFiles(directory))
             {
-                Thread t = new Thread((obj) => {
-                    ProcessFile((string)file);
-                });
-
-                threads.Add(t);
-
-                t.Start(file);
+                worker.EnqueueJob((Action<string>)ProcessFile, file);
             }
 
-            foreach (Thread thread in threads)
-            {
-                try
-                {
-                    thread.Join();
-                }
-                catch { }
-            }
+            worker.Join(null);
 
             ServerHandler.LogMessage("Starting FileSystemWatcher...");
 

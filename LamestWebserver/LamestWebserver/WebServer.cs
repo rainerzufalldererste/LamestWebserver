@@ -56,6 +56,7 @@ namespace LamestWebserver
         public static int RequestMaxPacketSize = 4096;
 
         private ReaderWriterLockSlim pageResponseWriteLock = new ReaderWriterLockSlim();
+
         private AVLHashMap<string, Master.GetContents> pageResponses = new AVLHashMap<string, Master.GetContents>(PageResponseStorageHashMapSize);
         private QueuedAVLTree<string, Master.GetContents> oneTimePageResponses = new QueuedAVLTree<string, Master.GetContents>(OneTimePageResponsesStorageQueueSize);
         private AVLHashMap<string, WebSocketCommunicationHandler> webSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(WebSocketResponsePageStorageHashMapSize);
@@ -249,7 +250,7 @@ namespace LamestWebserver
             ServerHandler.LogMessage("Cleaning up threads. Before: " + threadCount + ", After: " + threadCountAfter + ".");
         }
 
-        public void AddFunction(string URL, Master.GetContents getc)
+        private void AddFunction(string URL, Master.GetContents getc)
         {
             pageResponseWriteLock.EnterWriteLock();
             pageResponses.Add(URL, getc);
@@ -258,7 +259,7 @@ namespace LamestWebserver
             ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi)");
         }
 
-        public void AddOneTimeFunction(string URL, Master.GetContents getc)
+        private void AddOneTimeFunction(string URL, Master.GetContents getc)
         {
             pageResponseWriteLock.EnterWriteLock();
             oneTimePageResponses.Add(URL, getc);
@@ -267,7 +268,7 @@ namespace LamestWebserver
             ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi/OneTimeFunction)");
         }
 
-        public void RemoveFunction(string URL)
+        private void RemoveFunction(string URL)
         {
             pageResponseWriteLock.EnterWriteLock();
             pageResponses.Remove(URL);
@@ -276,7 +277,7 @@ namespace LamestWebserver
             ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (WebserverApi)");
         }
 
-        public void AddDirectoryFunction(string URL, Master.GetDirectoryContents function)
+        private void AddDirectoryFunction(string URL, Master.GetDirectoryContents function)
         {
             pageResponseWriteLock.EnterWriteLock();
             directoryResponses.Add(URL, function);
@@ -294,7 +295,7 @@ namespace LamestWebserver
             ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
         }
 
-        public void AddWebsocketHandler(WebSocketCommunicationHandler handler)
+        private void AddWebsocketHandler(WebSocketCommunicationHandler handler)
         {
             pageResponseWriteLock.EnterWriteLock();
             webSocketResponses.Add(handler.URL, handler);
@@ -303,7 +304,7 @@ namespace LamestWebserver
             ServerHandler.LogMessage("The URL '" + handler.URL + "' is now assigned to a Page. (Websocket)");
         }
 
-        public void RemoveWebsocketHandler(string URL)
+        private void RemoveWebsocketHandler(string URL)
         {
             pageResponseWriteLock.EnterWriteLock();
             webSocketResponses.Remove(URL);

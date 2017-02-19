@@ -215,6 +215,17 @@ namespace LamestWebserver.NotificationService
 
     public class NotificationHandler : WebSocketCommunicationHandler, INotificationHandler
     {
+        private static readonly List<NotificationHandler> AllNotificationHandlers = new List<NotificationHandler>();
+        private static readonly Mutex AllNotificationHandlerMutex = new Mutex();
+
+        public static void StopAllNotificationHandlers()
+        {
+            for (int i = AllNotificationHandlers.Count - 1; i >= 0; i--)
+            {
+                AllNotificationHandlers[i].StopHandler();
+            }
+        }
+
         private UsableWriteLock listWriteLock = new UsableWriteLock();
 
         private List<WebSocketHandlerProxy> proxies = new List<WebSocketHandlerProxy>();
@@ -246,6 +257,10 @@ namespace LamestWebserver.NotificationService
             string methodName = NotificationHelper.GetFunctionName(ID);
 
             SendingFunction = new JSFunction(methodName);
+
+            AllNotificationHandlerMutex.WaitOne();
+            AllNotificationHandlers.Add(this);
+            AllNotificationHandlerMutex.ReleaseMutex();
         }
 
         public JSElement JSElement => new JSPlainText("<script type='text/javascript'>" +
@@ -253,7 +268,7 @@ namespace LamestWebserver.NotificationService
 
         private JSElement _jselement = null;
 
-        public void serverClients()
+        public void ServerClients()
         {
             while (running)
             {
@@ -280,6 +295,10 @@ namespace LamestWebserver.NotificationService
         public void StopHandler()
         {
             running = false;
+            
+            AllNotificationHandlerMutex.WaitOne();
+            AllNotificationHandlers.Remove(this);
+            AllNotificationHandlerMutex.ReleaseMutex();
         }
 
         public void Notify(Notification notification)
@@ -338,7 +357,7 @@ namespace LamestWebserver.NotificationService
 
             if (handlerThread == null)
             {
-                handlerThread = new Thread(new ThreadStart(serverClients));
+                handlerThread = new Thread(new ThreadStart(ServerClients));
                 handlerThread.Start();
             }
 

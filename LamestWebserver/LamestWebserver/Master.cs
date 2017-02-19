@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using LamestWebserver.NotificationService;
 using LamestWebserver.UI;
 
 namespace LamestWebserver
@@ -271,10 +272,13 @@ namespace LamestWebserver
                     ServerHandler.RunningServers[i].StopServer();
                     ServerHandler.RunningServers.RemoveAt(i);
                 }
-                catch (Exception)
+                catch
                 {
                 }
             }
+
+            NotificationHandler.StopAllNotificationHandlers();
+            ThreadedWorker.CurrentWorker.Stop();
         }
 
         /// <summary>
