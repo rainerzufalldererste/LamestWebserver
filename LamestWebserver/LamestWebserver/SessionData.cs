@@ -7,7 +7,7 @@ namespace LamestWebserver
     /// <summary>
     /// Contains all Session dependent Information
     /// </summary>
-    public class SessionData : ISessionIdentificator
+    public class SessionData : AbstractSessionIdentificator
     {
         /// <summary>
         /// The Variables mentioned in the HTTP head (http://www.link.com/?IamAHeadVariable)
@@ -69,7 +69,8 @@ namespace LamestWebserver
         /// </summary>
         public AVLTree<string, string> Cookies { get; private set; }
 
-        internal SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, List<KeyValuePair<string, string>> Cookies, string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws)
+        internal SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, List<KeyValuePair<string, string>> Cookies,
+            string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws, ushort port)
         {
             this.HttpHeadParameters = additionalHEAD;
             this.HttpPostParameters = additionalPOST;
@@ -77,6 +78,8 @@ namespace LamestWebserver
             this.HttpPostValues = valuesPOST;
             this.ServerWorkingPath = path;
             base.RequestedFile = file;
+            base.Port = port;
+
             this.Cookies = new AVLTree<string, string>();
 
             if (Cookies != null)
@@ -90,7 +93,7 @@ namespace LamestWebserver
             this.RawHttpPacket = packet;
             this.ClientTpcConnection = client;
             this.ServerNetworkStream = nws;
-            
+
             this.ClientEndPoint = ClientTpcConnection?.Client.RemoteEndPoint;
             this.ServerEndPoint = ClientTpcConnection?.Client.LocalEndPoint;
 

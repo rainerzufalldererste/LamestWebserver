@@ -14,7 +14,12 @@ namespace LamestWebserver.NotificationService
 
             string sendMsgMethodName = GetFunctionName(NotificationHandlerID);
 
-            return "var conn = new WebSocket('ws://" + (address?.ToString() ?? sessionData.ServerEndPoint.ToString()) + "/" + destinationURL + "');" +
+            string addr = address?.ToString();
+
+            if (addr != null)
+                addr += ":" + sessionData.Port;
+
+            return "var conn = new WebSocket('ws://" + (addr ?? sessionData.ServerEndPoint.ToString()) + "/" + destinationURL + "');" +
                     "function " + sendMsgMethodName + " (type, msg){conn.send(type + \"\\n\\n\" + msg)};" +
                     "function " + sendMsgMethodName + " (msg){conn.send(\"" + NotificationType.Message + "\\\n\\n\" + msg)};" +
                     "conn.onmessage = function(event) { var answer = true; if(event.data.includes(\"\\n\\r\") && event.data.split(\"\\n\\r\", 2)[1] == \"" + NotificationOption.NoReply + "\") answer = false; " +
@@ -29,11 +34,16 @@ namespace LamestWebserver.NotificationService
                     "conn.onopen = function (event) { conn.send(\"" + NotificationType.KeepAlive + "\") };";
         }
 
-        internal static string JsonNotificationCode(ISessionIdentificator sessionData, string destinationURL, string NotificationHandlerID, IPAddress address, bool trace = false, int timeKeepaliveClientside = 8000)
+        internal static string JsonNotificationCode(AbstractSessionIdentificator sessionData, string destinationURL, string NotificationHandlerID, IPAddress address, bool trace = false, int timeKeepaliveClientside = 8000)
         {
             destinationURL = destinationURL.TrimStart('/', ' ');
 
             string sendMsgMethodName = GetFunctionName(NotificationHandlerID);
+
+            string addr = address?.ToString();
+
+            if (addr != null)
+                addr += ":" + sessionData.Port;
 
             return "var conn; var excepted = 0; var interval_" + sendMsgMethodName + ";  function initconn_" + sendMsgMethodName + "(){ " +
 #if DEBUG
@@ -42,7 +52,7 @@ namespace LamestWebserver.NotificationService
                    (trace ? "console.log(\"+> Trying to open new Connection... (from Client)\");" : "") + 
 #endif
 
-                   " try{ conn = new WebSocket('ws://" + (address?.ToString() ?? (sessionData is SessionData ? (sessionData as SessionData).ServerEndPoint.ToString() : "SERVER_HOST_NOT_DEFINDED")) + "/" + destinationURL + 
+                   " try{ conn = new WebSocket('ws://" + (addr ?? (sessionData is SessionData ? (sessionData as SessionData).ServerEndPoint.ToString() : "SERVER_HOST_NOT_DEFINDED")) + "/" + destinationURL + 
                    "'); conn.onmessage = function(event) { var rcv = window.JSON.parse(event.data); var answer = true; if(rcv." + JsonNotificationPacket.NoReply_string +
                    ") answer = false; " +
 #if DEBUG

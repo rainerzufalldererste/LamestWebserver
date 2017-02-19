@@ -261,13 +261,13 @@ namespace LamestWebserver.NotificationService
                 {
                     for (int i = proxies.Count - 1; i >= 0; i--)
                     {
-                        if (!proxies[i].isActive)
+                        if (!proxies[i].IsActive)
                         {
                             proxies.RemoveAt(i);
                             continue;
                         }
 
-                        if ((DateTime.UtcNow - proxies[i].lastMessageSent) >
+                        if ((DateTime.UtcNow - proxies[i].LastMessageSent) >
                             this.MaximumLastMessageTime)
                             proxies[i].Respond(new KeepAliveNotification().GetNotification());
                     }
@@ -431,7 +431,7 @@ namespace LamestWebserver.NotificationService
                     new List<string>(),
                     new List<string>(),
                     new List<KeyValuePair<string, string>> {new KeyValuePair<string, string>("ssid", ssid)},
-                    "", URL, input, null, response.proxy.GetNetworkStream());
+                    "", URL, input, null, response.proxy.GetNetworkStream(), response.proxy.Port);
             }
             else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
             {
@@ -441,7 +441,7 @@ namespace LamestWebserver.NotificationService
                     new List<string> { "ssid" },
                     new List<string> { ssid },
                     new List<KeyValuePair<string, string>>(),
-                    "", URL, input, null, response.proxy.GetNetworkStream());
+                    "", URL, input, null, response.proxy.GetNetworkStream(), response.proxy.Port);
             }
             else
             {

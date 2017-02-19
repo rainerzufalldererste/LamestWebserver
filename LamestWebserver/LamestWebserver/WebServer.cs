@@ -48,6 +48,7 @@ namespace LamestWebserver
         /// </summary>
         public static int DirectoryResponseStorageHashMapSize = 128;
 
+        private UsableMutexSlim pageResponseWriteLock = new UsableMutexSlim();
         private AVLHashMap<string, Master.GetContents> pageResponses = new AVLHashMap<string, Master.GetContents>(PageResponseStorageHashMapSize);
         private QueuedAVLTree<string, Master.GetContents> oneTimePageResponses = new QueuedAVLTree<string, Master.GetContents>(OneTimePageResponsesStorageQueueSize);
         private AVLHashMap<string, WebSocketCommunicationHandler> webSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(WebSocketResponsePageStorageHashMapSize);
@@ -90,11 +91,11 @@ namespace LamestWebserver
                 Master.AddOneTimeFunctionEvent += AddOneTimeFunction;
                 Master.AddDirectoryFunctionEvent += AddDirectoryFunction;
                 Master.RemoveDirectoryFunctionEvent += RemoveDirectoryFunction;
-            }
 
-            // Websockets
-            Master.AddWebsocketHandlerEvent += AddWebsocketHandler;
-            Master.RemoveWebsocketHandlerEvent += RemoveWebsocketHandler;
+                // Websockets
+                Master.AddWebsocketHandlerEvent += AddWebsocketHandler;
+                Master.RemoveWebsocketHandlerEvent += RemoveWebsocketHandler;
+            }
 
             this.port = port;
             this.tcpListener = new TcpListener(IPAddress.Any, port);
@@ -117,6 +118,8 @@ namespace LamestWebserver
                 Master.AddFunctionEvent -= AddFunction;
                 Master.RemoveFunctionEvent -= RemoveFunction;
                 Master.AddOneTimeFunctionEvent -= AddOneTimeFunction;
+                Master.AddWebsocketHandlerEvent -= AddWebsocketHandler;
+                Master.RemoveWebsocketHandlerEvent -= RemoveWebsocketHandler;
                 Master.AddDirectoryFunctionEvent -= AddDirectoryFunction;
                 Master.RemoveDirectoryFunctionEvent -= RemoveDirectoryFunction;
             }
@@ -241,49 +244,56 @@ namespace LamestWebserver
 
         public void AddFunction(string URL, Master.GetContents getc)
         {
-            pageResponses.Add(URL, getc);
+            using (pageResponseWriteLock.Lock())
+                pageResponses.Add(URL, getc);
 
             ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi)");
         }
 
         public void AddOneTimeFunction(string URL, Master.GetContents getc)
         {
-            oneTimePageResponses.Add(URL, getc);
+            using (pageResponseWriteLock.Lock())
+                oneTimePageResponses.Add(URL, getc);
 
             ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi/OneTimeFunction)");
         }
 
         public void RemoveFunction(string URL)
         {
-            pageResponses.Remove(URL);
+            using (pageResponseWriteLock.Lock())
+                pageResponses.Remove(URL);
 
             ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (WebserverApi)");
         }
 
         public void AddDirectoryFunction(string URL, Master.GetDirectoryContents function)
         {
-            directoryResponses.Add(URL, function);
+            using (pageResponseWriteLock.Lock())
+                directoryResponses.Add(URL, function);
 
             ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is now available at the Webserver. (WebserverApi)");
         }
 
         private void RemoveDirectoryFunction(string URL)
         {
-            directoryResponses.Remove(URL);
+            using (pageResponseWriteLock.Lock())
+                directoryResponses.Remove(URL);
 
             ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
         }
 
         public void AddWebsocketHandler(WebSocketCommunicationHandler handler)
         {
-            webSocketResponses.Add(handler.URL, handler);
+            using (pageResponseWriteLock.Lock())
+                webSocketResponses.Add(handler.URL, handler);
 
             ServerHandler.LogMessage("The URL '" + handler.URL + "' is now assigned to a Page. (Websocket)");
         }
 
         public void RemoveWebsocketHandler(string URL)
         {
-            webSocketResponses.Remove(URL);
+            using (pageResponseWriteLock.Lock())
+                webSocketResponses.Remove(URL);
 
             ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
         }
@@ -365,7 +375,6 @@ namespace LamestWebserver
                     break;
                 }
 
-
                 try
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
@@ -410,28 +419,34 @@ namespace LamestWebserver
                                 htp.RequestBaseUrl = htp.RequestBaseUrl.Remove(0, 1);
                             }
 
-                            Master.GetContents currentRequest = pageResponses[htp.RequestBaseUrl];
+                            Master.GetContents currentRequest;
+                            
+                                currentRequest = pageResponses[htp.RequestBaseUrl];
+
                             WebSocketCommunicationHandler currentWebSocketHandler;
-
-                            if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.RequestBaseUrl, out currentWebSocketHandler))
+                            
                             {
-                                var handler =
-                                    (Fleck.Handlers.ComposableHandler)
-                                    Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose,
-                                        currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
-                                msg = handler.CreateHandshake();
-                                nws.Write(msg, 0, msg.Length);
+                                if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.RequestBaseUrl, out currentWebSocketHandler))
+                                {
+                                    var handler =
+                                        (Fleck.Handlers.ComposableHandler)
+                                        Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose,
+                                            currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
+                                    msg = handler.CreateHandshake();
+                                    nws.Write(msg, 0, msg.Length);
 
-                                ServerHandler.LogMessage("Client requested the URL '" + htp.RequestBaseUrl + "'. (WebSocket Upgrade Request)");
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestBaseUrl + "'. (WebSocket Upgrade Request)");
 
-                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler);
+                                    var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler, (ushort)this.port);
 
-                                return;
+                                    return;
+                                }
                             }
+
 
                             if (currentRequest == null)
                             {
-                                currentRequest = oneTimePageResponses[htp.RequestBaseUrl];
+                                    currentRequest = oneTimePageResponses[htp.RequestBaseUrl];
 
                                 if (currentRequest != null)
                                     oneTimePageResponses.Remove(htp.RequestBaseUrl);
@@ -444,11 +459,14 @@ namespace LamestWebserver
                                 Exception error = null;
 
                                 int tries = 0;
+
                                 RetryGetData:
+
                                 try
                                 {
                                     SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                        htp.RequestBaseUrl, msg_, client, nws);
+                                        htp.RequestBaseUrl, msg_, client, nws, (ushort)this.port);
+
                                     htp_.BinaryData = enc.GetBytes(currentRequest.Invoke(sessionData));
 
                                     if (sessionData.SetCookies.Count > 0)
@@ -515,7 +533,7 @@ namespace LamestWebserver
                                 {
                                     result = Hook.resolveScriptFromFile(folder + htp.RequestBaseUrl,
                                         new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder, htp.RequestBaseUrl, msg_, client,
-                                            nws));
+                                            nws, (ushort)this.port));
                                 }
                                 catch (Exception e)
                                 {
@@ -551,7 +569,6 @@ namespace LamestWebserver
 
                                 if (response != null)
                                 {
-
                                     buffer = response.GetPackage(enc);
                                     nws.Write(buffer, 0, buffer.Length);
 
@@ -563,6 +580,9 @@ namespace LamestWebserver
                                 {
                                     Master.GetDirectoryContents directory = null;
                                     string bestUrlMatch = htp.RequestBaseUrl;
+
+                                    if (bestUrlMatch.StartsWith("/"))
+                                        bestUrlMatch = bestUrlMatch.Remove(0);
 
                                     while (true)
                                     {
@@ -580,10 +600,10 @@ namespace LamestWebserver
                                                 break;
                                             }
                                         }
+                                        
+                                            directory = directoryResponses[bestUrlMatch];
 
-                                        directory = directoryResponses[bestUrlMatch];
-
-                                        if (directory != null)
+                                        if (directory != null || bestUrlMatch.Length == 0)
                                         {
                                             break;
                                         }
@@ -602,7 +622,8 @@ namespace LamestWebserver
                                         try
                                         {
                                             SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                                htp.RequestBaseUrl, msg_, client, nws);
+                                                htp.RequestBaseUrl, msg_, client, nws, (ushort)this.port);
+
                                             htp_.BinaryData = enc.GetBytes(directory.Invoke(sessionData, subDir));
 
                                             if (sessionData.SetCookies.Count > 0)

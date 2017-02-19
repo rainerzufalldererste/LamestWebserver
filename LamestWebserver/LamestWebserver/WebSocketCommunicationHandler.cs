@@ -102,20 +102,23 @@ namespace LamestWebserver
         private WebSocketCommunicationHandler handler;
         private ComposableHandler websocketHandler;
 
-        public bool isActive { get; private set; } = true;
+        public bool IsActive { get; private set; } = true;
 
-        public DateTime lastMessageReceived = DateTime.UtcNow;
-        public DateTime lastMessageSent = DateTime.UtcNow;
+        public DateTime LastMessageReceived = DateTime.UtcNow;
+        public DateTime LastMessageSent = DateTime.UtcNow;
 
         private int exceptedTries = 0;
+        
+        public ushort Port;
 
         [ThreadStatic] internal static WebSocketHandlerProxy currentProxy;
 
-        internal WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler)
+        internal WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler, ushort port)
         {
             this.networkStream = stream;
             this.handler = handler;
             this.websocketHandler = websocketHandler;
+            this.Port = port;
 
             currentProxy = this;
             handleConnection();
@@ -123,20 +126,20 @@ namespace LamestWebserver
 
         public async void Respond(string Message)
         {
-            if (networkStream == null || !isActive)
+            if (networkStream == null || !IsActive)
                 return;
 
             try
             {
                 byte[] buffer = websocketHandler.TextFrame.Invoke(Message);
                 await networkStream.WriteAsync(buffer, 0, buffer.Length);
-                lastMessageSent = DateTime.UtcNow;
+                LastMessageSent = DateTime.UtcNow;
                 handler.callOnResponded();
                 exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
-                isActive = false;
+                IsActive = false;
                 return;
             }
             catch (ThreadAbortException e)
@@ -145,7 +148,7 @@ namespace LamestWebserver
             }
             catch (IOException)
             {
-                isActive = false;
+                IsActive = false;
 
                 try
                 {
@@ -170,19 +173,19 @@ namespace LamestWebserver
 
         public void RespondPong(byte[] bytes)
         {
-            if (networkStream == null || !isActive)
+            if (networkStream == null || !IsActive)
                 return;
 
             try
             {
                 byte[] buffer = websocketHandler.PongFrame.Invoke(bytes);
                 networkStream.WriteAsync(buffer, 0, buffer.Length);
-                lastMessageSent = DateTime.UtcNow;
+                LastMessageSent = DateTime.UtcNow;
                 exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
-                isActive = false;
+                IsActive = false;
                 return;
             }
             catch (ThreadAbortException e)
@@ -191,7 +194,7 @@ namespace LamestWebserver
             }
             catch (IOException)
             {
-                isActive = false;
+                IsActive = false;
 
                 try
                 {
@@ -216,19 +219,19 @@ namespace LamestWebserver
 
         public void RespondPing(byte[] bytes)
         {
-            if (networkStream == null || !isActive)
+            if (networkStream == null || !IsActive)
                 return;
 
             try
             {
                 byte[] buffer = websocketHandler.PingFrame.Invoke(bytes);
                 networkStream.WriteAsync(buffer, 0, buffer.Length);
-                lastMessageSent = DateTime.UtcNow;
+                LastMessageSent = DateTime.UtcNow;
                 exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
-                isActive = false;
+                IsActive = false;
                 return;
             }
             catch (ThreadAbortException e)
@@ -237,7 +240,7 @@ namespace LamestWebserver
             }
             catch (IOException)
             {
-                isActive = false;
+                IsActive = false;
 
                 try
                 {
@@ -262,20 +265,20 @@ namespace LamestWebserver
 
         public void RespondBinary(byte[] bytes)
         {
-            if (networkStream == null || !isActive)
+            if (networkStream == null || !IsActive)
                 return;
 
             try
             {
                 byte[] buffer = websocketHandler.BinaryFrame.Invoke(bytes);
                 networkStream.WriteAsync(buffer, 0, buffer.Length);
-                lastMessageSent = DateTime.UtcNow;
+                LastMessageSent = DateTime.UtcNow;
                 handler.callOnResponded();
                 exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
-                isActive = false;
+                IsActive = false;
                 return;
             }
             catch (ThreadAbortException e)
@@ -284,7 +287,7 @@ namespace LamestWebserver
             }
             catch (IOException)
             {
-                isActive = false;
+                IsActive = false;
 
                 try
                 {
@@ -336,7 +339,7 @@ namespace LamestWebserver
                         if (byteCount.Result == 0)
                             break;
 
-                        lastMessageReceived = DateTime.UtcNow;
+                        LastMessageReceived = DateTime.UtcNow;
 
                         var trimmedBuffer = new byte[byteCount.Result];
 
@@ -366,7 +369,7 @@ namespace LamestWebserver
                 }
             }
 
-            isActive = false;
+            IsActive = false;
             ConnectionClosed();
         }
 
@@ -395,7 +398,7 @@ namespace LamestWebserver
                     if (byteCount.Result == 0)
                         return false;
 
-                    lastMessageReceived = DateTime.UtcNow;
+                    LastMessageReceived = DateTime.UtcNow;
 
                     var trimmedBuffer = new byte[byteCount.Result];
 
@@ -407,14 +410,14 @@ namespace LamestWebserver
                 }
                 else
                 {
-                    isActive = false;
+                    IsActive = false;
                     networkStream = null;
                     return false;
                 }
             }
             catch (ThreadAbortException e)
             {
-                isActive = false;
+                IsActive = false;
                 throw e;
             }
             catch (WebSocketManagementOvertakeFlagException e)
@@ -424,7 +427,7 @@ namespace LamestWebserver
             catch (Exception e)
             {
                 ServerHandler.LogMessage("Exception in WebSocket. The connection might already have closed.\n" + e);
-                isActive = false;
+                IsActive = false;
                 networkStream = null;
                 return false;
             }

@@ -10,14 +10,14 @@ namespace LamestWebserver.UI
     /// </summary>
     public class PageBuilder : HContainer, IURLIdentifyable
     {
-        private Func<ISessionIdentificator, bool> conditionalCode;
+        private Func<AbstractSessionIdentificator, bool> conditionalCode;
         private bool condition = false;
         private string referealURL;
 
         /// <summary>
         /// a function pointer to the executed method on GetContent(ISessionIdentificator sessionData)
         /// </summary>
-        public Func<ISessionIdentificator, string> getContentMethod;
+        public Func<AbstractSessionIdentificator, string> getContentMethod;
 
         /// <summary>
         /// the title of this page
@@ -80,7 +80,7 @@ namespace LamestWebserver.UI
         /// <param name="URL">the URL at which to register this page</param>
         /// <param name="referalURL">the URL at which to refer if the conditionalCode returns false</param>
         /// <param name="conditionalCode">the conditionalCode</param>
-        public PageBuilder(string title, string URL, string referalURL, Func<ISessionIdentificator, bool> conditionalCode) : this(title, URL)
+        public PageBuilder(string title, string URL, string referalURL, Func<AbstractSessionIdentificator, bool> conditionalCode) : this(title, URL)
         {
             this.condition = true;
             this.conditionalCode = conditionalCode;
@@ -102,7 +102,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the contents as string</returns>
-        protected string buildContent(ISessionIdentificator sessionData)
+        protected string buildContent(AbstractSessionIdentificator sessionData)
         {
             if (condition && !conditionalCode(sessionData))
                 return InstantPageResponse.GenerateRedirectCode(referealURL, sessionData);
@@ -173,7 +173,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the contents as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret;
 
@@ -238,13 +238,13 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">sessionData of the currentUser</param>
         /// <returns></returns>
-        public abstract string GetContent(ISessionIdentificator sessionData);
+        public abstract string GetContent(AbstractSessionIdentificator sessionData);
 
         /// <summary>
         /// FISHY FISHY FISHY FISH, TASE A PIECE OF WISHY DISH
         /// </summary>
         /// <returns>element GetContent(sessionData)</returns>
-        public static string operator * (HElement element, ISessionIdentificator sessionData)
+        public static string operator * (HElement element, AbstractSessionIdentificator sessionData)
         {
             return element.GetContent(sessionData);
         }
@@ -255,7 +255,7 @@ namespace LamestWebserver.UI
         /// <returns>this element as string</returns>
         public override string ToString()
         {
-            return this.GetContent(ISessionIdentificator.CurrentSession);
+            return this.GetContent(AbstractSessionIdentificator.CurrentSession);
         }
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             return "<br>";
         }
@@ -303,7 +303,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<hr ";
 
@@ -338,7 +338,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             return text;
         }
@@ -374,7 +374,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<a ";
 
@@ -483,7 +483,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<img ";
 
@@ -543,7 +543,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<p ";
 
@@ -610,7 +610,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<h" + level + " ";
 
@@ -676,7 +676,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<input ";
 
@@ -864,7 +864,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<div ";
 
@@ -937,7 +937,7 @@ namespace LamestWebserver.UI
         public string action;
         private bool fixedAction;
         private string redirectTRUE, redirectFALSE;
-        Func<ISessionIdentificator, bool> conditionalCode;
+        Func<AbstractSessionIdentificator, bool> conditionalCode;
 
         /// <summary>
         /// Constructs a new Form pointing to the given action when submitted
@@ -952,7 +952,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// redirects if the conditional code returns true and executes other code if the conditional code returns false
         /// </summary>
-        public HForm(string redirectURLifTRUE, string redirectURLifFALSE, Func<ISessionIdentificator, bool> conditionalCode)
+        public HForm(string redirectURLifTRUE, string redirectURLifFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
         {
             fixedAction = false;
             redirectTRUE = redirectURLifTRUE;
@@ -982,7 +982,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<form ";
 
@@ -1077,7 +1077,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<button type='" + type + "' ";
 
@@ -1299,7 +1299,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<select ";
 
@@ -1398,7 +1398,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<" + (listType == EListType.OrderedList ? "ol" : "ul") + " ";
 
@@ -1487,7 +1487,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<table ";
 
@@ -1581,7 +1581,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<" + tagName + " ";
 
@@ -1656,7 +1656,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             return "<script type=\"text/javascript\">" + (dynamic ? scriptFunction(sessionData, arguments) : script) + "</script>";
         }
@@ -1686,7 +1686,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             return "<script type=\"text/javascript\" src=\"" + URL + "\"></script>";
         }
@@ -1702,7 +1702,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<canvas ";
 
@@ -1768,7 +1768,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string ret = "<textarea ";
 
@@ -1808,13 +1808,13 @@ namespace LamestWebserver.UI
         /// <summary>
         /// the code to execute
         /// </summary>
-        public Func<ISessionIdentificator, string> runtimeCode;
+        public Func<AbstractSessionIdentificator, string> runtimeCode;
 
         /// <summary>
         /// Creates non-static content, which is computed every request
         /// </summary>
         /// <param name="runtimeCode">The code to execute every request</param>
-        public HRuntimeCode(Func<ISessionIdentificator, string> runtimeCode)
+        public HRuntimeCode(Func<AbstractSessionIdentificator, string> runtimeCode)
         {
             this.runtimeCode = runtimeCode;
         }
@@ -1824,7 +1824,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             return runtimeCode.Invoke(sessionData);
         }
@@ -1836,9 +1836,9 @@ namespace LamestWebserver.UI
         /// <param name="codeIfFALSE">The code to execute if conditionalCode returns FALSE</param>
         /// <param name="conditionalCode">The Conditional code</param>
         /// <returns>returns a HRuntimeCode : HElement</returns>
-        public static HRuntimeCode getConditionalRuntimeCode(Func<ISessionIdentificator, string> codeIfTRUE, Func<ISessionIdentificator, string> codeIfFALSE, Func<ISessionIdentificator, bool> conditionalCode)
+        public static HRuntimeCode getConditionalRuntimeCode(Func<AbstractSessionIdentificator, string> codeIfTRUE, Func<AbstractSessionIdentificator, string> codeIfFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
         {
-            return new HRuntimeCode((ISessionIdentificator sessionData) => 
+            return new HRuntimeCode((AbstractSessionIdentificator sessionData) => 
                 {
                     if (conditionalCode(sessionData))
                         return codeIfTRUE(sessionData);
@@ -1854,9 +1854,9 @@ namespace LamestWebserver.UI
         /// <param name="elementIfFALSE"></param>
         /// <param name="conditionalCode">The Conditional code</param>
         /// <returns>returns a HRuntimeCode : HElement</returns>
-        public static HRuntimeCode getConditionalRuntimeCode(HElement elementIfTRUE, HElement elementIfFALSE, Func<ISessionIdentificator, bool> conditionalCode)
+        public static HRuntimeCode getConditionalRuntimeCode(HElement elementIfTRUE, HElement elementIfFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
         {
-            return new HRuntimeCode((ISessionIdentificator sessionData) =>
+            return new HRuntimeCode((AbstractSessionIdentificator sessionData) =>
             {
                 if (conditionalCode(sessionData))
                     return elementIfTRUE == null ? "" : elementIfTRUE.GetContent(sessionData);
@@ -1874,7 +1874,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// the code to execute
         /// </summary>
-        public Func<ISessionIdentificator, string> runtimeCode;
+        public Func<AbstractSessionIdentificator, string> runtimeCode;
 
         private System.Threading.Mutex mutex = new System.Threading.Mutex();
 
@@ -1882,7 +1882,7 @@ namespace LamestWebserver.UI
         /// Creates non-static content, which is computed every request AND SYNCRONIZED
         /// </summary>
         /// <param name="runtimeCode">The code to execute every request</param>
-        public HSyncronizedRuntimeCode(Func<ISessionIdentificator, string> runtimeCode)
+        public HSyncronizedRuntimeCode(Func<AbstractSessionIdentificator, string> runtimeCode)
         {
             this.runtimeCode = runtimeCode;
         }
@@ -1892,7 +1892,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
         /// <returns>the element as string</returns>
-        public override string GetContent(ISessionIdentificator sessionData)
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
             string s = "";
 
@@ -1918,9 +1918,9 @@ namespace LamestWebserver.UI
         /// <param name="codeIfFALSE">The code to execute if conditionalCode returns FALSE</param>
         /// <param name="conditionalCode">The Conditional code</param>
         /// <returns>returns a HRuntimeCode : HElement</returns>
-        public static HSyncronizedRuntimeCode getConditionalRuntimeCode(Func<ISessionIdentificator, string> codeIfTRUE, Func<ISessionIdentificator, string> codeIfFALSE, Func<ISessionIdentificator, bool> conditionalCode)
+        public static HSyncronizedRuntimeCode getConditionalRuntimeCode(Func<AbstractSessionIdentificator, string> codeIfTRUE, Func<AbstractSessionIdentificator, string> codeIfFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
         {
-            return new HSyncronizedRuntimeCode((ISessionIdentificator sessionData) =>
+            return new HSyncronizedRuntimeCode((AbstractSessionIdentificator sessionData) =>
             {
                 if (conditionalCode(sessionData))
                     return codeIfTRUE(sessionData);
@@ -1936,9 +1936,9 @@ namespace LamestWebserver.UI
         /// <param name="elementIfFALSE"></param>
         /// <param name="conditionalCode">The Conditional code</param>
         /// <returns>returns a HRuntimeCode : HElement</returns>
-        public static HSyncronizedRuntimeCode getConditionalRuntimeCode(HElement elementIfTRUE, HElement elementIfFALSE, Func<ISessionIdentificator, bool> conditionalCode)
+        public static HSyncronizedRuntimeCode getConditionalRuntimeCode(HElement elementIfTRUE, HElement elementIfFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
         {
-            return new HSyncronizedRuntimeCode((ISessionIdentificator sessionData) =>
+            return new HSyncronizedRuntimeCode((AbstractSessionIdentificator sessionData) =>
             {
                 if (conditionalCode(sessionData))
                     return elementIfTRUE == null ? "" : elementIfTRUE.GetContent(sessionData);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LamestWebserver
 {
-    public abstract class ISessionIdentificator
+    public abstract class AbstractSessionIdentificator
     {
         internal IDictionary<string, object> PerFileVariables;
         internal SessionContainer.UserInfo _userInfo;
@@ -12,7 +12,7 @@ namespace LamestWebserver
         /// contains the current session identificator for this thread
         /// </summary>
         [ThreadStatic]
-        public static ISessionIdentificator CurrentSession = null;
+        public static AbstractSessionIdentificator CurrentSession = null;
 
         /// <summary>
         /// The name of the current user (the sessionID handles this!) (the current user could by incognito due to a missing sessionID)
@@ -33,6 +33,11 @@ namespace LamestWebserver
         /// the currently requested file
         /// </summary>
         public string RequestedFile { get; protected set; }
+
+        /// <summary>
+        /// The Port of the currently responding server
+        /// </summary>
+        public ushort Port { get; protected set; }
 
         // ===============================================================================================================================================
         // ===============================================================================================================================================

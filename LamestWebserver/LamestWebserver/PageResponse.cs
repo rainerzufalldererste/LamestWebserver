@@ -431,7 +431,7 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="copyPOST">shall the POST-Values be copied?</param>
         /// <returns>the page as string</returns>
-        public static string GenerateRedirectCode(string destinationURL, ISessionIdentificator sessionData = null, bool copyPOST = false)
+        public static string GenerateRedirectCode(string destinationURL, AbstractSessionIdentificator sessionData = null, bool copyPOST = false)
         {
             if(!copyPOST)
             {

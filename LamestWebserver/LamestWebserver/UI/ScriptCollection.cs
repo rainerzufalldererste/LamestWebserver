@@ -4,9 +4,9 @@ namespace LamestWebserver.UI
 {
     public static class ScriptCollection
     {
-        public delegate string scriptFuction(ISessionIdentificator sessionData, object[] arguments);
+        public delegate string scriptFuction(AbstractSessionIdentificator sessionData, object[] arguments);
 
-        public static string getPageReloadWithFullPOSTInMilliseconds(ISessionIdentificator sessionData, object[] millisecondsAsInt)
+        public static string getPageReloadWithFullPOSTInMilliseconds(AbstractSessionIdentificator sessionData, object[] millisecondsAsInt)
         {
             if (millisecondsAsInt.Length != 1)
                 throw new ArgumentException("the argument has to be an object[1] containing one integer number");
@@ -31,7 +31,7 @@ namespace LamestWebserver.UI
             return ret;
         }
 
-        public static string getPageReloadInMilliseconds(ISessionIdentificator sessionData, object[] millisecondsAsInt)
+        public static string getPageReloadInMilliseconds(AbstractSessionIdentificator sessionData, object[] millisecondsAsInt)
         {
             if (millisecondsAsInt.Length != 1)
                 throw new ArgumentException("the argument has to be an object[1] containing one integer number");
@@ -46,7 +46,7 @@ namespace LamestWebserver.UI
             return ret;
         }
 
-        public static string getPageReferalToXInMilliseconds(ISessionIdentificator sessionData, object[] arguments)
+        public static string getPageReferalToXInMilliseconds(AbstractSessionIdentificator sessionData, object[] arguments)
         {
             if (arguments.Length != 2)
                 throw new ArgumentException("the argument has to be an object[2] containing one string and one integer number");
@@ -62,7 +62,7 @@ namespace LamestWebserver.UI
             return ret;
         }
 
-        public static string getPageReferalToX(ISessionIdentificator sessionData, object[] arguments)
+        public static string getPageReferalToX(AbstractSessionIdentificator sessionData, object[] arguments)
         {
             if (arguments.Length != 1)
                 throw new ArgumentException("the argument has to be an object[1] containing one string");
@@ -77,7 +77,7 @@ namespace LamestWebserver.UI
             return ret;
         }
 
-        public static string getPageReferalWithFullPOSTInMilliseconds(ISessionIdentificator sessionData, object[] arguments)
+        public static string getPageReferalWithFullPOSTInMilliseconds(AbstractSessionIdentificator sessionData, object[] arguments)
         {
             if (arguments.Length != 2)
                 throw new ArgumentException("the argument has to be an object[2] containing one string and one integer number");
