@@ -15,6 +15,9 @@ using Formatting = Newtonsoft.Json.Formatting;
 
 namespace LamestWebserver.Serialization
 {
+    /// <summary>
+    /// A class that contains various Serialization methods
+    /// </summary>
     public static class Serializer
     {
         /// <summary>
@@ -139,6 +142,9 @@ namespace LamestWebserver.Serialization
         }
     }
 
+    /// <summary>
+    /// A class that contains a lot of XmlSerialization helpers
+    /// </summary>
     public static class XmlSerializationTools
     {
         private static readonly Hashtable _cachedXmlSerialiazers = new Hashtable();
@@ -146,7 +152,7 @@ namespace LamestWebserver.Serialization
         /// <summary>
         /// Caches XMLSerializers to prevent MemoryLeaks.
         /// 
-        /// Source: http://codereview.stackexchange.com/questions/24861/caching-xmlserializer-in-appdomain & https://msdn.microsoft.com/en-us/library/system.xml.serialization.xmlserializer(v=vs.110).aspx
+        /// Source: http://codereview.stackexchange.com/questions/24861/caching-xmlserializer-in-appdomain &amp; https://msdn.microsoft.com/en-us/library/system.xml.serialization.xmlserializer(v=vs.110).aspx
         /// </summary>
         /// <param name="type">type parameter of the Serializer</param>
         /// <returns>An XML-Serializer created with the given type argument</returns>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using LamestWebserver.Collections;
 
 namespace LamestWebserver
 {
@@ -349,6 +350,24 @@ namespace LamestWebserver
         /// Available for all Users on any page
         /// </summary>
         Global
+    }
+
+    /// <summary>
+    /// A slim variant of SessionData used in WebSockets
+    /// </summary>
+    public class SessionIdentificatorSlim : AbstractSessionIdentificator
+    {
+        internal SessionIdentificatorSlim(string file, ushort port, string sessionId)
+        {
+            base.RequestedFile = file;
+            base.Port = port;
+            base.Ssid = sessionId;
+
+            base.PerFileVariables = SessionContainer.GetFileDictionary(file);
+            this._userInfo = SessionContainer.GetUserInfoFromSsid(Ssid);
+
+            CurrentSession = this;
+        }
     }
 
 }

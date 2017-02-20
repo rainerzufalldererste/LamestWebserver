@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using LamestWebserver.Synchronization;
 
 namespace LamestWebserver
 {
@@ -10,6 +11,7 @@ namespace LamestWebserver
     public class ThreadedWorker
     {
         private static ThreadedWorker _currentWorker;
+        private static UsableMutexSlim _currentWorkerMutex = new UsableMutexSlim();
 
         /// <summary>
         /// The ThreadedWorker used in the Server.
@@ -18,10 +20,13 @@ namespace LamestWebserver
         {
             get
             {
-                if (_currentWorker == null)
-                    _currentWorker = new ThreadedWorker();
+                using (_currentWorkerMutex.Lock())
+                {
+                    if (_currentWorker == null)
+                        _currentWorker = new ThreadedWorker();
 
-                return _currentWorker;
+                    return _currentWorker;
+                }
             }
         }
 
@@ -37,7 +42,26 @@ namespace LamestWebserver
 
         private readonly Queue<WorkerTask> _tasks = new Queue<WorkerTask>();
         private readonly Thread[] _workers;
-        private bool _running;
+
+        private bool _running
+        {
+            get
+            {
+                _mutex.WaitOne();
+                var ret = __running;
+                _mutex.ReleaseMutex();
+                return ret;
+            }
+
+            set
+            {
+                _mutex.WaitOne();
+                __running = value;
+                _mutex.ReleaseMutex();
+            }
+        }
+
+        private bool __running = true;
         private readonly Mutex _mutex = new Mutex();
 
         /// <summary>

@@ -67,7 +67,7 @@ namespace LamestWebserver
                 if (s == "exit")
                 {
                     Running = false;
-                    RunningServers.ForEach(srv => srv.StopServer());
+                    Master.StopServers();
                     return;
                 }
                 else

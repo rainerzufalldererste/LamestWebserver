@@ -237,7 +237,22 @@ namespace LamestWebserver.NotificationService
 
         public Thread handlerThread = null;
 
-        private bool running = true;
+        private bool running
+        {
+            get
+            {
+                using (listWriteLock.LockRead())
+                    return _running;
+            }
+            set
+            {
+                using (listWriteLock.LockWrite())
+                    _running = value;
+            }
+        }
+
+        private bool _running = true;
+
         public readonly bool NotifyForKeepalives;
         internal readonly bool TraceMessagesClient;
 
@@ -288,6 +303,9 @@ namespace LamestWebserver.NotificationService
                     }
                 }
 
+                //if (!ServerHandler.Running)
+                //    running = false;
+
                 Thread.Sleep(2);
             }
         }
@@ -295,7 +313,7 @@ namespace LamestWebserver.NotificationService
         public void StopHandler()
         {
             running = false;
-            
+
             AllNotificationHandlerMutex.WaitOne();
             AllNotificationHandlers.Remove(this);
             AllNotificationHandlerMutex.ReleaseMutex();
@@ -377,7 +395,7 @@ namespace LamestWebserver.NotificationService
         {
             return
                 SendingFunction.callFunction(
-                    new JSValue(messageGetter.getCode(SessionData.CurrentSession, CallingContext.Inner)));
+                    new JSValue(messageGetter.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner)));
         }
 
         public IJSPiece SendMessage(string message)
@@ -396,7 +414,7 @@ namespace LamestWebserver.NotificationService
         private NotificationHandler notificationHandler;
         private bool noreply = false;
 
-        public SessionData SessionData { get; private set; }
+        public AbstractSessionIdentificator SessionData { get; private set; }
 
         internal NotificationResponse(string input, WebSocketHandlerProxy proxy, string URL, NotificationHandler notificationHanlder)
         {
@@ -442,30 +460,7 @@ namespace LamestWebserver.NotificationService
 
             string ssid = packet.SSID;
 
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
-            {
-                response.SessionData = new SessionData(
-                    new List<string>(),
-                    new List<string>(),
-                    new List<string>(),
-                    new List<string>(),
-                    new List<KeyValuePair<string, string>> {new KeyValuePair<string, string>("ssid", ssid)},
-                    "", URL, input, null, response.proxy.GetNetworkStream(), response.proxy.Port);
-            }
-            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
-            {
-                response.SessionData = new SessionData(
-                    new List<string>(),
-                    new List<string>(),
-                    new List<string> { "ssid" },
-                    new List<string> { ssid },
-                    new List<KeyValuePair<string, string>>(),
-                    "", URL, input, null, response.proxy.GetNetworkStream(), response.proxy.Port);
-            }
-            else
-            {
-                throw new InvalidOperationException("The SessionID transmission type '" + SessionContainer.SessionIdTransmissionType + "' is not supported in NoificationResponse.ParseNotificationResponse()");
-            }
+            response.SessionData = new SessionIdentificatorSlim(URL, response.proxy.Port, ssid);
 
             switch(response.NotificationType)
             {

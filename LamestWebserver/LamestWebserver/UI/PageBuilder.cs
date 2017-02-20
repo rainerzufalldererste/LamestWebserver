@@ -517,8 +517,18 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "p" tag, representing a textblock
     /// </summary>
-    public class HText : HContainer
+    public class HText : HElement
     {
+        /// <summary>
+        /// Additional attributes to add to this HTML-Tag
+        /// </summary>
+        public string DescriptionTags;
+
+        /// <summary>
+        /// The text to display
+        /// </summary>
+        public string Text;
+
         /// <summary>
         /// Constructs a TextBlock
         /// </summary>
@@ -555,11 +565,58 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
                 ret += DescriptionTags;
 
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
+
+            return ret;
+        }
+    }
+
+    /// <summary>
+    /// A "p" tag, representing a textblock. You can add HTexts seamlessly to an HTextBlock - only the text inside will be displayed
+    /// </summary>
+    public class HTextBlock : HContainer
+    {
+        /// <summary>
+        /// Constructs a TextBlock
+        /// </summary>
+        /// <param name="text">the Text displayed</param>
+        public HTextBlock(string text = "")
+        {
+            this.Text = text;
+        }
+
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current ISessionIdentificator</param>
+        /// <returns>the element as string</returns>
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "<p ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
+
             ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
             Elements.ForEach(e =>
             {
-                if (e is HText) ret += ((HText) e).Text.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+                if (e is HText) ret += ((HText)e).Text.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
                 else ret += e.GetContent(sessionData);
             });
 

@@ -282,7 +282,7 @@ namespace LamestWebserver
         }
 
         /// <summary>
-        /// Stops an arbitrary server
+        /// Stops an arbitrary server. If it's the last one it stops everything server related (Threaded Worker, Notification Handlers)
         /// </summary>
         /// <param name="port">the port of the server to stop</param>
         public static void StopServer(int port)
@@ -301,6 +301,9 @@ namespace LamestWebserver
                     }
                 }
             }
+
+            if(ServerHandler.RunningServers.Count == 0)
+                StopServers();
         }
 
         /// <summary>

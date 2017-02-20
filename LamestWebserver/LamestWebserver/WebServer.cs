@@ -27,7 +27,27 @@ namespace LamestWebserver
         Thread mThread;
         public int port;
         public string folder = "./web";
-        internal bool running = true;
+
+        internal bool running
+        {
+            get
+            {
+                _runningLock.EnterReadLock(); 
+                var ret = _running;
+                _runningLock.ExitReadLock();
+                return ret;
+            }
+            set
+            {
+                _runningLock.EnterWriteLock();
+                _running = value;
+                _runningLock.ExitWriteLock();
+            }
+        }
+
+        private bool _running = true;
+        private ReaderWriterLockSlim _runningLock = new ReaderWriterLockSlim();
+
         internal AVLTree<string, PreloadedFile> cache = new AVLTree<string, PreloadedFile>();
 
         /// <summary>
@@ -61,6 +81,9 @@ namespace LamestWebserver
         private QueuedAVLTree<string, Master.GetContents> oneTimePageResponses = new QueuedAVLTree<string, Master.GetContents>(OneTimePageResponsesStorageQueueSize);
         private AVLHashMap<string, WebSocketCommunicationHandler> webSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(WebSocketResponsePageStorageHashMapSize);
         private AVLHashMap<string, Master.GetDirectoryContents> directoryResponses = new AVLHashMap<string, Master.GetDirectoryContents>(DirectoryResponseStorageHashMapSize);
+
+        private Mutex networkStreamsMutex = new Mutex();
+        private AVLTree<int, NetworkStream> networkStreams = new AVLTree<int, NetworkStream>();
 
         private bool csharp_bridge = true;
         internal bool useCache = true;
@@ -176,6 +199,15 @@ namespace LamestWebserver
             if (!silent)
                 Console.WriteLine("Main Thread stopped! - port: " + port + " - folder: " + folder);
 
+            networkStreamsMutex.WaitOne();
+
+            foreach (KeyValuePair<int, NetworkStream> networkStream in networkStreams)
+            {
+                networkStream.Value.Close();
+            }
+
+            networkStreamsMutex.ReleaseMutex();
+
             int i = threads.Count;
 
             while (threads.Count > 0)
@@ -238,6 +270,25 @@ namespace LamestWebserver
                     catch (Exception)
                     {
                     }
+
+                    networkStreamsMutex.WaitOne();
+
+                    var networkStream = networkStreams[threads[i].ManagedThreadId];
+
+                    if (networkStream != null)
+                    {
+                        try
+                        {
+                            networkStream.Close();
+                        }
+                        catch
+                        {
+                        }
+
+                        networkStreams.Remove(threads[i].ManagedThreadId);
+                    }
+
+                    networkStreamsMutex.ReleaseMutex();
 
                     threads.RemoveAt(i);
                 }
@@ -335,7 +386,7 @@ namespace LamestWebserver
                     tcpRcvTask = tcpListener.AcceptTcpClientAsync();
                     tcpRcvTask.Wait();
                     TcpClient tcpClient = tcpRcvTask.Result;
-                    Thread t = new Thread(handleClient);
+                    Thread t = new Thread(HandleClient);
                     threads.Add(t);
                     t.Start((object) tcpClient);
                     ServerHandler.LogMessage("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
@@ -358,7 +409,7 @@ namespace LamestWebserver
             }
         }
 
-        private void handleClient(object obj)
+        private void HandleClient(object obj)
         {
             TcpClient client = (TcpClient) obj;
             NetworkStream nws = client.GetStream();
@@ -368,6 +419,13 @@ namespace LamestWebserver
 
             byte[] msg;
             int bytes = 0;
+
+            ThreadedWorker.CurrentWorker.EnqueueJob((Action<NetworkStream>) (networkStream =>
+            {
+                networkStreamsMutex.WaitOne();
+                networkStreams.Add(Thread.CurrentThread.ManagedThreadId, networkStream);
+                networkStreamsMutex.ReleaseMutex();
+            }), nws);
 
             while (running)
             {
