@@ -14,11 +14,11 @@ namespace Demos
         {
             PageBuilder pb = new PageBuilder("PageBuilder Testpage", "pbtest")
             {
-                text = "this is some string!\n\n",
+                Text = "this is some string!\n\n",
 
-                elements = new List<HElement>()
+                Elements = new List<HElement>()
                 {
-                    new HContainer() { text = "hello world!" }
+                    new HContainer() { Text = "hello world!" }
                 }
             };
         }

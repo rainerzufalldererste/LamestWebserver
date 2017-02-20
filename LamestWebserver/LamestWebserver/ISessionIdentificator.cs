@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace LamestWebserver
 {
+    /// <summary>
+    /// Contains the current SessionData
+    /// </summary>
     public abstract class AbstractSessionIdentificator
     {
         internal IDictionary<string, object> PerFileVariables;

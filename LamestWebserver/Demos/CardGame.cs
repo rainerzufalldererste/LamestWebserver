@@ -26,19 +26,19 @@ namespace Demos
 
             public LoginScreen() : base("CardGame - Login", "cgame/")
             {
-                stylesheetCode = stylesheet;
+                StylesheetCode = stylesheet;
 
                 AddElement(
                     new HContainer()
                     {
-                        elements = new List<HElement>()
+                        Elements = new List<HElement>()
                         {
                             HRuntimeCode.getConditionalRuntimeCode(
                                 null,
                                 new HContainer()
                                 {
-                                    descriptionTags = "style='color: #aa5555;background-color:#FFEBEB;margin: 0;'",
-                                    text = "This Username has already been taken <i>(or you forgot your secret key)</i>."
+                                    DescriptionTags = "style='color: #aa5555;background-color:#FFEBEB;margin: 0;'",
+                                    Text = "This Username has already been taken <i>(or you forgot your secret key)</i>."
                                 }, (sessionData) =>
                                 {
                                     if (sessionData is SessionData && (sessionData as SessionData).GetHttpHeadValue("failed") != null)
@@ -81,7 +81,7 @@ namespace Demos
                                     }
                                 }))
                             {
-                                elements = new List<HElement>()
+                                Elements = new List<HElement>()
                                 {
                                     new HText("Pick a UserName"),
                                     new HInput(HInput.EInputType.text, "user"),
@@ -109,11 +109,11 @@ namespace Demos
             public Lobby() : base("CardGame - Lobby", "cgame/lobby")
             {
 
-                stylesheetCode = stylesheet;
+                StylesheetCode = stylesheet;
 
                 AddElement(
                     HRuntimeCode.getConditionalRuntimeCode(
-                        new HContainer() { elements = new List<HElement>()
+                        new HContainer() { Elements = new List<HElement>()
                             {
                                 new HScript(ScriptCollection.getPageReloadWithFullPOSTInMilliseconds, 2500),
                                 new HText("Searching for a lobby... <i>(The Page might reload a couple of times)</i>"),
@@ -195,7 +195,7 @@ namespace Demos
                                     }),
                             }
                         },
-                        new HContainer() { elements = new List<HElement>()
+                        new HContainer() { Elements = new List<HElement>()
                         {
                             new HScript(ScriptCollection.getPageReferalToXInMilliseconds, "/cgame/", 2500),
                             new HLink("you have to login first. click here to log in.", "/cgame/") } }
@@ -427,12 +427,12 @@ namespace Demos
                         thisplayer == activePlayer ?
                         new HForm("")
                         {
-                            descriptionTags = "style='position: relative;text-align: right;'",
-                            elements = new List<HElement>()
+                            DescriptionTags = "style='position: relative;text-align: right;'",
+                            Elements = new List<HElement>()
                             {
                                 new HInput(HInput.EInputType.hidden, "draw", "1"), new HButton("Draw a card", HButton.EButtonType.submit)
                                 {
-                                    descriptionTags = "style='background: #EADDC6; border-style: solid; border-color: #A09580; border-radius: 10px; width: 150px; height: 40px;font-size: 15px;margin: 10px;font-family: sans-serif;font-weight: bold;color: #544E44;'"
+                                    DescriptionTags = "style='background: #EADDC6; border-style: solid; border-color: #A09580; border-radius: 10px; width: 150px; height: 40px;font-size: 15px;margin: 10px;font-family: sans-serif;font-weight: bold;color: #544E44;'"
                                 }
                             }
                         } 
@@ -443,14 +443,14 @@ namespace Demos
                 {
                     output += new HContainer()
                     {
-                        descriptionTags = "style='display: table-cell;padding: 20;width: 180;min-width: 100;height: 220; border-style: solid;font-family: \"Georgia\", \"Times New Roman\", serif, sans-serif;color: #BFB39E;background: #544E44;'",
-                        elements = new List<HElement>()
+                        DescriptionTags = "style='display: table-cell;padding: 20;width: 180;min-width: 100;height: 220; border-style: solid;font-family: \"Georgia\", \"Times New Roman\", serif, sans-serif;color: #BFB39E;background: #544E44;'",
+                        Elements = new List<HElement>()
                         {
                             new HPlainText(players[thisplayer].cards[i].ToString()),
                             (thisplayer == activePlayer && topCard.cardPlayable(players[thisplayer].cards[i]) ? 
                                 new HForm("")
                                 {
-                                    elements = new List<HElement>() { new HNewLine(), new HInput(HInput.EInputType.hidden, "card", i.ToString()), new HButton("play this card", HButton.EButtonType.submit) }
+                                    Elements = new List<HElement>() { new HNewLine(), new HInput(HInput.EInputType.hidden, "card", i.ToString()), new HButton("play this card", HButton.EButtonType.submit) }
                                 } 
                                 : (HElement)new HPlainText())
                         }

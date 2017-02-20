@@ -74,7 +74,7 @@ namespace Demos
         {
             public Displayer() : base("XML Test", "xmltest")
             {
-                elements = new List<HElement>()
+                Elements = new List<HElement>()
                 {
                     HRuntimeCode.getConditionalRuntimeCode(new HText("DESERIALIZATION FAILED!\n"), new HText(), (sessionData) => { return (sessionData is SessionData && (sessionData as SessionData).GetHttpHeadValue("fail") != null); }),
                     HRuntimeCode.getConditionalRuntimeCode(new HText("SERIALIZATION FAILED!\n"), new HText(), (sessionData) => { return (sessionData is SessionData && (sessionData as SessionData).GetHttpHeadValue("sfail") != null); }),
@@ -119,7 +119,7 @@ namespace Demos
                     }
                 }))
                 {
-                    elements = new List<HElement>()
+                    Elements = new List<HElement>()
                     {
                         new HHeadline("Add an item"),
                         new HLine(),

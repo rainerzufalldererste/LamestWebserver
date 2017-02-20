@@ -22,7 +22,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// the title of this page
         /// </summary>
-        public string title;
+        public string PageTitle;
 
         /// <summary>
         /// the URL at which this page is / will be available at
@@ -32,45 +32,45 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Path to the stylesheets. Prefer strings. Else: toString() will be used
         /// </summary>
-        public List<object> stylesheetLinks = new List<object>();
+        public List<object> StylesheetLinks = new List<object>();
 
         /// <summary>
         /// javascript code directly bound into the page code
         /// </summary>
-        public List<string> scripts = new List<string>();
+        public List<string> Scripts = new List<string>();
 
         /// <summary>
         /// path to javascript code files
         /// </summary>
-        public List<string> scriptLinks = new List<string>();
+        public List<string> ScriptLinks = new List<string>();
 
         /// <summary>
         /// additional lines added to the "head" segment of the page
         /// </summary>
-        public string additionalHeadArguments;
+        public string AdditionalHeadArguments;
 
         /// <summary>
         /// The icon to display
         /// </summary>
-        public string favicon = null;
+        public string Favicon = null;
 
         /// <summary>
         /// CSS code directly bound into the page code
         /// </summary>
-        public string stylesheetCode;
+        public string StylesheetCode;
 
         /// <summary>
         /// Creates a new PageBuilder and registers it at the server for a specified url
         /// </summary>
-        /// <param name="title">The window title</param>
+        /// <param name="pagetitle">The window title</param>
         /// <param name="URL">the URL at which to register this page</param>
-        public PageBuilder(string title, string URL)
+        public PageBuilder(string pagetitle, string URL)
         {
-            this.title = title;
+            this.PageTitle = pagetitle;
             this.URL = URL;
-            getContentMethod = buildContent;
+            getContentMethod = BuildContent;
 
-            register();
+            Register();
         }
 
         /// <summary>
@@ -93,8 +93,8 @@ namespace LamestWebserver.UI
         /// <param name="title"></param>
         public PageBuilder(string title)
         {
-            this.title = title;
-            getContentMethod = buildContent;
+            this.PageTitle = title;
+            getContentMethod = BuildContent;
         }
 
         /// <summary>
@@ -102,36 +102,36 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the contents as string</returns>
-        protected string buildContent(AbstractSessionIdentificator sessionData)
+        protected string BuildContent(AbstractSessionIdentificator sessionData)
         {
             if (condition && !conditionalCode(sessionData))
                 return InstantPageResponse.GenerateRedirectCode(referealURL, sessionData);
 
-            string ret = "<html> <head> <title>" + title + "</title>";
+            string ret = "<html> <head> <title>" + PageTitle + "</title>";
 
-            if (!string.IsNullOrWhiteSpace(favicon))
-                ret += "<link rel=\"shortcut icon\" href='" + favicon + "'> <link rel=\"icon\" sizes=\"any\" mask=\"\" href=" + favicon + ">";
+            if (!string.IsNullOrWhiteSpace(Favicon))
+                ret += "<link rel=\"shortcut icon\" href='" + Favicon + "'> <link rel=\"icon\" sizes=\"any\" mask=\"\" href=" + Favicon + ">";
 
-            for (int i = 0; i < stylesheetLinks.Count; i++)
+            for (int i = 0; i < StylesheetLinks.Count; i++)
             {
-                ret += "<link rel=\"stylesheet\" href='" + stylesheetLinks[i] + "'>";
+                ret += "<link rel=\"stylesheet\" href='" + StylesheetLinks[i] + "'>";
             }
 
-            for (int i = 0; i < scripts.Count; i++)
+            for (int i = 0; i < Scripts.Count; i++)
             {
-                ret += "<script type=\"text/javascript\">" + scripts[i] + "</script>";
+                ret += "<script type=\"text/javascript\">" + Scripts[i] + "</script>";
             }
 
-            for (int i = 0; i < scriptLinks.Count; i++)
+            for (int i = 0; i < ScriptLinks.Count; i++)
             {
-                ret += "<script type=\"text/javascript\" src=\"" + scriptLinks[i] + "\"></script>";
+                ret += "<script type=\"text/javascript\" src=\"" + ScriptLinks[i] + "\"></script>";
             }
 
-            if (!string.IsNullOrWhiteSpace(stylesheetCode))
-                ret += "<style type=\"text/css\">" + stylesheetCode + "</style>";
+            if (!string.IsNullOrWhiteSpace(StylesheetCode))
+                ret += "<style type=\"text/css\">" + StylesheetCode + "</style>";
 
-            if (!string.IsNullOrWhiteSpace(additionalHeadArguments))
-                ret += additionalHeadArguments + " ";
+            if (!string.IsNullOrWhiteSpace(AdditionalHeadArguments))
+                ret += AdditionalHeadArguments + " ";
 
             ret += "</head> <body ";
 
@@ -147,20 +147,20 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Style))
                 ret += "style='" + Style + "' ";
 
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
+            if (!string.IsNullOrWhiteSpace(base.Title))
+                ret += "title=\"" + base.Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             ret += ">";
 
-            if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+            if (!string.IsNullOrWhiteSpace(Text))
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
-            for (int i = 0; i < base.elements.Count; i++)
+            for (int i = 0; i < base.Elements.Count; i++)
             {
-                ret += base.elements[i].GetContent(sessionData);
+                ret += base.Elements[i].GetContent(sessionData);
             }
 
             ret += "</body> </html>";
@@ -189,7 +189,7 @@ namespace LamestWebserver.UI
             return ret;
         }
 
-        private void register()
+        private void Register()
         {
             Master.AddFuntionToServer(URL, GetContent);
         }
@@ -241,9 +241,9 @@ namespace LamestWebserver.UI
         public abstract string GetContent(AbstractSessionIdentificator sessionData);
 
         /// <summary>
-        /// FISHY FISHY FISHY FISH, TASE A PIECE OF WISHY DISH
+        /// element.GetContent(sessionData)
         /// </summary>
-        /// <returns>element GetContent(sessionData)</returns>
+        /// <returns>element.GetContent(sessionData)</returns>
         public static string operator * (HElement element, AbstractSessionIdentificator sessionData)
         {
             return element.GetContent(sessionData);
@@ -517,25 +517,15 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "p" tag, representing a textblock
     /// </summary>
-    public class HText : HElement
+    public class HText : HContainer
     {
-        /// <summary>
-        /// The Text displayed in this textblock
-        /// </summary>
-        public string text;
-
-        /// <summary>
-        /// Additional attributes mentioned in the "p" tag
-        /// </summary>
-        public string descriptionTags;
-
         /// <summary>
         /// Constructs a TextBlock
         /// </summary>
         /// <param name="text">the Text displayed</param>
         public HText(string text = "")
         {
-            this.text = text;
+            this.Text = text;
         }
 
         /// <summary>
@@ -562,10 +552,106 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
-            ret += ">" + System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+
+            Elements.ForEach(e =>
+            {
+                if (e is HText) ret += ((HText) e).Text.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+                else ret += e.GetContent(sessionData);
+            });
+
+            return ret + "</p>";
+        }
+    }
+
+    /// <summary>
+    /// A "b" tag, representing bold text
+    /// </summary>
+    public class HBold : HElement
+    {
+        /// <summary>
+        /// The Text to display
+        /// </summary>
+        public string Text;
+
+        /// <summary>
+        /// Constructs a new HBold
+        /// </summary>
+        /// <param name="text">the text</param>
+        public HBold(string text)
+        {
+            Text = text;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "<b ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</b>";
+
+            return ret;
+        }
+    }
+
+    /// <summary>
+    /// A "i" tag, representing italic text
+    /// </summary>
+    public class HItalic : HElement
+    {
+        /// <summary>
+        /// The Text to display
+        /// </summary>
+        public string Text;
+
+        /// <summary>
+        /// Constructs a new HItalic
+        /// </summary>
+        /// <param name="text">the text</param>
+        public HItalic(string text)
+        {
+            Text = text;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "<i ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</i>";
 
             return ret;
         }
@@ -838,17 +924,17 @@ namespace LamestWebserver.UI
         /// <summary>
         /// A list of all contained elements
         /// </summary>
-        public List<HElement> elements = new List<HElement>();
+        public List<HElement> Elements = new List<HElement>();
 
         /// <summary>
         /// The text contained in this element
         /// </summary>
-        public string text;
+        public string Text;
 
         /// <summary>
         /// Additional attributes added to the tag
         /// </summary>
-        public string descriptionTags;
+        public string DescriptionTags;
 
         /// <summary>
         /// Adds an element to the element list
@@ -856,7 +942,7 @@ namespace LamestWebserver.UI
         /// <param name="element">the element</param>
         public void AddElement(HElement element)
         {
-            elements.Add(element);
+            Elements.Add(element);
         }
 
         /// <summary>
@@ -883,17 +969,17 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             ret += ">";
 
-            if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+            if (!string.IsNullOrWhiteSpace(Text))
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
-            for (int i = 0; i < elements.Count; i++)
+            for (int i = 0; i < Elements.Count; i++)
             {
-                ret += elements[i].GetContent(sessionData);
+                ret += Elements[i].GetContent(sessionData);
             }
 
             ret += "</div>";
@@ -934,10 +1020,11 @@ namespace LamestWebserver.UI
         /// <summary>
         /// The URL which will be called when submitting this form
         /// </summary>
-        public string action;
+        public string Action;
+
         private bool fixedAction;
         private string redirectTRUE, redirectFALSE;
-        Func<AbstractSessionIdentificator, bool> conditionalCode;
+        private Func<AbstractSessionIdentificator, bool> conditionalCode;
 
         /// <summary>
         /// Constructs a new Form pointing to the given action when submitted
@@ -945,7 +1032,7 @@ namespace LamestWebserver.UI
         /// <param name="action">the URL to load when submitted</param>
         public HForm(string action)
         {
-            this.action = action;
+            this.Action = action;
             fixedAction = true;
         }
 
@@ -966,15 +1053,15 @@ namespace LamestWebserver.UI
         public HForm(string action, bool addSubmitButton, string buttontext = "", params Tuple<string, string>[] values)
         {
             fixedAction = true;
-            this.action = action;
+            this.Action = action;
 
             for (int i = 0; i < values.Length; i++)
             {
-                elements.Add(new HInput(HInput.EInputType.hidden, values[i].Item1, values[i].Item2));
+                Elements.Add(new HInput(HInput.EInputType.hidden, values[i].Item1, values[i].Item2));
             }
 
             if (addSubmitButton)
-                elements.Add(new HButton(buttontext, HButton.EButtonType.submit));
+                Elements.Add(new HButton(buttontext, HButton.EButtonType.submit));
         }
 
         /// <summary>
@@ -988,8 +1075,8 @@ namespace LamestWebserver.UI
 
             if (fixedAction)
             {
-                if (!string.IsNullOrWhiteSpace(action))
-                    ret += "action='" + action + "' ";
+                if (!string.IsNullOrWhiteSpace(Action))
+                    ret += "action='" + Action + "' ";
             }
             else
             {
@@ -1011,8 +1098,8 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags + " ";
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags + " ";
 
             ret += "method='POST' >";
 
@@ -1021,12 +1108,12 @@ namespace LamestWebserver.UI
                 ret += "<input type='hidden' name='ssid' value='" + sessionData.Ssid + "'>";
             }
 
-            if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+            if (!string.IsNullOrWhiteSpace(Text))
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
-            for (int i = 0; i < elements.Count; i++)
+            for (int i = 0; i < Elements.Count; i++)
             {
-                ret += elements[i].GetContent(sessionData);
+                ret += Elements[i].GetContent(sessionData);
             }
 
             ret += "</form>";
@@ -1052,7 +1139,7 @@ namespace LamestWebserver.UI
         /// <param name="onclick"></param>
         public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "")
         {
-            this.text = text;
+            this.Text = text;
             this.href = href;
             this.onclick = onclick;
             this.type = type;
@@ -1066,7 +1153,7 @@ namespace LamestWebserver.UI
         /// <param name="onclick"></param>
         public HButton(string text, string href = "", string onclick = "")
         {
-            this.text = text;
+            this.Text = text;
             this.href = href;
             this.onclick = onclick;
             this.type = EButtonType.button;
@@ -1152,17 +1239,17 @@ namespace LamestWebserver.UI
                 System.Diagnostics.Debug.Assert(false, "SessionIdTransmissionType is invalid or not supported in " + this.GetType().ToString() + ".");
             }
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags + " ";
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags + " ";
 
             ret += ">";
 
-            if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+            if (!string.IsNullOrWhiteSpace(Text))
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
-            for (int i = 0; i < elements.Count; i++)
+            for (int i = 0; i < Elements.Count; i++)
             {
-                ret += elements[i].GetContent(sessionData);
+                ret += Elements[i].GetContent(sessionData);
             }
 
             ret += "</button>";
@@ -1380,7 +1467,7 @@ namespace LamestWebserver.UI
                 data.Add(s.ToHElement());
             }
 
-            this.elements = data;
+            this.Elements = data;
         }
 
         /// <summary>
@@ -1390,7 +1477,7 @@ namespace LamestWebserver.UI
         /// <param name="elements">the contents of the list</param>
         public HList(EListType listType, params HElement[] elements) : this(listType)
         {
-            this.elements = elements.ToList();
+            this.Elements = elements.ToList();
         }
 
         /// <summary>
@@ -1417,17 +1504,17 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             ret += ">";
 
-            if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+            if (!string.IsNullOrWhiteSpace(Text))
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
-            for (int i = 0; i < elements.Count; i++)
+            for (int i = 0; i < Elements.Count; i++)
             {
-                ret += "<li>" + elements[i].GetContent(sessionData) + "</li>";
+                ret += "<li>" + Elements[i].GetContent(sessionData) + "</li>";
             }
 
             ret += "</" + (listType == EListType.OrderedList ? "ol" : "ul") + ">";
@@ -1571,9 +1658,9 @@ namespace LamestWebserver.UI
         public HTag(string tagName, string descriptionTags, bool hasContent = false, string text = "")
         {
             this.tagName = tagName;
-            this.descriptionTags = descriptionTags;
+            this.DescriptionTags = descriptionTags;
             this.hasContent = hasContent;
-            this.text = text;
+            this.Text = text;
         }
 
         /// <summary>
@@ -1600,19 +1687,19 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             ret += ">";
 
             if (hasContent)
             {
-                if (!string.IsNullOrWhiteSpace(text))
-                    ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+                if (!string.IsNullOrWhiteSpace(Text))
+                    ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
-                for (int i = 0; i < elements.Count; i++)
+                for (int i = 0; i < Elements.Count; i++)
                 {
-                    ret += elements[i].GetContent(sessionData);
+                    ret += Elements[i].GetContent(sessionData);
                 }
 
                 ret += "</" + tagName  + ">";
