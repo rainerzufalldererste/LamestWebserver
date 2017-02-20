@@ -422,6 +422,8 @@ namespace LamestWebserver.Collections
         //[OnSerializing]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            info.AddValue(nameof(size), size);
+
             Entry[] elements = new Entry[this.Count];
             int index = 0;
 
@@ -446,27 +448,16 @@ namespace LamestWebserver.Collections
         {
             reader.ReadStartElement();
             reader.ReadStartElement();
-            
+
+            size = reader.ReadElement<int>();
+
+            HashMap = new object[size];
+
             List<Entry> entries = reader.ReadElement<List<Entry>>();
 
             foreach (Entry e in entries)
                 this[e.key] = e.value;
 
-            /*
-            reader.ReadStartElement();
-
-            while (reader.Name.StartsWith("Entry"))
-            {
-                var key = reader.ReadElement<TKey>("key");
-                var value = reader.ReadElement<TValue>("value");
-                reader.ReadEndElement();
-
-                this[key] = value;
-            }
-
-            if (Count > 0)
-                reader.ReadToEndElement("Elements");
-                */
             reader.ReadToEndElement("AVLHashMap");
             reader.ReadEndElement();
         }
@@ -474,6 +465,8 @@ namespace LamestWebserver.Collections
         public void WriteXml(XmlWriter writer)
         {
             writer.WriteStartElement("AVLHashMap");
+
+            writer.WriteElement("Size", size);
 
             Entry[] elements = new Entry[this.Count];
             int index = 0;
@@ -509,6 +502,9 @@ namespace LamestWebserver.Collections
 
         public AVLHashMap(SerializationInfo info, StreamingContext context)
         {
+            size = info.GetInt32(nameof(size));
+            HashMap = new object[size];
+
             Entry[] elements;
             elements = (Entry[])info.GetValue(nameof(elements), typeof(Entry[]));
 

@@ -30,12 +30,12 @@ namespace lwshostcore
                 this.OnPageRegister = OnPageRegister;
 
             ServerHandler.LogMessage("Reading Directory...");
-            
+
             ThreadedWorker worker = new ThreadedWorker();
 
             foreach (var file in Directory.GetFiles(directory))
             {
-                worker.EnqueueJob((Action<string>)ProcessFile, file);
+                worker.EnqueueJob((Action<string>) ProcessFile, file);
             }
 
             worker.Join(null);
@@ -101,7 +101,8 @@ namespace lwshostcore
                 ServerHandler.LogMessage("[lwshost] [File Load] Created a local copy at " + newFileName);
             }
             catch
-            { }
+            {
+            }
 
             try
             {
@@ -154,14 +155,14 @@ namespace lwshostcore
                                                                     try
                                                                     {
                                                                         ServerHandler.LogMessage(
-                                                                            $"[lwshost] [File Load] Execute on Unload: {type.Namespace}.{type_.Name}.{method_.Name} (in {file})");
+                                                                            $"[lwshost] [File Load] Execute on Unload: {type_.Namespace}.{type_.Name}.{method_.Name} (in {file})");
 
                                                                         method_.Invoke(null, ((ExecuteOnUnload) attribute).Args);
                                                                     }
                                                                     catch (Exception e)
                                                                     {
                                                                         ServerHandler.LogMessage(
-                                                                            $"[lwshost] [File Load] Failed to execute on unload: {type.Namespace}.{type_.Name}.{method_.Name} (in {file})\n" +
+                                                                            $"[lwshost] [File Load] Failed to execute on unload: {type_.Namespace}.{type_.Name}.{method_.Name} (in {file})\n" +
                                                                             e);
                                                                     }
                                                                 }).Start();
@@ -256,17 +257,77 @@ namespace lwshostcore
             {
                 ServerHandler.LogMessage("[lwshost] Failed to load Assembly " + file + " (" + e.LoaderExceptions.Length + " Loader Exceptions)");
 
-                for(int i = 0; i < (e.LoaderExceptions.Length > 25 ? 20 : e.LoaderExceptions.Length); i++)
+                for (int i = 0; i < (e.LoaderExceptions.Length > 25 ? 20 : e.LoaderExceptions.Length); i++)
                 {
-                    ServerHandler.LogMessage($"[lwshost] ({(i+1)}/{e.LoaderExceptions.Length}) {e.LoaderExceptions[i].Message}");
+                    ServerHandler.LogMessage($"[lwshost] ({(i + 1)}/{e.LoaderExceptions.Length}) {e.LoaderExceptions[i].Message}");
                 }
 
-                if(e.LoaderExceptions.Length > 25)
+                if (e.LoaderExceptions.Length > 25)
                     ServerHandler.LogMessage(" [...] " + (e.LoaderExceptions.Length - 20) + " more Loader Exceptions.");
             }
             catch (Exception e)
             {
                 ServerHandler.LogMessage("[lwshost] Failed to load Assembly " + file + "\n" + e);
+            }
+        }
+
+        public void Stop()
+        {
+            fileSystemWatcher.EnableRaisingEvents = false;
+
+            foreach (var types in TypesPerFile)
+            {
+                try
+                {
+                    foreach (var type_ in types.Value)
+                    {
+                        try
+                        {
+                            foreach (var method_ in type_.GetMethods())
+                            {
+                                try
+                                {
+                                    if (method_.IsStatic && method_.IsPublic)
+                                    {
+                                        foreach (var attribute in method_.GetCustomAttributes())
+                                        {
+                                            if (attribute is ExecuteOnUnload)
+                                            {
+                                                new Thread(() =>
+                                                {
+                                                    try
+                                                    {
+                                                        ServerHandler.LogMessage(
+                                                            $"[lwshost] [File Load] Execute on Unload: {type_.Namespace}.{type_.Name}.{method_.Name} (in {types.Key})");
+
+                                                        method_.Invoke(null, ((ExecuteOnUnload) attribute).Args);
+                                                    }
+                                                    catch (Exception e)
+                                                    {
+                                                        ServerHandler.LogMessage(
+                                                            $"[lwshost] [File Load] Failed to execute on unload: {type_.Namespace}.{type_.Name}.{method_.Name} (in {types.Key})\n" +
+                                                            e);
+                                                    }
+                                                }).Start();
+
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                catch
+                                {
+                                }
+                            }
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+                catch
+                {
+                }
             }
         }
     }

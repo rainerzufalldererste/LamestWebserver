@@ -377,6 +377,10 @@ namespace LamestWebserver
                 {
                     bytes = nws.Read(msg, 0, RequestMaxPacketSize);
                 }
+                catch (ThreadAbortException e)
+                {
+                    break;
+                }
                 catch (Exception e)
                 {
                     ServerHandler.LogMessage("An error occured in the client handler:  " + e);

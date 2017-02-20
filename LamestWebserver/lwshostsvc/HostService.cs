@@ -69,7 +69,8 @@ namespace lwshostsvc
 
         protected override void OnStop()
         {
-            Environment.Exit(0);
+            Master.StopServers();
+            hosts.ForEach(h => h.Stop());
         }
     }
 }

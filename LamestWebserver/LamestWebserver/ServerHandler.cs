@@ -10,10 +10,11 @@ namespace LamestWebserver
     public class ServerHandler
     {
         internal static List<WebServer> RunningServers = new List<WebServer>();
+        internal static bool Running = true;
 
         public static void Main(string[] args)
         {
-            Thread outp = new Thread(showMsgs);
+            Thread outp = new Thread(ShowMsgs);
 
             explicitLogging = true;
             outp.Start();
@@ -65,7 +66,9 @@ namespace LamestWebserver
 
                 if (s == "exit")
                 {
+                    Running = false;
                     RunningServers.ForEach(srv => srv.StopServer());
+                    return;
                 }
                 else
                 {
@@ -192,7 +195,7 @@ namespace LamestWebserver
                                     {
                                         if (outp.ThreadState == System.Threading.ThreadState.Aborted || outp.ThreadState == System.Threading.ThreadState.Unstarted)
                                         {
-                                            outp = new System.Threading.Thread(showMsgs);
+                                            outp = new System.Threading.Thread(ShowMsgs);
                                             outp.Start();
                                         }
                                     }
@@ -549,9 +552,9 @@ namespace LamestWebserver
             }).Start();
         }
 
-        private static void showMsgs()
+        private static void ShowMsgs()
         {
-            while (true)
+            while (Running)
             {
                 using (outputMutex.Lock())
                 {

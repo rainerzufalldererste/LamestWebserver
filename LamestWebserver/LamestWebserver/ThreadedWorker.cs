@@ -190,7 +190,14 @@ namespace LamestWebserver
                     continue;
                 }
 
-                currentTask.Task.DynamicInvoke(currentTask.Parameters);
+                try
+                {
+                    currentTask.Task.DynamicInvoke(currentTask.Parameters);
+                }
+                catch (Exception e)
+                {
+                    ServerHandler.LogMessage("Exception in WorkerTask '" + currentTask.Task.Method.Name + "'.\n" + e);
+                }
             }
         }
     }
