@@ -9,25 +9,40 @@ using LamestWebserver.Serialization;
 
 namespace LamestWebserver.Collections
 {
-    public class QueuedAVLTree<TKey, TValue> : IDictionary<TKey, TValue>, IXmlSerializable where TKey : IEquatable<TKey>, IComparable
+    /// <summary>
+    /// A automatically balancing BinaryTree to keep logarithmic search behaviour combined with a Queue. Search, Add, Remove: O(log(n)); RemoveFirst: O(1);
+    /// If the ItemCount exceeds the specified limit, the oldest entry is removed.
+    /// Returns default(T) / null if element not found.
+    /// </summary>
+    /// <typeparam name="TKey">The Type of the Keys (implement IComparable, IEquatable&lt;TKey&gt;)</typeparam>
+    /// <typeparam name="TValue">The Type of the Values</typeparam>
+    public class QueuedAVLTree<TKey, TValue> : IDictionary<TKey, TValue> where TKey : IEquatable<TKey>, IComparable
     {
         internal AVLNode head;
         private int count = 0;
         private int maxCount;
         internal Queue queue;
 
+        /// <summary>
+        /// Constructs a new QueuedAVLTree with a size of 4096.
+        /// </summary>
         public QueuedAVLTree()
         {
             maxCount = 4096;
             queue = new Queue(maxCount);
         }
 
+        /// <summary>
+        /// Constructs a new QueuedAVLTree with a specified maximum size
+        /// </summary>
+        /// <param name="maxSize">the maximum size</param>
         public QueuedAVLTree(int maxSize)
         {
             maxCount = maxSize;
             queue = new Queue(maxCount);
         }
 
+        /// <inheritdoc />
         public TValue this[TKey key]
         {
             get
@@ -75,45 +90,39 @@ namespace LamestWebserver.Collections
             }
         }
 
-        public int Count
-        {
-            get
-            {
-                return count;
-            }
-        }
+        /// <inheritdoc />
+        public int Count => count;
 
-        public bool IsReadOnly
-        {
-            get
-            {
-                return false;
-            }
-        }
+        /// <inheritdoc />
+        public bool IsReadOnly => false;
 
+        /// <inheritdoc />
         public ICollection<TKey> Keys
         {
             get
             {
-                if (head != null) return head.getSortedKeys();
+                if (head != null) return head.GetSortedKeys();
                 else return new List<TKey>();
             }
         }
 
+        /// <inheritdoc />
         public ICollection<TValue> Values
         {
             get
             {
-                if (head != null) return head.getSorted();
+                if (head != null) return head.GetSorted();
                 else return new List<TValue>();
             }
         }
 
+        /// <inheritdoc />
         public void Add(KeyValuePair<TKey, TValue> item)
         {
             Add(item.Key, item.Value);
         }
 
+        /// <inheritdoc />
         public void Add(TKey key, TValue value)
         {
             if (head == null)
@@ -125,6 +134,7 @@ namespace LamestWebserver.Collections
                 AVLNode.AddItem(head, key, value, this, ref count);
         }
 
+        /// <inheritdoc />
         public void Clear()
         {
             head = null;
@@ -133,6 +143,7 @@ namespace LamestWebserver.Collections
             queue.Clear();
         }
 
+        /// <inheritdoc />
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
             if (head == null)
@@ -170,6 +181,7 @@ namespace LamestWebserver.Collections
             }
         }
 
+        /// <inheritdoc />
         public bool ContainsKey(TKey key)
         {
             if (head == null || key == null)
@@ -206,14 +218,17 @@ namespace LamestWebserver.Collections
 
         }
 
+        /// <inheritdoc />
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            throw new NotImplementedException();
+            foreach (KeyValuePair<TKey, TValue> keyValuePair in this)
+                array[arrayIndex++] = keyValuePair;
         }
 
+        /// <inheritdoc />
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            var ret = head?.getAllData().GetEnumerator();
+            var ret = head?.GetAllData().GetEnumerator();
 
             if (ret == null)
                 return new List<KeyValuePair<TKey, TValue>>().GetEnumerator();
@@ -221,6 +236,7 @@ namespace LamestWebserver.Collections
             return ret;
         }
 
+        /// <inheritdoc />
         public bool Remove(KeyValuePair<TKey, TValue> item)
         {
             if (head == null)
@@ -229,6 +245,7 @@ namespace LamestWebserver.Collections
             return AVLNode.FindRemoveItem(head, this, item, ref count);
         }
 
+        /// <inheritdoc />
         public bool Remove(TKey key)
         {
             if (head == null)
@@ -237,6 +254,7 @@ namespace LamestWebserver.Collections
             return AVLNode.FindRemoveKey(head, this, key, ref count);
         }
 
+        /// <inheritdoc />
         public bool TryGetValue(TKey key, out TValue value)
         {
             if (key == null)
@@ -249,9 +267,10 @@ namespace LamestWebserver.Collections
             return ContainsKey(key);
         }
 
+        /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
-            var ret = head?.getAllData().GetEnumerator();
+            var ret = head?.GetAllData().GetEnumerator();
 
             if (ret == null)
                 return new List<KeyValuePair<TKey, TValue>>().GetEnumerator();
@@ -259,104 +278,31 @@ namespace LamestWebserver.Collections
             return ret;
         }
 
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue(nameof(count), count);
-            info.AddValue(nameof(head), head);
-        }
-
+        /// <summary>
+        /// Used for UnitTests.
+        /// </summary>
         public void Validate()
         {
             if (head != null)
             {
-                AVLNode.checkNodes(head);
-                int size = AVLNode.getCount(head);
+                AVLNode.CheckNodes(head);
+                int size = AVLNode.GetCount(head);
 
-                System.Diagnostics.Debug.Assert(size == queue.validateCount(), "The queue and tree sizes are not equal.");
+                System.Diagnostics.Debug.Assert(size == queue.ValidateCount(), "The queue and tree sizes are not equal.");
 
                 System.Diagnostics.Debug.Assert(size == count, "The elementCount is " + count + " but should be " + size);
                 System.Diagnostics.Debug.Assert(size == queue.size, "The queue size is " + queue.size + " but should be " + size);
             }
             else
             {
-                System.Diagnostics.Debug.Assert(count == queue.validateCount(), "The queue and tree sizes are not equal.");
+                System.Diagnostics.Debug.Assert(count == queue.ValidateCount(), "The queue and tree sizes are not equal.");
 
                 System.Diagnostics.Debug.Assert(count == 0, "The elementCount is " + count + " but should be 0");
                 System.Diagnostics.Debug.Assert(queue.size == 0, "The queue size is " + queue.size + " but should be 0");
             }
         }
 
-        public XmlSchema GetSchema()
-        {
-            return null;
-        }
-
-        public void ReadXml(XmlReader reader)
-        {
-            reader.ReadStartElement();
-            reader.ReadStartElement();
-
-
-            List<Entry> entries = reader.ReadElement<List<Entry>>();
-
-            foreach (Entry e in entries)
-                this[e.key] = e.value;
-
-            /*
-            reader.ReadStartElement();
-
-            while (reader.Name.StartsWith("Entry"))
-            {
-                var key = reader.ReadElement<TKey>("key");
-                var value = reader.ReadElement<TValue>("value");
-                reader.ReadEndElement();
-
-                this[key] = value;
-            }
-
-            if (Count > 0)
-                reader.ReadToEndElement("Elements");
-            */
-            reader.ReadToEndElement("QueuedAVLTree");
-            reader.ReadEndElement();
-        }
-
-        public void WriteXml(XmlWriter writer)
-        {
-            writer.WriteStartElement("QueuedAVLTree");
-
-            Entry[] elements = new Entry[this.count];
-            int index = 0;
-
-            if (head != null)
-                foreach (var element in head.getAllData())
-                    elements[index++] = element;
-
-            writer.WriteElement("Elements", elements);
-
-            writer.WriteEndElement();
-        }
-
-        [Serializable]
-        public struct Entry
-        {
-            public TKey key { get; set; }
-
-            public TValue value { get; set; }
-
-            public Entry(TKey key, TValue value)
-            {
-                this.key = key;
-                this.value = value;
-            }
-
-            public static implicit operator Entry(KeyValuePair<TKey, TValue> input)
-            {
-                return new Entry(input.Key, input.Value);
-            }
-        }
-
-        public class AVLNode
+        internal class AVLNode
         {
             internal AVLNode head, left, right;
             internal int balance { get { return -_depthL + _depthR; } }
@@ -367,25 +313,25 @@ namespace LamestWebserver.Collections
             internal bool isLeft = true;
 
             internal QueueElement linkedElement;
-            
-            public AVLNode(TKey key, TValue value, QueuedAVLTree<TKey, TValue> tree)
+
+            internal AVLNode(TKey key, TValue value, QueuedAVLTree<TKey, TValue> tree)
             {
                 this.key = key;
                 this.value = value;
                 this.linkedElement = tree.queue.Enqueue(this, tree);
             }
 
-            private void rebalance(QueuedAVLTree<TKey, TValue> tree)
+            private void Rebalance(QueuedAVLTree<TKey, TValue> tree)
             {
                 if (Math.Abs(balance) > 2)
                 {
                     if (balance < -2)
                     {
-                        left.rebalance(tree);
+                        left.Rebalance(tree);
                     }
                     else
                     {
-                        right.rebalance(tree);
+                        right.Rebalance(tree);
                     }
                 }
 
@@ -408,13 +354,13 @@ namespace LamestWebserver.Collections
 
                     if (right.balance > 0)
                     {
-                        rotl(right, tree);
+                        RotateLeft(right, tree);
                     }
                     else
                     {
-                        rotr(right.left, tree);
+                        RotateRight(right.left, tree);
 
-                        rotl(right, tree);
+                        RotateLeft(right, tree);
                     }
                 }
                 else if (balance < -1)
@@ -431,13 +377,13 @@ namespace LamestWebserver.Collections
 
                     if (left.balance < 0)
                     {
-                        rotr(left, tree);
+                        RotateRight(left, tree);
                     }
                     else
                     {
-                        rotl(left.right, tree);
+                        RotateLeft(left.right, tree);
 
-                        rotr(left, tree);
+                        RotateRight(left, tree);
                     }
                 }
 
@@ -446,7 +392,7 @@ namespace LamestWebserver.Collections
 #endif
             }
 
-            private static void checkHeads(AVLNode node, TKey key)
+            private static void CheckHeads(AVLNode node, TKey key)
             {
                 if (node.head != null)
                 {
@@ -454,15 +400,15 @@ namespace LamestWebserver.Collections
                 }
 
                 if (node.right != null)
-                    checkHeads(node.right, node.key);
+                    CheckHeads(node.right, node.key);
 
                 if (node.left != null)
-                    checkHeads(node.left, node.key);
+                    CheckHeads(node.left, node.key);
             }
 
-            private static void checkOrder(AVLNode node)
+            private static void CheckOrder(AVLNode node)
             {
-                var list = node.getSortedKeys();
+                var list = node.GetSortedKeys();
 
                 for (int i = 0; i < list.Count - 1; i++)
                 {
@@ -470,55 +416,55 @@ namespace LamestWebserver.Collections
                 }
             }
 
-            internal static void checkNodes(AVLNode node)
+            internal static void CheckNodes(AVLNode node)
             {
                 while (node.head != null)
                 {
                     node = node.head;
                 }
 
-                checkSide(node);
-                checkBalance(node);
-                checkOrder(node);
-                checkHeads(node, default(TKey));
+                CheckSide(node);
+                CheckBalance(node);
+                CheckOrder(node);
+                CheckHeads(node, default(TKey));
             }
 
-            private static void checkNodeSelf(AVLNode node)
+            private static void CheckNodeSelf(AVLNode node)
             {
-                checkSide(node);
-                checkBalance(node);
-                checkOrder(node);
+                CheckSide(node);
+                CheckBalance(node);
+                CheckOrder(node);
 
                 if (node.head != null)
-                    checkHeads(node, node.head.key);
+                    CheckHeads(node, node.head.key);
                 else
-                    checkHeads(node, default(TKey));
+                    CheckHeads(node, default(TKey));
             }
 
-            private static void checkSide(AVLNode node)
+            private static void CheckSide(AVLNode node)
             {
                 if (node.right != null)
                 {
                     System.Diagnostics.Debug.Assert(!node.right.isLeft, "The Node to the Right is not marked as !isLeft", node.ToString());
-                    checkSide(node.right);
+                    CheckSide(node.right);
                 }
 
                 if (node.left != null)
                 {
                     System.Diagnostics.Debug.Assert(node.left.isLeft, "The Node to the Left is not marked as isLeft", node.ToString());
-                    checkSide(node.left);
+                    CheckSide(node.left);
                 }
             }
 
-            private static int checkBalance(AVLNode node)
+            private static int CheckBalance(AVLNode node)
             {
                 int r = 0, l = 0;
 
                 if (node.right != null)
-                    r = checkBalance(node.right) + 1;
+                    r = CheckBalance(node.right) + 1;
 
                 if (node.left != null)
-                    l = checkBalance(node.left) + 1;
+                    l = CheckBalance(node.left) + 1;
 
                 System.Diagnostics.Debug.Assert(node._depthL == l, "Invalid Depth L (is " + node._depthL + " should be " + l + ")", node.ToString());
                 System.Diagnostics.Debug.Assert(node._depthR == r, "Invalid Depth R (is " + node._depthR + " should be " + r + ")", node.ToString());
@@ -526,7 +472,7 @@ namespace LamestWebserver.Collections
                 return Math.Max(r, l);
             }
 
-            private static void rotl(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
+            private static void RotateLeft(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
                 // swap head
                 AVLNode oldhead = node.head;
@@ -567,11 +513,11 @@ namespace LamestWebserver.Collections
 
                 oldhead.isLeft = true;
 
-                updateDepth(oldhead);
-                updateDepth(node);
+                UpdateDepth(oldhead);
+                UpdateDepth(node);
             }
 
-            private static void rotr(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
+            private static void RotateRight(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
                 // swap head
                 AVLNode oldhead = node.head;
@@ -613,11 +559,11 @@ namespace LamestWebserver.Collections
                 oldhead.isLeft = false;
 
                 // update balances
-                updateDepth(oldhead);
-                updateDepth(node);
+                UpdateDepth(oldhead);
+                UpdateDepth(node);
             }
 
-            private static void updateDepth(AVLNode node)
+            private static void UpdateDepth(AVLNode node)
             {
                 node._depthL = node.left == null ? 0 : Math.Max(node.left._depthL, node.left._depthR) + 1;
                 node._depthR = node.right == null ? 0 : Math.Max(node.right._depthL, node.right._depthR) + 1;
@@ -628,18 +574,18 @@ namespace LamestWebserver.Collections
                 return this.ToString(0);
             }
 
-            public string ToString(int count)
+            internal string ToString(int count)
             {
                 return (right != null ? right.ToString(count + 4) : new string(' ', count + 4) + "+ null") + "\n" + new string(' ', count) + (isLeft ? "L" : "R") + " \"" + key.ToString() + "\" : \"" + value.ToString() + "\" (" + balance + " | L" + _depthL + "R" + _depthR + ") \n" + (left != null ? left.ToString(count + 4) : new string(' ', count + 4) + "+ null");
             }
 
-            internal static int getMaxDepth(AVLNode node)
+            internal static int GetMaxDepth(AVLNode node)
             {
                 if (node.right != null)
-                    node._depthR = 1 + getMaxDepth(node.right);
+                    node._depthR = 1 + GetMaxDepth(node.right);
 
                 if (node.left != null)
-                    node._depthL = 1 + getMaxDepth(node.left);
+                    node._depthL = 1 + GetMaxDepth(node.left);
 
                 return Math.Max(node._depthL, node._depthR);
             }
@@ -647,7 +593,7 @@ namespace LamestWebserver.Collections
             /// <summary>
             /// Called after adding a node
             /// </summary>
-            internal static void balanceBubbleUp(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
+            internal static void BalanceBubbleUp(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
                 while (node.head != null)
                 {
@@ -667,7 +613,7 @@ namespace LamestWebserver.Collections
                     }
 
                     if (Math.Abs(node.head.balance) > 1)
-                        node.head.rebalance(tree);
+                        node.head.Rebalance(tree);
                     else
                         node = node.head;
                 }
@@ -676,53 +622,53 @@ namespace LamestWebserver.Collections
             /// <summary>
             /// Called after removing a node - can handle more than 2 or -2 balances on self
             /// </summary>
-            internal static void balanceSelfBubbleUp(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
+            internal static void BalanceSelfBubbleUp(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
                 while (node != null)
                 {
-                    node._depthL = node.left == null ? 0 : (getMaxDepth(node.left) + 1);
-                    node._depthR = node.right == null ? 0 : (getMaxDepth(node.right) + 1);
+                    node._depthL = node.left == null ? 0 : (GetMaxDepth(node.left) + 1);
+                    node._depthR = node.right == null ? 0 : (GetMaxDepth(node.right) + 1);
 
                     if (Math.Abs(node.balance) > 1)
-                        node.rebalance(tree);
+                        node.Rebalance(tree);
                     else
                         node = node.head;
                 }
             }
 
-            public List<TValue> getSorted()
+            internal List<TValue> GetSorted()
             {
                 List<TValue> ret = new List<TValue>();
 
                 if (left != null)
-                    ret.AddRange(left.getSorted());
+                    ret.AddRange(left.GetSorted());
 
                 ret.Add(this.value);
 
                 if (right != null)
-                    ret.AddRange(right.getSorted());
+                    ret.AddRange(right.GetSorted());
 
                 return ret;
             }
 
-            public List<TKey> getSortedKeys()
+            internal List<TKey> GetSortedKeys()
             {
                 List<TKey> ret = new List<TKey>();
 
                 if (left != null)
-                    ret.AddRange(left.getSortedKeys());
+                    ret.AddRange(left.GetSortedKeys());
 
                 ret.Add(this.key);
 
                 if (right != null)
-                    ret.AddRange(right.getSortedKeys());
+                    ret.AddRange(right.GetSortedKeys());
 
                 return ret;
             }
 
-            public static int getCount(AVLNode node)
+            internal static int GetCount(AVLNode node)
             {
-                return 1 + (node.left == null ? 0 : getCount(node.left)) + (node.right == null ? 0 : getCount(node.right));
+                return 1 + (node.left == null ? 0 : GetCount(node.left)) + (node.right == null ? 0 : GetCount(node.right));
             }
 
             internal static bool FindRemoveKey(AVLNode node, QueuedAVLTree<TKey, TValue> tree, TKey key, ref int elementCount)
@@ -837,7 +783,7 @@ namespace LamestWebserver.Collections
                             node.head._depthR = 0;
                         }
 
-                        AVLNode.balanceSelfBubbleUp(node.head, tree);
+                        AVLNode.BalanceSelfBubbleUp(node.head, tree);
                     }
                 }
                 else if (node.right == null || node.left == null) // one child
@@ -866,7 +812,7 @@ namespace LamestWebserver.Collections
                             node.head._depthR -= 1;
                         }
 
-                        AVLNode.balanceSelfBubbleUp(node.head, tree);
+                        AVLNode.BalanceSelfBubbleUp(node.head, tree);
                     }
                 }
                 else // two children :O
@@ -920,12 +866,12 @@ namespace LamestWebserver.Collections
 
                     if (childhead == node.head)
                     {
-                        AVLNode.balanceSelfBubbleUp(child, tree);
+                        AVLNode.BalanceSelfBubbleUp(child, tree);
                     }
                     else
                     {
                         child.right.head = child;
-                        AVLNode.balanceSelfBubbleUp(childhead, tree);
+                        AVLNode.BalanceSelfBubbleUp(childhead, tree);
                     }
                 }
 
@@ -938,7 +884,7 @@ namespace LamestWebserver.Collections
 
                 if(!tree.ContainsKey(key))
                 {
-                    tree.queue.checkRoom(tree);
+                    tree.queue.CheckRoom(tree);
 
                     if (tree.head == null)
                     {
@@ -956,7 +902,7 @@ namespace LamestWebserver.Collections
                         {
                             headNode.left = new AVLNode(key: key, value: value, tree: tree) { head = headNode, isLeft = true };
                             headNode._depthL = 1;
-                            AVLNode.balanceBubbleUp(headNode, tree);
+                            AVLNode.BalanceBubbleUp(headNode, tree);
                             elementCount++;
                             break;
                         }
@@ -972,7 +918,7 @@ namespace LamestWebserver.Collections
                         {
                             headNode.right = new AVLNode(key: key, value: value, tree: tree) { head = headNode, isLeft = false };
                             headNode._depthR = 1;
-                            AVLNode.balanceBubbleUp(headNode, tree);
+                            AVLNode.BalanceBubbleUp(headNode, tree);
                             elementCount++;
                             break;
                         }
@@ -992,28 +938,28 @@ namespace LamestWebserver.Collections
                 LukeIDeletedYourFather:;
             }
 
-            public List<KeyValuePair<TKey, TValue>> getAllData()
+            internal List<KeyValuePair<TKey, TValue>> GetAllData()
             {
                 List<KeyValuePair<TKey, TValue>> ret = new List<KeyValuePair<TKey, TValue>>();
 
                 ret.Add(new KeyValuePair<TKey, TValue>(key, value));
 
                 if (right != null)
-                    ret.AddRange(right.getAllData());
+                    ret.AddRange(right.GetAllData());
 
                 if (left != null)
-                    ret.AddRange(left.getAllData());
+                    ret.AddRange(left.GetAllData());
 
                 return ret;
             }
         }
 
-        public class QueueElement
+        internal class QueueElement
         {
             internal QueueElement next, previous;
             private AVLNode linkedNode;
 
-            public QueueElement(QueueElement head, AVLNode linkedNode)
+            internal QueueElement(QueueElement head, AVLNode linkedNode)
             {
                 this.linkedNode = linkedNode;
 
@@ -1035,13 +981,13 @@ namespace LamestWebserver.Collections
             }
         }
 
-        public class Queue
+        internal class Queue
         {
             QueueElement first, last;
             internal int size = 0;
-            int maxSize;
+            internal int maxSize;
 
-            public Queue(int maxSize)
+            internal Queue(int maxSize)
             {
                 if (maxSize <= 0)
                     throw new InvalidOperationException(maxSize + " is an invalid Size for a Queue");
@@ -1055,7 +1001,7 @@ namespace LamestWebserver.Collections
                 last.previous = first;
             }
 
-            public QueueElement Enqueue(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
+            internal QueueElement Enqueue(AVLNode node, QueuedAVLTree<TKey, TValue> tree)
             {
                 if (size > maxSize)
                     Dequeue(last.previous, tree, true);
@@ -1066,13 +1012,13 @@ namespace LamestWebserver.Collections
                 return element;
             }
 
-            public void Dequeue(QueueElement element, QueuedAVLTree<TKey, TValue> tree, bool callFromEnqueue = false)
+            internal void Dequeue(QueueElement element, QueuedAVLTree<TKey, TValue> tree, bool callFromEnqueue = false)
             {
                 QueueElement.Remove(element, tree, callFromEnqueue);
                 size--;
             }
 
-            internal int validateCount()
+            internal int ValidateCount()
             {
                 int count = 0;
 
@@ -1100,7 +1046,7 @@ namespace LamestWebserver.Collections
                 size = 0;
             }
 
-            internal void checkRoom(QueuedAVLTree<TKey, TValue> tree)
+            internal void CheckRoom(QueuedAVLTree<TKey, TValue> tree)
             {
                 if (size + 1 > maxSize)
                     Dequeue(last.previous, tree, true);

@@ -9,26 +9,40 @@ using LamestWebserver.Serialization;
 
 namespace LamestWebserver.Collections
 {
+    /// <summary>
+    /// A HashMap which uses AVLTrees inside to access Values very fast.
+    /// Returns default(T) / null if element not found.
+    /// implements ISerializable, IXmlSerializable
+    /// </summary>
+    /// <typeparam name="TKey">The Type of the Keys (implement IComparable, IEquatable&lt;TKey&gt;)</typeparam>
+    /// <typeparam name="TValue">The Type of the Values</typeparam>
     public class AVLHashMap<TKey, TValue> : IDictionary<TKey, TValue>, ISerializable, IXmlSerializable where TKey : IEquatable<TKey>, IComparable
     {
         private int size = 1024;
         protected int elementCount = 0;
-
-        [XmlArray("HashMap")]
+        
         internal object[] HashMap { get; private set; }
 
+        /// <summary>
+        /// Constructs a new AVLHashmap of the specified size
+        /// </summary>
+        /// <param name="size">the size of the hashmap</param>
         public AVLHashMap(int size)
         {
             this.size = size;
             HashMap = new object[size];
         }
 
+        /// <summary>
+        /// Constructs a new AVLHashmep with a size of 1024
+        /// </summary>
         public AVLHashMap()
         {
             this.size = 1024;
             HashMap = new object[size];
         }
 
+        /// <inheritdoc />
         public ICollection<TKey> Keys
         {
             get
@@ -39,16 +53,17 @@ namespace LamestWebserver.Collections
                 {
                     if (HashMap[i] == null)
                         continue;
-                    else if (HashMap[i] is InnerSerializableKeyValuePair)
-                        ret.Add(((InnerSerializableKeyValuePair)HashMap[i]).Key);
+                    else if (HashMap[i] is KeyValuePair<TKey, TValue>)
+                        ret.Add(((KeyValuePair<TKey, TValue>)HashMap[i]).Key);
                     else
-                        ret.AddRange(((AVLNode)HashMap[i]).getSortedKeys());
+                        ret.AddRange(((AVLNode)HashMap[i]).GetSortedKeys());
                 }
 
                 return ret;
             }
         }
 
+        /// <inheritdoc />
         public ICollection<TValue> Values
         {
             get
@@ -59,24 +74,22 @@ namespace LamestWebserver.Collections
                 {
                     if (HashMap[i] == null)
                         continue;
-                    else if (HashMap[i] is InnerSerializableKeyValuePair)
-                        ret.Add(((InnerSerializableKeyValuePair)HashMap[i]).Value);
+                    else if (HashMap[i] is KeyValuePair<TKey, TValue>)
+                        ret.Add(((KeyValuePair<TKey, TValue>)HashMap[i]).Value);
                     else
-                        ret.AddRange(((AVLNode)HashMap[i]).getSorted());
+                        ret.AddRange(((AVLNode)HashMap[i]).GetSorted());
                 }
 
                 return ret;
             }
         }
 
-        public int Count
-        {
-            get
-            {
-                return elementCount;
-            }
-        }
+        /// <inheritdoc />
+        public int Count => elementCount;
 
+        /// <summary>
+        /// Used for UnitTests.
+        /// </summary>
         public void Validate()
         {
             int size = 0;
@@ -85,12 +98,12 @@ namespace LamestWebserver.Collections
             {
                 if (HashMap[i] is AVLNode)
                 {
-                    AVLNode.checkNodes((AVLNode)HashMap[i]);
-                    size += AVLNode.getCount((AVLNode)HashMap[i]);
+                    AVLNode.CheckNodes((AVLNode)HashMap[i]);
+                    size += AVLNode.GetCount((AVLNode)HashMap[i]);
                 }
                 else if (HashMap[i] != null)
                 {
-                    System.Diagnostics.Debug.Assert(Math.Abs(((InnerSerializableKeyValuePair)HashMap[i]).Key.GetHashCode()) % this.size == i, "The InnerSerializableKeyValuePair hash would resolve to a different spot than it lives in.");
+                    System.Diagnostics.Debug.Assert(Math.Abs(((KeyValuePair<TKey, TValue>)HashMap[i]).Key.GetHashCode()) % this.size == i, "The InnerSerializableKeyValuePair hash would resolve to a different spot than it lives in.");
                     size++;
                 }
             }
@@ -98,14 +111,10 @@ namespace LamestWebserver.Collections
             System.Diagnostics.Debug.Assert(size == elementCount, "The elementCount is " + elementCount + " but should be " + size);
         }
 
-        public bool IsReadOnly
-        {
-            get
-            {
-                return false;
-            }
-        }
+        /// <inheritdoc />
+        public bool IsReadOnly => false;
 
+        /// <inheritdoc />
         public TValue this[TKey key]
         {
             get
@@ -119,10 +128,10 @@ namespace LamestWebserver.Collections
                 {
                     return default(TValue);
                 }
-                else if (HashMap[hash] is InnerSerializableKeyValuePair)
+                else if (HashMap[hash] is KeyValuePair<TKey, TValue>)
                 {
-                    if (((InnerSerializableKeyValuePair)HashMap[hash]).Key.Equals(key))
-                        return ((InnerSerializableKeyValuePair)HashMap[hash]).Value;
+                    if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
+                        return ((KeyValuePair<TKey, TValue>)HashMap[hash]).Value;
                     else
                         return default(TValue);
                 }
@@ -165,6 +174,7 @@ namespace LamestWebserver.Collections
             }
         }
 
+        /// <inheritdoc />
         public bool ContainsKey(TKey key)
         {
             int hash = Math.Abs(key.GetHashCode()) % size;
@@ -173,9 +183,9 @@ namespace LamestWebserver.Collections
             {
                 return false;
             }
-            else if (HashMap[hash] is InnerSerializableKeyValuePair)
+            else if (HashMap[hash] is KeyValuePair<TKey, TValue>)
             {
-                if (((InnerSerializableKeyValuePair)HashMap[hash]).Key.Equals(key))
+                if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
                     return true;
                 else
                     return false;
@@ -213,18 +223,20 @@ namespace LamestWebserver.Collections
             }
         }
 
+        /// <inheritdoc />
         public void Add(TKey key, TValue value)
         {
             Add(new KeyValuePair<TKey, TValue>(key, value));
         }
 
+        /// <inheritdoc />
         public bool Remove(KeyValuePair<TKey, TValue> item)
         {
             int hash = Math.Abs(item.Key.GetHashCode()) % size;
 
-            if (HashMap[hash] is InnerSerializableKeyValuePair)
+            if (HashMap[hash] is KeyValuePair<TKey, TValue>)
             {
-                if (((InnerSerializableKeyValuePair)HashMap[hash]).Key.Equals(item.Key) && ((InnerSerializableKeyValuePair)HashMap[hash]).Value.Equals(item.Value))
+                if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(item.Key) && ((KeyValuePair<TKey, TValue>)HashMap[hash]).Value.Equals(item.Value))
                 {
                     HashMap[hash] = null;
                     elementCount--;
@@ -242,6 +254,7 @@ namespace LamestWebserver.Collections
             return false; // Redundant
         }
 
+        /// <inheritdoc />
         public bool TryGetValue(TKey key, out TValue value)
         {
             if (key == null)
@@ -254,26 +267,27 @@ namespace LamestWebserver.Collections
             return value != null && !value.Equals(default(TValue));
         }
 
+        /// <inheritdoc />
         public void Add(KeyValuePair<TKey, TValue> item)
         {
             int hash = Math.Abs(item.Key.GetHashCode()) % size;
 
             if (HashMap[hash] == null)
             {
-                HashMap[hash] = (InnerSerializableKeyValuePair)item;
+                HashMap[hash] = item;
                 elementCount++;
             }
-            else if (HashMap[hash] is InnerSerializableKeyValuePair)
+            else if (HashMap[hash] is KeyValuePair<TKey, TValue>)
             {
-                if (((InnerSerializableKeyValuePair)HashMap[hash]).Key.Equals(item.Key))
+                if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(item.Key))
                 {
-                    HashMap[hash] = (InnerSerializableKeyValuePair)item;
+                    HashMap[hash] = item;
                 }
                 else
                 {
-                    AVLNode node = new AVLNode(key: ((InnerSerializableKeyValuePair)HashMap[hash]).Key, value: ((InnerSerializableKeyValuePair)HashMap[hash]).Value) { head = null };
+                    AVLNode node = new AVLNode(key: ((KeyValuePair<TKey, TValue>)HashMap[hash]).Key, value: ((KeyValuePair<TKey, TValue>)HashMap[hash]).Value) { head = null };
 
-                    if (item.Key.CompareTo(((InnerSerializableKeyValuePair)HashMap[hash]).Key) < 0)
+                    if (item.Key.CompareTo(((KeyValuePair<TKey, TValue>)HashMap[hash]).Key) < 0)
                     {
                         node.left = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = true };
                         node._depthL = 1;
@@ -290,28 +304,23 @@ namespace LamestWebserver.Collections
             }
             else
             {
-                // TODO: Add to AVLTree; if exists don't add to elementCount and Dequeue old item if maxSize.HasValue; if !exists add to elementCount
                 AVLNode node = (AVLNode)HashMap[hash];
 
                 AVLNode.AddItem(node: node, item: item, HashMap: HashMap, hash: hash, elementCount: ref elementCount);
 #if TEST
                 AVLNode.checkNodes(node);
 #endif
-
-                /*
-                Action<AVLNode> checkNotZero = null;
-                checkNotZero = (AVLNode n) => { if (n != null) { System.Diagnostics.Debug.Assert(!n.value.Equals((TValue)((object)0)), "value is 0 for" + item.Value); checkNotZero(n.right); checkNotZero(n.left); } };
-
-                checkNotZero(node);*/
             }
         }
 
+        /// <inheritdoc />
         public void Clear()
         {
             elementCount = 0;
             HashMap = new object[size];
         }
 
+        /// <inheritdoc />
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
             int hash = Math.Abs(item.Key.GetHashCode()) % size;
@@ -320,9 +329,9 @@ namespace LamestWebserver.Collections
             {
                 return false;
             }
-            else if (HashMap[hash] is InnerSerializableKeyValuePair)
+            else if (HashMap[hash] is KeyValuePair<TKey, TValue>)
             {
-                if (((InnerSerializableKeyValuePair)HashMap[hash]).Key.Equals(item.Key) && ((InnerSerializableKeyValuePair)HashMap[hash]).Value.Equals(item.Value))
+                if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(item.Key) && ((KeyValuePair<TKey, TValue>)HashMap[hash]).Value.Equals(item.Value))
                     return true;
                 else
                     return false;
@@ -360,18 +369,21 @@ namespace LamestWebserver.Collections
             }
         }
 
+        /// <inheritdoc />
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            throw new NotImplementedException();
+            foreach (KeyValuePair<TKey, TValue> keyValuePair in this)
+                array[arrayIndex++] = keyValuePair;
         }
 
+        /// <inheritdoc />
         public bool Remove(TKey key)
         {
             int hash = Math.Abs(key.GetHashCode()) % size;
 
-            if (HashMap[hash] is InnerSerializableKeyValuePair)
+            if (HashMap[hash] is KeyValuePair<TKey, TValue>)
             {
-                if (((InnerSerializableKeyValuePair)HashMap[hash]).Key.Equals(key))
+                if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
                 {
                     HashMap[hash] = null;
                     elementCount--;
@@ -389,36 +401,39 @@ namespace LamestWebserver.Collections
             return false; // Redundant
         }
 
+        /// <inheritdoc />
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
             List<KeyValuePair<TKey, TValue>> list = new List<KeyValuePair<TKey, TValue>>();
 
             for (int i = 0; i < HashMap.Length; i++)
             {
-                if (HashMap[i] is InnerSerializableKeyValuePair)
-                    list.Add((KeyValuePair<TKey, TValue>)(InnerSerializableKeyValuePair)HashMap[i]);
+                if (HashMap[i] is KeyValuePair<TKey, TValue>)
+                    list.Add((KeyValuePair<TKey, TValue>)HashMap[i]);
                 else if (HashMap[i] is AVLNode)
-                    list.AddRange(((AVLNode)HashMap[i]).getAllData());
+                    list.AddRange(((AVLNode)HashMap[i]).GetAllData());
             }
 
             return list.GetEnumerator();
         }
 
+        /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
             List<TValue> list = new List<TValue>();
 
             for (int i = 0; i < HashMap.Length; i++)
             {
-                if (HashMap[i] is InnerSerializableKeyValuePair)
-                    list.Add((((InnerSerializableKeyValuePair)HashMap[i]).Value));
+                if (HashMap[i] is KeyValuePair<TKey, TValue>)
+                    list.Add((((KeyValuePair<TKey, TValue>)HashMap[i]).Value));
                 else if (HashMap[i] is AVLNode)
-                    list.AddRange(((AVLNode)HashMap[i]).getSorted());
+                    list.AddRange(((AVLNode)HashMap[i]).GetSorted());
             }
 
             return list.GetEnumerator();
         }
 
+        /// <inheritdoc />
         //[OnSerializing]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -433,17 +448,13 @@ namespace LamestWebserver.Collections
             info.AddValue(nameof(elements), elements);
         }
 
-        [OnDeserializing]
-        void OnDeserializing(StreamingContext context)
-        {
-
-        }
-
+        /// <inheritdoc />
         public XmlSchema GetSchema()
         {
             return null;
         }
 
+        /// <inheritdoc />
         public void ReadXml(XmlReader reader)
         {
             reader.ReadStartElement();
@@ -456,12 +467,13 @@ namespace LamestWebserver.Collections
             List<Entry> entries = reader.ReadElement<List<Entry>>();
 
             foreach (Entry e in entries)
-                this[e.key] = e.value;
+                this[e.Key] = e.Value;
 
             reader.ReadToEndElement("AVLHashMap");
             reader.ReadEndElement();
         }
 
+        /// <inheritdoc />
         public void WriteXml(XmlWriter writer)
         {
             writer.WriteStartElement("AVLHashMap");
@@ -481,25 +493,49 @@ namespace LamestWebserver.Collections
             writer.WriteEndElement();
         }
 
+        /// <summary>
+        /// Only used for Serializing
+        /// </summary>
         [Serializable]
         public struct Entry
         {
-            public TKey key { get; set; }
+            /// <summary>
+            /// The Key
+            /// </summary>
+            public TKey Key { get; set; }
 
-            public TValue value { get; set; }
+            /// <summary>
+            /// The Value
+            /// </summary>
+            public TValue Value { get; set; }
 
+            /// <summary>
+            /// Constructs a new Entry
+            /// </summary>
+            /// <param name="key">the Key</param>
+            /// <param name="value">the Value</param>
             public Entry(TKey key, TValue value)
             {
-                this.key = key;
-                this.value = value;
+                this.Key = key;
+                this.Value = value;
             }
 
+            /// <summary>
+            /// Casts a KeyValuePair to an Entry
+            /// </summary>
+            /// <param name="input">the KeyValuePair</param>
+            /// <returns>the Entry</returns>
             public static implicit operator Entry(KeyValuePair<TKey, TValue> input)
             {
                 return new Entry(input.Key, input.Value);
             }
         }
 
+        /// <summary>
+        /// Deserializes an AVLHashmap
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
         public AVLHashMap(SerializationInfo info, StreamingContext context)
         {
             size = info.GetInt32(nameof(size));
@@ -509,13 +545,11 @@ namespace LamestWebserver.Collections
             elements = (Entry[])info.GetValue(nameof(elements), typeof(Entry[]));
 
             foreach (var e in elements)
-                this[e.key] = e.value;
+                this[e.Key] = e.Value;
         }
-
-        [Serializable, XmlRoot("AVLNode")]
-        public class AVLNode : ISerializable, IXmlSerializable
+        
+        internal class AVLNode
         {
-            [XmlIgnore]
             internal AVLNode head;
 
             internal AVLNode left, right;
@@ -529,36 +563,28 @@ namespace LamestWebserver.Collections
             /// <summary>
             /// Empty constructor for Deserialisation
             /// </summary>
-            public AVLNode()
+            internal AVLNode()
             {
 
             }
 
-            public AVLNode(TKey key, TValue value)
+            internal AVLNode(TKey key, TValue value)
             {
                 this.key = key;
                 this.value = value;
             }
 
-            private void rebalance(object[] HashMap, int index)
+            private void Rebalance(object[] HashMap, int index)
             {
-                /*AVLNode displayNode = this;
-
-                while (displayNode.head != null)
-                    displayNode = displayNode.head;
-
-                Console.ForegroundColor = ConsoleColor.Gray;
-
-                Console.WriteLine(displayNode.ToString());*/
                 if (Math.Abs(balance) > 2)
                 {
                     if (balance < -2)
                     {
-                        left.rebalance(HashMap, index);
+                        left.Rebalance(HashMap, index);
                     }
                     else
                     {
-                        right.rebalance(HashMap, index);
+                        right.Rebalance(HashMap, index);
                     }
                 }
 
@@ -581,42 +607,13 @@ namespace LamestWebserver.Collections
 
                     if (right.balance > 0)
                     {
-                        /*
-                        this._balance -= 2;
-                        right._balance -= 1;
-                        */
-                        //Console.WriteLine("rotl");
-                        rotl(right, HashMap, index);
-
-                        /*Console.Write("(ROTL)");*/
+                        RotateLeft(right, HashMap, index);
                     }
                     else
                     {
-                        /*
-                        this._balance -= 2;
-                        right.left._balance = -right._balance + 1;
-                        right._balance += 1;
-                        */
-                        /*this.value =        (TValue)(object)9999;
-                        right.value =       (TValue)(object)99999;
-                        right.left.value =  (TValue)(object)999999;*/
-                        //Console.WriteLine("rotr");
+                        RotateRight(right.left, HashMap, index);
 
-                        rotr(right.left, HashMap, index);
-
-                        /*Console.ForegroundColor = ConsoleColor.Yellow;
-
-                        while (displayNode.head != null)
-                            displayNode = displayNode.head;
-
-                        Console.WriteLine("\n==ROTR===\n" + displayNode + "\n\n\n");
-
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;*/
-                        //Console.WriteLine("rotl");
-
-                        rotl(right, HashMap, index);
-
-                        /*Console.Write("(ROTL)");*/
+                        RotateLeft(right, HashMap, index);
                     }
                 }
                 else if (balance < -1)
@@ -633,68 +630,22 @@ namespace LamestWebserver.Collections
 
                     if (left.balance < 0)
                     {
-                        /*
-                        this._balance += 2;
-                        left._balance += 1;
-                        */
-                        //Console.WriteLine("rotr");
-                        rotr(left, HashMap, index);
-
-                        /*Console.Write("(ROTL)");*/
+                        RotateRight(left, HashMap, index);
                     }
                     else
                     {
-                        //Console.WriteLine("rotl");
-                        /*
-                        this.value =        (TValue)(object)9999;
-                        left.value =        (TValue)(object)99999;
-                        left.right.value =  (TValue)(object)999999;
-                        */
-                        /*this._balance += 2;
-                        left.right._balance = -left._balance - 1;
-                        left._balance -= 1;*/
+                        RotateLeft(left.right, HashMap, index);
 
-                        rotl(left.right, HashMap, index);
-                        //Console.WriteLine("rotr");
-
-                        /*Console.ForegroundColor = ConsoleColor.Yellow;
-
-                        while (displayNode.head != null)
-                            displayNode = displayNode.head;
-
-                        Console.WriteLine("\n==ROTL===\n" + displayNode + "\n\n\n");
-
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;*/
-
-                        rotr(left, HashMap, index);
-
-                        /*Console.Write("(ROTR)");*/
+                        RotateRight(left, HashMap, index);
                     }
                 }
-
-                /*while (displayNode.head != null)
-                    displayNode = displayNode.head;
-
-                Console.WriteLine("\n=====\n" + displayNode + "\n\n\n");
-
-                checkNodes(displayNode);*/
-
-                /*AVLNode displaynode = this;
-
-                while (displaynode.head != null)
-                    displaynode = displaynode.head;
-
-                checkOrder(displaynode);
-                checkHeads(displaynode, default(TKey));
-                Console.WriteLine("Keys OK!\n\n");*/
-                //Console.WriteLine("\n");
 
 #if TEST
                 checkNodeSelf(this);
 #endif
             }
 
-            private static void checkHeads(AVLNode node, TKey key)
+            private static void CheckHeads(AVLNode node, TKey key)
             {
                 if (node.head != null)
                 {
@@ -702,15 +653,15 @@ namespace LamestWebserver.Collections
                 }
 
                 if (node.right != null)
-                    checkHeads(node.right, node.key);
+                    CheckHeads(node.right, node.key);
 
                 if (node.left != null)
-                    checkHeads(node.left, node.key);
+                    CheckHeads(node.left, node.key);
             }
 
-            private static void checkOrder(AVLNode node)
+            private static void CheckOrder(AVLNode node)
             {
-                var list = node.getSortedKeys();
+                var list = node.GetSortedKeys();
 
                 for (int i = 0; i < list.Count - 1; i++)
                 {
@@ -718,55 +669,55 @@ namespace LamestWebserver.Collections
                 }
             }
 
-            internal static void checkNodes(AVLNode node)
+            internal static void CheckNodes(AVLNode node)
             {
                 while (node.head != null)
                 {
                     node = node.head;
                 }
 
-                checkSide(node);
-                checkBalance(node);
-                checkOrder(node);
-                checkHeads(node, default(TKey));
+                CheckSide(node);
+                CheckBalance(node);
+                CheckOrder(node);
+                CheckHeads(node, default(TKey));
             }
 
-            private static void checkNodeSelf(AVLNode node)
+            private static void CheckNodeSelf(AVLNode node)
             {
-                checkSide(node);
-                checkBalance(node);
-                checkOrder(node);
+                CheckSide(node);
+                CheckBalance(node);
+                CheckOrder(node);
 
                 if (node.head != null)
-                    checkHeads(node, node.head.key);
+                    CheckHeads(node, node.head.key);
                 else
-                    checkHeads(node, default(TKey));
+                    CheckHeads(node, default(TKey));
             }
 
-            private static void checkSide(AVLNode node)
+            private static void CheckSide(AVLNode node)
             {
                 if (node.right != null)
                 {
                     System.Diagnostics.Debug.Assert(!node.right.isLeft, "The Node to the Right is not marked as !isLeft", node.ToString());
-                    checkSide(node.right);
+                    CheckSide(node.right);
                 }
 
                 if (node.left != null)
                 {
                     System.Diagnostics.Debug.Assert(node.left.isLeft, "The Node to the Left is not marked as isLeft", node.ToString());
-                    checkSide(node.left);
+                    CheckSide(node.left);
                 }
             }
 
-            private static int checkBalance(AVLNode node)
+            private static int CheckBalance(AVLNode node)
             {
                 int r = 0, l = 0;
 
                 if (node.right != null)
-                    r = checkBalance(node.right) + 1;
+                    r = CheckBalance(node.right) + 1;
 
                 if (node.left != null)
-                    l = checkBalance(node.left) + 1;
+                    l = CheckBalance(node.left) + 1;
 
                 System.Diagnostics.Debug.Assert(node._depthL == l, "Invalid Depth L (is " + node._depthL + " should be " + l + ")", node.ToString());
                 System.Diagnostics.Debug.Assert(node._depthR == r, "Invalid Depth R (is " + node._depthR + " should be " + r + ")", node.ToString());
@@ -774,15 +725,8 @@ namespace LamestWebserver.Collections
                 return Math.Max(r, l);
             }
 
-            private static void rotl(AVLNode node, object[] HashMap, int index)
+            private static void RotateLeft(AVLNode node, object[] HashMap, int index)
             {
-                /*Console.ForegroundColor = ConsoleColor.DarkGreen;
-                if(node.head != null)
-                    Console.WriteLine("\n\n" + node.head.ToString() + "\n--");
-                else
-                    Console.WriteLine("\n\n" + node.ToString() + "\n--");
-                Console.ForegroundColor = ConsoleColor.Gray;*/
-
                 // swap head
                 AVLNode oldhead = node.head;
                 node.head = node.head.head;
@@ -822,35 +766,12 @@ namespace LamestWebserver.Collections
 
                 oldhead.isLeft = true;
 
-                // update balances
-                /*if (node._depthR == 0 && node._depthL == 0 || oldhead.balance > 0)
-                    oldhead._depthR -= 1;
-                else
-                    oldhead._depthR -= 2;*/
-                updateDepth(oldhead);
-                updateDepth(node);
-
-                //node._depthL += 1;
-                /*oldhead._balance -= 2;
-                node._balance -= 1;*/
-
-                /*Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine("\nROT L:\n" + node.ToString() + "\n");
-                Console.ForegroundColor = ConsoleColor.Gray;*/
-
-                //balanceBubbleUp(node);
-                //checkNodes(node);
+                UpdateDepth(oldhead);
+                UpdateDepth(node);
             }
 
-            private static void rotr(AVLNode node, object[] HashMap, int index)
+            private static void RotateRight(AVLNode node, object[] HashMap, int index)
             {
-                /*Console.ForegroundColor = ConsoleColor.DarkCyan;
-                if (node.head != null)
-                    Console.WriteLine("\n\n" + node.head.ToString() + "\n--");
-                else
-                    Console.WriteLine("\n\n" + node.ToString() + "\n--");
-                Console.ForegroundColor = ConsoleColor.Gray;*/
-
                 // swap head
                 AVLNode oldhead = node.head;
                 node.head = node.head.head;
@@ -889,28 +810,12 @@ namespace LamestWebserver.Collections
                 }
 
                 oldhead.isLeft = false;
-
-                // update balances
-                /*if (node._depthR == 0 && node._depthL == 0 || oldhead.balance < 0)
-                    oldhead._depthL -= 1;
-                else
-                    oldhead._depthL -= 2;*/
-                updateDepth(oldhead);
-                updateDepth(node);
-
-                //node._depthR += 1;
-                /*oldhead._balance;
-                node._balance += 1;*/
-
-                /*Console.ForegroundColor = ConsoleColor.DarkCyan;
-                Console.WriteLine("\nROT R:\n" + node.ToString() + "\n");
-                Console.ForegroundColor = ConsoleColor.Gray;*/
-
-                //balanceBubbleUp(node);
-                //checkNodes(node);
+                
+                UpdateDepth(oldhead);
+                UpdateDepth(node);
             }
 
-            private static void updateDepth(AVLNode node)
+            private static void UpdateDepth(AVLNode node)
             {
                 node._depthL = node.left == null ? 0 : Math.Max(node.left._depthL, node.left._depthR) + 1;
                 node._depthR = node.right == null ? 0 : Math.Max(node.right._depthL, node.right._depthR) + 1;
@@ -919,21 +824,20 @@ namespace LamestWebserver.Collections
             public override string ToString()
             {
                 return this.ToString(0);
-                //return "(" + (left != null ? left.ToString() + ", " : "" ) + key.ToString() + " [" + balance + "]" + (right != null ? ", " + right.ToString() : "") + ")";
             }
 
-            public string ToString(int count)
+            internal string ToString(int count)
             {
                 return (right != null ? right.ToString(count + 4) : new string(' ', count + 4) + "+ null") + "\n" + new string(' ', count) + (isLeft ? "L" : "R") + " \"" + key.ToString() + "\" : \"" + value.ToString() + "\" (" + balance + " | L" + _depthL + "R" + _depthR + ") \n" + (left != null ? left.ToString(count + 4) : new string(' ', count + 4) + "+ null");
             }
 
-            internal static int getMaxDepth(AVLNode node)
+            internal static int GetMaxDepth(AVLNode node)
             {
                 if (node.right != null)
-                    node._depthR = 1 + getMaxDepth(node.right);
+                    node._depthR = 1 + GetMaxDepth(node.right);
 
                 if (node.left != null)
-                    node._depthL = 1 + getMaxDepth(node.left);
+                    node._depthL = 1 + GetMaxDepth(node.left);
 
                 return Math.Max(node._depthL, node._depthR);
             }
@@ -941,7 +845,7 @@ namespace LamestWebserver.Collections
             /// <summary>
             /// Called after adding a node
             /// </summary>
-            internal static void balanceBubbleUp(AVLNode node, object[] HashMap, int index)
+            internal static void BalanceBubbleUp(AVLNode node, object[] HashMap, int index)
             {
                 while (node.head != null)
                 {
@@ -961,7 +865,7 @@ namespace LamestWebserver.Collections
                     }
 
                     if (Math.Abs(node.head.balance) > 1)
-                        node.head.rebalance(HashMap, index);
+                        node.head.Rebalance(HashMap, index);
                     else
                         node = node.head;
                 }
@@ -970,53 +874,53 @@ namespace LamestWebserver.Collections
             /// <summary>
             /// Called after removing a node - can handle more than 2 or -2 balances on self
             /// </summary>
-            internal static void balanceSelfBubbleUp(AVLNode node, object[] HashMap, int index)
+            internal static void BalanceSelfBubbleUp(AVLNode node, object[] HashMap, int index)
             {
                 while (node != null)
                 {
-                    node._depthL = node.left == null ? 0 : (getMaxDepth(node.left) + 1);
-                    node._depthR = node.right == null ? 0 : (getMaxDepth(node.right) + 1);
+                    node._depthL = node.left == null ? 0 : (GetMaxDepth(node.left) + 1);
+                    node._depthR = node.right == null ? 0 : (GetMaxDepth(node.right) + 1);
 
                     if (Math.Abs(node.balance) > 1)
-                        node.rebalance(HashMap, index);
+                        node.Rebalance(HashMap, index);
                     else
                         node = node.head;
                 }
             }
 
-            public List<TValue> getSorted()
+            internal List<TValue> GetSorted()
             {
                 List<TValue> ret = new List<TValue>();
 
                 if (left != null)
-                    ret.AddRange(left.getSorted());
+                    ret.AddRange(left.GetSorted());
 
                 ret.Add(this.value);
 
                 if (right != null)
-                    ret.AddRange(right.getSorted());
+                    ret.AddRange(right.GetSorted());
 
                 return ret;
             }
 
-            public List<TKey> getSortedKeys()
+            internal List<TKey> GetSortedKeys()
             {
                 List<TKey> ret = new List<TKey>();
 
                 if (left != null)
-                    ret.AddRange(left.getSortedKeys());
+                    ret.AddRange(left.GetSortedKeys());
 
                 ret.Add(this.key);
 
                 if (right != null)
-                    ret.AddRange(right.getSortedKeys());
+                    ret.AddRange(right.GetSortedKeys());
 
                 return ret;
             }
 
-            public static int getCount(AVLNode node)
+            internal static int GetCount(AVLNode node)
             {
-                return 1 + (node.left == null ? 0 : getCount(node.left)) + (node.right == null ? 0 : getCount(node.right));
+                return 1 + (node.left == null ? 0 : GetCount(node.left)) + (node.right == null ? 0 : GetCount(node.right));
             }
 
             internal static bool FindRemoveKey(AVLNode headNode, object[] HashMap, int hash, TKey key, ref int elementCount)
@@ -1128,7 +1032,7 @@ namespace LamestWebserver.Collections
                             node.head._depthR = 0;
                         }
 
-                        AVLNode.balanceSelfBubbleUp(node.head, HashMap, hash);
+                        AVLNode.BalanceSelfBubbleUp(node.head, HashMap, hash);
                     }
                 }
                 else if (node.right == null || node.left == null) // one child
@@ -1157,7 +1061,7 @@ namespace LamestWebserver.Collections
                             node.head._depthR -= 1;
                         }
 
-                        AVLNode.balanceSelfBubbleUp(node.head, HashMap, hash);
+                        AVLNode.BalanceSelfBubbleUp(node.head, HashMap, hash);
                     }
                 }
                 else // two children :O
@@ -1211,24 +1115,13 @@ namespace LamestWebserver.Collections
 
                     if (childhead == node.head)
                     {
-                        // child.right = null;
-                        // child._depthR = 0;
-                        AVLNode.balanceSelfBubbleUp(child, HashMap, hash);
+                        AVLNode.BalanceSelfBubbleUp(child, HashMap, hash);
                     }
                     else
                     {
-                        /*
-                        // we already do that in the line below, right? (child.right.head = child;)
-                        if(childhead.head == node)
-                        {
-                            childhead.head = child;
-                        }*/
-
                         child.right.head = child;
-                        AVLNode.balanceSelfBubbleUp(childhead, HashMap, hash);
+                        AVLNode.BalanceSelfBubbleUp(childhead, HashMap, hash);
                     }
-
-                    // AVLNode.balanceSelfBubbleUp(childhead, HashMap, hash);
                 }
 
                 elementCount--;
@@ -1246,7 +1139,7 @@ namespace LamestWebserver.Collections
                         {
                             node.left = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = true };
                             node._depthL = 1;
-                            AVLNode.balanceBubbleUp(node, HashMap, hash);
+                            AVLNode.BalanceBubbleUp(node, HashMap, hash);
                             elementCount++;
                             break;
                         }
@@ -1262,7 +1155,7 @@ namespace LamestWebserver.Collections
                         {
                             node.right = new AVLNode(key: item.Key, value: item.Value) { head = node, isLeft = false };
                             node._depthR = 1;
-                            AVLNode.balanceBubbleUp(node, HashMap, hash);
+                            AVLNode.BalanceBubbleUp(node, HashMap, hash);
                             elementCount++;
                             break;
                         }
@@ -1279,152 +1172,18 @@ namespace LamestWebserver.Collections
                     }
                 }
             }
-            
-            public void GetObjectData(SerializationInfo info, StreamingContext context)
-            {
-                // !NOT! info.AddValue(nameof(this.head), this.head); // <- would create cross references...
-                info.AddValue(nameof(this.isLeft), this.isLeft);
-                info.AddValue(nameof(this.key), this.key);
-                info.AddValue(nameof(this.left), this.left);
-                info.AddValue(nameof(this.right), this.right);
-                info.AddValue(nameof(this.value), this.value);
-                info.AddValue(nameof(this._depthL), this._depthL);
-                info.AddValue(nameof(this._depthR), this._depthR);
-            }
 
-            [OnDeserializing]
-            void OnDeserializing(StreamingContext c)
-            {
-                if (right != null)
-                    right.head = this;
-
-                if (left != null)
-                    left.head = this;
-            }
-
-            public XmlSchema GetSchema()
-            {
-                return null;
-            }
-
-            public void ReadXml(XmlReader reader)
-            {
-                isLeft = reader.ReadElement<bool>(nameof(isLeft));
-                key = reader.ReadElement<TKey>(nameof(key));
-                value = reader.ReadElement<TValue>(nameof(value));
-                left = reader.ReadElement<AVLNode>(nameof(left));
-                right = reader.ReadElement<AVLNode>(nameof(right));
-                _depthL = reader.ReadElement<int>(nameof(_depthL));
-                _depthR = reader.ReadElement<int>(nameof(_depthR));
-
-                if (right != null)
-                    right.head = this;
-
-                if (left != null)
-                    left.head = this;
-
-                reader.ReadToEndElement("AVLNode");
-            }
-
-            public void WriteXml(XmlWriter writer)
-            {
-                writer.WriteStartElement("AVLNode");
-
-                // !NOT! writer.WriteElement(nameof(head), head); // <- would create cross references...
-                writer.WriteElement(nameof(isLeft), isLeft);
-                writer.WriteElement(nameof(key), key);
-                writer.WriteElement(nameof(value), value);
-                writer.WriteElement(nameof(left), left);
-                writer.WriteElement(nameof(right), right);
-                writer.WriteElement(nameof(_depthL), _depthL);
-                writer.WriteElement(nameof(_depthR), _depthR);
-
-                writer.WriteEndElement();
-            }
-
-            public List<KeyValuePair<TKey, TValue>> getAllData()
+            internal List<KeyValuePair<TKey, TValue>> GetAllData()
             {
                 List<KeyValuePair<TKey, TValue>> ret = new List<KeyValuePair<TKey, TValue>>();
 
                 ret.Add(new KeyValuePair<TKey, TValue>(key, value));
 
                 if (right != null)
-                    ret.AddRange(right.getAllData());
+                    ret.AddRange(right.GetAllData());
 
                 if (left != null)
-                    ret.AddRange(left.getAllData());
-
-                return ret;
-            }
-
-            internal static AVLNode CreateFromXML(XmlReader reader)
-            {
-                AVLNode ret = new AVLNode();
-
-                ret.ReadXml(reader);
-
-                return ret;
-            }
-        }
-
-
-        [Serializable, XmlRoot("InnerSerializableKeyValuePair")]
-        public class InnerSerializableKeyValuePair : ISerializable, IXmlSerializable
-        {
-            public TKey Key;
-            public TValue Value;
-
-            public InnerSerializableKeyValuePair()
-            { }
-
-            public InnerSerializableKeyValuePair(TKey Key, TValue Value)
-            {
-                this.Key = Key;
-                this.Value = Value;
-            }
-
-            public static explicit operator InnerSerializableKeyValuePair(KeyValuePair<TKey, TValue> input)
-            {
-                return new InnerSerializableKeyValuePair(input.Key, input.Value);
-            }
-
-            public static implicit operator KeyValuePair<TKey, TValue>(InnerSerializableKeyValuePair input)
-            {
-                return new KeyValuePair<TKey, TValue>(input.Key, input.Value);
-            }
-
-            public void GetObjectData(SerializationInfo info, StreamingContext context)
-            {
-                info.AddValue(nameof(Key), Key);
-                info.AddValue(nameof(Value), Value);
-            }
-
-            public XmlSchema GetSchema()
-            {
-                return null;
-            }
-
-            public void ReadXml(XmlReader reader)
-            {
-                Key = reader.ReadElement<TKey>(nameof(Key));
-                Value = reader.ReadElement<TValue>(nameof(Value));
-
-                reader.ReadToEndElement("InnerSerializableKeyValuePair");
-            }
-
-            public void WriteXml(XmlWriter writer)
-            {
-                writer.WriteStartElement("InnerSerializableKeyValuePair");
-                writer.WriteElement(nameof(Key), Key);
-                writer.WriteElement(nameof(Value), Value);
-                writer.WriteEndElement();
-            }
-
-            public static InnerSerializableKeyValuePair CreateFromXML(XmlReader xmlReader)
-            {
-                InnerSerializableKeyValuePair ret = new InnerSerializableKeyValuePair();
-
-                ret.ReadXml(xmlReader);
+                    ret.AddRange(left.GetAllData());
 
                 return ret;
             }
