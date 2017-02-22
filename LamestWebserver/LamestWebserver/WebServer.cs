@@ -18,7 +18,7 @@ using ThreadState = System.Threading.ThreadState;
 
 namespace LamestWebserver
 {
-    public class WebServer
+    public class WebServer : IDisposable
     {
         internal static List<WebServer> RunningServers = new List<WebServer>();
         internal static UsableMutexSlim RunningServerMutex = new UsableMutexSlim();
@@ -162,6 +162,12 @@ namespace LamestWebserver
             catch (Exception)
             {
             }
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            Stop();
         }
 
         public void Stop()
