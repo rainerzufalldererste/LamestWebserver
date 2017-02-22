@@ -12,7 +12,6 @@ namespace LamestWebserver
     /// </summary>
     public class ServerHandler
     {
-        internal static List<WebServer> RunningServers = new List<WebServer>();
         internal static bool Running = true;
 
         /// <summary>
@@ -46,9 +45,13 @@ namespace LamestWebserver
                         {
                             using (outputMutex.Lock())
                             {
-                                for (int i = 0; i < RunningServers.Count; i++)
+                                using (WebServer.RunningServerMutex.Lock())
                                 {
-                                    Console.WriteLine("Port: " + RunningServers[i].port + " Folder: " + RunningServers[i].folder + " Threads: " + RunningServers[i].GetThreadCount());
+                                    for (int i = 0; i < WebServer.RunningServers.Count; i++)
+                                    {
+                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].port + " Folder: " + WebServer.RunningServers[i].folder + " Threads: " +
+                                                          WebServer.RunningServers[i].GetThreadCount());
+                                    }
                                 }
                                 Console.WriteLine("Done!");
                             }
@@ -63,16 +66,8 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < RunningServers.Count; i++)
-                                    {
-                                        if (RunningServers[i].port == Int32.Parse(id))
-                                        {
-                                            RunningServers[i].StopServer();
-                                            RunningServers.RemoveAt(i);
-                                            Console.WriteLine("Done!");
-                                            break;
-                                        }
-                                    }
+                                    Master.StopServer(int.Parse(id));
+                                    Console.WriteLine("Done!");
                                 }
                                 catch (Exception e)
                                 {
@@ -92,7 +87,7 @@ namespace LamestWebserver
                                     string prt = Console.ReadLine();
                                     Console.WriteLine("Folder: (\"./web\")");
                                     string fld = Console.ReadLine();
-                                    RunningServers.Add(new WebServer(Int32.Parse(prt), fld, true));
+                                    new WebServer(Int32.Parse(prt), fld, true);
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e)
@@ -239,13 +234,15 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < RunningServers.Count; i++)
+                                    
+                                    using (WebServer.RunningServerMutex.Lock())
                                     {
-                                        if (RunningServers[i].port == Int32.Parse(id))
+                                        for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                         {
-                                            lock (RunningServers[i].cache)
+                                            if (WebServer.RunningServers[i].port == Int32.Parse(id))
                                             {
-                                                RunningServers[i].cache.Clear();
+                                                using (WebServer.RunningServers[i].CacheMutex.Lock())
+                                                    WebServer.RunningServers[i].cache.Clear();
                                                 Console.WriteLine("Done!");
                                                 break;
                                             }
@@ -268,13 +265,17 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < RunningServers.Count; i++)
+
+                                    using (WebServer.RunningServerMutex.Lock())
                                     {
-                                        if (RunningServers[i].port == Int32.Parse(id))
+                                        for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                         {
-                                            RunningServers[i].useCache = true;
-                                            Console.WriteLine("Done!");
-                                            break;
+                                            if (WebServer.RunningServers[i].port == Int32.Parse(id))
+                                            {
+                                                WebServer.RunningServers[i].useCache = true;
+                                                Console.WriteLine("Done!");
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -294,14 +295,22 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < RunningServers.Count; i++)
+
+                                    using (WebServer.RunningServerMutex.Lock())
                                     {
-                                        if (RunningServers[i].port == Int32.Parse(id))
+                                        for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                         {
-                                            RunningServers[i].useCache = false;
-                                            RunningServers[i].cache.Clear();
-                                            Console.WriteLine("Done!");
-                                            break;
+                                            if (WebServer.RunningServers[i].port == Int32.Parse(id))
+                                            {
+                                                using (WebServer.RunningServers[i].CacheMutex.Lock())
+                                                {
+                                                    WebServer.RunningServers[i].useCache = false;
+                                                    WebServer.RunningServers[i].cache.Clear();
+                                                }
+
+                                                Console.WriteLine("Done!");
+                                                break;
+                                            }
                                         }
                                     }
                                 }

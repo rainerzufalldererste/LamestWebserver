@@ -20,6 +20,9 @@ namespace LamestWebserver
 {
     public class WebServer
     {
+        internal static List<WebServer> RunningServers = new List<WebServer>();
+        internal static UsableMutexSlim RunningServerMutex = new UsableMutexSlim();
+
         [ThreadStatic] public static string CurrentClientRemoteEndpoint = "<?>";
 
         TcpListener tcpListener;
@@ -85,37 +88,34 @@ namespace LamestWebserver
         private Mutex networkStreamsMutex = new Mutex();
         private AVLTree<int, NetworkStream> networkStreams = new AVLTree<int, NetworkStream>();
 
-        private bool csharp_bridge = true;
+        private bool acceptPages = true;
         internal bool useCache = true;
 
         Mutex cleanMutex = new Mutex();
         private bool silent;
 
         private FileSystemWatcher fileSystemWatcher = null;
-        private UsableMutex cacheMutex = new UsableMutex();
+        internal UsableMutex CacheMutex = new UsableMutex();
 
         private readonly byte[] crlf = new UTF8Encoding().GetBytes("\r\n");
         private Task<TcpClient> tcpRcvTask;
 
         private Random random = new Random();
 
-        public WebServer(int port, string folder, bool silent = false) : this(port, folder, true, silent)
+        public WebServer(int port, string folder) : this(port, folder, true, true)
         {
         }
 
-        internal WebServer(int port, string folder, bool cs_bridge, bool silent = false)
+        internal WebServer(int port, string folder, bool acceptPages, bool silent = false)
         {
             if (!TcpPortIsUnused(port))
             {
-                if (!silent)
-                    Console.WriteLine("Failed to start the WebServer. The tcp port " + port + " is currently used by another application.");
-
-                throw new InvalidOperationException("The tcp port " + port + " is currently used.");
+                throw new InvalidOperationException("The tcp port " + port + " is currently used by another application.");
             }
 
-            this.csharp_bridge = cs_bridge;
+            this.acceptPages = acceptPages;
 
-            if (cs_bridge)
+            if (acceptPages)
             {
                 Master.AddFunctionEvent += AddFunction;
                 Master.RemoveFunctionEvent += RemoveFunction;
@@ -136,15 +136,15 @@ namespace LamestWebserver
             this.folder = folder;
 
             if (useCache)
-                setupFileSystemWatcher();
+                SetupFileSystemWatcher();
 
-            if (!silent)
-                Console.WriteLine("WebServer started on port " + port + ".");
+            using (RunningServerMutex.Lock())
+                RunningServers.Add(this);
         }
 
         ~WebServer()
         {
-            if (csharp_bridge)
+            if (acceptPages)
             {
                 Master.AddFunctionEvent -= AddFunction;
                 Master.RemoveFunctionEvent -= RemoveFunction;
@@ -157,14 +157,14 @@ namespace LamestWebserver
 
             try
             {
-                StopServer();
+                Stop();
             }
             catch (Exception)
             {
             }
         }
 
-        public void StopServer()
+        public void Stop()
         {
             running = false;
 
@@ -172,20 +172,16 @@ namespace LamestWebserver
             {
                 tcpListener.Stop();
             }
-            catch (Exception e)
+            catch
             {
-                if (!silent)
-                    Console.WriteLine(port + ": " + e.Message);
             }
 
             try
             {
                 Master.ForceQuitThread(mThread);
             }
-            catch (Exception e)
+            catch
             {
-                if (!silent)
-                    Console.WriteLine(port + ": " + e.Message);
             }
 
             try
@@ -195,9 +191,6 @@ namespace LamestWebserver
             catch
             {
             }
-
-            if (!silent)
-                Console.WriteLine("Main Thread stopped! - port: " + port + " - folder: " + folder);
 
             networkStreamsMutex.WaitOne();
 
@@ -216,16 +209,18 @@ namespace LamestWebserver
                 {
                     Master.ForceQuitThread(threads[0]);
                 }
-                catch (Exception e)
+                catch
                 {
-                    if (!silent)
-                        Console.WriteLine(port + ": " + e.Message);
                 }
-                threads.RemoveAt(0);
 
-                if (!silent)
-                    Console.WriteLine("Thread stopped! (" + (i - threads.Count) + "/" + i + ") - port: " + port + " - folder: " + folder);
+                threads.RemoveAt(0);
             }
+
+            using (RunningServerMutex.Lock())
+                RunningServers.Remove(this);
+            
+            if (RunningServers.Count == 0)
+                Master.StopServers();
         }
 
         public int GetThreadCount()
@@ -853,7 +848,7 @@ namespace LamestWebserver
                     fileName += "index.html";
                     extention = "html";
 
-                    if (useCache && getFromCache(fileName, out file))
+                    if (useCache && GetFromCache(fileName, out file))
                     {
                         lastModified = file.LastModified;
 
@@ -861,7 +856,7 @@ namespace LamestWebserver
                         {
                             contents = file.Contents;
 
-                            extention = getExtention(fileName);
+                            extention = GetExtention(fileName);
                         }
                         else
                         {
@@ -877,7 +872,7 @@ namespace LamestWebserver
 
                         if (useCache)
                         {
-                            using (cacheMutex.Lock())
+                            using (CacheMutex.Lock())
                             {
                                 cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, false));
                             }
@@ -888,16 +883,16 @@ namespace LamestWebserver
                         return null;
                     }
                 }
-                else if (useCache && getFromCache(fileName, out file))
+                else if (useCache && GetFromCache(fileName, out file))
                 {
-                    extention = getExtention(fileName);
+                    extention = GetExtention(fileName);
                     lastModified = file.LastModified;
 
                     if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value < lastModified)
                     {
                         contents = file.Contents;
 
-                        extention = getExtention(fileName);
+                        extention = GetExtention(fileName);
                     }
                     else
                     {
@@ -908,14 +903,14 @@ namespace LamestWebserver
                 }
                 else if (File.Exists(folder + fileName))
                 {
-                    extention = getExtention(fileName);
-                    bool isBinary = fileIsBinary(fileName, extention);
+                    extention = GetExtention(fileName);
+                    bool isBinary = FileIsBinary(fileName, extention);
                     contents = ReadFile(fileName, enc, isBinary);
                     lastModified = File.GetLastWriteTimeUtc(folder + fileName);
 
                     if (useCache)
                     {
-                        using (cacheMutex.Lock())
+                        using (CacheMutex.Lock())
                         {
                             cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, isBinary));
                         }
@@ -934,7 +929,7 @@ namespace LamestWebserver
                 }
                 else
                 {
-                    return new HttpPacket() {ContentType = getMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
+                    return new HttpPacket() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
                 }
             }
             catch (Exception e)
@@ -955,7 +950,7 @@ namespace LamestWebserver
             }
         }
 
-        internal bool fileIsBinary(string fileName, string extention)
+        internal bool FileIsBinary(string fileName, string extention)
         {
             if (fileName.Length < 2)
                 return true;
@@ -979,7 +974,7 @@ namespace LamestWebserver
             }
         }
 
-        private string getExtention(string fileName)
+        private string GetExtention(string fileName)
         {
             if (fileName.Length < 2)
                 return "";
@@ -996,9 +991,9 @@ namespace LamestWebserver
             return "";
         }
 
-        internal bool getFromCache(string name, out PreloadedFile file)
+        internal bool GetFromCache(string name, out PreloadedFile file)
         {
-            using (cacheMutex.Lock())
+            using (CacheMutex.Lock())
             {
                 if (cache.TryGetValue(name, out file))
                 {
@@ -1012,7 +1007,7 @@ namespace LamestWebserver
             return true;
         }
 
-        internal string getMimeType(string extention)
+        internal string GetMimeType(string extention)
         {
             switch (extention)
             {
@@ -1103,21 +1098,21 @@ namespace LamestWebserver
             }
         }
 
-        internal bool cacheHas(string name)
+        internal bool CacheHas(string name)
         {
-            using (cacheMutex.Lock())
+            using (CacheMutex.Lock())
             {
                 return cache.ContainsKey(name);
             }
         }
 
-        internal void setupFileSystemWatcher()
+        internal void SetupFileSystemWatcher()
         {
             fileSystemWatcher = new FileSystemWatcher(folder);
 
             fileSystemWatcher.Renamed += (object sender, RenamedEventArgs e) =>
             {
-                using (cacheMutex.Lock())
+                using (CacheMutex.Lock())
                 {
                     PreloadedFile file, oldfile = cache["/" + e.OldName];
 
@@ -1145,7 +1140,7 @@ namespace LamestWebserver
 
             fileSystemWatcher.Deleted += (object sender, FileSystemEventArgs e) =>
             {
-                using (cacheMutex.Lock())
+                using (CacheMutex.Lock())
                 {
                     cache.Remove("/" + e.Name);
                 }
@@ -1155,7 +1150,7 @@ namespace LamestWebserver
 
             fileSystemWatcher.Changed += (object sender, FileSystemEventArgs e) =>
             {
-                using (cacheMutex.Lock())
+                using (CacheMutex.Lock())
                 {
                     PreloadedFile file = cache["/" + e.Name];
 
