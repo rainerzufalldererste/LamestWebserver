@@ -9,7 +9,6 @@ using System.Threading;
 using System.Net.Sockets;
 using System.Drawing;
 using System.IO.Compression;
-using LamestWebserver.ScriptHook;
 using LamestWebserver.Collections;
 using System.IO;
 using System.Windows.Forms;
@@ -612,45 +611,6 @@ namespace LamestWebserver
                                 else
                                     ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl +
                                                              "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
-                            }
-                            else if (htp.RequestUrl.ToLower().EndsWith(".hcs") && File.Exists((folder != "/" ? folder : "") + "/" + htp.RequestUrl))
-                            {
-                                string result = "";
-                                Exception error = null;
-
-                                try
-                                {
-                                    result = Hook.resolveScriptFromFile(folder + htp.RequestUrl,
-                                        new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder, htp.RequestUrl, msg_, client,
-                                            nws, (ushort) this.port));
-                                }
-                                catch (Exception e)
-                                {
-                                    result = Master.GetErrorMsg("Exception in C# Script for '"
-                                                                + htp.RequestUrl + "'", "<b>An Error occured while processing the output</b><br>"
-                                                                                            + e.ToString().Replace("\r\n", "<br>")
-#if DEBUG
-                                                                                            +
-                                                                                            "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                                                            + msg_.Replace("\r\n", "<br>")
-#endif
-                                                                                            + "</div></p>");
-
-                                    error = e;
-                                }
-
-                                HttpPacket htp_ = new HttpPacket {BinaryData = enc.GetBytes(result)};
-                                buffer = htp_.GetPackage(enc);
-                                nws.Write(buffer, 0, buffer.Length);
-
-                                buffer = null;
-                                result = null;
-
-                                if (error == null)
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# Script)");
-                                else
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# Script)\nThe URL crashed with the following Exception:\n" +
-                                                             error);
                             }
                             else
                             {
