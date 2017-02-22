@@ -41,7 +41,7 @@ namespace Demos
 
                 if (input == "lws")
                 {
-                    ServerHandler.StartHandler(args);
+                    ServerHandler.StartHandler();
                     break;
                 }
             }

@@ -136,7 +136,7 @@ namespace lwshostsvc
             }
 
             new Thread(() => {
-                ServerHandler.StartHandler(new string[0]);
+                ServerHandler.StartHandler();
                 hosts.ForEach(h => h.Stop());
             }).Start();
 

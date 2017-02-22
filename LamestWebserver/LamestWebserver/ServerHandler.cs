@@ -435,7 +435,7 @@ namespace LamestWebserver
                     {
                         var frame = stackTrace.GetFrame(i);
 
-                        if (frame.GetMethod() == null || frame.HasNativeImage() || frame.GetMethod().DeclaringType.Namespace.Contains("LamestWebserver"))
+                        if (frame.GetMethod() == null || frame.GetMethod().DeclaringType.Namespace.Contains("LamestWebserver"))
                         {
                             continue;
                         }
