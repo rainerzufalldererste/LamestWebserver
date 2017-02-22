@@ -10,40 +10,65 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.ProxyServices
 {
+    /// <summary>
+    /// The interface for a Transparent Proxy
+    /// </summary>
     public interface ITransparentProxy
     {
+        /// <summary>
+        /// The port at which the proxy will be available at
+        /// </summary>
         int ProxyServerPort { get; }
 
+        /// <summary>
+        /// the ipendpoint of the replicated service
+        /// </summary>
         IPEndPoint Gateway { get; }
 
+        /// <summary>
+        /// Stops the transparent proxy
+        /// </summary>
         void Stop();
     }
 
+    /// <summary>
+    /// A transparent proxy to redistribute other services locally or under different ports
+    /// </summary>
     public class TransparentProxy : ITransparentProxy
     {
-        private byte[] _responseIfNotAvailable;
-        private int _timeout;
-        private readonly bool _loggingEnabled = false;
+        private readonly byte[] _responseIfNotAvailable;
+        private readonly int _timeout;
         private bool _active = true;
-        private TcpListener listener;
-        private int _gatewayTimeout;
+        private TcpListener _listener;
+        private readonly int _gatewayTimeout;
 
+        /// <inheritdoc />
         public int ProxyServerPort { get; }
 
+        /// <inheritdoc />
         public IPEndPoint Gateway { get; }
 
+        /// <inheritdoc />
         public void Stop()
         {
-
+            _active = false;
         }
 
-        public TransparentProxy(IPEndPoint gateway, int proxyServerPort, byte[] response = null, bool loggingEnabled = false, int timeout = 15000, int gatewayTimeout = 250)
+        /// <summary>
+        /// Constructs a new TranspartentProxy.
+        /// </summary>
+        /// <param name="gateway">the IPEndpoint of the replicated service</param>
+        /// <param name="proxyServerPort">the port at which this service will be available at</param>
+        /// <param name="response">the default response if the service is not available</param>
+        /// <param name="timeout">the timeout at which to drop the connection to a client</param>
+        /// <param name="gatewayTimeout">the timeout at which to expect the replicated service to be not available</param>
+        /// <exception cref="InvalidOperationException">Throws an exception if the port is currently blocked</exception>
+        public TransparentProxy(IPEndPoint gateway, int proxyServerPort, byte[] response = null, int timeout = 15000, int gatewayTimeout = 250)
         {
             Gateway = gateway;
             ProxyServerPort = proxyServerPort;
             _responseIfNotAvailable = response;
             _timeout = timeout;
-            _loggingEnabled = loggingEnabled;
             _gatewayTimeout = gatewayTimeout;
 
             if (!WebServer.TcpPortIsUnused(proxyServerPort))
@@ -61,15 +86,15 @@ namespace LamestWebserver.ProxyServices
             {
                 try
                 {
-                    listener = new TcpListener(ProxyServerPort);
-                    listener.Start();
+                    _listener = new TcpListener(ProxyServerPort);
+                    _listener.Start();
                     failed = 0;
 
                     while (_active)
                     {
                         try
                         {
-                            var task = listener.AcceptTcpClientAsync();
+                            var task = _listener.AcceptTcpClientAsync();
                             Thread t = new Thread(HandleClient);
                             task.Wait();
                             t.Start(task.Result);

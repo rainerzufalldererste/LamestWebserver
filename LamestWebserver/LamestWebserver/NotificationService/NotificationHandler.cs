@@ -29,28 +29,44 @@ namespace LamestWebserver.NotificationService
         void Notify(Notification notification);
     }
 
-    public interface INotificationResponse
-    {
-        string URL { get; }
-
-        Notification GetResponse(SessionData sessionData, string Request);
-    }
-
+    /// <summary>
+    /// A Notification for Communicating message based via WebSockets
+    /// </summary>
     public abstract class Notification
     {
+        /// <summary>
+        /// The type of the current notification
+        /// </summary>
         public readonly NotificationType NotificationType;
+
+        /// <summary>
+        /// shall the client / server not reply to this notification?
+        /// </summary>
         protected bool NoReply = false;
 
+        /// <summary>
+        /// Constructs a new Notification of the given type
+        /// </summary>
+        /// <param name="type"></param>
         protected Notification(NotificationType type)
         {
             NotificationType = type;
         }
 
+        /// <summary>
+        /// Returns the current notification as string (json)
+        /// </summary>
+        /// <returns>the current notification as string (json)</returns>
         public override string ToString()
         {
             return ToString(new KeyValuePair<string, string>[0]);
         }
 
+        /// <summary>
+        /// Returns the current notification as string (json)
+        /// </summary>
+        /// <param name="args">the arguments listed in the message</param>
+        /// <returns>the current notification as string (json)</returns>
         public string ToString(params KeyValuePair<string, string>[] args)
         {
             JsonNotificationPacket packet = new JsonNotificationPacket(NotificationType, args);
@@ -61,169 +77,272 @@ namespace LamestWebserver.NotificationService
             return packet.Serialize();
         }
 
+        /// <summary>
+        /// Retrieves the current notification
+        /// </summary>
+        /// <returns>Returns the notification as string</returns>
         public abstract string GetNotification();
 
+        /// <summary>
+        /// Creates a notification to execute a javascript piece of code in the client
+        /// </summary>
+        /// <param name="script">the script to execute</param>
+        /// <returns>the specified notification</returns>
         public static Notification ExecuteScript(string script)
         {
             return new ExecuteScriptNotification(script);
         }
 
+        /// <summary>
+        /// Creates a notification to execute a javascript piece of code in the client
+        /// </summary>
+        /// <param name="piece">the script to execute</param>
+        /// <returns>the specified notification</returns>
         public static Notification ExecuteScript(IJSPiece piece)
         {
-            return new ExecuteScriptNotification(piece.getCode(SessionData.CurrentSession));
+            return new ExecuteScriptNotification(piece.getCode(AbstractSessionIdentificator.CurrentSession));
         }
 
+        /// <summary>
+        /// Creates a notification to replace a given div element identified by an id with the specific new content
+        /// </summary>
+        /// <param name="divId">the id of the div element</param>
+        /// <param name="content">the content to replace it's contents with</param>
+        /// <returns>the specified notification</returns>
         public static Notification ReplaceDivWithContent(string divId, IJSValue content)
         {
             return
                 new ExecuteScriptNotification(
                     JSElement.getByID(divId)
                         .InnerHTML.Set(content)
-                        .getCode(SessionData.CurrentSession, CallingContext.Inner));
+                        .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
 
+        /// <summary>
+        /// Creates a notification to replace a given div element identified by an id with the specific new content
+        /// </summary>
+        /// <param name="divId">the id of the div element</param>
+        /// <param name="content">the content to replace it's contents with</param>
+        /// <returns>the specified notification</returns>
         public static Notification ReplaceDivWithContent(string divId, string content)
         {
             return ReplaceDivWithContent(divId, new JSValue(content.Base64Encode()));
         }
 
+        /// <summary>
+        /// Creates a notification to replace the documents body with specific new content
+        /// </summary>
+        /// <param name="content">the content to replace the body with</param>
+        /// <returns>the specified notification</returns>
         public static Notification ReplaceBodyWithContent(IJSValue content)
         {
             return
                 new ExecuteScriptNotification(
                     JSElement.Body
                         .InnerHTML.Set(content)
-                        .getCode(SessionData.CurrentSession, CallingContext.Inner));
+                        .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
 
+        /// <summary>
+        /// Creates a notification to replace the documents body with specific new content
+        /// </summary>
+        /// <param name="content">the content to replace the body with</param>
+        /// <returns>the specified notification</returns>
         public static Notification ReplaceBodyWithContent(string content)
         {
             return ReplaceBodyWithContent(new JSValue(content.Base64Encode()));
         }
 
-        public static Notification AddToDivContent(string divId, IJSValue content)
+        /// <summary>
+        /// Creates a notification to add the given content to a specified div
+        /// </summary>
+        /// <param name="divId">the div to add content to</param>
+        /// <param name="content">the content to add</param>
+        /// <returns>the specified notification</returns>
+        public static Notification AddContentToDiv(string divId, IJSValue content)
         {
             return new ExecuteScriptNotification(
                 JSElement.getByID(divId).InnerHTML.Set(
                     JSElement.getByID(divId).InnerHTML + content
-                ).getCode(SessionData.CurrentSession, CallingContext.Inner));
+                ).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
-
-        public static Notification AddToDivContent(string divId, string content)
+        
+        /// <summary>
+        /// Creates a notification to add the given content to a specified div
+        /// </summary>
+        /// <param name="divId">the div to add content to</param>
+        /// <param name="content">the content to add</param>
+        /// <returns>the specified notification</returns>
+        public static Notification AddContentToDiv(string divId, string content)
         {
-            return AddToDivContent(divId, new JSValue(content.Base64Encode()));
+            return AddContentToDiv(divId, new JSValue(content.Base64Encode()));
         }
-
+        
+        /// <summary>
+        /// Creates a notification to reload the current page
+        /// </summary>
+        /// <returns>the specified notification</returns>
         public static Notification ReloadPage()
         {
             return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(JSValue.CurrentBrowserURL)
-                .getCode(SessionData.CurrentSession, CallingContext.Inner));
+                .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
 
+        /// <summary>
+        /// Creates a notification to redirect the client to a new page
+        /// </summary>
+        /// <param name="newPageUrl">the url of the new page</param>
+        /// <returns>the specified notification</returns>
         public static Notification Redirect(IJSValue newPageUrl)
         {
             return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(newPageUrl)
-                .getCode(SessionData.CurrentSession, CallingContext.Inner));
+                .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
 
+        /// <summary>
+        /// Creates a notification to redirect the client to a new page
+        /// </summary>
+        /// <param name="newPageUrl">the url of the new page</param>
+        /// <returns>the specified notification</returns>
         public static Notification Redirect(string newPageUrl)
         {
             return Redirect((JSStringValue) newPageUrl);
         }
 
+        /// <summary>
+        /// Creates a notification to tell that something went wrong
+        /// </summary>
+        /// <returns>the specified notification</returns>
         internal static Notification Invalid()
         {
             return new InvalidNotification();
         }
 
+        /// <summary>
+        /// Creates a notification to tell that something went wrong
+        /// </summary>
+        /// <param name="text">the description of what went wrong</param>
+        /// <returns>the specified notification</returns>
         internal static Notification Invalid(string text)
         {
             return new InvalidNotificationInfo(text);
         }
 
-        public static string Log(Notification notification)
+        /// <summary>
+        /// Parses a Notification to string for logging purposes
+        /// </summary>
+        /// <param name="notification">the notification to parse</param>
+        /// <returns>the notification as string</returns>
+        public static string LogNotification(Notification notification)
         {
             string ret = notification.NotificationType.ToString();
 
             if (notification is ExecuteScriptNotification)
-                ret += "\n\t" + ((ExecuteScriptNotification) notification).script;
+                ret += "\n\t" + ((ExecuteScriptNotification) notification).Script;
 
             return ret;
         }
     }
 
+    /// <summary>
+    /// A Notication to Keep the Connection alive
+    /// </summary>
     public class KeepAliveNotification : Notification
     {
-        public KeepAliveNotification() : base(NotificationType.KeepAlive)
+        internal KeepAliveNotification() : base(NotificationType.KeepAlive)
         {
         }
 
+        /// <inheritdoc />
         public override string GetNotification()
         {
             return base.ToString();
         }
     }
 
+    /// <summary>
+    /// A Notication to signalize invalid behaviour (please resend last msg)
+    /// </summary>
     public class InvalidNotification : Notification
     {
-        public InvalidNotification() : base(NotificationType.Invalid)
+        internal InvalidNotification() : base(NotificationType.Invalid)
         {
         }
 
+        /// <inheritdoc />
         public override string GetNotification()
         {
             return base.ToString();
         }
     }
 
+    /// <summary>
+    /// A Notication to signalize invalid behaviour with a description text (please resend last msg)
+    /// </summary>
     public class InvalidNotificationInfo : Notification
     {
         private readonly string _text;
-        public InvalidNotificationInfo(string text) : base(NotificationType.Invalid)
+
+        internal InvalidNotificationInfo(string text) : base(NotificationType.Invalid)
         {
             _text = text;
         }
 
+        /// <inheritdoc />
         public override string GetNotification()
         {
             return base.ToString(new KeyValuePair<string, string>("info", _text));
         }
     }
 
+    /// <summary>
+    /// A Notication to execute a given javascript on the client
+    /// </summary>
     public class ExecuteScriptNotification : Notification
     {
-        public string script { get; private set; }
+        internal string Script { get; private set; }
 
-        public ExecuteScriptNotification(string script) : base(NotificationType.ExecuteScript)
+        internal ExecuteScriptNotification(string script) : base(NotificationType.ExecuteScript)
         {
-            this.script = script;
+            this.Script = script;
         }
 
+        /// <inheritdoc />
         public override string GetNotification()
         {
-            return base.ToString(new KeyValuePair<string, string>(JsonNotificationPacket.Script_string, script));
+            return base.ToString(new KeyValuePair<string, string>(JsonNotificationPacket.Script_string, Script));
         }
     }
 
+    /// <summary>
+    /// The type of the Notification
+    /// </summary>
     public enum NotificationType : byte
     {
+        /// <summary>
+        /// Signalize that the last transfer was successful
+        /// </summary>
         Acknowledge,
-        KeepAlive,
-        Message,
-        Invalid,
-        ExecuteScript,
-        Redirect,
-        ReloadPage,
-        ReplacePageContent,
-        ReplacePageBody,
-        ReplaceDivContent,
-        ExpandPageBodyWith,
-        ExpandDivContentWith
-    }
 
-    public enum NotificationOption : byte
-    {
-        NoReply
+        /// <summary>
+        /// Kepps the connection open
+        /// </summary>
+        KeepAlive,
+
+        /// <summary>
+        /// Transfers a message from the client to the server
+        /// </summary>
+        Message,
+
+        /// <summary>
+        /// Transfers the information that something went wrong in the last message
+        /// </summary>
+        Invalid,
+
+        /// <summary>
+        /// Executes a javascript in the client
+        /// </summary>
+        ExecuteScript
     }
 
     /// <summary>
@@ -346,8 +465,6 @@ namespace LamestWebserver.NotificationService
         public JSElement ConnectionElement => new JSPlainText("<script type='text/javascript'>" +
                                 NotificationHelper.JsonNotificationCode(AbstractSessionIdentificator.CurrentSession, URL, ID, _externalAddress, TraceMessagesClient) + "</script>");
 
-        private JSElement _jselement = null;
-
         /// <summary>
         /// The method which handles the sending of keepalive packages to the clients whenever the maximum time is reached.
         /// </summary>
@@ -415,7 +532,7 @@ namespace LamestWebserver.NotificationService
             try
             {
                 if(TraceMessagesClient && response.NotificationType != NotificationType.KeepAlive && response.NotificationType != NotificationType.Acknowledge)
-                    ServerHandler.LogMessage("WebSocket: Server << Client: " + NotificationResponse.Log(response));
+                    ServerHandler.LogMessage("WebSocket: Server << Client: " + NotificationResponse.LogNotificatoin(response));
 
                 if (response.IsMessage || (response.NotificationType == NotificationType.KeepAlive && NotifyForKeepalives))
                     OnNotification(response);
@@ -485,34 +602,62 @@ namespace LamestWebserver.NotificationService
         }
     }
 
+    /// <summary>
+    /// The Response to a Notification from a client
+    /// </summary>
     public class NotificationResponse
     {
+        /// <summary>
+        /// Does the Reponse from the client contain a message?
+        /// </summary>
         public bool IsMessage = false;
-        public string Message = null;
-        public WebSocketHandlerProxy proxy;
-        internal NotificationType NotificationType;
-        private Dictionary<string, string> Values = new Dictionary<string, string>();
-        private NotificationHandler notificationHandler;
-        private bool noreply = false;
 
+        /// <summary>
+        /// The message sent by the client (if any)
+        /// </summary>
+        public string Message = null;
+
+        /// <summary>
+        /// The Hanlder for the current connection
+        /// </summary>
+        public WebSocketHandlerProxy HandlerProxy;
+
+        internal NotificationType NotificationType;
+        private Dictionary<string, string> _values = new Dictionary<string, string>();
+        private readonly NotificationHandler _notificationHandler;
+        private bool _noreply = false;
+
+        /// <summary>
+        /// The current SessionData
+        /// </summary>
         public AbstractSessionIdentificator SessionData { get; private set; }
 
         internal NotificationResponse(string input, WebSocketHandlerProxy proxy, string URL, NotificationHandler notificationHanlder)
         {
-            this.proxy = proxy;
-            this.notificationHandler = notificationHanlder;
+            this.HandlerProxy = proxy;
+            this._notificationHandler = notificationHanlder;
 
             ParseNotificationResponse(input, this, URL);
         }
 
+        /// <summary>
+        /// Reply directly to the client who sent this message.
+        /// </summary>
+        /// <param name="notification">the Notification to send to the client</param>
         public void Reply(Notification notification)
         {
-            if(notificationHandler.TraceMessagesClient && notification.NotificationType != NotificationType.KeepAlive)
-                ServerHandler.LogMessage("WebSocket: Server >> Client: " + Notification.Log(notification));
+            if(_notificationHandler.TraceMessagesClient && notification.NotificationType != NotificationType.KeepAlive)
+                ServerHandler.LogMessage("WebSocket: Server >> Client: " + Notification.LogNotification(notification));
 
-            proxy.Respond(notification.GetNotification());
+            HandlerProxy.Respond(notification.GetNotification());
         }
 
+        /// <summary>
+        /// Parses a Notification response from string
+        /// </summary>
+        /// <param name="input">the response string</param>
+        /// <param name="response">the current response</param>
+        /// <param name="URL">the url of the request</param>
         public static void ParseNotificationResponse(string input, NotificationResponse response, string URL)
         {
             if (input.Length <= 0)
@@ -535,13 +680,13 @@ namespace LamestWebserver.NotificationService
                 return;
             }
 
-            response.Values = packet.Values;
+            response._values = packet.Values;
             response.NotificationType = packet.NotificationType;
-            response.noreply = packet.noreply;
+            response._noreply = packet.noreply;
 
             string ssid = packet.SSID;
 
-            response.SessionData = new SessionIdentificatorSlim(URL, response.proxy.Port, ssid);
+            response.SessionData = new SessionIdentificatorSlim(URL, response.HandlerProxy.Port, ssid);
 
             switch(response.NotificationType)
             {
@@ -556,18 +701,28 @@ namespace LamestWebserver.NotificationService
             }
         }
 
+        /// <summary>
+        /// Retrieves a value from the values the client sent.
+        /// </summary>
+        /// <param name="key">the key of the value</param>
+        /// <returns>the value</returns>
         public string GetValue(string key)
         {
-            return Values.ContainsKey(key) ? Values[key] : null;
+            return _values.ContainsKey(key) ? _values[key] : null;
         }
 
-        public static string Log(NotificationResponse response)
+        /// <summary>
+        /// Parses the given notificationResponse to string to be used for logging purposes
+        /// </summary>
+        /// <param name="response">the notificationResponse</param>
+        /// <returns>the notificationResponse as string</returns>
+        public static string LogNotificatoin(NotificationResponse response)
         {
             string ret = response.Message;
 
-            if (response.Values.Count > 2)
+            if (response._values.Count > 2)
             {
-                foreach (var value in response.Values)
+                foreach (var value in response._values)
                 {
                     if (value.Key != "ssid" && value.Key != "type")
                         ret += $"\n\t'{value.Key}' : '{value.Value}'";

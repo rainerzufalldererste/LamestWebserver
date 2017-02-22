@@ -130,6 +130,9 @@ namespace LamestWebserver.Security
             }
         }
 
+        /// <summary>
+        /// Reexecutes the current process with administrative rights and exits the current one if you don't already have these
+        /// </summary>
         public static void ElevateRights()
         {
             if (!IsRunAsAdmin || !IsProcessElevated)

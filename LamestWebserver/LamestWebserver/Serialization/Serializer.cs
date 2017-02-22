@@ -133,7 +133,12 @@ namespace LamestWebserver.Serialization
                 Directory.CreateDirectory(Path.GetDirectoryName(filename));
             }
 
-            using (FileStream fs = new FileStream(filename, FileMode.Create))
+            if (File.Exists(filename))
+            {
+                File.Delete(filename);
+            }
+
+            using (FileStream fs = File.Create(filename))
             {
                 BinaryFormatter formatter = new BinaryFormatter();
 

@@ -7,33 +7,6 @@ namespace LamestWebserver.NotificationService
 {
     internal static class NotificationHelper
     {
-        [Obsolete]
-        internal static string NotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID, IPAddress address)
-        {
-            destinationURL = destinationURL.TrimStart('/', ' ');
-
-            string sendMsgMethodName = GetFunctionName(NotificationHandlerID);
-
-            string addr = address?.ToString();
-
-            if (addr != null)
-                addr += ":" + sessionData.Port;
-
-            return "var conn = new WebSocket('ws://" + (addr ?? sessionData.ServerEndPoint.ToString()) + "/" + destinationURL + "');" +
-                    "function " + sendMsgMethodName + " (type, msg){conn.send(type + \"\\n\\n\" + msg)};" +
-                    "function " + sendMsgMethodName + " (msg){conn.send(\"" + NotificationType.Message + "\\\n\\n\" + msg)};" +
-                    "conn.onmessage = function(event) { var answer = true; if(event.data.includes(\"\\n\\r\") && event.data.split(\"\\n\\r\", 2)[1] == \"" + NotificationOption.NoReply + "\") answer = false; " +
-#if DEBUG
-                    "console.log(event.data);" +
-#endif
-
-                    "var cmd = event.data.split(\"\\n\", 1)[0]; switch(cmd) { case \"" + NotificationType.KeepAlive + "\": if(answer) conn.send(\"" + NotificationType.KeepAlive + "\"); break;" +
-                    "case \"" + NotificationType.ExecuteScript + "\": {var dat = event.data.split(\"\\n\\n\", 2)[1]; if(dat) eval(window.atob(dat));} if(answer) conn.send(\"" + NotificationType.Acknowledge + "\\r\\n\"); break;" +
-                    "case \"" + NotificationType.ReplaceDivContent + "\": {var dat = event.data.split(\"\\n\\n\", 2)[1]; var dat0 = event.data.split(\"\\n\\n\", 2)[2]; if(dat && dat0) { document.getElementByID(dat).innerHTML = dat0; } else { conn.send(\"" + NotificationType.Invalid + "\") }} if(answer) conn.send(\"" + NotificationType.Acknowledge + "\\r\\n\"); break;" +
-                    " } };" +
-                    "conn.onopen = function (event) { conn.send(\"" + NotificationType.KeepAlive + "\") };";
-        }
-
         internal static string JsonNotificationCode(AbstractSessionIdentificator sessionData, string destinationURL, string NotificationHandlerID, IPAddress address, bool trace = false, int timeKeepaliveClientside = 8000)
         {
             destinationURL = destinationURL.TrimStart('/', ' ');
@@ -52,7 +25,7 @@ namespace LamestWebserver.NotificationService
                    (trace ? "console.log(\"+> Trying to open new Connection... (from Client)\");" : "") + 
 #endif
 
-                   " try{ conn = new WebSocket('ws://" + (addr ?? (sessionData is SessionData ? (sessionData as SessionData).ServerEndPoint.ToString() : "SERVER_HOST_NOT_DEFINDED")) + "/" + destinationURL + 
+                   " try{ conn = new WebSocket('ws://" + (addr ?? ((sessionData as SessionData)?.ServerEndPoint.ToString() ?? "SERVER_HOST_NOT_DEFINDED")) + "/" + destinationURL + 
                    "'); conn.onmessage = function(event) { var rcv = window.JSON.parse(event.data); var answer = true; if(rcv." + JsonNotificationPacket.NoReply_string +
                    ") answer = false; " +
 #if DEBUG
