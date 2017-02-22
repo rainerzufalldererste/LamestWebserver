@@ -7,12 +7,18 @@ using LamestWebserver.Synchronization;
 
 namespace LamestWebserver
 {
+    /// <summary>
+    /// Provides functionality to overview running servers and logs
+    /// </summary>
     public class ServerHandler
     {
         internal static List<WebServer> RunningServers = new List<WebServer>();
         internal static bool Running = true;
 
-        public static void StartHandler(string[] args)
+        /// <summary>
+        /// Starts the IO-Loop for handling the server and showing logs.
+        /// </summary>
+        public static void StartHandler()
         {
             Console.WriteLine("\n▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█,                             \r\n▓▓▓  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▌\"\"▓▓▓▓▓▓▓▓▓▓▓▓▓▓██                             \r\n▓▓▓  ▐▓▓▓▓▓▓▌▀\"\"▀▀▓▓▓▀▀▀\"\"▀█▀\"\"▀▓▓▓█▀\"\"▀▀▓▓▓▀▀\"\"▀█▓▀`  ▀▀▓▓▀▀▀▓▓▀▀▀▓▓██                             \r\n▓▓▓  ▐▓▓▓▓▓▌,,&▄  ▐▓▓  ╓&   ╔&   ▓▌  Æ▄╕  ▓Γ .▄&,,█NL  N▄▓▓,,▄▓▓,,▐▓▓██                             \r\n▓▓▓  ▐▓▓▓▓▓▀      ▐▓▓  ▓▓▌  ▓▓▌  ▓        ▓▌,    `█▓▌  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓██                             \r\n▓▓▓  \"\"\"\"\"▐  ╙▀▀   █▓  ▓▓▌  ▓▓▌  ▓▌  ▀▀` ,▓  \"▀▀  ▄▓▌  ▀▀▓▓  ▓▓▓  ▐▓▓██                             \r\n▓▓▓ggggggg▄█&╦╦g█gg█▓gg▓▓█gg▓▓▌g▄▓▓█▄╦╦g▄▓▓▓▌g╦╦g█▓▓▓▄ggg▓▓gg▓▓▓gg▓▓▓██                             \r\n▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█▀█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█`\'▌ ▀▓▓▓▓▓▓▓▓▓█,\r\n▓▓  ▐▓▓▌  █▓▓  ▄▓▓▓▓▓▓▓▓▓▌  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█  █▓┐ ▐▓▓▓▓▓▓▓▓██\r\n▓▓▌  ▓█    ▓█  ▓▓▀    ╙█▓▌     `▀▓▓▀    \"█▓█┘    ▀▓▓▌ ╙  ╟  █▓▓▌  ▓▀`   \"█▓▓  `  ▓  █▓▓▓  █▓▓  ▐▓▓██\r\n▓▓▓  ▓  ▓  ▐  ╔▓  ≤▀▀L  ▓▌  █▓█  ▓█  ▀▀&g▄▓  Æ▀▀  ╘▓   ▄▓█L  ▓▌  █▌  ▀▀&  ▓▓  ╔▓█▓  ▓▓▓▓▌ ╟▓▓gg▓▓▓██\r\n▓▓▓▌   ╒▓█    █▓  ╔╦╦╦╦╦▓▌  ▓▓▓  ╟█▌⌂╥⌐, `▓  ╦╦╦╦╦╦▓  ▐▓▓▓▓  ╘  ▓▓   ╦╦╦╦╦▓▓  ▓▓▓▓  ▓▓▓▓▌ ▐▓▓▓▓▓▓▓██\r\n▓▓▓▓   █▓▓▌  ,▓▓▌  ``  ▄▓▌   `  ┌█▌  ``  ╔▓▌  ``  ▓▓  ▐▓▓▓▓▓   Æ▓▓█,  `  ╔▓▓  ▓▓▓▓, ▀▓▓█  ▓▓▓  ╟▓▓██\r\n▓▓▓▓███▓▓▓▓███▓▓▓▓█▓▓█▓▓▓████▓▓█▓▓▓▓█▓▓█▓▓▓▓▓█▓▓█▓▓▓███▓▓▓▓▓███▓▓▓▓▓▓▓▓█▓▓▓▓██▓▓▓▓▓┐ ╙▀ ,█▓▓▓▀ ▄▓▓██\r\n▓██████████████████████████████████████████████████████████████████████████████████████▄█████▌██████\r\n  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n");
             Console.WriteLine("LamestWebserver Version " + typeof(ServerHandler).Assembly.GetName().Version + "\n");
@@ -21,46 +27,6 @@ namespace LamestWebserver
 
             explicitLogging = true;
             outp.Start();
-
-
-            if (args.Length == 1)
-            {
-                if (args[0] == "-clean")
-                {
-                    Console.WriteLine("Clean Server Started.");
-                }
-                else
-                {
-                    try
-                    {
-                        RunningServers.Add(new WebServer(Int32.Parse(args[0]), "./web", true));
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine("Something went wrong.\n" + e.Message);
-                    }
-                    ;
-                }
-            }
-            else if (args.Length < 1)
-            {
-                for (int i = 0; i < args.Length; i += 2)
-                {
-                    try
-                    {
-                        RunningServers.Add(new WebServer(Int32.Parse(args[i]), args[i + 1], true));
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine("Something went wrong.\n" + e.Message);
-                    }
-                    ;
-                }
-            }
-
-            Console.WriteLine("Type Help to get help. Type exit to quit.\n");
-
-            int y = 0;
 
             while (true)
             {
