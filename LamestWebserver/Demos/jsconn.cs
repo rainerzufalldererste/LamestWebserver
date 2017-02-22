@@ -29,7 +29,7 @@ namespace Demos
         {
             PageBuilder _pb = new PageBuilder("jsconn");
 
-            _pb.AddElement(handler.JSElement);
+            _pb.AddElement(handler.ConnectionElement);
 
             JSInput input = new JSInput(HInput.EInputType.text, "text");
             input.onblur = handler.SendMessage(JSElement.getByID(input.ID).Value);

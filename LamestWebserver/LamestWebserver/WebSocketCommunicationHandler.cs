@@ -8,30 +8,32 @@ using LamestWebserver.Synchronization;
 
 namespace LamestWebserver
 {
+    /// <summary>
+    /// An Exception used to Tell the outer Thread that the Websocket controll has been taken over by another thread.
+    /// </summary>
     public class WebSocketManagementOvertakeFlagException : Exception
     {
     }
 
+    /// <summary>
+    /// A raw Communication Handler for WebSocket Connections, representing a response scheme for WebSocket Requests
+    /// </summary>
     public class WebSocketCommunicationHandler : IURLIdentifyable
     {
-        public static TimeSpan DefaultMaximumLastMessageTime = TimeSpan.FromSeconds(2d);
-        public readonly TimeSpan MaximumLastMessageTime = DefaultMaximumLastMessageTime;
 
+        /// <inheritdoc />
         public string URL { get; private set; }
 
-        public WebSocketCommunicationHandler(string URL, TimeSpan? maximumLastMessageTime = null)
+        public WebSocketCommunicationHandler(string URL)
         {
             this.URL = URL;
 
-            if(maximumLastMessageTime.HasValue)
-                MaximumLastMessageTime = maximumLastMessageTime.Value;
-
-            _OnMessage = message => callOnMessage(message, WebSocketHandlerProxy.currentProxy);
+            _OnMessage = message => CallOnMessage(message, WebSocketHandlerProxy.currentProxy);
             _OnClose = () => OnDisconnect(WebSocketHandlerProxy.currentProxy);
             _OnPing = data => WebSocketHandlerProxy.currentProxy.RespondPong(data);
             _OnPong = x => { };
 
-            register();
+            Register();
         }
 
         internal Action<string> _OnMessage { get; set; }
@@ -47,17 +49,17 @@ namespace LamestWebserver
 
         private Random random = new Random();
 
-        protected void register()
+        protected void Register()
         {
             Master.AddWebsocketHandler(this);
         }
 
-        protected void unregister()
+        protected void Unregister()
         {
             Master.RemoveWebsocketHandler(this.URL);
         }
 
-        internal void callOnMessage(string message, WebSocketHandlerProxy proxy)
+        internal void CallOnMessage(string message, WebSocketHandlerProxy proxy)
         {
             int tries = 0;
 
@@ -80,17 +82,17 @@ namespace LamestWebserver
             }
         }
 
-        internal void callOnResponded()
+        internal void CallOnResponded()
         {
             OnResponded();
         }
 
-        internal void callOnConnect(WebSocketHandlerProxy webSocketHandlerProxy)
+        internal void CallOnConnect(WebSocketHandlerProxy webSocketHandlerProxy)
         {
             OnConnect(webSocketHandlerProxy);
         }
 
-        internal void callOnDisconnect(WebSocketHandlerProxy webSocketHandlerProxy)
+        internal void CallOnDisconnect(WebSocketHandlerProxy webSocketHandlerProxy)
         {
             OnDisconnect(webSocketHandlerProxy);
         }
@@ -121,7 +123,7 @@ namespace LamestWebserver
             this.Port = port;
 
             currentProxy = this;
-            handleConnection();
+            HandleConnection();
         }
 
         public async void Respond(string Message)
@@ -134,7 +136,7 @@ namespace LamestWebserver
                 byte[] buffer = websocketHandler.TextFrame.Invoke(Message);
                 await networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                handler.callOnResponded();
+                handler.CallOnResponded();
                 exceptedTries = 0;
             }
             catch (ObjectDisposedException)
@@ -158,12 +160,6 @@ namespace LamestWebserver
                 {
                     networkStream = null;
                 }
-
-                /*
-                exceptedTries++;
-
-                if (exceptedTries > 2)
-                    isActive = false;*/
             }
             catch (Exception e)
             {
@@ -204,12 +200,6 @@ namespace LamestWebserver
                 {
                     networkStream = null;
                 }
-
-                /*
-                exceptedTries++;
-
-                if (exceptedTries > 2)
-                    isActive = false;*/
             }
             catch (Exception e)
             {
@@ -250,12 +240,6 @@ namespace LamestWebserver
                 {
                     networkStream = null;
                 }
-
-                /*
-                exceptedTries++;
-
-                if (exceptedTries > 2)
-                    isActive = false;*/
             }
             catch (Exception e)
             {
@@ -273,7 +257,7 @@ namespace LamestWebserver
                 byte[] buffer = websocketHandler.BinaryFrame.Invoke(bytes);
                 networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                handler.callOnResponded();
+                handler.CallOnResponded();
                 exceptedTries = 0;
             }
             catch (ObjectDisposedException)
@@ -297,12 +281,6 @@ namespace LamestWebserver
                 {
                     networkStream = null;
                 }
-
-                /*
-                exceptedTries++;
-
-                if (exceptedTries > 2)
-                    isActive = false;*/
             }
             catch (Exception e)
             {
@@ -310,9 +288,9 @@ namespace LamestWebserver
             }
         }
 
-        private void handleConnection()
+        private void HandleConnection()
         {
-            handler.callOnConnect(this);
+            handler.CallOnConnect(this);
 
             byte[] currentBuffer = new byte[4096];
 
@@ -442,7 +420,7 @@ namespace LamestWebserver
 
         public void ConnectionClosed()
         {
-            handler.callOnDisconnect(this);
+            handler.CallOnDisconnect(this);
         }
     }
 }

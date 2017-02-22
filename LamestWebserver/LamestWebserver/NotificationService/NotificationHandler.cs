@@ -7,12 +7,25 @@ using LamestWebserver.Synchronization;
 
 namespace LamestWebserver.NotificationService
 {
+    /// <summary>
+    /// An interface for notification based communication between client and server.
+    /// </summary>
     public interface INotificationHandler
     {
+        /// <summary>
+        /// The URL of the ResponseService
+        /// </summary>
         string URL { get; }
 
-        void Unregister();
+        /// <summary>
+        /// Stops and Unregisters the Handler
+        /// </summary>
+        void StopHandler();
 
+        /// <summary>
+        /// Notifies all connected clients.
+        /// </summary>
+        /// <param name="notification">the notification to send</param>
         void Notify(Notification notification);
     }
 
@@ -20,7 +33,7 @@ namespace LamestWebserver.NotificationService
     {
         string URL { get; }
 
-        Notification getResponse(SessionData sessionData, string Request);
+        Notification GetResponse(SessionData sessionData, string Request);
     }
 
     public abstract class Notification
@@ -213,11 +226,27 @@ namespace LamestWebserver.NotificationService
         NoReply
     }
 
+    /// <summary>
+    /// Provides a Notification Based System for Communicating via Websockets
+    /// </summary>
     public class NotificationHandler : WebSocketCommunicationHandler, INotificationHandler
     {
         private static readonly List<NotificationHandler> AllNotificationHandlers = new List<NotificationHandler>();
         private static readonly Mutex AllNotificationHandlerMutex = new Mutex();
 
+        /// <summary>
+        /// The default time before a keepalive message is being sent.
+        /// </summary>
+        public static TimeSpan DefaultMaximumLastMessageTime = TimeSpan.FromSeconds(2d);
+
+        /// <summary>
+        /// The maximum time before a keepalive package is being sent.
+        /// </summary>
+        public readonly TimeSpan MaximumLastMessageTime = DefaultMaximumLastMessageTime;
+
+        /// <summary>
+        /// Stops all currently running NotificationHandlers
+        /// </summary>
         public static void StopAllNotificationHandlers()
         {
             for (int i = AllNotificationHandlers.Count - 1; i >= 0; i--)
@@ -226,48 +255,81 @@ namespace LamestWebserver.NotificationService
             }
         }
 
-        private UsableWriteLock listWriteLock = new UsableWriteLock();
+        private readonly UsableWriteLock _listWriteLock = new UsableWriteLock();
 
-        private List<WebSocketHandlerProxy> proxies = new List<WebSocketHandlerProxy>();
+        private readonly List<WebSocketHandlerProxy> _proxies = new List<WebSocketHandlerProxy>();
 
+        /// <summary>
+        /// The function used for sending messages to the server from the client
+        /// </summary>
         public JSFunction SendingFunction { get; private set; }
+
+        /// <summary>
+        /// The id of this NotificationHandler (for easier identification in the client)
+        /// </summary>
         public string ID { get; private set; } = SessionContainer.generateHash();
+        
+        /// <summary>
+        /// The amount of currently connected clients.
+        /// </summary>
         public uint ConnectedClients { get; private set; } = 0;
-        private IPAddress externalAddress = null;
 
-        public Thread handlerThread = null;
+        private readonly IPAddress _externalAddress = null;
 
-        private bool running
+        /// <summary>
+        /// The thread that handles the keepalive sending
+        /// </summary>
+        protected Thread HandlerThread = null;
+
+        private bool Running
         {
             get
             {
-                using (listWriteLock.LockRead())
+                using (_listWriteLock.LockRead())
                     return _running;
             }
             set
             {
-                using (listWriteLock.LockWrite())
+                using (_listWriteLock.LockWrite())
                     _running = value;
             }
         }
 
         private bool _running = true;
 
+        /// <summary>
+        /// Specifies whether the OnNotification Event shall also be called for keepalive messages - or only on messages carrying information.
+        /// </summary>
         public readonly bool NotifyForKeepalives;
+
         internal readonly bool TraceMessagesClient;
 
+        /// <summary>
+        /// This event is called whenever a client sends a notification
+        /// </summary>
         public event Action<NotificationResponse> OnNotification;
 
-        public NotificationHandler(string URL, bool notifyForKeepalives = false, IPAddress externalAddress = null, bool traceMessagesClient = false, TimeSpan? maximumLastMessageTime = null) : base(URL, maximumLastMessageTime)
+        /// <summary>
+        /// Constructs a new NotificationHandler listening for websocket requests at a specified URL
+        /// </summary>
+        /// <param name="URL">the URL at which the Websocket Response will be available at</param>
+        /// <param name="notifyForKeepalives">shall the OnNotification event be fired if the Notification is just a KeepAliveMessage</param>
+        /// <param name="externalAddress">at which IP-Address is the server registered at externally</param>
+        /// <param name="traceMessagesClient">shall the communication be logged in the client browser console? (for debugging)</param>
+        /// <param name="maximumLastMessageTime">the maximum time at which the server decides not to sent a keepalive package after not hearing from the client. (null means DefaultMaximumLastMessageTime)</param>
+        public NotificationHandler(string URL, bool notifyForKeepalives = false, IPAddress externalAddress = null, bool traceMessagesClient = false, TimeSpan? maximumLastMessageTime = null) : base(URL)
         {
+            if (maximumLastMessageTime.HasValue)
+                MaximumLastMessageTime = maximumLastMessageTime.Value;
+
             NotifyForKeepalives = notifyForKeepalives;
             TraceMessagesClient = traceMessagesClient;
 
-            this.externalAddress = externalAddress;
+            this._externalAddress = externalAddress;
 
             OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy, URL, this));
-            OnConnect += proxy => connect(proxy);
-            OnDisconnect += proxy => disconnect(proxy);
+            OnConnect += proxy => Connect(proxy);
+            OnDisconnect += proxy => Disconnect(proxy);
 
             string methodName = NotificationHelper.GetFunctionName(ID);
 
@@ -278,65 +340,76 @@ namespace LamestWebserver.NotificationService
             AllNotificationHandlerMutex.ReleaseMutex();
         }
 
-        public JSElement JSElement => new JSPlainText("<script type='text/javascript'>" +
-                                NotificationHelper.JsonNotificationCode(SessionData.CurrentSession, URL, ID, externalAddress, TraceMessagesClient) + "</script>");
+        /// <summary>
+        /// The javascript code that handles the Notification based Communication to the server
+        /// </summary>
+        public JSElement ConnectionElement => new JSPlainText("<script type='text/javascript'>" +
+                                NotificationHelper.JsonNotificationCode(AbstractSessionIdentificator.CurrentSession, URL, ID, _externalAddress, TraceMessagesClient) + "</script>");
 
         private JSElement _jselement = null;
 
+        /// <summary>
+        /// The method which handles the sending of keepalive packages to the clients whenever the maximum time is reached.
+        /// </summary>
         public void ServerClients()
         {
-            while (running)
+            while (Running)
             {
-                using (listWriteLock.LockWrite())
+                using (_listWriteLock.LockWrite())
                 {
-                    for (int i = proxies.Count - 1; i >= 0; i--)
+                    for (int i = _proxies.Count - 1; i >= 0; i--)
                     {
-                        if (!proxies[i].IsActive)
+                        if (!_proxies[i].IsActive)
                         {
-                            proxies.RemoveAt(i);
+                            _proxies.RemoveAt(i);
                             continue;
                         }
 
-                        if ((DateTime.UtcNow - proxies[i].LastMessageSent) >
+                        if ((DateTime.UtcNow - _proxies[i].LastMessageSent) >
                             this.MaximumLastMessageTime)
-                            proxies[i].Respond(new KeepAliveNotification().GetNotification());
+                            _proxies[i].Respond(new KeepAliveNotification().GetNotification());
                     }
                 }
-
-                //if (!ServerHandler.Running)
-                //    running = false;
 
                 Thread.Sleep(2);
             }
         }
 
+        /// <summary>
+        /// Stops the NotificationHandler &amp; the handler thread; unregisters the page.
+        /// </summary>
         public void StopHandler()
         {
-            running = false;
+            Running = false;
 
             AllNotificationHandlerMutex.WaitOne();
             AllNotificationHandlers.Remove(this);
             AllNotificationHandlerMutex.ReleaseMutex();
+
+            Unregister();
         }
 
+        /// <summary>
+        /// Notify all connected clients.
+        /// </summary>
+        /// <param name="notification">the notification to send</param>
         public void Notify(Notification notification)
         {
             Thread t = new Thread(() =>
             {
                 string notificationText = notification.GetNotification();
 
-                using (listWriteLock.LockRead())
-                    proxies.ForEach(proxy => proxy.Respond(notificationText));
+                using (_listWriteLock.LockRead())
+                    _proxies.ForEach(proxy => proxy.Respond(notificationText));
             });
 
             t.Start();
         }
 
-        public void Unregister()
-        {
-            unregister();
-        }
-
+        /// <summary>
+        /// Handles Messages sent from the client
+        /// </summary>
+        /// <param name="response">the message from the client</param>
         public virtual void HandleResponse(NotificationResponse response)
         {
             try
@@ -365,32 +438,35 @@ namespace LamestWebserver.NotificationService
             }
         }
 
-        private void connect(WebSocketHandlerProxy proxy)
+        private void Connect(WebSocketHandlerProxy proxy)
         {
-            using (listWriteLock.LockWrite())
+            using (_listWriteLock.LockWrite())
             {
                 ConnectedClients++;
-                proxies.Add(proxy);
+                _proxies.Add(proxy);
             }
 
-            if (handlerThread == null)
+            if (HandlerThread == null)
             {
-                handlerThread = new Thread(new ThreadStart(ServerClients));
-                handlerThread.Start();
+                HandlerThread = new Thread(new ThreadStart(ServerClients));
+                HandlerThread.Start();
             }
-
-            // throw new WebSocketManagementOvertakeFlagException();
         }
 
-        private void disconnect(WebSocketHandlerProxy proxy)
+        private void Disconnect(WebSocketHandlerProxy proxy)
         {
-            using (listWriteLock.LockWrite())
+            using (_listWriteLock.LockWrite())
             {
                 ConnectedClients--;
-                proxies.Remove(proxy);
+                _proxies.Remove(proxy);
             }
         }
 
+        /// <summary>
+        /// Retrives JavaScript code to send a Message from the client to the server.
+        /// </summary>
+        /// <param name="messageGetter">The Method to get the Notification Contents from</param>
+        /// <returns>A piece of JavaScript code</returns>
         public IJSPiece SendMessage(IJSPiece messageGetter)
         {
             return
@@ -398,6 +474,11 @@ namespace LamestWebserver.NotificationService
                     new JSValue(messageGetter.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner)));
         }
 
+        /// <summary>
+        /// Retrives JavaScript code to send a Message from the client to the server.
+        /// </summary>
+        /// <param name="message">the message to send as string</param>
+        /// <returns>A piece of JavaScript code</returns>
         public IJSPiece SendMessage(string message)
         {
             return SendingFunction.callFunction(new JSStringValue(message));
