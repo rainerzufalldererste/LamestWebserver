@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Web;
+using LamestWebserver.UI;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace LamestWebserver.JScriptBuilder
@@ -509,6 +510,15 @@ namespace LamestWebserver.JScriptBuilder
         {
             return new JSOperator(JSOperator.JSOperatorType.Add, a, new JSStringValue(b));
         }
+
+        /// <summary>
+        /// Casts an HElement to a JSValue
+        /// </summary>
+        /// <param name="element">the HElement</param>
+        public static implicit operator IJSValue(HElement element)
+        {
+            return new JSValue(element.GetContent(AbstractSessionIdentificator.CurrentSession));
+        }
     }
 
     /// <summary>
@@ -940,6 +950,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="value">the element to set the new content to</param>
         /// <param name="URL">the URL where the new contents come from</param>
+        /// <param name="executeOnComplete">the code to execute when the task has been completed</param>
         /// <returns>A piece of JavaScript code</returns>
         public static JSValue SetInnerHTMLAsync(IJSValue value, string URL, params IJSPiece[] executeOnComplete)
         {
@@ -953,6 +964,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="value">the element to set the new content to</param>
         /// <param name="URL">the URL where the new contents come from</param>
+        /// <param name="executeOnComplete">the code to execute when the task has been completed</param>
         /// <returns>A piece of JavaScript code</returns>
         public static JSValue SetOuterHTMLAsync(IJSValue value, string URL, params IJSPiece[] executeOnComplete)
         {

@@ -24,13 +24,17 @@ namespace LamestWebserver
         /// <inheritdoc />
         public string URL { get; private set; }
 
+        /// <summary>
+        /// Constructs and registers a new CommunicationHandler for Websockets
+        /// </summary>
+        /// <param name="URL"></param>
         public WebSocketCommunicationHandler(string URL)
         {
             this.URL = URL;
 
-            _OnMessage = message => CallOnMessage(message, WebSocketHandlerProxy.currentProxy);
-            _OnClose = () => OnDisconnect(WebSocketHandlerProxy.currentProxy);
-            _OnPing = data => WebSocketHandlerProxy.currentProxy.RespondPong(data);
+            _OnMessage = message => CallOnMessage(message, WebSocketHandlerProxy.CurrentProxy);
+            _OnClose = () => OnDisconnect(WebSocketHandlerProxy.CurrentProxy);
+            _OnPing = data => WebSocketHandlerProxy.CurrentProxy.RespondPong(data);
             _OnPong = x => { };
 
             Register();
@@ -42,18 +46,39 @@ namespace LamestWebserver
         internal Action<byte[]> _OnPing { get; set; }
         internal Action<byte[]> _OnPong { get; set; }
 
+        /// <summary>
+        /// The event to execute whenever a new Message has been received
+        /// </summary>
         protected event Action<string, WebSocketHandlerProxy> OnMessage = delegate { };
+        
+        /// <summary>
+        /// The event to execute whenever a new Message has been sent
+        /// </summary>
         protected event Action OnResponded = delegate { };
+
+        /// <summary>
+        /// The event to execute whenever a client connected
+        /// </summary>
         protected event Action<WebSocketHandlerProxy> OnConnect = delegate { };
+
+        /// <summary>
+        /// The event to execute whenever a client disconnected
+        /// </summary>
         protected event Action<WebSocketHandlerProxy> OnDisconnect = delegate { };
 
-        private Random random = new Random();
+        private readonly Random _random = new Random();
 
+        /// <summary>
+        /// Registers the current handler at the servers
+        /// </summary>
         protected void Register()
         {
             Master.AddWebsocketHandler(this);
         }
 
+        /// <summary>
+        /// Unregisters the current handler at the servers
+        /// </summary>
         protected void Unregister()
         {
             Master.RemoveWebsocketHandler(this.URL);
@@ -77,7 +102,7 @@ namespace LamestWebserver
                 ServerHandler.LogMessage("MutexRetryException in Websocket - retrying...");
 
                 tries++;
-                Thread.Sleep(random.Next(5 * tries));
+                Thread.Sleep(_random.Next(5 * tries));
                 goto RETRY;
             }
         }
@@ -98,46 +123,66 @@ namespace LamestWebserver
         }
     }
 
+    /// <summary>
+    /// A WebSocketHandlerProxy represents a single clients connection to a WebSocketCommunicationHandler
+    /// </summary>
     public class WebSocketHandlerProxy
     {
-        private NetworkStream networkStream;
-        private WebSocketCommunicationHandler handler;
-        private ComposableHandler websocketHandler;
+        private NetworkStream _networkStream;
+        private readonly WebSocketCommunicationHandler _handler;
+        private readonly ComposableHandler _websocketHandler;
 
+        /// <summary>
+        /// Is the client still active
+        /// </summary>
         public bool IsActive { get; private set; } = true;
 
+        /// <summary>
+        /// When did we receive the last message from the client
+        /// </summary>
         public DateTime LastMessageReceived = DateTime.UtcNow;
+
+        /// <summary>
+        /// When did we send the last message to the client
+        /// </summary>
         public DateTime LastMessageSent = DateTime.UtcNow;
 
-        private int exceptedTries = 0;
+        private int _exceptedTries = 0;
         
+        /// <summary>
+        /// At which port did the client connect to the server
+        /// </summary>
         public ushort Port;
 
-        [ThreadStatic] internal static WebSocketHandlerProxy currentProxy;
+        [ThreadStatic] internal static WebSocketHandlerProxy CurrentProxy;
 
         internal WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler, ushort port)
         {
-            this.networkStream = stream;
-            this.handler = handler;
-            this.websocketHandler = websocketHandler;
+            this._networkStream = stream;
+            this._handler = handler;
+            this._websocketHandler = websocketHandler;
             this.Port = port;
 
-            currentProxy = this;
+            CurrentProxy = this;
             HandleConnection();
         }
 
+        /// <summary>
+        /// Sends a message to the client
+        /// </summary>
+        /// <param name="Message">the message to send</param>
         public async void Respond(string Message)
         {
-            if (networkStream == null || !IsActive)
+            if (_networkStream == null || !IsActive)
                 return;
 
             try
             {
-                byte[] buffer = websocketHandler.TextFrame.Invoke(Message);
-                await networkStream.WriteAsync(buffer, 0, buffer.Length);
+                byte[] buffer = _websocketHandler.TextFrame.Invoke(Message);
+                await _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                handler.CallOnResponded();
-                exceptedTries = 0;
+                _handler.CallOnResponded();
+                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -154,11 +199,11 @@ namespace LamestWebserver
 
                 try
                 {
-                    networkStream.Dispose();
+                    _networkStream.Dispose();
                 }
                 finally
                 {
-                    networkStream = null;
+                    _networkStream = null;
                 }
             }
             catch (Exception e)
@@ -167,17 +212,21 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// Responds a Pong to the client
+        /// </summary>
+        /// <param name="bytes">the contained bytes</param>
         public void RespondPong(byte[] bytes)
         {
-            if (networkStream == null || !IsActive)
+            if (_networkStream == null || !IsActive)
                 return;
 
             try
             {
-                byte[] buffer = websocketHandler.PongFrame.Invoke(bytes);
-                networkStream.WriteAsync(buffer, 0, buffer.Length);
+                byte[] buffer = _websocketHandler.PongFrame.Invoke(bytes);
+                _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                exceptedTries = 0;
+                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -194,11 +243,11 @@ namespace LamestWebserver
 
                 try
                 {
-                    networkStream.Dispose();
+                    _networkStream.Dispose();
                 }
                 finally
                 {
-                    networkStream = null;
+                    _networkStream = null;
                 }
             }
             catch (Exception e)
@@ -207,17 +256,21 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// Responds a Ping to the client
+        /// </summary>
+        /// <param name="bytes">the contained bytes</param>
         public void RespondPing(byte[] bytes)
         {
-            if (networkStream == null || !IsActive)
+            if (_networkStream == null || !IsActive)
                 return;
 
             try
             {
-                byte[] buffer = websocketHandler.PingFrame.Invoke(bytes);
-                networkStream.WriteAsync(buffer, 0, buffer.Length);
+                byte[] buffer = _websocketHandler.PingFrame.Invoke(bytes);
+                _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                exceptedTries = 0;
+                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -234,11 +287,11 @@ namespace LamestWebserver
 
                 try
                 {
-                    networkStream.Dispose();
+                    _networkStream.Dispose();
                 }
                 finally
                 {
-                    networkStream = null;
+                    _networkStream = null;
                 }
             }
             catch (Exception e)
@@ -247,18 +300,22 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// Responds binary data to the client
+        /// </summary>
+        /// <param name="bytes">the bytes to send</param>
         public void RespondBinary(byte[] bytes)
         {
-            if (networkStream == null || !IsActive)
+            if (_networkStream == null || !IsActive)
                 return;
 
             try
             {
-                byte[] buffer = websocketHandler.BinaryFrame.Invoke(bytes);
-                networkStream.WriteAsync(buffer, 0, buffer.Length);
+                byte[] buffer = _websocketHandler.BinaryFrame.Invoke(bytes);
+                _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                handler.CallOnResponded();
-                exceptedTries = 0;
+                _handler.CallOnResponded();
+                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -275,11 +332,11 @@ namespace LamestWebserver
 
                 try
                 {
-                    networkStream.Dispose();
+                    _networkStream.Dispose();
                 }
                 finally
                 {
-                    networkStream = null;
+                    _networkStream = null;
                 }
             }
             catch (Exception e)
@@ -290,7 +347,7 @@ namespace LamestWebserver
 
         private void HandleConnection()
         {
-            handler.CallOnConnect(this);
+            _handler.CallOnConnect(this);
 
             byte[] currentBuffer = new byte[4096];
 
@@ -298,10 +355,10 @@ namespace LamestWebserver
             {
                 try
                 {
-                    if (networkStream == null)
+                    if (_networkStream == null)
                         return;
 
-                    var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096);
+                    var byteCount = _networkStream.ReadAsync(currentBuffer, 0, 4096);
 
                     if(
 #if DEBUG
@@ -311,7 +368,7 @@ namespace LamestWebserver
 #endif
                        )
                     {
-                        if (byteCount.IsCanceled || networkStream == null)
+                        if (byteCount.IsCanceled || _networkStream == null)
                             break;
 
                         if (byteCount.Result == 0)
@@ -323,9 +380,9 @@ namespace LamestWebserver
 
                         Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
 
-                        websocketHandler.Receive(trimmedBuffer);
+                        _websocketHandler.Receive(trimmedBuffer);
 
-                        exceptedTries = 0;
+                        _exceptedTries = 0;
                     }
                     else
                     {
@@ -351,16 +408,20 @@ namespace LamestWebserver
             ConnectionClosed();
         }
 
+        /// <summary>
+        /// Reads asynchronously from the client stream
+        /// </summary>
+        /// <returns>true if the client responded anything</returns>
         public bool ReadAsync()
         {
             byte[] currentBuffer = new byte[4096];
 
             try
             {
-                if (networkStream == null)
+                if (_networkStream == null)
                     return false;
 
-                var byteCount = networkStream.ReadAsync(currentBuffer, 0, 4096);
+                var byteCount = _networkStream.ReadAsync(currentBuffer, 0, 4096);
 
                 if (
 #if DEBUG
@@ -370,7 +431,7 @@ namespace LamestWebserver
 #endif
                        )
                 {
-                    if (byteCount.IsCanceled || networkStream == null)
+                    if (byteCount.IsCanceled || _networkStream == null)
                         return false;
 
                     if (byteCount.Result == 0)
@@ -382,14 +443,14 @@ namespace LamestWebserver
 
                     Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
 
-                    websocketHandler.Receive(trimmedBuffer);
+                    _websocketHandler.Receive(trimmedBuffer);
 
-                    exceptedTries = 0;
+                    _exceptedTries = 0;
                 }
                 else
                 {
                     IsActive = false;
-                    networkStream = null;
+                    _networkStream = null;
                     return false;
                 }
             }
@@ -406,7 +467,7 @@ namespace LamestWebserver
             {
                 ServerHandler.LogMessage("Exception in WebSocket. The connection might already have closed.\n" + e);
                 IsActive = false;
-                networkStream = null;
+                _networkStream = null;
                 return false;
             }
 
@@ -415,12 +476,15 @@ namespace LamestWebserver
 
         internal NetworkStream GetNetworkStream()
         {
-            return networkStream;
+            return _networkStream;
         }
 
-        public void ConnectionClosed()
+        /// <summary>
+        /// Triggers the disconnected event in the handler
+        /// </summary>
+        protected void ConnectionClosed()
         {
-            handler.CallOnDisconnect(this);
+            _handler.CallOnDisconnect(this);
         }
     }
 }

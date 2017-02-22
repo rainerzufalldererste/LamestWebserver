@@ -96,6 +96,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="user">the current user</param>
         /// <param name="isNewSSID">has a new ssid been created or are we reusing the old one</param>
+        /// <param name="userInfo">the UserInfo of the retrieved User</param>
         /// <returns></returns>
         internal static string GetSSIDforUser(string user, out bool isNewSSID, out UserInfo userInfo)
         {

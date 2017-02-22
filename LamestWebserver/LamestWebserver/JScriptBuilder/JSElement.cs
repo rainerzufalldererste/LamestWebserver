@@ -318,6 +318,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="element">the element which innerHTML you want to override</param>
         /// <param name="URL">the event to reach</param>
+        /// <param name="executeOnComplete">the code to execute when the task has been completed</param>
         public virtual JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL, params IJSPiece[] executeOnComplete)
         {
             if (URL.Contains('?') && URL[URL.Length - 1] != '?')

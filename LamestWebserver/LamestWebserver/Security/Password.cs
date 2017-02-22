@@ -8,6 +8,10 @@ using LamestWebserver.Serialization;
 
 namespace LamestWebserver.Security
 {
+    /// <summary>
+    /// A safe way to store passwords.
+    /// (implements IXmlSerializable, ISerializable)
+    /// </summary>
     public class Password : IXmlSerializable, ISerializable
     {
         private byte[] hash;
@@ -21,12 +25,22 @@ namespace LamestWebserver.Security
 
         }
 
+        /// <summary>
+        /// Only used for deserialization
+        /// </summary>
+        /// <param name="info">SerializationInfo</param>
+        /// <param name="context">StreamingContext</param>
         public Password(SerializationInfo info, StreamingContext context)
         {
             hash = (byte[])info.GetValue(nameof(this.hash), typeof(byte[]));
             salt = (byte[])info.GetValue(nameof(this.salt), typeof(byte[]));
         }
 
+        /// <summary>
+        /// Constructs a new password object
+        /// </summary>
+        /// <param name="password">the password</param>
+        /// <exception cref="InvalidOperationException">throws an exception is the password is null or empty</exception>
         public Password(string password)
         {
             if (string.IsNullOrEmpty(password))
@@ -34,15 +48,21 @@ namespace LamestWebserver.Security
 
             salt = SessionContainer.getComplexHash(new UTF8Encoding().GetBytes(SessionContainer.generateHash() + SessionContainer.generateHash() + SessionContainer.generateHash() + SessionContainer.generateHash()));
 
-            hash = generateSaltedHash(password, salt);
+            hash = GenerateSaltedHash(password, salt);
         }
 
+        /// <summary>
+        /// Checks whether a password matches this password
+        /// </summary>
+        /// <param name="password">the password to compare to</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException">throws an exception if the password is null or empty</exception>
         public bool IsValid(string password)
         {
             if (string.IsNullOrEmpty(password))
                 throw new InvalidOperationException("You have to set a password to check against.");
 
-            byte[] sha3 = generateSaltedHash(password, salt);
+            byte[] sha3 = GenerateSaltedHash(password, salt);
 
             if (sha3.Length != hash.Length)
                 return false;
@@ -53,7 +73,7 @@ namespace LamestWebserver.Security
             return true;
         }
 
-        private byte[] generateSaltedHash(string password, byte[] salt)
+        private byte[] GenerateSaltedHash(string password, byte[] salt)
         {
             byte[] bytes = new UTF8Encoding().GetBytes(password);
             byte[] hash = SessionContainer.getComplexHash(bytes);
@@ -70,11 +90,13 @@ namespace LamestWebserver.Security
             return hash;
         }
 
+        /// <inheritdoc />
         public XmlSchema GetSchema()
         {
             return null;
         }
 
+        /// <inheritdoc />
         public void ReadXml(XmlReader reader)
         {
             reader.ReadStartElement();
@@ -85,6 +107,7 @@ namespace LamestWebserver.Security
             reader.ReadEndElement();
         }
 
+        /// <inheritdoc />
         public void WriteXml(XmlWriter writer)
         {
             writer.WriteElement("hash", hash);
