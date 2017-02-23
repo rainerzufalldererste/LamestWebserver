@@ -294,7 +294,7 @@ namespace LamestWebserver
             {
                 for (int i = WebServer.RunningServers.Count - 1; i > -1; i--)
                 {
-                    if (WebServer.RunningServers[i].port == port)
+                    if (WebServer.RunningServers[i].Port == port)
                     {
                         try
                         {

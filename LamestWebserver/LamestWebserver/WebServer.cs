@@ -27,7 +27,7 @@ namespace LamestWebserver
         TcpListener tcpListener;
         List<Thread> threads = new List<Thread>();
         Thread mThread;
-        public int port;
+        public int Port;
         public string folder = "./web";
 
         internal bool running
@@ -127,7 +127,7 @@ namespace LamestWebserver
                 Master.RemoveWebsocketHandlerEvent += RemoveWebsocketHandler;
             }
 
-            this.port = port;
+            this.Port = port;
             this.tcpListener = new TcpListener(IPAddress.Any, port);
             mThread = new Thread(new ThreadStart(HandleTcpListener));
             mThread.Start();
@@ -517,7 +517,7 @@ namespace LamestWebserver
 
                                 ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (WebSocket Upgrade Request)");
 
-                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler, (ushort) this.port);
+                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler, (ushort) this.Port);
 
                                 return;
                             }
@@ -553,7 +553,7 @@ namespace LamestWebserver
                                 try
                                 {
                                     SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                        htp.RequestUrl, msg_, client, nws, (ushort) this.port);
+                                        htp.RequestUrl, msg_, client, nws, (ushort) this.Port);
 
                                     htp_.BinaryData = enc.GetBytes(currentRequest.Invoke(sessionData));
 
@@ -673,7 +673,7 @@ namespace LamestWebserver
                                         try
                                         {
                                             SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                                htp.RequestUrl, msg_, client, nws, (ushort) this.port);
+                                                htp.RequestUrl, msg_, client, nws, (ushort) this.Port);
 
                                             htp_.BinaryData = enc.GetBytes(directory.Invoke(sessionData, subDir));
 

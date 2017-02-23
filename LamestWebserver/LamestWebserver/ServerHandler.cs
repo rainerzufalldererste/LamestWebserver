@@ -49,7 +49,7 @@ namespace LamestWebserver
                                 {
                                     for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                     {
-                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].port + " Folder: " + WebServer.RunningServers[i].folder + " Threads: " +
+                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Folder: " + WebServer.RunningServers[i].folder + " Threads: " +
                                                           WebServer.RunningServers[i].GetThreadCount());
                                     }
                                 }
@@ -239,7 +239,7 @@ namespace LamestWebserver
                                     {
                                         for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                         {
-                                            if (WebServer.RunningServers[i].port == Int32.Parse(id))
+                                            if (WebServer.RunningServers[i].Port == Int32.Parse(id))
                                             {
                                                 using (WebServer.RunningServers[i].CacheMutex.Lock())
                                                     WebServer.RunningServers[i].cache.Clear();
@@ -270,7 +270,7 @@ namespace LamestWebserver
                                     {
                                         for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                         {
-                                            if (WebServer.RunningServers[i].port == Int32.Parse(id))
+                                            if (WebServer.RunningServers[i].Port == Int32.Parse(id))
                                             {
                                                 WebServer.RunningServers[i].useCache = true;
                                                 Console.WriteLine("Done!");
@@ -300,7 +300,7 @@ namespace LamestWebserver
                                     {
                                         for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                         {
-                                            if (WebServer.RunningServers[i].port == Int32.Parse(id))
+                                            if (WebServer.RunningServers[i].Port == Int32.Parse(id))
                                             {
                                                 using (WebServer.RunningServers[i].CacheMutex.Lock())
                                                 {
