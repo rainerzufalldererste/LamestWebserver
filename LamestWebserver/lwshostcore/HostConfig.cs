@@ -46,13 +46,21 @@ namespace lwshostcore
                     }
                     catch
                     {
-
                     }
 
                     return _currentConfig;
                 }
-                catch
+                catch (Exception e)
                 {
+                    ServerHandler.LogMessage("Failed to read config-file: \n" + e);
+
+                    try
+                    {
+                        System.IO.File.Copy(configFile, "lwshost\\invalid-config_" + DateTime.UtcNow.ToFileTimeUtc());
+                    }
+                    catch
+                    { }
+
                     _currentConfig = new HostConfig();
 
                     try
@@ -61,7 +69,6 @@ namespace lwshostcore
                     }
                     catch
                     {
-                        
                     }
 
                     return _currentConfig;

@@ -78,22 +78,100 @@ namespace Demos
                     new HText(nameof(HTextBlock)),
                     new HText("Can combine text with e.g. bold and italic text. (Every HElement)"),
                     new HText("<p>"),
-                    new HTextBlock("Regular", new HBold("bold"), new HItalic("italic"), new HText("HText"))
+                    new HTextBlock("Regular", new HBold("Bold"), new HItalic("Italic"), new HText("HText"))
                 },
                 new List<HElement>()
                 {
                     new HText(nameof(HPlainText)),
                     new HText("Copies an unencoded string to the final result."),
                     new HText("-"),
-                    new HPlainText("&amp; vs. &<b>bold</b>")
+                    new HPlainText("&amp; vs. & / <b>bold</b>")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HEncodedString)),
+                    new HText("Copies a string to the final result like HPlainText but the string is automatically encoded before."),
+                    new HText("-"),
+                    new HEncodedString("&amp; vs. & / <b>bold</b>")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HMultipleElements)),
+                    new HText("Contains multiple HElements without a surrounding element."),
+                    new HText("-"),
+                    new HMultipleElements(new HBold("bold+") + new HItalic("italic+"), new HText("regular"))
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HNewLine)),
+                    new HText("A line break"),
+                    new HText("<br>"),
+                    new HText("one line") + new HNewLine() + new HText("another line")
                 },
                 new List<HElement>()
                 {
                     new HText(nameof(HHeadline)),
                     new HText("A Headline."),
                     new HText("<h1> <h2> ..."),
-                    new HContainer(new HHeadline("h1"), new HHeadline("h2", 2), new HHeadline("h3", 3))
-                }
+                    new HHeadline("h1") + new HHeadline("h2", 2) + new HHeadline("h3", 3)
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HButton)),
+                    new HText("A Button."),
+                    new HText("<button>"),
+                    new HButton("button", HButton.EButtonType.button, "")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HContainer)),
+                    new HText("A Container for other elements."),
+                    new HText("<div>"),
+                    new HContainer(new HText("hello"), new HBold("yello"), new HNewLine(), new HButton("cello", HButton.EButtonType.button))
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HImage)),
+                    new HText("An image."),
+                    new HText("<img>"),
+                    new HImage("lwsfooter.png")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HInput)),
+                    new HText("An input element."),
+                    new HText("<input>"),
+                    new HInput(HInput.EInputType.text, "textInput", "textInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.button, "buttonInput", "buttonInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.checkbox, "checkBoxInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.color, "colorInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.date, "dateInput", "dateInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.datetime, "dateTimeInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.datetime_local, "dateTimeLocalInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.email, "emailInput", "emailInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.file, "fileInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.hidden, "hiddenInput", "hidden") + new HNewLine()
+                    + new HInput(HInput.EInputType.image, "imageInput") { DescriptionTags = "src='lwsfooter.png'" } + new HNewLine()
+                    + new HInput(HInput.EInputType.month, "monthInput", "monthInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.number, "numberInput", "1337") + new HNewLine()
+                    + new HInput(HInput.EInputType.password, "passwordInput", "password") + new HNewLine()
+                    + new HInput(HInput.EInputType.radio, "radioInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.range, "rangeInput", "5.5") {DescriptionTags = "min='0' max='10' step='0.5'"} + new HNewLine()
+                    + new HInput(HInput.EInputType.reset, "resetInput", "resetInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.search, "searchInput", "searchInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.submit, "submitInput", "submitInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.tel, "telInput", "telInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.time, "timeInput", "timeInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.url, "urlInput", "urlInput") + new HNewLine()
+                    + new HInput(HInput.EInputType.week, "weekInput", "weekInput") + new HNewLine()
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HTextArea)),
+                    new HText("A mutliline text input."),
+                    new HText("<textarea>"),
+                    new HTextArea("this\n is\n  some\n   text", null, 5)
+                },
             });
         } 
     }

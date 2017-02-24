@@ -100,8 +100,9 @@ namespace lwshostcore
 
                 ServerHandler.LogMessage("[lwshost] [File Load] Created a local copy at " + newFileName);
             }
-            catch
+            catch (IOException e)
             {
+                ServerHandler.LogMessage("[lwshost] [File Load] Failed to copy file to currentRun directory:\n" + e);
             }
 
             try

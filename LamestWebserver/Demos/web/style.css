@@ -73,6 +73,7 @@ h1 {
     font-size: 40pt;
     margin-bottom: 40pt;
     text-shadow: #d6d6d6 3px 3px 15px;
+    line-height: 90%;
 }
 
 img.back {
@@ -92,6 +93,7 @@ h2 {
     display: block;
     border-bottom: #ee6959 1px solid;
     padding: 0.45em 0;
+    line-height: 90%;
 }
 
 p.code {
@@ -121,6 +123,7 @@ h3 {
     font-weight: normal;
     font-size: 15pt;
     font-family: "Segoe UI Semibold", "Segoe UI", Tahoma, sans-serif;
+    line-height: 90%;
 }
 
 table {
@@ -136,6 +139,7 @@ td {
     border-collapse: collapse;
     border: solid 2px #eaeaea;
     padding: 1em;
+    vertical-align: top;
 }
 
 td p, td b, td i {

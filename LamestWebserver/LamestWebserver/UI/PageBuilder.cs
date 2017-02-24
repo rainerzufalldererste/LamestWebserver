@@ -275,6 +275,17 @@ namespace LamestWebserver.UI
         {
             return e.ToString();
         }
+
+        /// <summary>
+        /// Adds two elements to be one HMultipleElements object
+        /// </summary>
+        /// <param name="a">the first HElement</param>
+        /// <param name="b">the second HElement</param>
+        /// <returns>a HMultipleElements object</returns>
+        public static HMultipleElements operator +(HElement a, HElement b)
+        {
+            return new HMultipleElements(a,b);
+        }
     }
 
     /// <summary>
@@ -322,7 +333,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// The text to copy to the HTML document
         /// </summary>
-        public string text;
+        public string Text;
 
         /// <summary>
         /// Constructs a new By-Copy-Element. The contents will only be copied into the final HTML code.
@@ -330,7 +341,7 @@ namespace LamestWebserver.UI
         /// <param name="text">the text to copy into the final HTML code</param>
         public HPlainText(string text = "")
         {
-            this.text = text;
+            this.Text = text;
         }
 
         /// <summary>
@@ -340,21 +351,85 @@ namespace LamestWebserver.UI
         /// <returns>the element as string</returns>
         public override string GetContent(AbstractSessionIdentificator sessionData)
         {
-            return text;
+            return Text;
         }
     }
 
     /// <summary>
-    /// Represents a "a" element used for links
+    /// Copies the given text to the final HTML-Response - html encoded.
+    /// </summary>
+    public class HEncodedString : HPlainText
+    {
+        /// <summary>
+        /// Creates a new HEncodedString containing the given text.
+        /// </summary>
+        /// <param name="text"></param>
+        public HEncodedString(string text = "") : base(text) { }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            return System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+        }
+    }
+
+    /// <summary>
+    /// Combines multiple HElements without using a div to a single HElement object
+    /// </summary>
+    public class HMultipleElements : HElement
+    {
+        /// <summary>
+        /// The elements to display
+        /// </summary>
+        public List<HElement> Elements = new List<HElement>();
+
+        /// <summary>
+        /// Constructs a new HMultipleElements containing the given elements
+        /// </summary>
+        /// <param name="elements">the elements to add</param>
+        public HMultipleElements(params HElement[] elements)
+        {
+            Elements = elements.ToList();
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "";
+
+            Elements.ForEach(e => ret += e.GetContent(sessionData));
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Adds elements to the current multiple element
+        /// </summary>
+        /// <param name="thisElement">one multipleElements object</param>
+        /// <param name="otherElement">some HElement</param>
+        /// <returns>the MultipleElements object containing the other multipleElements object</returns>
+        public static HMultipleElements operator +(HMultipleElements thisElement, HElement otherElement)
+        {
+            if(otherElement is HMultipleElements)
+                thisElement.Elements.AddRange(((HMultipleElements)otherElement).Elements);
+            else
+                thisElement.Elements.Add(otherElement);
+
+            return thisElement;
+        }
+    }
+
+    /// <summary>
+    /// Represents an "a" element used for links
     /// </summary>
     public class HLink : HElement
     {
-        string href, onclick, text;
+        private readonly string _href, _onclick, _text;
 
         /// <summary>
         /// Additional attributes added to this tag
         /// </summary>
-        public string descriptionTags;
+        public string DescriptionTags;
 
         /// <summary>
         /// Creates a new Link Element
@@ -364,9 +439,9 @@ namespace LamestWebserver.UI
         /// <param name="onclick">the Javasctipt action executed when clicking on this link</param>
         public HLink(string text = "", string href = "", string onclick = "")
         {
-            this.text = text;
-            this.href = href;
-            this.onclick = onclick;
+            this._text = text;
+            this._href = href;
+            this._onclick = onclick;
         }
 
         /// <summary>
@@ -380,10 +455,10 @@ namespace LamestWebserver.UI
 
             if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
             {
-                if (href.Length > 0)
+                if (_href.Length > 0)
                 {
-                    if (href[0] == '#')
-                        ret += "href='" + href + "' ";
+                    if (_href[0] == '#')
+                        ret += "href='" + _href + "' ";
                     else
                     {
                         ret += "href='#' ";
@@ -393,7 +468,7 @@ namespace LamestWebserver.UI
                             + hash + "=document.createElement('form');f_"
                             + hash + ".setAttribute('method','POST');f_"
                             + hash + ".setAttribute('action','"
-                                + href + "');f_"
+                                + _href + "');f_"
                             + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
                             + hash + "=document.createElement('input');i_"
                             + hash + ".setAttribute('type','hidden');i_"
@@ -406,22 +481,22 @@ namespace LamestWebserver.UI
                             + hash + ".submit();document.body.remove(f_"
                             + hash + ");";
 
-                        ret += " onclick=\"" + onclick + add + "\" ";
+                        ret += " onclick=\"" + _onclick + add + "\" ";
                     }
                 }
                 else
                 {
-                    if (!string.IsNullOrWhiteSpace(onclick))
-                        ret += "onclick='" + onclick + "' ";
+                    if (!string.IsNullOrWhiteSpace(_onclick))
+                        ret += "onclick='" + _onclick + "' ";
                 }
             }
             else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
             {
-                if (!string.IsNullOrWhiteSpace(href))
-                    ret += "href='" + href + "' ";
+                if (!string.IsNullOrWhiteSpace(_href))
+                    ret += "href='" + _href + "' ";
 
-                if (!string.IsNullOrWhiteSpace(onclick))
-                    ret += "onclick='" + onclick + "' ";
+                if (!string.IsNullOrWhiteSpace(_onclick))
+                    ret += "onclick='" + _onclick + "' ";
             }
             else
             {
@@ -443,13 +518,13 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             ret += ">";
 
-            if (!string.IsNullOrWhiteSpace(text))
-                ret += System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+            if (!string.IsNullOrWhiteSpace(_text))
+                ret += System.Web.HttpUtility.HtmlEncode(_text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
             ret += "</a>";
 
@@ -462,12 +537,12 @@ namespace LamestWebserver.UI
     /// </summary>
     public class HImage : HElement
     {
-        string source;
+        private readonly string _source;
 
         /// <summary>
         /// Additional attributes added to this tag
         /// </summary>
-        public string descriptionTags;
+        public string DescriptionTags;
 
         /// <summary>
         /// Creates an Image
@@ -475,7 +550,7 @@ namespace LamestWebserver.UI
         /// <param name="source">the URL where the image is located at</param>
         public HImage(string source = "")
         {
-            this.source = source;
+            this._source = source;
         }
 
         /// <summary>
@@ -487,8 +562,8 @@ namespace LamestWebserver.UI
         {
             string ret = "<img ";
 
-            if (!string.IsNullOrWhiteSpace(source))
-                ret += "src='" + source + "' ";
+            if (!string.IsNullOrWhiteSpace(_source))
+                ret += "src='" + _source + "' ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -505,8 +580,8 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             ret += ">";
 
@@ -741,17 +816,17 @@ namespace LamestWebserver.UI
         /// <summary>
         /// The Text displayed in this Headline
         /// </summary>
-        public string text;
+        public string Text;
 
         /// <summary>
         /// Additional attributes added to this element
         /// </summary>
-        public string descriptionTags;
+        public string DescriptionTags;
 
         /// <summary>
         /// The level of this headline (1-6)
         /// </summary>
-        private int level;
+        private readonly int _level;
 
         /// <summary>
         /// Constructs a new Headline
@@ -760,8 +835,8 @@ namespace LamestWebserver.UI
         /// <param name="level">the level of this headline</param>
         public HHeadline(string text = "", int level = 1)
         {
-            this.text = text;
-            this.level = level;
+            this.Text = text;
+            this._level = level;
 
             if (level > 6 || level < 1)
                 throw new Exception("the level has to be between 1 and 6!");
@@ -774,7 +849,7 @@ namespace LamestWebserver.UI
         /// <returns>the element as string</returns>
         public override string GetContent(AbstractSessionIdentificator sessionData)
         {
-            string ret = "<h" + level + " ";
+            string ret = "<h" + _level + " ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -791,10 +866,10 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
-            ret += ">" + System.Web.HttpUtility.HtmlEncode(text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</h" + level + ">";
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</h" + _level + ">";
 
             return ret;
         }
@@ -808,17 +883,17 @@ namespace LamestWebserver.UI
         /// <summary>
         /// The Type of the input element
         /// </summary>
-        public EInputType inputType;
+        public EInputType InputType;
 
         /// <summary>
         /// The Value of the input element
         /// </summary>
-        public string value;
+        public string Value;
 
         /// <summary>
         /// Additional attributes added to the tag
         /// </summary>
-        public string descriptionTags;
+        public string DescriptionTags;
 
         /// <summary>
         /// Constructs a new Input Element
@@ -828,9 +903,9 @@ namespace LamestWebserver.UI
         /// <param name="value">the predefined value of this input element</param>
         public HInput(EInputType inputType, string name, string value = "")
         {
-            this.inputType = inputType;
+            this.InputType = inputType;
             this.Name = name;
-            this.value = value;
+            this.Value = value;
         }
 
         /// <summary>
@@ -842,7 +917,7 @@ namespace LamestWebserver.UI
         {
             string ret = "<input ";
 
-            ret += "type='" + (inputType != EInputType.datetime_local ? inputType.ToString() : "datetime-local") + "' ";
+            ret += "type='" + (InputType != EInputType.datetime_local ? InputType.ToString() : "datetime-local") + "' ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -856,14 +931,14 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Name))
                 ret += "name='" + Name + "' ";
 
-            if (!string.IsNullOrWhiteSpace(value))
-                ret += "value='" + value + "' ";
+            if (!string.IsNullOrWhiteSpace(Value))
+                ret += "value='" + Value + "' ";
 
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             ret += ">";
 
@@ -1107,9 +1182,10 @@ namespace LamestWebserver.UI
         /// </summary>
         public string Action;
 
-        private bool fixedAction;
-        private string redirectTRUE, redirectFALSE;
-        private Func<AbstractSessionIdentificator, bool> conditionalCode;
+        private readonly bool _fixedAction;
+        private readonly string _redirectTrue;
+        private readonly string _redirectFalse;
+        private readonly Func<AbstractSessionIdentificator, bool> _conditionalCode;
 
         /// <summary>
         /// Constructs a new Form pointing to the given action when submitted
@@ -1118,26 +1194,33 @@ namespace LamestWebserver.UI
         public HForm(string action)
         {
             this.Action = action;
-            fixedAction = true;
+            _fixedAction = true;
         }
 
         /// <summary>
         /// redirects if the conditional code returns true and executes other code if the conditional code returns false
         /// </summary>
+        /// <param name="redirectURLifTRUE">the url to redirect to if the conditionalCode returns true</param>
+        /// <param name="redirectURLifFALSE">the url to redirect to if the conditionalCode returns false</param>
+        /// <param name="conditionalCode">the conditional code</param>
         public HForm(string redirectURLifTRUE, string redirectURLifFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
         {
-            fixedAction = false;
-            redirectTRUE = redirectURLifTRUE;
-            redirectFALSE = redirectURLifFALSE;
-            this.conditionalCode = conditionalCode;
+            _fixedAction = false;
+            _redirectTrue = redirectURLifTRUE;
+            _redirectFalse = redirectURLifFALSE;
+            this._conditionalCode = conditionalCode;
         }
 
         /// <summary>
         /// creates a form containing a few values which are added to elements. It can also contain a submit button.
         /// </summary>
+        /// <param name="action">the URL to load when submitted</param>
+        /// <param name="addSubmitButton">shall there be a submit button?</param>
+        /// <param name="buttontext">if yes: what should the text on the submit button say?</param>
+        /// <param name="values">additional values to set in the form as invisible parameters</param>
         public HForm(string action, bool addSubmitButton, string buttontext = "", params Tuple<string, string>[] values)
         {
-            fixedAction = true;
+            _fixedAction = true;
             this.Action = action;
 
             for (int i = 0; i < values.Length; i++)
@@ -1158,14 +1241,14 @@ namespace LamestWebserver.UI
         {
             string ret = "<form ";
 
-            if (fixedAction)
+            if (_fixedAction)
             {
                 if (!string.IsNullOrWhiteSpace(Action))
                     ret += "action='" + Action + "' ";
             }
             else
             {
-                ret += "action='" + InstantPageResponse.AddOneTimeConditionalRedirect(redirectTRUE, redirectFALSE, true, conditionalCode) + "' ";
+                ret += "action='" + InstantPageResponse.AddOneTimeConditionalRedirect(_redirectTrue, _redirectFalse, true, _conditionalCode) + "' ";
             }
 
             if (!string.IsNullOrWhiteSpace(ID))
@@ -1212,8 +1295,9 @@ namespace LamestWebserver.UI
     /// </summary>
     public class HButton : HContainer
     {
-        string href, onclick;
-        EButtonType type;
+        private readonly string _href;
+        private readonly string _onclick;
+        private readonly EButtonType _type;
 
         /// <summary>
         /// Creates a button. SUBMIT BUTTONS SHOULDN'T HAVE A HREF!
@@ -1225,9 +1309,9 @@ namespace LamestWebserver.UI
         public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "")
         {
             this.Text = text;
-            this.href = href;
-            this.onclick = onclick;
-            this.type = type;
+            this._href = href;
+            this._onclick = onclick;
+            this._type = type;
         }
 
         /// <summary>
@@ -1239,9 +1323,9 @@ namespace LamestWebserver.UI
         public HButton(string text, string href = "", string onclick = "")
         {
             this.Text = text;
-            this.href = href;
-            this.onclick = onclick;
-            this.type = EButtonType.button;
+            this._href = href;
+            this._onclick = onclick;
+            this._type = EButtonType.button;
         }
 
         /// <summary>
@@ -1251,7 +1335,7 @@ namespace LamestWebserver.UI
         /// <returns>the element as string</returns>
         public override string GetContent(AbstractSessionIdentificator sessionData)
         {
-            string ret = "<button type='" + type + "' ";
+            string ret = "<button type='" + _type + "' ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -1270,10 +1354,10 @@ namespace LamestWebserver.UI
 
             if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
             {
-                if (href.Length > 0 && type != EButtonType.submit)
+                if (_href.Length > 0 && _type != EButtonType.submit)
                 {
-                    if (href[0] == '#')
-                        ret += "href='" + href + "' ";
+                    if (_href[0] == '#')
+                        ret += "href='" + _href + "' ";
                     else
                         ret += "href='#' ";
 
@@ -1282,7 +1366,7 @@ namespace LamestWebserver.UI
                         + hash + "=document.createElement('form');f_"
                         + hash + ".setAttribute('method','POST');f_"
                         + hash + ".setAttribute('action','"
-                            + href + "');f_"
+                            + _href + "');f_"
                         + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
                         + hash + "=document.createElement('input');i_"
                         + hash + ".setAttribute('type','hidden');i_"
@@ -1295,28 +1379,28 @@ namespace LamestWebserver.UI
                         + hash + ".submit();document.body.remove(f_"
                         + hash + ");";
 
-                    ret += " onclick=\"" + onclick + add + "\"";
+                    ret += " onclick=\"" + _onclick + add + "\"";
                 }
                 else
                 {
-                    if (!string.IsNullOrWhiteSpace(onclick))
-                        ret += "onclick='" + onclick + "' ";
+                    if (!string.IsNullOrWhiteSpace(_onclick))
+                        ret += "onclick='" + _onclick + "' ";
                 }
             }
             else if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
             {
-                if (!string.IsNullOrWhiteSpace(onclick))
+                if (!string.IsNullOrWhiteSpace(_onclick))
                 {
-                    ret += "onclick=\"" + onclick + ";";
+                    ret += "onclick=\"" + _onclick + ";";
 
-                    if (!string.IsNullOrWhiteSpace(href) && type != EButtonType.submit)
-                        ret += "location.href='" + href + "'\" ";
+                    if (!string.IsNullOrWhiteSpace(_href) && _type != EButtonType.submit)
+                        ret += "location.href='" + _href + "'\" ";
                     else
                         ret += "\" ";
                 }
-                else if (!string.IsNullOrWhiteSpace(href) && type != EButtonType.submit)
+                else if (!string.IsNullOrWhiteSpace(_href) && _type != EButtonType.submit)
                 {
-                    ret += "onclick=\"location.href='" + href + "'\" ";
+                    ret += "onclick=\"location.href='" + _href + "'\" ";
                 }
             }
             else
@@ -1370,29 +1454,29 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Additional attributes added to the tag
         /// </summary>
-        public string descriptionTags;
+        public string DescriptionTags;
 
         private Tuple<string, string>[] options;
 
         /// <summary>
         /// The amount of entries displayed if not expanded
         /// </summary>
-        public int size = 1;
+        public int Size = 1;
 
         /// <summary>
         /// does the dropdownmenu allow multiple selections?
         /// </summary>
-        public bool multipleSelectable = false;
+        public bool MultipleSelectable = false;
 
         /// <summary>
         /// is the dropdownmenu disabled for the user?
         /// </summary>
-        public bool disabled = false;
+        public bool Disabled = false;
 
         /// <summary>
         /// the selectedIndexes
         /// </summary>
-        public List<int> selectedIndexes = new List<int>() { 0 };
+        public List<int> SelectedIndexes = new List<int>() { 0 };
 
         /// <summary>
         /// Constructs a new DropDownMenu element
@@ -1404,8 +1488,8 @@ namespace LamestWebserver.UI
         public HDropDownMenu(string name, int size, bool multipleSelectable, params Tuple<string, string>[] TextValuePairsToDisplay)
         {
             this.Name = name;
-            this.size = size;
-            this.multipleSelectable = multipleSelectable;
+            this.Size = size;
+            this.MultipleSelectable = multipleSelectable;
             this.options = TextValuePairsToDisplay;
         }
 
@@ -1429,14 +1513,14 @@ namespace LamestWebserver.UI
         /// <returns>this element for inline use.</returns>
         public HDropDownMenu SelectByValue(string value)
         {
-            if (!multipleSelectable)
-                selectedIndexes.Clear();
+            if (!MultipleSelectable)
+                SelectedIndexes.Clear();
 
             for (int i = 0; i < options.Length; i++)
             {
                 if(options[i].Item2 == value)
                 {
-                    this.selectedIndexes.Add(i);
+                    this.SelectedIndexes.Add(i);
                 }
             }
 
@@ -1452,14 +1536,14 @@ namespace LamestWebserver.UI
         /// <returns>this element for inline use.</returns>
         public HDropDownMenu SelectByText(string text)
         {
-            if (!multipleSelectable)
-                selectedIndexes.Clear();
+            if (!MultipleSelectable)
+                SelectedIndexes.Clear();
 
             for (int i = 0; i < options.Length; i++)
             {
                 if (options[i].Item1 == text)
                 {
-                    this.selectedIndexes.Add(i);
+                    this.SelectedIndexes.Add(i);
                 }
             }
 
@@ -1490,16 +1574,16 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            ret += "size=\"" + size + "\" ";
+            ret += "size=\"" + Size + "\" ";
 
-            if (multipleSelectable)
+            if (MultipleSelectable)
                 ret += "multiple=\"multiple\" ";
 
-            if (disabled)
-                ret += "disabled=\"" + disabled + "\" ";
+            if (Disabled)
+                ret += "disabled=\"" + Disabled + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             ret += ">";
 
@@ -1509,7 +1593,7 @@ namespace LamestWebserver.UI
                 {
                     ret += "<option value=\"" + System.Web.HttpUtility.UrlEncode(options[i].Item2) + "\" ";
 
-                    if (selectedIndexes.Contains(i))
+                    if (SelectedIndexes.Contains(i))
                         ret += "selected=\"selected\" ";
 
                     ret += ">" + System.Web.HttpUtility.HtmlEncode(options[i].Item1).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</option>";
@@ -1634,7 +1718,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Additional attributes to be added to this node
         /// </summary>
-        public string descriptionTags;
+        public string DescriptionTags;
 
         /// <summary>
         /// Constructs a new Table containing the given elements
@@ -1678,8 +1762,8 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             ret += ">";
 
@@ -1726,12 +1810,12 @@ namespace LamestWebserver.UI
         /// <summary>
         /// if false, the element won't have a start and end tag but will only consist of a single tag (like img)
         /// </summary>
-        public bool hasContent;
+        public bool HasContent;
 
         /// <summary>
         /// the name of the tag
         /// </summary>
-        public string tagName;
+        public string TagName;
 
         /// <summary>
         /// Constructs a new custom tag
@@ -1742,9 +1826,9 @@ namespace LamestWebserver.UI
         /// <param name="text">the text displayed in the content of this element</param>
         public HTag(string tagName, string descriptionTags, bool hasContent = false, string text = "")
         {
-            this.tagName = tagName;
+            this.TagName = tagName;
             this.DescriptionTags = descriptionTags;
-            this.hasContent = hasContent;
+            this.HasContent = hasContent;
             this.Text = text;
         }
 
@@ -1755,7 +1839,7 @@ namespace LamestWebserver.UI
         /// <returns>the element as string</returns>
         public override string GetContent(AbstractSessionIdentificator sessionData)
         {
-            string ret = "<" + tagName + " ";
+            string ret = "<" + TagName + " ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -1777,7 +1861,7 @@ namespace LamestWebserver.UI
 
             ret += ">";
 
-            if (hasContent)
+            if (HasContent)
             {
                 if (!string.IsNullOrWhiteSpace(Text))
                     ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
@@ -1787,7 +1871,7 @@ namespace LamestWebserver.UI
                     ret += Elements[i].GetContent(sessionData);
                 }
 
-                ret += "</" + tagName  + ">";
+                ret += "</" + TagName  + ">";
             }
 
             return ret;
@@ -1905,22 +1989,22 @@ namespace LamestWebserver.UI
         /// <summary>
         /// The amount columns dispalyed
         /// </summary>
-        public uint? cols;
+        public uint? Cols;
 
         /// <summary>
         /// The amount rows dispalyed
         /// </summary>
-        public uint? rows;
+        public uint? Rows;
 
         /// <summary>
         /// The predefined value
         /// </summary>
-        public string value;
+        public string Value;
 
         /// <summary>
         /// Additional attributes added to this tag
         /// </summary>
-        public string descriptionTags;
+        public string DescriptionTags;
 
         /// <summary>
         /// Constructs a new textarea element
@@ -1930,9 +2014,9 @@ namespace LamestWebserver.UI
         /// <param name="rows">the amount of rows displayed</param>
         public HTextArea(string value = "", uint? cols = null, uint? rows = null)
         {
-            this.value = value;
-            this.cols = cols;
-            this.rows = rows;
+            this.Value = value;
+            this.Cols = cols;
+            this.Rows = rows;
         }
 
         /// <summary>
@@ -1959,16 +2043,16 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Name))
                 ret += "name='" + Name + "' ";
 
-            if (cols.HasValue)
-                ret += "cols=\"" + cols.Value + "\" ";
+            if (Cols.HasValue)
+                ret += "cols=\"" + Cols.Value + "\" ";
             
-            if (rows.HasValue)
-                ret += "rows=\"" + rows.Value + "\" ";
+            if (Rows.HasValue)
+                ret += "rows=\"" + Rows.Value + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
-            return ret + ">" + System.Web.HttpUtility.HtmlEncode(value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</textarea>";
+            return ret + ">" + System.Web.HttpUtility.HtmlEncode(Value) + "</textarea>";
         }
     }
 
