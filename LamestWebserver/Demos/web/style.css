@@ -44,13 +44,14 @@ div.footer {
     font-size: 11pt;
     float: left;
     margin-top: -4em;
+    color: #bdbdbd;
 }
 
 .footer img {
     margin: 0 0 0 auto;
 }
 
-p, a, h1, h2, h3, div.container {
+p, a, h1, h2, h3, div.container, b, i {
     max-width: 1100px;
     margin: 1em auto 0.5em auto;
 }
@@ -120,4 +121,23 @@ h3 {
     font-weight: normal;
     font-size: 15pt;
     font-family: "Segoe UI Semibold", "Segoe UI", Tahoma, sans-serif;
+}
+
+table {
+    max-width: 1100px;
+    margin: 1em auto 0.5em auto;
+    min-width: 75%;
+    background-color: #f9f9f9;
+    color: #333;
+    border-collapse: collapse;
+}
+
+td {
+    border-collapse: collapse;
+    border: solid 2px #eaeaea;
+    padding: 1em;
+}
+
+td p, td b, td i {
+    margin: 0;
 }

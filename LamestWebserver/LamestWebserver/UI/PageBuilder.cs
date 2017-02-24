@@ -30,9 +30,9 @@ namespace LamestWebserver.UI
         public string URL { get; protected set; }
 
         /// <summary>
-        /// Path to the stylesheets. Prefer strings. Else: toString() will be used
+        /// Path to the stylesheets.
         /// </summary>
-        public List<object> StylesheetLinks = new List<object>();
+        public List<string> StylesheetLinks = new List<string>();
 
         /// <summary>
         /// javascript code directly bound into the page code
@@ -586,6 +586,25 @@ namespace LamestWebserver.UI
         }
 
         /// <summary>
+        /// Constructs a new TextBlock
+        /// </summary>
+        /// <param name="texts">will be a HText if string, will be itself if HElement, else will be HText of .ToString() text</param>
+        public HTextBlock(params object[] texts)
+        {
+            foreach (object text in texts)
+            {
+                if (text == null)
+                    Elements.Add("null");
+                else if(text is string)
+                    Elements.Add(new HText((string)text));
+                else if(text is HElement)
+                    Elements.Add((HElement)text);
+                else
+                    Elements.Add(new HText(text.ToString()));
+            }
+        }
+
+        /// <summary>
         /// This Method parses the current element to string
         /// </summary>
         /// <param name="sessionData">the current ISessionIdentificator</param>
@@ -612,7 +631,7 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
                 ret += DescriptionTags;
 
-            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+            ret += ">" + (System.Web.HttpUtility.HtmlEncode(Text)?.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") ?? "");
 
             Elements.ForEach(e =>
             {
@@ -978,6 +997,15 @@ namespace LamestWebserver.UI
     /// </summary>
     public class HContainer : HElement
     {
+        /// <summary>
+        /// Adds all listed objects into the container.
+        /// </summary>
+        /// <param name="elements">the elements to add</param>
+        public HContainer(params HElement[] elements)
+        {
+            Elements = elements.ToList();
+        }
+
         /// <summary>
         /// A list of all contained elements
         /// </summary>
