@@ -419,13 +419,12 @@ namespace LamestWebserver
 
             byte[] msg;
             int bytes = 0;
+            
+            networkStreamsMutex.WaitOne();
+            networkStreams.Add(Thread.CurrentThread.ManagedThreadId, nws);
+            networkStreamsMutex.ReleaseMutex();
 
-            ThreadedWorker.CurrentWorker.EnqueueJob((Action<NetworkStream>) (networkStream =>
-            {
-                networkStreamsMutex.WaitOne();
-                networkStreams.Add(Thread.CurrentThread.ManagedThreadId, networkStream);
-                networkStreamsMutex.ReleaseMutex();
-            }), nws);
+            Stopwatch stopwatch = new Stopwatch();
 
             while (running)
             {
@@ -433,7 +432,11 @@ namespace LamestWebserver
 
                 try
                 {
+                    if(stopwatch.IsRunning)
+                        stopwatch.Reset();
+
                     bytes = nws.Read(msg, 0, RequestMaxPacketSize);
+                    stopwatch.Start();
                 }
                 catch (ThreadAbortException e)
                 {
@@ -441,7 +444,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.LogMessage("An error occured in the client handler:  " + e);
+                    ServerHandler.LogMessage("An error occured in the client handler:  " + e, stopwatch);
                     break;
                 }
 
@@ -483,7 +486,7 @@ namespace LamestWebserver
                             buffer = htp_.GetPackage(enc);
                             nws.Write(buffer, 0, buffer.Length);
 
-                            ServerHandler.LogMessage("Client requested an empty URL. We sent Error 501.");
+                            ServerHandler.LogMessage("Client requested an empty URL. We sent Error 501.", stopwatch);
                         }
                         else
                         {
@@ -515,7 +518,7 @@ namespace LamestWebserver
                                 msg = handler.CreateHandshake();
                                 nws.Write(msg, 0, msg.Length);
 
-                                ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (WebSocket Upgrade Request)");
+                                ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (WebSocket Upgrade Request)", stopwatch);
 
                                 var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler, (ushort) this.Port);
 
@@ -564,7 +567,7 @@ namespace LamestWebserver
                                 }
                                 catch (MutexRetryException e)
                                 {
-                                    ServerHandler.LogMessage("MutexRetryException. Retrying...");
+                                    ServerHandler.LogMessage("MutexRetryException. Retrying...", stopwatch);
 
                                     if (tries >= 10)
                                     {
@@ -607,10 +610,10 @@ namespace LamestWebserver
                                 nws.Write(buffer, 0, buffer.Length);
 
                                 if (error == null)
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# WebserverApi)");
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# WebserverApi)", stopwatch);
                                 else
                                     ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl +
-                                                             "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
+                                                             "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error, stopwatch);
                             }
                             else
                             {
@@ -623,7 +626,7 @@ namespace LamestWebserver
 
                                     buffer = null;
 
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'.");
+                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'.", stopwatch);
                                 }
                                 else
                                 {
@@ -684,12 +687,12 @@ namespace LamestWebserver
                                         }
                                         catch (MutexRetryException e)
                                         {
-                                            ServerHandler.LogMessage("MutexRetryException. Retrying...");
+                                            ServerHandler.LogMessage("MutexRetryException. Retrying...", stopwatch);
 
                                             if (tries >= 10)
                                             {
-                                                htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
-                                                                                                  + htp.RequestUrl + "'",
+                                                htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Directory Response for '"
+                                                                                              + htp.RequestUrl + "' in Directory Response '" + bestUrlMatch + "'",
                                                     $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
                                                     + e.ToString().Replace("\r\n", "<br>")
 #if DEBUG
@@ -729,10 +732,10 @@ namespace LamestWebserver
 
                                         if (error == null)
                                             ServerHandler.LogMessage("Client requested the Directory URL '" + subDir + "' in Directory Page '" + bestUrlMatch +
-                                                                     "'. (C# WebserverApi)");
+                                                                     "'. (C# WebserverApi)", stopwatch);
                                         else
                                             ServerHandler.LogMessage("Client requested the Directory URL '" + subDir + "' in Directory Page '" + bestUrlMatch +
-                                                                     "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
+                                                                     "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error, stopwatch);
                                     }
                                     else
                                     {
@@ -769,7 +772,7 @@ namespace LamestWebserver
 
                                         nws.Write(buffer, 0, buffer.Length);
 
-                                        ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 404.");
+                                        ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 403/404.", stopwatch);
                                     }
                                 }
                             }
@@ -781,7 +784,7 @@ namespace LamestWebserver
                     }
                     catch (Exception e)
                     {
-                        ServerHandler.LogMessage("An error occured in the client handler: " + e);
+                        ServerHandler.LogMessage("An error occured in the client handler: " + e, stopwatch);
                     }
                 }
                 catch (ThreadAbortException)
@@ -790,7 +793,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.LogMessage("An error occured in the client handler: " + e);
+                    ServerHandler.LogMessage("An error occured in the client handler: " + e, stopwatch);
                 }
             }
         }

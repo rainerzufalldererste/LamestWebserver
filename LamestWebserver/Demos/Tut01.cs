@@ -89,10 +89,10 @@ namespace Demos
                 },
                 new List<HElement>()
                 {
-                    new HText(nameof(HEncodedString)),
+                    new HText(nameof(HString)),
                     new HText("Copies a string to the final result like HPlainText but the string is automatically encoded before."),
                     new HText("-"),
-                    new HEncodedString("&amp; vs. & / <b>bold</b>")
+                    new HString("&amp; vs. & / <b>bold</b>")
                 },
                 new List<HElement>()
                 {
@@ -114,6 +114,13 @@ namespace Demos
                     new HText("A Headline."),
                     new HText("<h1> <h2> ..."),
                     new HHeadline("h1") + new HHeadline("h2", 2) + new HHeadline("h3", 3)
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HLink)),
+                    new HText("A link"),
+                    new HText("<a>"),
+                    new HLink("Go back to the MainPage", "/")
                 },
                 new List<HElement>()
                 {
@@ -150,7 +157,7 @@ namespace Demos
                     + new HInput(HInput.EInputType.datetime_local, "dateTimeLocalInput") + new HNewLine()
                     + new HInput(HInput.EInputType.email, "emailInput", "emailInput") + new HNewLine()
                     + new HInput(HInput.EInputType.file, "fileInput") + new HNewLine()
-                    + new HInput(HInput.EInputType.hidden, "hiddenInput", "hidden") + new HNewLine()
+                    + new HInput(HInput.EInputType.hidden, "hiddenInput", "hidden") + new HItalic("<- Hidden Input") + new HNewLine()
                     + new HInput(HInput.EInputType.image, "imageInput") { DescriptionTags = "src='lwsfooter.png'" } + new HNewLine()
                     + new HInput(HInput.EInputType.month, "monthInput", "monthInput") + new HNewLine()
                     + new HInput(HInput.EInputType.number, "numberInput", "1337") + new HNewLine()
@@ -171,6 +178,35 @@ namespace Demos
                     new HText("A mutliline text input."),
                     new HText("<textarea>"),
                     new HTextArea("this\n is\n  some\n   text", null, 5)
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HForm)),
+                    new HText("A collection of inputs that can be sent to another page via HTTP POST."),
+                    new HText("<form>"),
+                    new HForm("") { Elements = {new HInput(HInput.EInputType.text, "text", "insert your text here."), new HButton("submit", HButton.EButtonType.submit)}}
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HRuntimeCode)),
+                    new HText("Code that will be executed at runtime (mostly just to add code in a big HElement block like this one here)."),
+                    new HText("-"),
+                    new HRuntimeCode((innerSessionData) => // The code returns string and takes an AbstractSessionIdentificator
+                    {
+                        string result = (innerSessionData as SessionData)?.GetHttpPostValue("text"); // only SessionData can get Post Values - other AbstractSessionIdentificators could be initiated from Websockets.
+
+                        if (result == null) // GetHttpPostValue returns null if the value could not be found.
+                            return new HString("You can enter a text in the HForm example above and click on the submit button.").GetContent(innerSessionData);
+                        else
+                            return new HString($"You entered '{result}'").GetContent(innerSessionData);
+                    })
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HLine)),
+                    new HText("A horizontal line."),
+                    new HText("<hr>"),
+                    new HLine()
                 },
             });
         } 

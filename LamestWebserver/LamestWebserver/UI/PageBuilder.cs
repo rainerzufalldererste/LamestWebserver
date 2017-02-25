@@ -358,13 +358,13 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Copies the given text to the final HTML-Response - html encoded.
     /// </summary>
-    public class HEncodedString : HPlainText
+    public class HString : HPlainText
     {
         /// <summary>
         /// Creates a new HEncodedString containing the given text.
         /// </summary>
         /// <param name="text"></param>
-        public HEncodedString(string text = "") : base(text) { }
+        public HString(string text = "") : base(text) { }
 
         /// <inheritdoc />
         public override string GetContent(AbstractSessionIdentificator sessionData)

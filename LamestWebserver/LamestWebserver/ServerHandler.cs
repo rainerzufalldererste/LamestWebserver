@@ -529,6 +529,11 @@ namespace LamestWebserver
             }).Start();
         }
 
+        internal static void LogMessage(string text, Stopwatch stopwatch)
+        {
+            LogMessage($"[in {((double)stopwatch.ElapsedTicks/(double)TimeSpan.TicksPerMillisecond):0.000}ms] {text}");
+        }
+
         private static void ShowMsgs()
         {
             while (Running)

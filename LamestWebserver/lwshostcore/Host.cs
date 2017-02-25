@@ -54,13 +54,17 @@ namespace lwshostcore
             {
                 ID = SessionContainer.generateHash();
                 ProcessFile(args.FullPath);
-                ServerHandler.LogMessage("[lwshost] [Updated File] " + args.FullPath);
+
+                if (args.FullPath.EndsWith(".exe") || args.FullPath.EndsWith(".dll"))
+                    ServerHandler.LogMessage("[lwshost] [Updated File] " + args.FullPath);
             };
 
             fileSystemWatcher.Created += (sender, args) =>
             {
                 ProcessFile(args.FullPath);
-                ServerHandler.LogMessage("[lwshost] [Added File] " + args.FullPath);
+
+                if (args.FullPath.EndsWith(".exe") || args.FullPath.EndsWith(".dll"))
+                    ServerHandler.LogMessage("[lwshost] [Added File] " + args.FullPath);
             };
 
             fileSystemWatcher.Renamed += (sender, args) =>
