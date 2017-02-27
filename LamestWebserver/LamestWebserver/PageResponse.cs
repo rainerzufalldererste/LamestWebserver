@@ -467,9 +467,9 @@ namespace LamestWebserver
                 else
                 {
                     return "<head><script type=\"text/javascript\">onload = "
-                                    + ScriptCollection.getPageReferalWithFullPOSTInMilliseconds(sessionData, new object[] { destinationURL, 0 }) + 
+                                    + ScriptCollection.GetPageReferalWithFullPostInMilliseconds(sessionData, new object[] { destinationURL, 0 }) + 
                                     "</script><title>Page Redirection</title><style type=\"text/css\">hr{border:solid;border-width:3;color:#efefef;} p {overflow:overlay;}</style></head><body style='background-color: #f1f1f1;margin: 0;'><div style='font-family: \"Segoe UI\" ,sans-serif;width: 70%;max-width: 1200px;margin: 0em auto;font-size: 16pt;background-color: #fdfdfd;padding: 4em 8em;color: #4e4e4e;'><h1 style='font-weight: lighter;font-size: 50pt;'>Page Redirection</h1><hr><p>If you are not redirected automatically, follow this <a href='#' onclick=\""
-                                    + ScriptCollection.getPageReferalWithFullPOSTInMilliseconds(sessionData, new object[] { destinationURL, 0 }) +
+                                    + ScriptCollection.GetPageReferalWithFullPostInMilliseconds(sessionData, new object[] { destinationURL, 0 }) +
                                     "\">link.</a></p><p style='text-align:right'>- LamestWebserver (LameOS)</p></div></body>";
                 }
             }
@@ -525,10 +525,10 @@ namespace LamestWebserver
                 else
                 {
                     return "<head><script type=\"text/javascript\">onload = "
-                                    + ScriptCollection.getPageReferalWithFullPOSTInMilliseconds(sessionData, new object[] { destinationURL, milliseconds }) +
+                                    + ScriptCollection.GetPageReferalWithFullPostInMilliseconds(sessionData, new object[] { destinationURL, milliseconds }) +
                                     "</script><title>Page Redirection</title><style type=\"text/css\">hr{border:solid;border-width:3;color:#efefef;} p {overflow:overlay;}</style></head><body style='background-color: #f1f1f1;margin: 0;'><div style='font-family: \"Segoe UI\" ,sans-serif;width: 70%;max-width: 1200px;margin: 0em auto;font-size: 16pt;background-color: #fdfdfd;padding: 4em 8em;color: #4e4e4e;'><p><h2 style='font-weight: lighter;font-size: 40pt;'>"
                                     + message + "</h2></p><hr><p><i style='color:#404040;'>If you are not redirected automatically, follow this <a href='#' onclick=\""
-                                    + ScriptCollection.getPageReferalWithFullPOSTInMilliseconds(sessionData, new object[] { destinationURL, milliseconds }) +
+                                    + ScriptCollection.GetPageReferalWithFullPostInMilliseconds(sessionData, new object[] { destinationURL, milliseconds }) +
                                     "\">link.</a></i></p></div></body>";
                 }
             }

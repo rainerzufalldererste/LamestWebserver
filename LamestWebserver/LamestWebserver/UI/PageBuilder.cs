@@ -2139,7 +2139,7 @@ namespace LamestWebserver.UI
         private object[] arguments;
         private bool dynamic;
         private string script;
-        private ScriptCollection.scriptFuction scriptFunction;
+        private ScriptCollection.ScriptFuction scriptFunction;
         
         /// <summary>
         /// generates a static script (not the ones that need ISessionIdentificator or the SSID)
@@ -2153,7 +2153,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// generates a runtime defined script (like the ones, that need ISessionIdentificator or the SSID)
         /// </summary>
-        public HScript(ScriptCollection.scriptFuction scriptFunction, params object[] arguments)
+        public HScript(ScriptCollection.ScriptFuction scriptFunction, params object[] arguments)
         {
             this.dynamic = true;
             this.scriptFunction = scriptFunction;

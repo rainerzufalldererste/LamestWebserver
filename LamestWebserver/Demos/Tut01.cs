@@ -19,7 +19,7 @@ namespace Demos
         public Tut01() : base(nameof(Tut01)) // <- The nameof(Tut01) is just used to name the URL just like this class is called
         {
         }
-        
+
         protected override string GetContents(SessionData sessionData)
         {
             // Get the default layout around the elements retrieved by GetElements()
@@ -32,7 +32,7 @@ namespace Demos
             return page.ToString();
 
             // Or for all you fishy dudes out there there's also this alternative
-            return page * sessionData;
+            return page*sessionData;
         }
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace Demos
                     + new HInput(HInput.EInputType.email, "emailInput", "emailInput") + new HNewLine()
                     + new HInput(HInput.EInputType.file, "fileInput") + new HNewLine()
                     + new HInput(HInput.EInputType.hidden, "hiddenInput", "hidden") + new HItalic("<- Hidden Input") + new HNewLine()
-                    + new HInput(HInput.EInputType.image, "imageInput") { DescriptionTags = "src='lwsfooter.png'" } + new HNewLine()
+                    + new HInput(HInput.EInputType.image, "imageInput") {DescriptionTags = "src='lwsfooter.png'"} + new HNewLine()
                     + new HInput(HInput.EInputType.month, "monthInput", "monthInput") + new HNewLine()
                     + new HInput(HInput.EInputType.number, "numberInput", "1337") + new HNewLine()
                     + new HInput(HInput.EInputType.password, "passwordInput", "password") + new HNewLine()
@@ -184,7 +184,7 @@ namespace Demos
                     new HText(nameof(HForm)),
                     new HText("A collection of inputs that can be sent to another page via HTTP POST."),
                     new HText("<form>"),
-                    new HForm("") { Elements = {new HInput(HInput.EInputType.text, "text", "insert your text here."), new HButton("submit", HButton.EButtonType.submit)}}
+                    new HForm("") {Elements = {new HInput(HInput.EInputType.text, "text", "insert your text here."), new HButton("submit", HButton.EButtonType.submit)}}
                 },
                 new List<HElement>()
                 {
@@ -193,7 +193,8 @@ namespace Demos
                     new HText("-"),
                     new HRuntimeCode((innerSessionData) => // The code returns string and takes an AbstractSessionIdentificator
                     {
-                        string result = (innerSessionData as SessionData)?.GetHttpPostValue("text"); // only SessionData can get Post Values - other AbstractSessionIdentificators could be initiated from Websockets.
+                        string result = (innerSessionData as SessionData)?.GetHttpPostValue("text");
+                            // only SessionData can get Post Values - other AbstractSessionIdentificators could be initiated from Websockets.
 
                         if (result == null) // GetHttpPostValue returns null if the value could not be found.
                             return new HString("You can enter a text in the HForm example above and click on the submit button.").GetContent(innerSessionData);
@@ -213,7 +214,7 @@ namespace Demos
                     new HText(nameof(HCanvas)),
                     new HText("A HTML-Canvas for drawing on using JavaScript code."),
                     new HText("<canvas>"),
-                    new HCanvas() { Style = "width:100px; height:100px; background-color:#fb905f;"}
+                    new HCanvas() {Style = "width:100px; height:100px; background-color:#fb905f;"}
                 },
                 new List<HElement>()
                 {
@@ -224,16 +225,18 @@ namespace Demos
                     + new HNewLine()
                     + new HNewLine()
                     + new HDropDownMenu("dropDown", 3, true, new Tuple<string, string>("Some", "first"), new Tuple<string, string>("Thing", "second"),
-                                                             new Tuple<string, string>("With", "third"), new Tuple<string, string>("More", "fourth"),
-                                                             new Tuple<string, string>("Concurrent", "fifth"), new Tuple<string, string>("Options", "sixth"))
+                        new Tuple<string, string>("With", "third"), new Tuple<string, string>("More", "fourth"),
+                        new Tuple<string, string>("Concurrent", "fifth"), new Tuple<string, string>("Options", "sixth"))
                 },
                 new List<HElement>()
                 {
                     new HText(nameof(HList)),
                     new HText("List of elements."),
                     new HText("<ol> <ul>"),
-                    new HList(HList.EListType.OrderedList, new [] {"this", "is", "an", "ordered", "list"})
-                    + new HList(HList.EListType.UnorderedList, new HInput(HInput.EInputType.text, "textInput2", "Hello!"), "this", "is", "an", "unordered", "list", new HImage("lwsfooter.png"))
+                    new HList(HList.EListType.OrderedList, new[] {"this", "is", "an", "ordered", "list"})
+                    +
+                    new HList(HList.EListType.UnorderedList, new HInput(HInput.EInputType.text, "textInput2", "Hello!"), "this", "is", "an", "unordered", "list",
+                        new HImage("lwsfooter.png"))
                 },
                 new List<HElement>()
                 {
@@ -274,7 +277,7 @@ namespace Demos
                 {
                     new HText(nameof(HCheckBox)),
                     new HText("A simpler way to get a checkbox input."),
-                    new HText("<input>"),
+                    new HText("<input> <label>"),
                     new HCheckBox("checkBox1", "checkBox1Value", null, true) + new HNewLine()
                     + new HCheckBox("checkBox2", "checkBox2Value", "Check Box Text", true) + new HNewLine()
                     + new HCheckBox("checkBox3", "checkBox3Value", null, false) + new HNewLine()
@@ -284,7 +287,7 @@ namespace Demos
                 {
                     new HText(nameof(HRadioButton)),
                     new HText("A simpler way to get a radio button input."),
-                    new HText("<input>"),
+                    new HText("<input> <label>"),
                     new HRadioButton("radioButton1", "radioButton1Value", null, true) + new HNewLine()
                     + new HRadioButton("radioButton2", "radioButton2Value", "Radio Button Text", true) + new HNewLine()
                     + new HRadioButton("radioButton3", "radioButton3Value", null, false) + new HNewLine()
@@ -304,8 +307,26 @@ namespace Demos
                         new Tuple<string, string>("Fourth", "fourthItem"),
                         new Tuple<string, string>("Fifth", "fifthItem")
                     }, 2, true)
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HScript)),
+                    new HText("A script embedded in the webpage."),
+                    new HText("<script>"),
+                    new HScript("")
+                    + new HScript(ScriptCollection.GetPageReloadInMilliseconds, new object[] {60000})
+                    // the first parameter is a delegate, the second one is the parameters expected for this delegate to work
+                    // the delegates in ScriptCollection specify the parameters in their comments
+                    // In this case the parameters are obviously the milliseconds to wait.
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HScriptLink)),
+                    new HText("A linked script file embedded in the webpage."),
+                    new HText("<script>"),
+                    new HScriptLink("script.js")
                 }
             });
-        } 
+        }
     }
 }
