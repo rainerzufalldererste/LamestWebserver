@@ -1065,6 +1065,144 @@ namespace LamestWebserver.UI
             /// </summary>
             week,
         }
+
+        /// <summary>
+        /// A list of radio-buttons of which only one can be selected at a time.
+        /// </summary>
+        public class HSingleSelector : HElement
+        {
+            /// <summary>
+            /// Additional attributes to be added to the items
+            /// </summary>
+            public string DescriptionTags;
+
+            private readonly int _selectedIndex = 0;
+            private readonly List<Tuple<string, string>> _nameValuePairs;
+            private readonly bool _newLineAfterSelection;
+
+            /// <summary>
+            /// Constructs a new HSingleSelector
+            /// </summary>
+            /// <param name="name">the name of the resulting value</param>
+            /// <param name="nameValuePairs">a list of tuples of the selectableItems and their representative value</param>
+            /// <param name="selectedIndex">the selected value of the radioButtons</param>
+            /// <param name="newLineAfterSelection">shall there be a line after each option?</param>
+            public HSingleSelector(string name, List<Tuple<string, string>> nameValuePairs, int selectedIndex = 0, bool newLineAfterSelection = true)
+            {
+                Name = name;
+                _nameValuePairs = nameValuePairs;
+                _selectedIndex = selectedIndex;
+                _newLineAfterSelection = newLineAfterSelection;
+            }
+
+            /// <inheritdoc />
+            public override string GetContent(AbstractSessionIdentificator sessionData)
+            {
+                string attribs = "";
+
+                if (!string.IsNullOrWhiteSpace(ID))
+                    attribs += "id='" + ID + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Name))
+                    attribs += "name='" + Name + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Class))
+                    attribs += "class='" + Class + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Style))
+                    attribs += "style=\"" + Style + "\" ";
+
+                if (!string.IsNullOrWhiteSpace(Title))
+                    attribs += "title=\"" + Title + "\" ";
+
+                if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                    attribs += DescriptionTags + " ";
+
+                string ret = "";
+
+                int i = 0;
+
+                foreach (Tuple<string, string> tuple in _nameValuePairs)
+                {
+                    ret += "<label " + attribs + "> <input type=\"radio\" value=\"" + tuple.Item2 + "\" ";
+
+                    if (_selectedIndex == i++)
+                    {
+                        ret += "checked ";
+                    }
+
+                    ret += attribs + ">" + System.Web.HttpUtility.HtmlEncode(tuple.Item1).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</label>";
+
+                    if (_newLineAfterSelection && i != _nameValuePairs.Count)
+                        ret += "<br>";
+                }
+
+                return ret;
+            }
+        }
+
+        /// <summary>
+        /// A Text input field.
+        /// </summary>
+        public class HTextInput : HInput
+        {
+            private readonly string _placeholder;
+
+            /// <inheritdoc />
+            /// <param name="placeholderText">the placeholder to display when no text has been entered.</param>
+            public HTextInput(string name, string value = "", string placeholderText = "") : base(EInputType.text, name, value)
+            {
+                _placeholder = placeholderText;
+            }
+
+            /// <inheritdoc />
+            public override string GetContent(AbstractSessionIdentificator sessionData)
+            {
+                string ret = "<input ";
+
+                ret += "type='" + (InputType != EInputType.datetime_local ? InputType.ToString() : "datetime-local") + "' ";
+
+                if (!string.IsNullOrWhiteSpace(ID))
+                    ret += "id='" + ID + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Class))
+                    ret += "class='" + Class + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Style))
+                    ret += "style=\"" + Style + "\" ";
+
+                if (!string.IsNullOrWhiteSpace(Name))
+                    ret += "name='" + Name + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Value))
+                    ret += "value='" + Value + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Title))
+                    ret += "title=\"" + Title + "\" ";
+
+                if (!string.IsNullOrWhiteSpace(_placeholder))
+                    ret += "placeholder=\"" + _placeholder + "\" ";
+
+                if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                    ret += DescriptionTags;
+
+                ret += ">";
+
+                return ret;
+            }
+        }
+
+        /// <summary>
+        /// A Password-Text input field.
+        /// </summary>
+        public class HPasswordInput : HTextInput
+        {
+            /// <inheritdoc />
+            public HPasswordInput(string name, string placeholderText = "") : base(name, "", placeholderText)
+            {
+                base.InputType = EInputType.password;
+            }
+        }
     }
 
     /// <summary>
