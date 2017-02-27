@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.ServiceProcess;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using lwshostcore;
 using LamestWebserver;
@@ -45,6 +46,13 @@ namespace lwshostsvc
                 {
                     LamestWebserver.ServerHandler.LogMessage("Failed to bind port " + port + ":\n" + e);
                 }
+            }
+
+            if (WebServer.ServerCount == 0)
+            {
+                ServerHandler.LogMessage("No server started. Aborting.");
+                ServerHandler.StopHandler();
+                return;
             }
 
             // Discover the HostServiceDefaultResponse

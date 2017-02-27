@@ -154,6 +154,18 @@ namespace lwshostsvc
                 }
             }
 
+            if (WebServer.ServerCount == 0)
+            {
+                ServerHandler.LogMessage("No server started. Aborting.");
+                ServerHandler.StopHandler();
+                Thread.Sleep(5000);
+                return;
+            }
+            else
+            {
+                ServerHandler.LogMessage($"{WebServer.ServerCount} port-listening Servers started.");
+            }
+
             // Discover the HostServiceDefaultResponse
             Master.DiscoverPages();
 

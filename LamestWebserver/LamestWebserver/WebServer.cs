@@ -47,6 +47,18 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// The number of currently running servers.
+        /// </summary>
+        public static int ServerCount
+        {
+            get
+            {
+                using (RunningServerMutex.Lock())
+                    return RunningServers.Count;
+            }
+        }
+
         private bool _running = true;
         private ReaderWriterLockSlim _runningLock = new ReaderWriterLockSlim();
 

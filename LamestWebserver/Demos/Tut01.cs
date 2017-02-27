@@ -208,6 +208,54 @@ namespace Demos
                     new HText("<hr>"),
                     new HLine()
                 },
+                new List<HElement>()
+                {
+                    new HText(nameof(HCanvas)),
+                    new HText("A HTML-Canvas for drawing on using JavaScript code."),
+                    new HText("<canvas>"),
+                    new HCanvas() { Style = "width:100px; height:100px; background-color:#fb905f;"}
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HDropDownMenu)),
+                    new HText("A dropdown menu."),
+                    new HText("<select>"),
+                    new HDropDownMenu("dropDown", new Tuple<string, string>("Some", "first"), new Tuple<string, string>("Thing", "second"))
+                    + new HNewLine()
+                    + new HNewLine()
+                    + new HDropDownMenu("dropDown", 3, true, new Tuple<string, string>("Some", "first"), new Tuple<string, string>("Thing", "second"),
+                                                             new Tuple<string, string>("With", "third"), new Tuple<string, string>("More", "fourth"),
+                                                             new Tuple<string, string>("Concurrent", "fifth"), new Tuple<string, string>("Options", "sixth"))
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HList)),
+                    new HText("List of elements."),
+                    new HText("<ol> <ul>"),
+                    new HList(HList.EListType.OrderedList, new [] {"this", "is", "an", "ordered", "list"})
+                    + new HList(HList.EListType.UnorderedList, new HInput(HInput.EInputType.text, "textInput2", "Hello!"), "this", "is", "an", "unordered", "list", new HImage("lwsfooter.png"))
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HTable)),
+                    new HText("A table."),
+                    new HText("<table>"),
+                    new HTable(new List<List<HElement>>()
+                    {
+                        new List<HElement>
+                        {
+                            new HText("Everything"),
+                            new HItalic("in this table"),
+                            new HInput(HInput.EInputType.text, "textInput3", "speaking about HElements")
+                        },
+                        new List<HElement>
+                        {
+                            new HText("has been created"),
+                            new HBold("just like this"),
+                            new HImage("lwsfooter.png")
+                        }
+                    })
+                }
             });
         } 
     }

@@ -19,6 +19,7 @@ namespace LamestWebserver
         /// </summary>
         public static void StartHandler()
         {
+            nolog = false;
             Console.WriteLine("\n  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█,                             \n  ▓▓▓  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▌\"\"▓▓▓▓▓▓▓▓▓▓▓▓▓▓██                             \n  ▓▓▓  ▐▓▓▓▓▓▓▌▀\"\"▀▀▓▓▓▀▀▀\"\"▀█▀\"\"▀▓▓▓█▀\"\"▀▀▓▓▓▀▀\"\"▀█▓▀`  ▀▀▓▓▀▀▀▓▓▀▀▀▓▓██                             \n  ▓▓▓  ▐▓▓▓▓▓▌,,&▄  ▐▓▓  ╓&   ╔&   ▓▌  Æ▄╕  ▓Γ .▄&,,█NL  N▄▓▓,,▄▓▓,,▐▓▓██                             \n  ▓▓▓  ▐▓▓▓▓▓▀      ▐▓▓  ▓▓▌  ▓▓▌  ▓        ▓▌,    `█▓▌  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓██                             \n  ▓▓▓  \"\"\"\"\"▐  ╙▀▀   █▓  ▓▓▌  ▓▓▌  ▓▌  ▀▀` ,▓  \"▀▀  ▄▓▌  ▀▀▓▓  ▓▓▓  ▐▓▓██                             \n  ▓▓▓ggggggg▄█&╦╦g█gg█▓gg▓▓█gg▓▓▌g▄▓▓█▄╦╦g▄▓▓▓▌g╦╦g█▓▓▓▄ggg▓▓gg▓▓▓gg▓▓▓██                             \n  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█▀█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█`\'▌ ▀▓▓▓▓▓▓▓▓▓█,\n  ▓▓  ▐▓▓▌  █▓▓  ▄▓▓▓▓▓▓▓▓▓▌  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█  █▓┐ ▐▓▓▓▓▓▓▓▓██\n  ▓▓▌  ▓█    ▓█  ▓▓▀    ╙█▓▌     `▀▓▓▀    \"█▓█┘    ▀▓▓▌ ╙  ╟  █▓▓▌  ▓▀`   \"█▓▓  `  ▓  █▓▓▓  █▓▓  ▐▓▓██\n  ▓▓▓  ▓  ▓  ▐  ╔▓  ≤▀▀L  ▓▌  █▓█  ▓█  ▀▀&g▄▓  Æ▀▀  ╘▓   ▄▓█L  ▓▌  █▌  ▀▀&  ▓▓  ╔▓█▓  ▓▓▓▓▌ ╟▓▓gg▓▓▓██\n  ▓▓▓▌   ╒▓█    █▓  ╔╦╦╦╦╦▓▌  ▓▓▓  ╟█▌⌂╥⌐, `▓  ╦╦╦╦╦╦▓  ▐▓▓▓▓  ╘  ▓▓   ╦╦╦╦╦▓▓  ▓▓▓▓  ▓▓▓▓▌ ▐▓▓▓▓▓▓▓██\n  ▓▓▓▓   █▓▓▌  ,▓▓▌  ``  ▄▓▌   `  ┌█▌  ``  ╔▓▌  ``  ▓▓  ▐▓▓▓▓▓   Æ▓▓█,  `  ╔▓▓  ▓▓▓▓, ▀▓▓█  ▓▓▓  ╟▓▓██\n  ▓▓▓▓███▓▓▓▓███▓▓▓▓█▓▓█▓▓▓████▓▓█▓▓▓▓█▓▓█▓▓▓▓▓█▓▓█▓▓▓███▓▓▓▓▓███▓▓▓▓▓▓▓▓█▓▓▓▓██▓▓▓▓▓┐ ╙▀ ,█▓▓▓▀ ▄▓▓██\n  ▓██████████████████████████████████████████████████████████████████████████████████████▄█████▌██████\n    ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n");
             Console.WriteLine("LamestWebserver Version " + typeof(ServerHandler).Assembly.GetName().Version + "\n");
             
@@ -27,7 +28,7 @@ namespace LamestWebserver
             explicitLogging = true;
             outp.Start();
 
-            while (true)
+            while (Running)
             {
                 string s = Console.ReadLine();
 
@@ -183,10 +184,7 @@ namespace LamestWebserver
                             {
                                 try
                                 {
-                                    lock (output)
-                                    {
-                                        output = new List<Output>();
-                                    }
+                                    output = new List<Output>();
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e)
@@ -422,11 +420,20 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// Stops the Handler and all running Servers.
+        /// </summary>
+        public static void StopHandler()
+        {
+            Running = false;
+            Master.StopServers();
+        }
+
         private static List<Output> output = new List<Output>();
         private static int cmdsleep = 300;
         private static int autocls = 1000, autocls_s = 250;
         private static bool explicitLogging = false;
-        private static bool nolog = false;
+        private static bool nolog = true;
         private static UsableMutexSlim outputMutex = new UsableMutexSlim();
         private static bool silent = false;
 
@@ -509,7 +516,7 @@ namespace LamestWebserver
             {
                 try
                 {
-                    lock (output)
+                    using (outputMutex.Lock())
                     {
                         output.Add(new Output(message, stackTrace, endpoint));
 
@@ -527,6 +534,19 @@ namespace LamestWebserver
                 }
                 catch (Exception) { }
             }).Start();
+
+            if (!Running && !nolog)
+            {
+                using (outputMutex.Lock())
+                {
+                    foreach (Output outp in output)
+                    {
+                        Console.WriteLine(outp.msg);
+                    }
+
+                    output.Clear();
+                }
+            }
         }
 
         internal static void LogMessage(string text, Stopwatch stopwatch)
