@@ -156,7 +156,7 @@ namespace lwshostsvc
 
             if (WebServer.ServerCount == 0)
             {
-                ServerHandler.LogMessage("No server started. Aborting.");
+                ServerHandler.LogMessage("No server started. Aborting.\n\nPress Enter to Quit.");
                 ServerHandler.StopHandler();
                 Thread.Sleep(5000);
                 return;

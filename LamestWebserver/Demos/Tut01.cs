@@ -258,24 +258,44 @@ namespace Demos
                 },
                 new List<HElement>()
                 {
-                    new HText(nameof(HInput) + "." + nameof(HInput.HTextInput)),
+                    new HText(nameof(HTextInput)),
                     new HText("A simpler way to get a text input."),
                     new HText("<input>"),
-                    new HInput.HTextInput("textInput4", "", "placeholder text")
+                    new HTextInput("textInput4", "", "placeholder text")
                 },
                 new List<HElement>()
                 {
-                    new HText(nameof(HInput) + "." + nameof(HInput.HPasswordInput)),
+                    new HText(nameof(HPasswordInput)),
                     new HText("A simpler way to get a password input."),
                     new HText("<input>"),
-                    new HInput.HPasswordInput("passwordInput2", "placeholder text")
+                    new HPasswordInput("passwordInput2", "placeholder text")
                 },
                 new List<HElement>()
                 {
-                    new HText(nameof(HInput) + "." + nameof(HInput.HSingleSelector)),
+                    new HText(nameof(HCheckBox)),
+                    new HText("A simpler way to get a checkbox input."),
+                    new HText("<input>"),
+                    new HCheckBox("checkBox1", "checkBox1Value", null, true) + new HNewLine()
+                    + new HCheckBox("checkBox2", "checkBox2Value", "Check Box Text", true) + new HNewLine()
+                    + new HCheckBox("checkBox3", "checkBox3Value", null, false) + new HNewLine()
+                    + new HCheckBox("checkBox4", "checkBox4Value", "Next Check Box text", false)
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HRadioButton)),
+                    new HText("A simpler way to get a radio button input."),
+                    new HText("<input>"),
+                    new HRadioButton("radioButton1", "radioButton1Value", null, true) + new HNewLine()
+                    + new HRadioButton("radioButton2", "radioButton2Value", "Radio Button Text", true) + new HNewLine()
+                    + new HRadioButton("radioButton3", "radioButton3Value", null, false) + new HNewLine()
+                    + new HRadioButton("radioButton4", "radioButton4Value", "Next Radio Button text", false)
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HSingleSelector)),
                     new HText("A list of radio-buttons, in which only one can be selected once."),
                     new HText("<input> <label>"),
-                    new HInput.HSingleSelector("groupedRadioButtons", new List<Tuple<string, string>>()
+                    new HSingleSelector("groupedRadioButtons", new List<Tuple<string, string>>()
                     {
                         new Tuple<string, string>("Zero", "zerothItem"),
                         new Tuple<string, string>("First", "firstItem"),

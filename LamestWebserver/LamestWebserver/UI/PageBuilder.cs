@@ -1065,98 +1065,173 @@ namespace LamestWebserver.UI
             /// </summary>
             week,
         }
+    }
+
+
+
+    /// <summary>
+    /// A list of radio-buttons of which only one can be selected at a time.
+    /// </summary>
+    public class HSingleSelector : HElement
+    {
+        /// <summary>
+        /// Additional attributes to be added to the items
+        /// </summary>
+        public string DescriptionTags;
+
+        private readonly int _selectedIndex = 0;
+        private readonly List<Tuple<string, string>> _nameValuePairs;
+        private readonly bool _newLineAfterSelection;
 
         /// <summary>
-        /// A list of radio-buttons of which only one can be selected at a time.
+        /// Constructs a new HSingleSelector
         /// </summary>
-        public class HSingleSelector : HElement
+        /// <param name="name">the name of the resulting value</param>
+        /// <param name="nameValuePairs">a list of tuples of the selectableItems and their representative value</param>
+        /// <param name="selectedIndex">the selected value of the radioButtons</param>
+        /// <param name="newLineAfterSelection">shall there be a line after each option?</param>
+        public HSingleSelector(string name, List<Tuple<string, string>> nameValuePairs, int selectedIndex = 0, bool newLineAfterSelection = true)
         {
-            /// <summary>
-            /// Additional attributes to be added to the items
-            /// </summary>
-            public string DescriptionTags;
-
-            private readonly int _selectedIndex = 0;
-            private readonly List<Tuple<string, string>> _nameValuePairs;
-            private readonly bool _newLineAfterSelection;
-
-            /// <summary>
-            /// Constructs a new HSingleSelector
-            /// </summary>
-            /// <param name="name">the name of the resulting value</param>
-            /// <param name="nameValuePairs">a list of tuples of the selectableItems and their representative value</param>
-            /// <param name="selectedIndex">the selected value of the radioButtons</param>
-            /// <param name="newLineAfterSelection">shall there be a line after each option?</param>
-            public HSingleSelector(string name, List<Tuple<string, string>> nameValuePairs, int selectedIndex = 0, bool newLineAfterSelection = true)
-            {
-                Name = name;
-                _nameValuePairs = nameValuePairs;
-                _selectedIndex = selectedIndex;
-                _newLineAfterSelection = newLineAfterSelection;
-            }
-
-            /// <inheritdoc />
-            public override string GetContent(AbstractSessionIdentificator sessionData)
-            {
-                string attribs = "";
-
-                if (!string.IsNullOrWhiteSpace(ID))
-                    attribs += "id='" + ID + "' ";
-
-                if (!string.IsNullOrWhiteSpace(Name))
-                    attribs += "name='" + Name + "' ";
-
-                if (!string.IsNullOrWhiteSpace(Class))
-                    attribs += "class='" + Class + "' ";
-
-                if (!string.IsNullOrWhiteSpace(Style))
-                    attribs += "style=\"" + Style + "\" ";
-
-                if (!string.IsNullOrWhiteSpace(Title))
-                    attribs += "title=\"" + Title + "\" ";
-
-                if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                    attribs += DescriptionTags + " ";
-
-                string ret = "";
-
-                int i = 0;
-
-                foreach (Tuple<string, string> tuple in _nameValuePairs)
-                {
-                    ret += "<label " + attribs + "> <input type=\"radio\" value=\"" + tuple.Item2 + "\" ";
-
-                    if (_selectedIndex == i++)
-                    {
-                        ret += "checked ";
-                    }
-
-                    ret += attribs + ">" + System.Web.HttpUtility.HtmlEncode(tuple.Item1).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</label>";
-
-                    if (_newLineAfterSelection && i != _nameValuePairs.Count)
-                        ret += "<br>";
-                }
-
-                return ret;
-            }
+            Name = name;
+            _nameValuePairs = nameValuePairs;
+            _selectedIndex = selectedIndex;
+            _newLineAfterSelection = newLineAfterSelection;
         }
 
-        /// <summary>
-        /// A Text input field.
-        /// </summary>
-        public class HTextInput : HInput
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
         {
-            private readonly string _placeholder;
+            string attribs = "";
 
-            /// <inheritdoc />
-            /// <param name="placeholderText">the placeholder to display when no text has been entered.</param>
-            public HTextInput(string name, string value = "", string placeholderText = "") : base(EInputType.text, name, value)
+            if (!string.IsNullOrWhiteSpace(ID))
+                attribs += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                attribs += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                attribs += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                attribs += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                attribs += "title=\"" + Title + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                attribs += DescriptionTags + " ";
+
+            string ret = "";
+
+            int i = 0;
+
+            foreach (Tuple<string, string> tuple in _nameValuePairs)
             {
-                _placeholder = placeholderText;
+                ret += "<label " + attribs + "> <input type=\"radio\" value=\"" + tuple.Item2 + "\" ";
+
+                if (_selectedIndex == i++)
+                {
+                    ret += "checked ";
+                }
+
+                ret += attribs + ">" + System.Web.HttpUtility.HtmlEncode(tuple.Item1).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</label>";
+
+                if (_newLineAfterSelection && i != _nameValuePairs.Count)
+                    ret += "<br>";
             }
 
-            /// <inheritdoc />
-            public override string GetContent(AbstractSessionIdentificator sessionData)
+            return ret;
+        }
+    }
+
+    /// <summary>
+    /// A Text input field.
+    /// </summary>
+    public class HTextInput : HInput
+    {
+        private readonly string _placeholder;
+
+        /// <inheritdoc />
+        /// <param name="placeholderText">the placeholder to display when no text has been entered.</param>
+        public HTextInput(string name, string value = "", string placeholderText = "") : base(EInputType.text, name, value)
+        {
+            _placeholder = placeholderText;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "<input ";
+
+            ret += "type='" + (InputType != EInputType.datetime_local ? InputType.ToString() : "datetime-local") + "' ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Value))
+                ret += "value='" + Value + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(_placeholder))
+                ret += "placeholder=\"" + _placeholder + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
+
+            ret += ">";
+
+            return ret;
+        }
+    }
+
+    /// <summary>
+    /// A Password-Text input field.
+    /// </summary>
+    public class HPasswordInput : HTextInput
+    {
+        /// <inheritdoc />
+        public HPasswordInput(string name, string placeholderText = "") : base(name, "", placeholderText)
+        {
+            base.InputType = EInputType.password;
+        }
+    }
+
+    /// <summary>
+    /// A simple Radiobutton.
+    /// </summary>
+    public class HRadioButton : HInput
+    {
+        private readonly string _text;
+        private readonly bool _checked;
+
+        /// <summary>
+        /// Constructs a new HRadioButton.
+        /// </summary>
+        /// <param name="name">the name of the retrived value</param>
+        /// <param name="value">the value to retrive</param>
+        /// <param name="text">the displayed text (or null if none)</param>
+        /// <param name="_checked">is it checked by default?</param>
+        public HRadioButton(string name, string value, string text = null, bool _checked = true) : base(EInputType.radio, name, value)
+        {
+            _text = text;
+            this._checked = _checked;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            if (_text == null)
             {
                 string ret = "<input ";
 
@@ -1180,8 +1255,8 @@ namespace LamestWebserver.UI
                 if (!string.IsNullOrWhiteSpace(Title))
                     ret += "title=\"" + Title + "\" ";
 
-                if (!string.IsNullOrWhiteSpace(_placeholder))
-                    ret += "placeholder=\"" + _placeholder + "\" ";
+                if (_checked)
+                    ret += "checked ";
 
                 if (!string.IsNullOrWhiteSpace(DescriptionTags))
                     ret += DescriptionTags;
@@ -1190,18 +1265,58 @@ namespace LamestWebserver.UI
 
                 return ret;
             }
-        }
-
-        /// <summary>
-        /// A Password-Text input field.
-        /// </summary>
-        public class HPasswordInput : HTextInput
-        {
-            /// <inheritdoc />
-            public HPasswordInput(string name, string placeholderText = "") : base(name, "", placeholderText)
+            else
             {
-                base.InputType = EInputType.password;
+                string ret = "<label><input ";
+
+                ret += "type='" + (InputType != EInputType.datetime_local ? InputType.ToString() : "datetime-local") + "' ";
+
+                if (!string.IsNullOrWhiteSpace(ID))
+                    ret += "id='" + ID + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Class))
+                    ret += "class='" + Class + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Style))
+                    ret += "style=\"" + Style + "\" ";
+
+                if (!string.IsNullOrWhiteSpace(Name))
+                    ret += "name='" + Name + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Value))
+                    ret += "value='" + Value + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Title))
+                    ret += "title=\"" + Title + "\" ";
+
+                if (_checked)
+                    ret += "checked ";
+
+                if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                    ret += DescriptionTags;
+
+                ret += ">" + System.Web.HttpUtility.HtmlEncode(_text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</label>";
+
+                return ret;
             }
+        }
+    }
+
+    /// <summary>
+    /// A simple checkbox.
+    /// </summary>
+    public class HCheckBox : HRadioButton
+    {
+        /// <summary>
+        /// Constructs a new HCheckbox.
+        /// </summary>
+        /// <param name="name">the name of the retrived value</param>
+        /// <param name="value">the value to retrive</param>
+        /// <param name="text">the displayed text (or null if none)</param>
+        /// <param name="_checked">is it checked by default?</param>
+        public HCheckBox(string name, string value, string text = null, bool _checked = true) : base(name, value, text, _checked)
+        {
+            InputType = EInputType.checkbox;
         }
     }
 
