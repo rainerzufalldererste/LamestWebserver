@@ -185,7 +185,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSFunction(string name, List<IJSValue> parameters)
         {
             if (String.IsNullOrWhiteSpace(name))
-                _content = "_func" + SessionContainer.generateHash();
+                _content = "_func" + SessionContainer.GenerateHash();
             else
                 _content = name;
 
@@ -198,7 +198,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="parameters">the parameters of the Function Definition</param>
         public JSFunction(List<IJSValue> parameters)
         {
-            _content = "_func" + SessionContainer.generateHash();
+            _content = "_func" + SessionContainer.GenerateHash();
             this.parameters = parameters;
         }
 
@@ -215,7 +215,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSFunction(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                _content = "_func" + SessionContainer.generateHash();
+                _content = "_func" + SessionContainer.GenerateHash();
             else
                 _content = name;
         }
@@ -225,7 +225,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         public JSFunction()
         {
-            _content = "_func" + SessionContainer.generateHash();
+            _content = "_func" + SessionContainer.GenerateHash();
         }
 
         /// <summary>
@@ -355,7 +355,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="pieces">the code to execute on execution</param>
         public JSInstantFunction(params IJSPiece[] pieces)
         {
-            _content = "_ifunc" + SessionContainer.generateHash();
+            _content = "_ifunc" + SessionContainer.GenerateHash();
             this.pieces = pieces.ToList();
         }
     }
@@ -844,7 +844,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSVariable(string name = null)
         {
             if (string.IsNullOrWhiteSpace(name))
-                this._content = "_var" + SessionContainer.generateHash();
+                this._content = "_var" + SessionContainer.GenerateHash();
             else this._content = name;
         }
 
@@ -1019,7 +1019,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public static IJSPiece RemoveElementByID(string id)
         {
-            string varName = "_var" + SessionContainer.generateHash();
+            string varName = "_var" + SessionContainer.GenerateHash();
 
             return new JSValue(varName + "=document.getElementById(\"" + id + "\");" + varName + ".remove();");
         }

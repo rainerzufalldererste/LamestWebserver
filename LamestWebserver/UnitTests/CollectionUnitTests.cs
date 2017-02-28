@@ -315,8 +315,8 @@ namespace UnitTests
             for (int i = 0; i < size; i++)
             {
                 Assert.IsTrue(hashmap.Count == i);
-                hashes.Add(SessionContainer.generateHash());
-                values.Add(SessionContainer.generateHash());
+                hashes.Add(SessionContainer.GenerateHash());
+                values.Add(SessionContainer.GenerateHash());
                 hashmap[hashes[i]] = values[i];
                 Assert.IsTrue(hashmap[hashes[i]] == values[i]);
                 Assert.IsTrue(hashmap.Keys.Contains(hashes[i]));
@@ -329,7 +329,7 @@ namespace UnitTests
             for (int i = 0; i < size; i++)
             {
                 Assert.IsTrue(hashmap[hashes[i]] == values[i]);
-                values[i] = SessionContainer.generateHash();
+                values[i] = SessionContainer.GenerateHash();
                 hashmap[hashes[i]] = values[i];
                 Assert.IsTrue(hashmap.Count == size);
             }
@@ -435,8 +435,8 @@ namespace UnitTests
             for (int i = 0; i < size; i++)
             {
                 Assert.IsTrue(tree.Count == i);
-                hashes.Add(SessionContainer.generateHash());
-                values.Add(SessionContainer.generateHash());
+                hashes.Add(SessionContainer.GenerateHash());
+                values.Add(SessionContainer.GenerateHash());
                 tree[hashes[i]] = values[i];
                 Assert.IsTrue(tree[hashes[i]] == values[i]);
                 Assert.IsTrue(tree.Keys.Contains(hashes[i]));
@@ -449,7 +449,7 @@ namespace UnitTests
             for (int i = 0; i < size; i++)
             {
                 Assert.IsTrue(tree[hashes[i]] == values[i]);
-                values[i] = SessionContainer.generateHash();
+                values[i] = SessionContainer.GenerateHash();
                 tree[hashes[i]] = values[i];
                 Assert.IsTrue(tree.Count == size);
             }
@@ -549,8 +549,8 @@ namespace UnitTests
             for (int i = 0; i < size; i++)
             {
                 Assert.IsTrue(qtree.Count == i);
-                hashes.Add(SessionContainer.generateHash());
-                values.Add(SessionContainer.generateHash());
+                hashes.Add(SessionContainer.GenerateHash());
+                values.Add(SessionContainer.GenerateHash());
                 qtree[hashes[i]] = values[i];
                 Assert.IsTrue(qtree[hashes[i]] == values[i]);
                 Assert.IsTrue(qtree.Keys.Contains(hashes[i]));
@@ -563,7 +563,7 @@ namespace UnitTests
             for (int i = 0; i < size; i++)
             {
                 Assert.IsTrue(qtree[hashes[i]] == values[i]);
-                values[i] = SessionContainer.generateHash();
+                values[i] = SessionContainer.GenerateHash();
                 qtree[hashes[i]] = values[i];
                 Assert.IsTrue(qtree.Count == size);
             }
@@ -617,8 +617,8 @@ namespace UnitTests
             for (int i = 0; i < size; i++)
             {
                 Assert.IsTrue(qtree.Count == i);
-                hashes.Add(SessionContainer.generateHash());
-                values.Add(SessionContainer.generateHash());
+                hashes.Add(SessionContainer.GenerateHash());
+                values.Add(SessionContainer.GenerateHash());
                 qtree[hashes[i]] = values[i];
                 Assert.IsTrue(qtree[hashes[i]] == values[i]);
                 Assert.IsTrue(qtree.Keys.Contains(hashes[i]));
@@ -631,8 +631,8 @@ namespace UnitTests
             for (int i = 0; i < size; i++)
             {
                 Assert.IsTrue(qtree.Count == size);
-                hashes.Add(SessionContainer.generateHash());
-                values.Add(SessionContainer.generateHash());
+                hashes.Add(SessionContainer.GenerateHash());
+                values.Add(SessionContainer.GenerateHash());
                 qtree[hashes[size + i]] = values[size + i];
                 Assert.IsTrue(qtree[hashes[size + i]] == values[size + i]);
                 Assert.IsTrue(qtree.Keys.Contains(hashes[size + i]));
@@ -644,7 +644,7 @@ namespace UnitTests
 
             for (int i = 0; i < size; i++)
             {
-                values[i] = SessionContainer.generateHash();
+                values[i] = SessionContainer.GenerateHash();
                 qtree[hashes[size + i]] = values[size + i];
                 Assert.IsTrue(qtree[hashes[size + i]] == values[size + i]);
                 Assert.IsTrue(qtree.Keys.Contains(hashes[size + i]));

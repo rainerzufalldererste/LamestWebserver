@@ -15,7 +15,7 @@ namespace lwshostcore
     public class Host
     {
         private FileSystemWatcher fileSystemWatcher;
-        private string ID = SessionContainer.generateHash();
+        private string ID = SessionContainer.GenerateHash();
         private string directoryPath;
 
         public AVLHashMap<string, IEnumerable<Type>> TypesPerFile = new AVLHashMap<string, IEnumerable<Type>>();
@@ -52,7 +52,7 @@ namespace lwshostcore
         {
             fileSystemWatcher.Changed += (sender, args) =>
             {
-                ID = SessionContainer.generateHash();
+                ID = SessionContainer.GenerateHash();
                 ProcessFile(args.FullPath);
 
                 if (args.FullPath.EndsWith(".exe") || args.FullPath.EndsWith(".dll"))

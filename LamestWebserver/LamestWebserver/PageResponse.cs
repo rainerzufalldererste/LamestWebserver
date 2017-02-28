@@ -263,7 +263,7 @@ namespace LamestWebserver
         /// <returns>the name at which this temporary page will be available at.</returns>
         public static string AddOneTimeInstantPageResponse(Master.GetContents code, bool instantlyRemove)
         {
-            string hash = SessionContainer.generateUnusedHash();
+            string hash = SessionContainer.GenerateUnusedHash();
 
             if (instantlyRemove)
             {

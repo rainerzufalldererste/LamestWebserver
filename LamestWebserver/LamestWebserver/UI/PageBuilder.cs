@@ -417,6 +417,13 @@ namespace LamestWebserver.UI
 
             return thisElement;
         }
+
+        /// <summary>
+        /// Casts a HMultipleElements object to string
+        /// </summary>
+        /// <param name="multipleElements">the elements to cast</param>
+        /// <returns>the elements as string</returns>
+        public static implicit operator string(HMultipleElements multipleElements) => multipleElements.ToString();
     }
 
     /// <summary>
@@ -463,7 +470,7 @@ namespace LamestWebserver.UI
                     {
                         ret += "href='#' ";
 
-                        string hash = SessionContainer.generateUnusedHash();
+                        string hash = SessionContainer.GenerateUnusedHash();
                         string add = ";var f_"
                             + hash + "=document.createElement('form');f_"
                             + hash + ".setAttribute('method','POST');f_"
@@ -1614,7 +1621,7 @@ namespace LamestWebserver.UI
                     else
                         ret += "href='#' ";
 
-                    string hash = SessionContainer.generateUnusedHash();
+                    string hash = SessionContainer.GenerateUnusedHash();
                     string add = ";var f_"
                         + hash + "=document.createElement('form');f_"
                         + hash + ".setAttribute('method','POST');f_"
@@ -2317,7 +2324,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// the code to execute
         /// </summary>
-        public Func<AbstractSessionIdentificator, string> runtimeCode;
+        public Func<AbstractSessionIdentificator, string> RuntimeCode;
 
         /// <summary>
         /// Creates non-static content, which is computed every request
@@ -2325,7 +2332,7 @@ namespace LamestWebserver.UI
         /// <param name="runtimeCode">The code to execute every request</param>
         public HRuntimeCode(Func<AbstractSessionIdentificator, string> runtimeCode)
         {
-            this.runtimeCode = runtimeCode;
+            this.RuntimeCode = runtimeCode;
         }
 
         /// <summary>
@@ -2335,7 +2342,7 @@ namespace LamestWebserver.UI
         /// <returns>the element as string</returns>
         public override string GetContent(AbstractSessionIdentificator sessionData)
         {
-            return runtimeCode.Invoke(sessionData);
+            return RuntimeCode.Invoke(sessionData);
         }
 
         /// <summary>
@@ -2345,7 +2352,7 @@ namespace LamestWebserver.UI
         /// <param name="codeIfFALSE">The code to execute if conditionalCode returns FALSE</param>
         /// <param name="conditionalCode">The Conditional code</param>
         /// <returns>returns a HRuntimeCode : HElement</returns>
-        public static HRuntimeCode getConditionalRuntimeCode(Func<AbstractSessionIdentificator, string> codeIfTRUE, Func<AbstractSessionIdentificator, string> codeIfFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
+        public static HRuntimeCode GetConditionalRuntimeCode(Func<AbstractSessionIdentificator, string> codeIfTRUE, Func<AbstractSessionIdentificator, string> codeIfFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
         {
             return new HRuntimeCode((AbstractSessionIdentificator sessionData) => 
                 {
@@ -2363,7 +2370,7 @@ namespace LamestWebserver.UI
         /// <param name="elementIfFALSE"></param>
         /// <param name="conditionalCode">The Conditional code</param>
         /// <returns>returns a HRuntimeCode : HElement</returns>
-        public static HRuntimeCode getConditionalRuntimeCode(HElement elementIfTRUE, HElement elementIfFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
+        public static HRuntimeCode GetConditionalRuntimeCode(HElement elementIfTRUE, HElement elementIfFALSE, Func<AbstractSessionIdentificator, bool> conditionalCode)
         {
             return new HRuntimeCode((AbstractSessionIdentificator sessionData) =>
             {

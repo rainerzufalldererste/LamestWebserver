@@ -76,7 +76,7 @@ namespace LamestWebserver
         private static AVLHashMap<string, UserInfo> UserInfos = new AVLHashMap<string, UserInfo>(UserHashMapSize);
         private static AVLHashMap<string, UserInfo> UserInfosByName = new AVLHashMap<string, UserInfo>(UserHashMapSize);
 
-        internal static AVLTree<string, object> globalVariables = new AVLTree<string, object>();
+        internal static AVLTree<string, object> GlobalVariables = new AVLTree<string, object>();
 
         internal class UserInfo
         {
@@ -105,7 +105,7 @@ namespace LamestWebserver
             if (hash == null)
             {
                 userInfo = new UserInfo();
-                userInfo.ID = generateUnusedHash();
+                userInfo.ID = GenerateUnusedHash();
                 hash = userInfo.ID;
                 userInfo.UserName = user;
 
@@ -114,7 +114,7 @@ namespace LamestWebserver
                 UserInfos.Add(userInfo.ID, userInfo);
                 UserInfosByName.Add(userInfo.UserName, userInfo);
 
-                userCleanup();
+                UserCleanup();
 
                 mutex.ReleaseMutex();
 
@@ -130,10 +130,10 @@ namespace LamestWebserver
 
                     userInfo = UserInfosByName[user];
                     UserInfos.Remove(userInfo.ID);
-                    userInfo.ID = generateUnusedHash();
+                    userInfo.ID = GenerateUnusedHash();
                     UserInfos[userInfo.ID] = userInfo;
 
-                    userCleanup();
+                    UserCleanup();
 
                     mutex.ReleaseMutex();
 
@@ -146,10 +146,10 @@ namespace LamestWebserver
 
                     userInfo = UserInfosByName[user];
                     UserInfos.Remove(userInfo.ID);
-                    userInfo.ID = generateUnusedHash();
+                    userInfo.ID = GenerateUnusedHash();
                     UserInfos[userInfo.ID] = userInfo;
 
-                    userCleanup();
+                    UserCleanup();
 
                     mutex.ReleaseMutex();
 
@@ -168,7 +168,7 @@ namespace LamestWebserver
             return hash;
         }
 
-        private static void userCleanup()
+        private static void UserCleanup()
         {
             if (UserInfos.Count > MaxUsers)
             {
@@ -199,7 +199,7 @@ namespace LamestWebserver
             if (hash == null)
             {
                 UserInfo info = new UserInfo();
-                info.ID = generateUnusedHash();
+                info.ID = GenerateUnusedHash();
                 hash = info.ID;
                 info.UserName = user;
 
@@ -216,7 +216,7 @@ namespace LamestWebserver
 
                 UserInfo info = UserInfosByName[user];
                 UserInfos.Remove(info.ID);
-                info.ID = generateUnusedHash();
+                info.ID = GenerateUnusedHash();
                 UserInfos[info.ID] = info;
 
                 mutex.ReleaseMutex();
@@ -236,10 +236,10 @@ namespace LamestWebserver
         /// generates a 128 bit AES hash that is not used in pagenames
         /// </summary>
         /// <returns></returns>
-        public static string generateUnusedHash()
+        public static string GenerateUnusedHash()
         {
             GENERATE_NEW_HASH:
-            string hash = generateHash();
+            string hash = GenerateHash();
 
             // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
             
@@ -256,7 +256,7 @@ namespace LamestWebserver
         /// generates a 128 bit AES hash
         /// </summary>
         /// <returns></returns>
-        public static string generateHash()
+        public static string GenerateHash()
         {
             if (_hashMutex == null)
                 _hashMutex = new Mutex();
@@ -293,9 +293,9 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="input">the text to hash</param>
         /// <returns>the hash as hex string</returns>
-        public static string getComplexHash(string input)
+        public static string GetComplexHash(string input)
         {
-            return getComplexHash(Encoding.Unicode.GetBytes(input)).ToHexString();
+            return GetComplexHash(Encoding.Unicode.GetBytes(input)).ToHexString();
         }
 
         /// <summary>
@@ -303,7 +303,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="input">the byte[] to hash</param>
         /// <returns>the hash as byte[]</returns>
-        public static byte[] getComplexHash(byte[] input)
+        public static byte[] GetComplexHash(byte[] input)
         {
             // Chris: Preparation if sha3 hasn't been initialized
             if (_sha3 == null)
@@ -320,15 +320,15 @@ namespace LamestWebserver
             return bytes;
         }
 
-        private static string _lastSha3Hash = generateHash() + generateHash() + generateHash() + generateHash();
+        private static string _lastSha3Hash = GenerateHash() + GenerateHash() + GenerateHash() + GenerateHash();
 
         /// <summary>
         /// Generates a SHA3 512bit hash of a random piece of code
         /// </summary>
         /// <returns>the hash as hex string</returns>
-        public static string generateComplexHash()
+        public static string GenerateComplexHash()
         {
-            return _lastSha3Hash = getComplexHash(_lastSha3Hash + generateHash());
+            return _lastSha3Hash = GetComplexHash(_lastSha3Hash + GenerateHash());
         }
 
         internal static UserInfo GetUserInfoFromSsid(string ssid)

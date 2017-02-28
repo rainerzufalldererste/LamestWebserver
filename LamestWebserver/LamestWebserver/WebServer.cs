@@ -11,9 +11,12 @@ using System.Drawing;
 using System.IO.Compression;
 using LamestWebserver.Collections;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Windows.Forms;
 using LamestWebserver.Synchronization;
 using ThreadState = System.Threading.ThreadState;
+using System.Reflection;
+using Newtonsoft.Json;
 
 namespace LamestWebserver
 {
@@ -563,13 +566,13 @@ namespace LamestWebserver
 
                                 int tries = 0;
 
+                                SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
+                                    htp.RequestUrl, msg_, client, nws, (ushort)this.Port);
+
                                 RetryGetData:
 
                                 try
                                 {
-                                    SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                        htp.RequestUrl, msg_, client, nws, (ushort) this.Port);
-
                                     htp_.BinaryData = enc.GetBytes(currentRequest.Invoke(sessionData));
 
                                     if (sessionData.SetCookies.Count > 0)
@@ -585,12 +588,8 @@ namespace LamestWebserver
                                     {
                                         htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
                                                                                           + htp.RequestUrl + "'",
-                                            $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
-                                            + e.ToString().Replace("\r\n", "<br>")
-#if DEBUG
-                                            + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                            + msg_.Replace("\r\n", "<br>")
-#endif
+                                            $"<b>An Error occured while processing the output ({tries} Retries)</b><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                            + GetErrorMsg(e, sessionData, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                             + "</div></p>"));
 
                                         error = e;
@@ -604,14 +603,9 @@ namespace LamestWebserver
                                 catch (Exception e)
                                 {
                                     htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
-                                                                                      + htp.RequestUrl + "'", "<b>An Error occured while processing the output</b><br>"
-                                                                                                                  + e.ToString().Replace("\r\n", "<br>")
-#if DEBUG
-                                                                                                                  +
-                                                                                                                  "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                                                                                  + msg_.Replace("\r\n", "<br>")
-#endif
-                                                                                                                  + "</div></p>"));
+                                                                                      + htp.RequestUrl + "'", "<b>An Error occured while processing the output</b><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                                                      + GetErrorMsg(e, sessionData, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
+                                                                                      + "</div></p>"));
 
                                     error = e;
                                 }
@@ -683,13 +677,14 @@ namespace LamestWebserver
                                         Exception error = null;
 
                                         int tries = 0;
+
+                                        SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
+                                            htp.RequestUrl, msg_, client, nws, (ushort)this.Port);
+
                                         RetryGetData:
 
                                         try
                                         {
-                                            SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                                htp.RequestUrl, msg_, client, nws, (ushort) this.Port);
-
                                             htp_.BinaryData = enc.GetBytes(directory.Invoke(sessionData, subDir));
 
                                             if (sessionData.SetCookies.Count > 0)
@@ -705,12 +700,8 @@ namespace LamestWebserver
                                             {
                                                 htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Directory Response for '"
                                                                                               + htp.RequestUrl + "' in Directory Response '" + bestUrlMatch + "'",
-                                                    $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
-                                                    + e.ToString().Replace("\r\n", "<br>")
-#if DEBUG
-                                                    + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                    + msg_.Replace("\r\n", "<br>")
-#endif
+                                                    $"<b>An Error occured while processing the output ({tries} Retries)</b><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                    + GetErrorMsg(e, sessionData, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                                     + "</div></p>"));
 
                                                 error = e;
@@ -725,13 +716,8 @@ namespace LamestWebserver
                                         {
                                             htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Directory Response for '"
                                                                                               + htp.RequestUrl + "' in Directory Response '" + bestUrlMatch + "'",
-                                                "<b>An Error occured while processing the output</b><br>"
-                                                + e.ToString().Replace("\r\n", "<br>")
-#if DEBUG
-                                                +
-                                                "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                + msg_.Replace("\r\n", "<br>")
-#endif
+                                                "<b>An Error occured while processing the output</b><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                + GetErrorMsg(e, sessionData, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                                 + "</div></p>"));
 
                                             error = e;
@@ -921,11 +907,7 @@ namespace LamestWebserver
                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
                         "Error 500: Internal Server Error",
                         "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                        + e.ToString().Replace("\r\n", "<br>") + "</div><br>"
-#if DEBUG
-                        + "<hr><br><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
-                        fullPacketString.Replace("\r\n", "<br>")
-#endif
+                        + GetErrorMsg(e, null, fullPacketString).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                         + "</div>"))
                 };
             }
@@ -1224,6 +1206,107 @@ namespace LamestWebserver
             {
                 reader.Peek(); // you need this!
                 return reader.CurrentEncoding;
+            }
+        }
+        
+        /// <summary>
+        /// Shall the ErrorMsg contain the current SessionData if possible?
+        /// </summary>
+        public static bool ErrorMsgContainSessionData = true;
+
+        /// <summary>
+        /// Retrieves an error message
+        /// </summary>
+        /// <param name="exception">the exception that happened</param>
+        /// <param name="sessionData">the sessionData (can be null)</param>
+        /// <param name="httpPacket">the http-request</param>
+        /// <returns>a nice error message</returns>
+        public static string GetErrorMsg(Exception exception, AbstractSessionIdentificator sessionData, string httpPacket)
+        {
+            string ret = exception.ToString() + "\n\n";
+
+            ret += "The package you were sending:\n\n" + httpPacket + "\n\n__________________________\n\n";
+
+            if (ErrorMsgContainSessionData && sessionData != null)
+            {
+                if (sessionData is SessionData)
+                {
+                    SessionData _sessionData = (SessionData)sessionData;
+
+                    ret += "\n\nHTTP-Head:\n\n";
+
+                    for (int i = 0; i < _sessionData.HttpHeadParameters.Count; i++)
+                        ret += "'" + _sessionData.HttpHeadParameters[i] + "': " + _sessionData.HttpHeadValues[i] + "\n";
+
+                    ret += "\n\nHTTP-Post:\n\n";
+
+                    for (int i = 0; i < _sessionData.HttpPostParameters.Count; i++)
+                        ret += "'" + _sessionData.HttpPostParameters[i] + "': " + _sessionData.HttpPostValues[i] + "\n";
+                }
+
+                IDictionary<string, object> currentDictionary = null;
+
+                if (sessionData.KnownUser)
+                {
+                    currentDictionary = sessionData._userInfo.UserGlobalVariables;
+
+                    if (currentDictionary != null)
+                    {
+                        ret += "\n\nUserGlobalVars:\n\n";
+
+                        SerializeValues(currentDictionary, ref ret);
+                    }
+
+                    currentDictionary = sessionData.GetUserPerFileVariables();
+
+                    if (currentDictionary != null)
+                    {
+                        ret += "\n\nUserFileVars:\n\n";
+
+                        SerializeValues(currentDictionary, ref ret);
+                    }
+                }
+
+                currentDictionary = sessionData.GetGlobalVariables();
+
+                if (currentDictionary != null)
+                {
+                    ret += "\n\nGlobalVars:\n\n";
+
+                    SerializeValues(currentDictionary, ref ret);
+                }
+
+                currentDictionary = sessionData.GetPerFileVariables();
+
+                if (currentDictionary != null)
+                {
+                    ret += "\n\nFileVars:\n\n";
+
+                    SerializeValues(currentDictionary, ref ret);
+                }
+            }
+
+            return ret;
+        }
+
+        private static void SerializeValues(IDictionary<string, object> data, ref string ret)
+        {
+            foreach (var variable in data)
+            {
+                try
+                {
+                    if (variable.Value.GetType().GetInterfaces().Contains(typeof(ISerializable)) ||
+                        (from attrib in variable.Value.GetType().GetCustomAttributes() where attrib is SerializableAttribute select attrib).Any())
+                    {
+                        ret += "'" + variable.Key + "': \n" + Newtonsoft.Json.JsonConvert.SerializeObject(variable.Value, Formatting.Indented) + "\n\n";
+                        continue;
+                    }
+                }
+                catch
+                {
+                }
+
+                ret += "'" + variable.Key + "': " + variable.Value + "\n";
             }
         }
     }

@@ -19,7 +19,7 @@ namespace UnitTests
                 if (i % 16 == 0)
                     Console.Write(".");
 
-                string passw = SessionContainer.generateHash();
+                string passw = SessionContainer.GenerateHash();
 
                 Password password = new Password(passw);
                 
@@ -27,7 +27,7 @@ namespace UnitTests
 
                 for (int j = 0; j < 2048; j++)
                 {
-                    Assert.IsFalse(password.IsValid(SessionContainer.generateHash()));
+                    Assert.IsFalse(password.IsValid(SessionContainer.GenerateHash()));
                 }
             }
 
@@ -44,7 +44,7 @@ namespace UnitTests
                 if (i % 8 == 0)
                     Console.Write(".");
 
-                string passw = SessionContainer.generateComplexHash();
+                string passw = SessionContainer.GenerateComplexHash();
 
                 Password password = new Password(passw);
 
@@ -52,7 +52,7 @@ namespace UnitTests
 
                 for (int j = 0; j < 128; j++)
                 {
-                    Assert.IsFalse(password.IsValid(SessionContainer.generateComplexHash()));
+                    Assert.IsFalse(password.IsValid(SessionContainer.GenerateComplexHash()));
                 }
 
                 Serializer.WriteXmlData(new Password[] { password, password, new Password(" ") }, "pw");
@@ -72,9 +72,9 @@ namespace UnitTests
 
                 for (int j = 0; j < 256; j++)
                 {
-                    Assert.IsFalse(pws[0].IsValid(SessionContainer.generateComplexHash()));
-                    Assert.IsFalse(pws[1].IsValid(SessionContainer.generateComplexHash()));
-                    Assert.IsFalse(pws[2].IsValid(SessionContainer.generateComplexHash()));
+                    Assert.IsFalse(pws[0].IsValid(SessionContainer.GenerateComplexHash()));
+                    Assert.IsFalse(pws[1].IsValid(SessionContainer.GenerateComplexHash()));
+                    Assert.IsFalse(pws[2].IsValid(SessionContainer.GenerateComplexHash()));
                 }
             }
 

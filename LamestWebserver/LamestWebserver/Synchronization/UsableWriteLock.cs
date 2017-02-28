@@ -11,7 +11,7 @@ namespace LamestWebserver.Synchronization
     public class UsableWriteLock
     {
         private ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        private readonly string ID = SessionContainer.generateHash();
+        private readonly string ID = SessionContainer.GenerateHash();
 
         /// <summary>
         /// Locks the WriteLock for reading

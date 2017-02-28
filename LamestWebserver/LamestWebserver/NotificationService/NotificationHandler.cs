@@ -386,7 +386,7 @@ namespace LamestWebserver.NotificationService
         /// <summary>
         /// The id of this NotificationHandler (for easier identification in the client)
         /// </summary>
-        public string ID { get; private set; } = SessionContainer.generateHash();
+        public string ID { get; private set; } = SessionContainer.GenerateHash();
         
         /// <summary>
         /// The amount of currently connected clients.

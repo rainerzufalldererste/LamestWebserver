@@ -24,7 +24,7 @@ namespace LamestWebserver.Synchronization
         public static int MutexSelfRelease = 200;
 
         private ReaderWriterLockSlim innerMutex;
-        private readonly string ID = SessionContainer.generateHash();
+        private readonly string ID = SessionContainer.GenerateHash();
 
         private Mutex helperMutex = new Mutex();
         private DateTime? lastLocked = null;
