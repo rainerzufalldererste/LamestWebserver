@@ -18,8 +18,8 @@ namespace LamestWebserver.Collections
     /// <typeparam name="TValue">The Type of the Values</typeparam>
     public class AVLHashMap<TKey, TValue> : IDictionary<TKey, TValue>, ISerializable, IXmlSerializable where TKey : IEquatable<TKey>, IComparable
     {
-        private int size = 1024;
-        protected int elementCount = 0;
+        private int _size = 1024;
+        private int _elementCount = 0;
         
         internal object[] HashMap { get; private set; }
 
@@ -29,7 +29,7 @@ namespace LamestWebserver.Collections
         /// <param name="size">the size of the hashmap</param>
         public AVLHashMap(int size)
         {
-            this.size = size;
+            this._size = size;
             HashMap = new object[size];
         }
 
@@ -38,8 +38,8 @@ namespace LamestWebserver.Collections
         /// </summary>
         public AVLHashMap()
         {
-            this.size = 1024;
-            HashMap = new object[size];
+            this._size = 1024;
+            HashMap = new object[_size];
         }
 
         /// <inheritdoc />
@@ -85,7 +85,7 @@ namespace LamestWebserver.Collections
         }
 
         /// <inheritdoc />
-        public int Count => elementCount;
+        public int Count => _elementCount;
 
         /// <summary>
         /// Used for UnitTests.
@@ -103,12 +103,12 @@ namespace LamestWebserver.Collections
                 }
                 else if (HashMap[i] != null)
                 {
-                    System.Diagnostics.Debug.Assert(Math.Abs(((KeyValuePair<TKey, TValue>)HashMap[i]).Key.GetHashCode()) % this.size == i, "The InnerSerializableKeyValuePair hash would resolve to a different spot than it lives in.");
+                    System.Diagnostics.Debug.Assert(Math.Abs(((KeyValuePair<TKey, TValue>)HashMap[i]).Key.GetHashCode()) % this._size == i, "The InnerSerializableKeyValuePair hash would resolve to a different spot than it lives in.");
                     size++;
                 }
             }
 
-            System.Diagnostics.Debug.Assert(size == elementCount, "The elementCount is " + elementCount + " but should be " + size);
+            System.Diagnostics.Debug.Assert(size == _elementCount, "The elementCount is " + _elementCount + " but should be " + size);
         }
 
         /// <inheritdoc />
@@ -122,7 +122,7 @@ namespace LamestWebserver.Collections
                 if (key == null)
                     return default(TValue);
 
-                int hash = Math.Abs(key.GetHashCode()) % size;
+                int hash = Math.Abs(key.GetHashCode()) % _size;
 
                 if (HashMap[hash] == null)
                 {
@@ -177,7 +177,7 @@ namespace LamestWebserver.Collections
         /// <inheritdoc />
         public bool ContainsKey(TKey key)
         {
-            int hash = Math.Abs(key.GetHashCode()) % size;
+            int hash = Math.Abs(key.GetHashCode()) % _size;
 
             if (HashMap[hash] == null)
             {
@@ -232,14 +232,14 @@ namespace LamestWebserver.Collections
         /// <inheritdoc />
         public bool Remove(KeyValuePair<TKey, TValue> item)
         {
-            int hash = Math.Abs(item.Key.GetHashCode()) % size;
+            int hash = Math.Abs(item.Key.GetHashCode()) % _size;
 
             if (HashMap[hash] is KeyValuePair<TKey, TValue>)
             {
                 if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(item.Key) && ((KeyValuePair<TKey, TValue>)HashMap[hash]).Value.Equals(item.Value))
                 {
                     HashMap[hash] = null;
-                    elementCount--;
+                    _elementCount--;
                     return true;
                 }
                 else return false;
@@ -248,7 +248,7 @@ namespace LamestWebserver.Collections
             {
                 AVLNode node = (AVLNode)HashMap[hash];
 
-                return AVLNode.FindRemoveItem(node, HashMap, hash, item, ref elementCount);
+                return AVLNode.FindRemoveItem(node, HashMap, hash, item, ref _elementCount);
             }
 
             return false; // Redundant
@@ -270,12 +270,12 @@ namespace LamestWebserver.Collections
         /// <inheritdoc />
         public void Add(KeyValuePair<TKey, TValue> item)
         {
-            int hash = Math.Abs(item.Key.GetHashCode()) % size;
+            int hash = Math.Abs(item.Key.GetHashCode()) % _size;
 
             if (HashMap[hash] == null)
             {
                 HashMap[hash] = item;
-                elementCount++;
+                _elementCount++;
             }
             else if (HashMap[hash] is KeyValuePair<TKey, TValue>)
             {
@@ -299,14 +299,14 @@ namespace LamestWebserver.Collections
                     }
 
                     HashMap[hash] = node;
-                    elementCount++;
+                    _elementCount++;
                 }
             }
             else
             {
                 AVLNode node = (AVLNode)HashMap[hash];
 
-                AVLNode.AddItem(node: node, item: item, HashMap: HashMap, hash: hash, elementCount: ref elementCount);
+                AVLNode.AddItem(node: node, item: item, HashMap: HashMap, hash: hash, elementCount: ref _elementCount);
 #if TEST
                 AVLNode.checkNodes(node);
 #endif
@@ -316,14 +316,14 @@ namespace LamestWebserver.Collections
         /// <inheritdoc />
         public void Clear()
         {
-            elementCount = 0;
-            HashMap = new object[size];
+            _elementCount = 0;
+            HashMap = new object[_size];
         }
 
         /// <inheritdoc />
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
-            int hash = Math.Abs(item.Key.GetHashCode()) % size;
+            int hash = Math.Abs(item.Key.GetHashCode()) % _size;
 
             if (HashMap[hash] == null)
             {
@@ -379,14 +379,14 @@ namespace LamestWebserver.Collections
         /// <inheritdoc />
         public bool Remove(TKey key)
         {
-            int hash = Math.Abs(key.GetHashCode()) % size;
+            int hash = Math.Abs(key.GetHashCode()) % _size;
 
             if (HashMap[hash] is KeyValuePair<TKey, TValue>)
             {
                 if (((KeyValuePair<TKey, TValue>)HashMap[hash]).Key.Equals(key))
                 {
                     HashMap[hash] = null;
-                    elementCount--;
+                    _elementCount--;
                     return true;
                 }
                 else return false;
@@ -395,7 +395,7 @@ namespace LamestWebserver.Collections
             {
                 AVLNode node = (AVLNode)HashMap[hash];
 
-                return AVLNode.FindRemoveKey(node, HashMap, hash, key, ref elementCount);
+                return AVLNode.FindRemoveKey(node, HashMap, hash, key, ref _elementCount);
             }
 
             return false; // Redundant
@@ -437,7 +437,7 @@ namespace LamestWebserver.Collections
         //[OnSerializing]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(nameof(size), size);
+            info.AddValue(nameof(_size), _size);
 
             Entry[] elements = new Entry[this.Count];
             int index = 0;
@@ -460,9 +460,9 @@ namespace LamestWebserver.Collections
             reader.ReadStartElement();
             reader.ReadStartElement();
 
-            size = reader.ReadElement<int>();
+            _size = reader.ReadElement<int>();
 
-            HashMap = new object[size];
+            HashMap = new object[_size];
 
             List<Entry> entries = reader.ReadElement<List<Entry>>();
 
@@ -478,7 +478,7 @@ namespace LamestWebserver.Collections
         {
             writer.WriteStartElement("AVLHashMap");
 
-            writer.WriteElement("Size", size);
+            writer.WriteElement("Size", _size);
 
             Entry[] elements = new Entry[this.Count];
             int index = 0;
@@ -538,8 +538,8 @@ namespace LamestWebserver.Collections
         /// <param name="context">StreamingContext</param>
         public AVLHashMap(SerializationInfo info, StreamingContext context)
         {
-            size = info.GetInt32(nameof(size));
-            HashMap = new object[size];
+            _size = info.GetInt32(nameof(_size));
+            HashMap = new object[_size];
 
             Entry[] elements;
             elements = (Entry[])info.GetValue(nameof(elements), typeof(Entry[]));

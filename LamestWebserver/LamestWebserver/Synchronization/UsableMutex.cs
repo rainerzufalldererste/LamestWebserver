@@ -20,7 +20,14 @@ namespace LamestWebserver.Synchronization
     /// </summary>
     public class UsableMutex
     {
+        /// <summary>
+        /// The milliseconds to wait for the mutex to be free.
+        /// </summary>
         public static int MutexWaitMillis = 100;
+
+        /// <summary>
+        /// The milliseconds to wait for the mutex to expect a neverending method might have aquired it and just releasing it by yourself.
+        /// </summary>
         public static int MutexSelfRelease = 200;
 
         private ReaderWriterLockSlim innerMutex;
@@ -29,6 +36,9 @@ namespace LamestWebserver.Synchronization
         private Mutex helperMutex = new Mutex();
         private DateTime? lastLocked = null;
 
+        /// <summary>
+        /// Constructs a new UsableMutex.
+        /// </summary>
         public UsableMutex()
         {
             innerMutex = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
@@ -89,6 +99,10 @@ namespace LamestWebserver.Synchronization
             helperMutex.ReleaseMutex();
         }
 
+        /// <summary>
+        /// Locks the mutex.
+        /// </summary>
+        /// <returns>true if the mutex could be locked in time</returns>
         public bool WaitOne()
         {
             HandleTimer();
@@ -96,6 +110,9 @@ namespace LamestWebserver.Synchronization
             return StartTimer(innerMutex.TryEnterWriteLock(MutexWaitMillis));
         }
 
+        /// <summary>
+        /// Releases the mutex.
+        /// </summary>
         public void ReleaseMutex()
         {
             try
@@ -155,8 +172,8 @@ namespace LamestWebserver.Synchronization
     /// </summary>
     public class UsableMultiMutexLocker : IDisposable
     {
-        private Mutex[] mutexes;
-        private bool[] locked;
+        private readonly Mutex[] _mutexes;
+        private readonly bool[] _locked;
 
         /// <summary>
         /// constructs a new UsableMultiMutexLocker and already locks all given mutexes.
@@ -164,8 +181,8 @@ namespace LamestWebserver.Synchronization
         /// <param name="mutexes">the mutexes to lock</param>
         public UsableMultiMutexLocker(params Mutex[] mutexes)
         {
-            this.mutexes = mutexes;
-            this.locked = new bool[mutexes.Length];
+            this._mutexes = mutexes;
+            this._locked = new bool[mutexes.Length];
 
             for (int i = 0; i < mutexes.Length; i++)
             {
@@ -175,7 +192,7 @@ namespace LamestWebserver.Synchronization
                     throw new MutexRetryException();
                 }
 
-                locked[i] = true;
+                _locked[i] = true;
             }
         }
 
@@ -184,10 +201,10 @@ namespace LamestWebserver.Synchronization
         /// </summary>
         public void Dispose()
         {
-            for (int i = mutexes.Length - 1; i >= 0; i--)
+            for (int i = _mutexes.Length - 1; i >= 0; i--)
             {
-                if(locked[i])
-                    mutexes[i].ReleaseMutex();
+                if(_locked[i])
+                    _mutexes[i].ReleaseMutex();
             }
         }
     }
@@ -234,30 +251,43 @@ namespace LamestWebserver.Synchronization
         }
     }
 
+    /// <summary>
+    /// This exception symbolizes, that a mutex could not be aquired in time and the Operation has been aborted.
+    /// </summary>
     public class MutexRetryException : Exception
     {
     }
 
+    /// <summary>
+    /// Just a simple UsableMutex with no handling for deadlocks - Only to use Mutexes with IDisposable.
+    /// </summary>
     public class UsableMutexSlim
     {
-        private readonly Mutex innerMutex = new Mutex();
+        private readonly Mutex _innerMutex = new Mutex();
 
+        /// <summary>
+        /// Locks the mutex; IDisposable.
+        /// </summary>
+        /// <returns>an IDisposable object that releases the mutex on Dispose()</returns>
         public UsableSlimMutexLocker Lock() => new UsableSlimMutexLocker(this);
 
+        /// <summary>
+        /// Just a simple IDisposable Mutex lock/release.
+        /// </summary>
         public class UsableSlimMutexLocker : IDisposable
         {
-            private readonly UsableMutexSlim innerMutex;
+            private readonly UsableMutexSlim _innerMutex;
 
             internal UsableSlimMutexLocker(UsableMutexSlim innerMutex)
             {
-                this.innerMutex = innerMutex;
-                innerMutex.innerMutex.WaitOne();
+                this._innerMutex = innerMutex;
+                innerMutex._innerMutex.WaitOne();
             }
 
             /// <inheritdoc />
             public void Dispose()
             {
-                innerMutex.innerMutex.ReleaseMutex();
+                _innerMutex._innerMutex.ReleaseMutex();
             }
         }
     }

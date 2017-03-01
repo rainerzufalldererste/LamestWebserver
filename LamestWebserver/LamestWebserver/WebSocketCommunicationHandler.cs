@@ -146,8 +146,6 @@ namespace LamestWebserver
         /// When did we send the last message to the client
         /// </summary>
         public DateTime LastMessageSent = DateTime.UtcNow;
-
-        private int _exceptedTries = 0;
         
         /// <summary>
         /// At which port did the client connect to the server
@@ -182,7 +180,6 @@ namespace LamestWebserver
                 await _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
                 _handler.CallOnResponded();
-                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -226,7 +223,6 @@ namespace LamestWebserver
                 byte[] buffer = _websocketHandler.PongFrame.Invoke(bytes);
                 _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -270,7 +266,6 @@ namespace LamestWebserver
                 byte[] buffer = _websocketHandler.PingFrame.Invoke(bytes);
                 _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -315,7 +310,6 @@ namespace LamestWebserver
                 _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
                 _handler.CallOnResponded();
-                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -381,8 +375,6 @@ namespace LamestWebserver
                         Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
 
                         _websocketHandler.Receive(trimmedBuffer);
-
-                        _exceptedTries = 0;
                     }
                     else
                     {
@@ -444,8 +436,6 @@ namespace LamestWebserver
                     Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
 
                     _websocketHandler.Receive(trimmedBuffer);
-
-                    _exceptedTries = 0;
                 }
                 else
                 {

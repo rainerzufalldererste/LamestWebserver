@@ -12,7 +12,6 @@ using System.IO.Compression;
 using LamestWebserver.Collections;
 using System.IO;
 using System.Runtime.Serialization;
-using System.Windows.Forms;
 using LamestWebserver.Synchronization;
 using ThreadState = System.Threading.ThreadState;
 using System.Reflection;
@@ -20,20 +19,34 @@ using Newtonsoft.Json;
 
 namespace LamestWebserver
 {
+    /// <summary>
+    /// A Webserver. The central unit in LamestWebserver.
+    /// </summary>
     public class WebServer : IDisposable
     {
         internal static List<WebServer> RunningServers = new List<WebServer>();
         internal static UsableMutexSlim RunningServerMutex = new UsableMutexSlim();
 
+        /// <summary>
+        /// The IP and Port of the currently Connected Client.
+        /// </summary>
         [ThreadStatic] public static string CurrentClientRemoteEndpoint = "<?>";
 
-        TcpListener tcpListener;
-        List<Thread> threads = new List<Thread>();
-        Thread mThread;
-        public int Port;
-        public string folder = "./web";
+        private readonly TcpListener _tcpListener;
+        private readonly List<Thread> _threads = new List<Thread>();
+        private readonly Thread _mThread;
+        
+        /// <summary>
+        /// The Port, the server is listening at.
+        /// </summary>
+        public readonly int Port;
 
-        internal bool running
+        /// <summary>
+        /// The Folder, the server should look for files at.
+        /// </summary>
+        public string Folder = "./web";
+
+        internal bool Running
         {
             get
             {
@@ -116,6 +129,11 @@ namespace LamestWebserver
 
         private Random random = new Random();
 
+        /// <summary>
+        /// Starts a new Webserver.
+        /// </summary>
+        /// <param name="port">the port listen to</param>
+        /// <param name="folder">the folder to listen to</param>
         public WebServer(int port, string folder) : this(port, folder, true, true)
         {
         }
@@ -143,11 +161,11 @@ namespace LamestWebserver
             }
 
             this.Port = port;
-            this.tcpListener = new TcpListener(IPAddress.Any, port);
-            mThread = new Thread(new ThreadStart(HandleTcpListener));
-            mThread.Start();
+            this._tcpListener = new TcpListener(IPAddress.Any, port);
+            _mThread = new Thread(new ThreadStart(HandleTcpListener));
+            _mThread.Start();
             this.silent = silent;
-            this.folder = folder;
+            this.Folder = folder;
 
             if (useCache)
                 SetupFileSystemWatcher();
@@ -156,6 +174,7 @@ namespace LamestWebserver
                 RunningServers.Add(this);
         }
 
+        /// <inheritdoc />
         ~WebServer()
         {
             if (acceptPages)
@@ -184,13 +203,16 @@ namespace LamestWebserver
             Stop();
         }
 
+        /// <summary>
+        /// Stops the Server from running.
+        /// </summary>
         public void Stop()
         {
-            running = false;
+            Running = false;
 
             try
             {
-                tcpListener.Stop();
+                _tcpListener.Stop();
             }
             catch
             {
@@ -198,7 +220,7 @@ namespace LamestWebserver
 
             try
             {
-                Master.ForceQuitThread(mThread);
+                Master.ForceQuitThread(_mThread);
             }
             catch
             {
@@ -221,19 +243,19 @@ namespace LamestWebserver
 
             networkStreamsMutex.ReleaseMutex();
 
-            int i = threads.Count;
+            int i = _threads.Count;
 
-            while (threads.Count > 0)
+            while (_threads.Count > 0)
             {
                 try
                 {
-                    Master.ForceQuitThread(threads[0]);
+                    Master.ForceQuitThread(_threads[0]);
                 }
                 catch
                 {
                 }
 
-                threads.RemoveAt(0);
+                _threads.RemoveAt(0);
             }
 
             using (RunningServerMutex.Lock())
@@ -243,15 +265,19 @@ namespace LamestWebserver
                 Master.StopServers();
         }
 
+        /// <summary>
+        /// Retrieves the number of used threads by this Webserver.
+        /// </summary>
+        /// <returns>the number of used threads by this Webserver</returns>
         public int GetThreadCount()
         {
             int num = 1;
 
             CleanThreads();
 
-            for (int i = 0; i < threads.Count; i++)
+            for (int i = 0; i < _threads.Count; i++)
             {
-                if (threads[i] != null && threads[i].IsAlive)
+                if (_threads[i] != null && _threads[i].IsAlive)
                 {
                     num++;
                 }
@@ -260,19 +286,19 @@ namespace LamestWebserver
             return num;
         }
 
-        public void CleanThreads()
+        internal void CleanThreads()
         {
             cleanMutex.WaitOne();
 
-            int threadCount = threads.Count;
+            int threadCount = _threads.Count;
             int i = 0;
 
-            while (i < threads.Count)
+            while (i < _threads.Count)
             {
-                if (threads[i] == null ||
-                    threads[i].ThreadState == ThreadState.Running ||
-                    threads[i].ThreadState == ThreadState.Unstarted ||
-                    threads[i].ThreadState == ThreadState.AbortRequested)
+                if (_threads[i] == null ||
+                    _threads[i].ThreadState == ThreadState.Running ||
+                    _threads[i].ThreadState == ThreadState.Unstarted ||
+                    _threads[i].ThreadState == ThreadState.AbortRequested)
                 {
                     i++;
                 }
@@ -280,7 +306,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        threads[i].Abort();
+                        _threads[i].Abort();
                     }
                     catch (Exception)
                     {
@@ -288,7 +314,7 @@ namespace LamestWebserver
 
                     networkStreamsMutex.WaitOne();
 
-                    var networkStream = networkStreams[threads[i].ManagedThreadId];
+                    var networkStream = networkStreams[_threads[i].ManagedThreadId];
 
                     if (networkStream != null)
                     {
@@ -300,16 +326,16 @@ namespace LamestWebserver
                         {
                         }
 
-                        networkStreams.Remove(threads[i].ManagedThreadId);
+                        networkStreams.Remove(_threads[i].ManagedThreadId);
                     }
 
                     networkStreamsMutex.ReleaseMutex();
 
-                    threads.RemoveAt(i);
+                    _threads.RemoveAt(i);
                 }
             }
 
-            int threadCountAfter = threads.Count;
+            int threadCountAfter = _threads.Count;
 
             cleanMutex.ReleaseMutex();
 
@@ -383,7 +409,7 @@ namespace LamestWebserver
         {
             try
             {
-                tcpListener.Start();
+                _tcpListener.Start();
             }
             catch (Exception e)
             {
@@ -394,22 +420,22 @@ namespace LamestWebserver
                 return;
             }
 
-            while (running)
+            while (Running)
             {
                 try
                 {
-                    tcpRcvTask = tcpListener.AcceptTcpClientAsync();
+                    tcpRcvTask = _tcpListener.AcceptTcpClientAsync();
                     tcpRcvTask.Wait();
                     TcpClient tcpClient = tcpRcvTask.Result;
                     Thread t = new Thread(HandleClient);
-                    threads.Add(t);
+                    _threads.Add(t);
                     t.Start((object) tcpClient);
                     ServerHandler.LogMessage("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
-                    if (threads.Count%25 == 0)
+                    if (_threads.Count%25 == 0)
                     {
-                        threads.Add(new Thread(new ThreadStart(CleanThreads)));
-                        threads[threads.Count - 1].Start();
+                        _threads.Add(new Thread(new ThreadStart(CleanThreads)));
+                        _threads[_threads.Count - 1].Start();
                     }
                 }
                 catch (ThreadAbortException)
@@ -441,7 +467,7 @@ namespace LamestWebserver
 
             Stopwatch stopwatch = new Stopwatch();
 
-            while (running)
+            while (Running)
             {
                 msg = new byte[RequestMaxPacketSize];
 
@@ -453,7 +479,7 @@ namespace LamestWebserver
                     bytes = nws.Read(msg, 0, RequestMaxPacketSize);
                     stopwatch.Start();
                 }
-                catch (ThreadAbortException e)
+                catch (ThreadAbortException)
                 {
                     break;
                 }
@@ -566,7 +592,7 @@ namespace LamestWebserver
 
                                 int tries = 0;
 
-                                SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
+                                SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, Folder,
                                     htp.RequestUrl, msg_, client, nws, (ushort)this.Port);
 
                                 RetryGetData:
@@ -678,7 +704,7 @@ namespace LamestWebserver
 
                                         int tries = 0;
 
-                                        SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
+                                        SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, Folder,
                                             htp.RequestUrl, msg_, client, nws, (ushort)this.Port);
 
                                         RetryGetData:
@@ -832,10 +858,10 @@ namespace LamestWebserver
                             notModified = requestPacket.ModifiedDate != null;
                         }
                     }
-                    else if (File.Exists(folder + fileName))
+                    else if (File.Exists(Folder + fileName))
                     {
                         contents = ReadFile(fileName, enc);
-                        lastModified = File.GetLastWriteTimeUtc(folder + fileName);
+                        lastModified = File.GetLastWriteTimeUtc(Folder + fileName);
 
                         if (useCache)
                         {
@@ -868,12 +894,12 @@ namespace LamestWebserver
                         notModified = requestPacket.ModifiedDate != null;
                     }
                 }
-                else if (File.Exists(folder + fileName))
+                else if (File.Exists(Folder + fileName))
                 {
                     extention = GetExtention(fileName);
                     bool isBinary = FileIsBinary(fileName, extention);
                     contents = ReadFile(fileName, enc, isBinary);
-                    lastModified = File.GetLastWriteTimeUtc(folder + fileName);
+                    lastModified = File.GetLastWriteTimeUtc(Folder + fileName);
 
                     if (useCache)
                     {
@@ -1071,7 +1097,7 @@ namespace LamestWebserver
 
         internal void SetupFileSystemWatcher()
         {
-            fileSystemWatcher = new FileSystemWatcher(folder);
+            fileSystemWatcher = new FileSystemWatcher(Folder);
 
             fileSystemWatcher.Renamed += (object sender, RenamedEventArgs e) =>
             {
@@ -1087,7 +1113,7 @@ namespace LamestWebserver
                             file.Filename = "/" + e.Name;
                             file.Contents = ReadFile(file.Filename, new UTF8Encoding(), file.IsBinary);
                             file.Size = file.Contents.Length;
-                            file.LastModified = File.GetLastWriteTimeUtc(folder + e.Name);
+                            file.LastModified = File.GetLastWriteTimeUtc(Folder + e.Name);
                             cache.Add(e.Name, file);
                         }
                     }
@@ -1148,15 +1174,15 @@ namespace LamestWebserver
                 {
                     if (isBinary)
                     {
-                        return File.ReadAllBytes(folder + filename);
+                        return File.ReadAllBytes(Folder + filename);
                     }
 
-                    if (Equals(GetEncoding(folder + filename), Encoding.UTF8))
+                    if (Equals(GetEncoding(Folder + filename), Encoding.UTF8))
                     {
-                        return File.ReadAllBytes(folder + filename);
+                        return File.ReadAllBytes(Folder + filename);
                     }
 
-                    string content = File.ReadAllText(folder + filename);
+                    string content = File.ReadAllText(Folder + filename);
                     return Encoding.UTF8.GetBytes(content);
                 }
                 catch (IOException)
@@ -1214,10 +1240,19 @@ namespace LamestWebserver
         /// </summary>
         public static bool ErrorMsgContainSessionData = true;
 
+        /// <summary>
+        /// Shall exception-messages be encrypted?
+        /// </summary>
         public static bool EncryptErrorMsgs = false;
 
+        /// <summary>
+        /// The Key for the exception-message encryption.
+        /// </summary>
         public static byte[] ErrorMsgKey { set { _errorMsgKey = value; } }
 
+        /// <summary>
+        /// The IV for the exception-message encryption.
+        /// </summary>
         public static byte[] ErrorMsgIV { set { _errorMsgIV = value; } }
 
         private static byte[] _errorMsgKey = Security.Encryption.GetKey();

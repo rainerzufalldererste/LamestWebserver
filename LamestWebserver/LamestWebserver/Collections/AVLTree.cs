@@ -355,10 +355,21 @@ namespace LamestWebserver.Collections
         [Serializable]
         public struct Entry
         {
+            /// <summary>
+            /// The key.
+            /// </summary>
             public TKey Key { get; set; }
 
+            /// <summary>
+            /// The value.
+            /// </summary>
             public TValue Value { get; set; }
 
+            /// <summary>
+            /// Constructs a new Entry.
+            /// </summary>
+            /// <param name="key">the key</param>
+            /// <param name="value">the value</param>
             public Entry(TKey key, TValue value)
             {
                 Key = key;

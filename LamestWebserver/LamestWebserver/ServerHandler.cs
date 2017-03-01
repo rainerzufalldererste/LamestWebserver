@@ -50,7 +50,7 @@ namespace LamestWebserver
                                 {
                                     for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                     {
-                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Folder: " + WebServer.RunningServers[i].folder + " Threads: " +
+                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Folder: " + WebServer.RunningServers[i].Folder + " Threads: " +
                                                           WebServer.RunningServers[i].GetThreadCount());
                                     }
                                 }

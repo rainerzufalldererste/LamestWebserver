@@ -1159,6 +1159,8 @@ namespace LamestWebserver.UI
         private readonly string _placeholder;
 
         /// <inheritdoc />
+        /// <param name="name">the name of the submitted value</param>
+        /// <param name="value">the default value</param>
         /// <param name="placeholderText">the placeholder to display when no text has been entered.</param>
         public HTextInput(string name, string value = "", string placeholderText = "") : base(EInputType.text, name, value)
         {
