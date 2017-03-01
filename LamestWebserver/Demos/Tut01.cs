@@ -25,6 +25,8 @@ namespace Demos
             // Get the default layout around the elements retrieved by GetElements()
             HElement page = MainPage.GetPage(GetElements(), nameof(Tut01) + ".cs");
 
+            throw new Exception();
+
             // To get the HTML-string of an HElement, call GetContent with the current session data.
             return page.GetContent(sessionData);
 

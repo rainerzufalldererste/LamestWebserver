@@ -588,7 +588,7 @@ namespace LamestWebserver
                                     {
                                         htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
                                                                                           + htp.RequestUrl + "'",
-                                            $"<b>An Error occured while processing the output ({tries} Retries)</b><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                            $"<b>An Error occured while processing the output ({tries} Retries)</b><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                             + GetErrorMsg(e, sessionData, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                             + "</div></p>"));
 
@@ -603,7 +603,7 @@ namespace LamestWebserver
                                 catch (Exception e)
                                 {
                                     htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
-                                                                                      + htp.RequestUrl + "'", "<b>An Error occured while processing the output</b><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                                                      + htp.RequestUrl + "'", "<b>An Error occured while processing the output</b><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                                                                       + GetErrorMsg(e, sessionData, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                                                                       + "</div></p>"));
 
@@ -700,7 +700,7 @@ namespace LamestWebserver
                                             {
                                                 htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Directory Response for '"
                                                                                               + htp.RequestUrl + "' in Directory Response '" + bestUrlMatch + "'",
-                                                    $"<b>An Error occured while processing the output ({tries} Retries)</b><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                    $"<b>An Error occured while processing the output ({tries} Retries)</b><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                                     + GetErrorMsg(e, sessionData, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                                     + "</div></p>"));
 
@@ -716,7 +716,7 @@ namespace LamestWebserver
                                         {
                                             htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Directory Response for '"
                                                                                               + htp.RequestUrl + "' in Directory Response '" + bestUrlMatch + "'",
-                                                "<b>An Error occured while processing the output</b><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                                "<b>An Error occured while processing the output</b><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                                 + GetErrorMsg(e, sessionData, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                                 + "</div></p>"));
 
@@ -906,7 +906,7 @@ namespace LamestWebserver
                     Status = "500 Internal Server Error",
                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
                         "Error 500: Internal Server Error",
-                        "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                        "<p>An Exception occurred while sending the response:<br><br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                         + GetErrorMsg(e, null, fullPacketString).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                         + "</div>"))
                 };
@@ -1214,6 +1214,15 @@ namespace LamestWebserver
         /// </summary>
         public static bool ErrorMsgContainSessionData = true;
 
+        public static bool EncryptErrorMsgs = false;
+
+        public static byte[] ErrorMsgKey { set { _errorMsgKey = value; } }
+
+        public static byte[] ErrorMsgIV { set { _errorMsgIV = value; } }
+
+        private static byte[] _errorMsgKey = Security.Encryption.GetKey();
+        private static byte[] _errorMsgIV = Security.Encryption.GetIV();
+
         /// <summary>
         /// Retrieves an error message
         /// </summary>
@@ -1225,23 +1234,31 @@ namespace LamestWebserver
         {
             string ret = exception.ToString() + "\n\n";
 
-            ret += "The package you were sending:\n\n" + httpPacket + "\n\n__________________________\n\n";
+            ret += "The package you were sending:\n\n" + httpPacket;
 
             if (ErrorMsgContainSessionData && sessionData != null)
             {
+                ret += "\n\n______________________________________________________________________________________________\n\n";
+
                 if (sessionData is SessionData)
                 {
                     SessionData _sessionData = (SessionData)sessionData;
 
-                    ret += "\n\nHTTP-Head:\n\n";
+                    if (_sessionData.HttpHeadParameters.Count > 0)
+                    {
+                        ret += "\n\nHTTP-Head:\n\n";
 
-                    for (int i = 0; i < _sessionData.HttpHeadParameters.Count; i++)
-                        ret += "'" + _sessionData.HttpHeadParameters[i] + "': " + _sessionData.HttpHeadValues[i] + "\n";
+                        for (int i = 0; i < _sessionData.HttpHeadParameters.Count; i++)
+                            ret += "'" + _sessionData.HttpHeadParameters[i] + "': " + _sessionData.HttpHeadValues[i] + "\n";
+                    }
 
-                    ret += "\n\nHTTP-Post:\n\n";
+                    if (_sessionData.HttpPostParameters.Count > 0)
+                    {
+                        ret += "\n\nHTTP-Post:\n\n";
 
-                    for (int i = 0; i < _sessionData.HttpPostParameters.Count; i++)
-                        ret += "'" + _sessionData.HttpPostParameters[i] + "': " + _sessionData.HttpPostValues[i] + "\n";
+                        for (int i = 0; i < _sessionData.HttpPostParameters.Count; i++)
+                            ret += "'" + _sessionData.HttpPostParameters[i] + "': " + _sessionData.HttpPostValues[i] + "\n";
+                    }
                 }
 
                 IDictionary<string, object> currentDictionary = null;
@@ -1250,7 +1267,7 @@ namespace LamestWebserver
                 {
                     currentDictionary = sessionData._userInfo.UserGlobalVariables;
 
-                    if (currentDictionary != null)
+                    if (currentDictionary != null && currentDictionary.Count > 0)
                     {
                         ret += "\n\nUserGlobalVars:\n\n";
 
@@ -1259,7 +1276,7 @@ namespace LamestWebserver
 
                     currentDictionary = sessionData.GetUserPerFileVariables();
 
-                    if (currentDictionary != null)
+                    if (currentDictionary != null && currentDictionary.Count > 0)
                     {
                         ret += "\n\nUserFileVars:\n\n";
 
@@ -1269,7 +1286,7 @@ namespace LamestWebserver
 
                 currentDictionary = sessionData.GetGlobalVariables();
 
-                if (currentDictionary != null)
+                if (currentDictionary != null && currentDictionary.Count > 0)
                 {
                     ret += "\n\nGlobalVars:\n\n";
 
@@ -1278,12 +1295,25 @@ namespace LamestWebserver
 
                 currentDictionary = sessionData.GetPerFileVariables();
 
-                if (currentDictionary != null)
+                if (currentDictionary != null && currentDictionary.Count > 0)
                 {
                     ret += "\n\nFileVars:\n\n";
 
                     SerializeValues(currentDictionary, ref ret);
                 }
+            }
+
+            if (EncryptErrorMsgs)
+            {
+                ret = Security.Encryption.Encrypt(ret, _errorMsgKey, _errorMsgIV);
+
+                for (int i = ret.Length - 1; i >= 0; i--)
+                {
+                    if (i % 128 == 0)
+                        ret = ret.Insert(i, "\n");
+                }
+
+                ret = "The Error-Message has been encrypted for security reasons.\nIf this error occurs multiple times, please contact the developers and send them this piece of code.\n" + ret;
             }
 
             return ret;

@@ -24,6 +24,9 @@ namespace lwshostcore
         public int WebSocketResponsePageStorageHashMapSize = 64;
         public int DirectoryResponseStorageHashMapSize = 128;
         public int RequestMaxPacketSize = 4096;
+        public bool EncryptErrorMessages = false;
+        public byte[] ErrorMessageEncryptionKey = LamestWebserver.Security.Encryption.GetKey();
+        public byte[] ErrorMessageEncryptionIV = LamestWebserver.Security.Encryption.GetIV();
 
         private const string configFile = "lwshost\\lwsconfig.json";
         
@@ -109,6 +112,15 @@ namespace lwshostcore
             WebServer.RequestMaxPacketSize = RequestMaxPacketSize;
             ServerHandler.LogMessage($"[hostconfig] WebServer.RequestMaxPacketSize = {RequestMaxPacketSize}");
 
+
+            WebServer.ErrorMsgKey = ErrorMessageEncryptionKey;
+            ServerHandler.LogMessage($"[hostconfig] WebServer.ErrorMsgKey = {Convert.ToBase64String(ErrorMessageEncryptionKey)}");
+
+            WebServer.ErrorMsgIV = ErrorMessageEncryptionIV;
+            ServerHandler.LogMessage($"[hostconfig] WebServer.ErrorMsgIV = {Convert.ToBase64String(ErrorMessageEncryptionIV)}");
+
+            WebServer.EncryptErrorMsgs = EncryptErrorMessages;
+            ServerHandler.LogMessage($"[hostconfig] WebServer.EncryptErrorMsgs = {EncryptErrorMessages}");
         }
     }
 }
