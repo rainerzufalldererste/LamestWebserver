@@ -19,6 +19,8 @@ namespace LamestWebserver.RequestHandlers
 
         public HttpPacket GetResponse(HttpPacket requestPacket)
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
             while (requestPacket.RequestUrl.Length >= 2 && (requestPacket.RequestUrl[0] == ' ' || requestPacket.RequestUrl[0] == '/'))
             {
                 requestPacket.RequestUrl = requestPacket.RequestUrl.Remove(0, 1);
@@ -31,7 +33,11 @@ namespace LamestWebserver.RequestHandlers
                     var response = requestHandler.GetResponse(requestPacket);
 
                     if (response != null)
+                    {
+                        ServerHandler.LogMessage($"Completed Request on '{requestPacket.RequestUrl}' using '{requestHandler}'.", stopwatch);
+
                         return response;
+                    }
                 }
 
                 foreach (IRequestHandler requestHandler in SecondaryRequestHandlers)
@@ -39,9 +45,15 @@ namespace LamestWebserver.RequestHandlers
                     var response = requestHandler.GetResponse(requestPacket);
 
                     if (response != null)
+                    {
+                        ServerHandler.LogMessage($"Completed Request on '{requestPacket.RequestUrl}' using [secondary] '{requestHandler}'.", stopwatch);
+
                         return response;
+                    }
                 }
             }
+
+            ServerHandler.LogMessage($"Failed to complete Request on '{requestPacket.RequestUrl}'.", stopwatch);
 
             return null;
         }
@@ -540,7 +552,7 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
-    public abstract class AbstractMutexRetriableRequestHandler : IRequestHandler
+    public abstract class AbstractMutexRetriableResponse<T> : IRequestHandler
     {
         private Random random = new Random();
 
@@ -572,6 +584,7 @@ namespace LamestWebserver.RequestHandlers
                         throw;
                     }
 
+                    Thread.Sleep(random.Next(25 * tries));
                     goto RETRY;
                 }
             }
@@ -579,12 +592,12 @@ namespace LamestWebserver.RequestHandlers
             return null;
         }
 
-        public abstract HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, SessionData sessionData);
+        public abstract HttpPacket GetRetriableResponse(T requestFunction, HttpPacket requestPacket, SessionData sessionData);
 
-        public abstract Master.GetContents GetResponseFunction(HttpPacket requestPacket);
+        public abstract T GetResponseFunction(HttpPacket requestPacket);
     }
 
-    public class PageResponseRequestHandler : AbstractMutexRetriableRequestHandler
+    public class PageResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetContents>
     {
         protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         protected AVLHashMap<string, Master.GetContents> PageResponses = new AVLHashMap<string, Master.GetContents>(WebServer.PageResponseStorageHashMapSize);
@@ -600,7 +613,8 @@ namespace LamestWebserver.RequestHandlers
         {
             return new HttpPacket()
             {
-                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData))
+                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
+                Cookies = sessionData.SetCookies
             };
         }
 
@@ -633,7 +647,7 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
-    public class OneTimePageResponseRequestHandler : AbstractMutexRetriableRequestHandler
+    public class OneTimePageResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetContents>
     {
         protected QueuedAVLTree<string, Master.GetContents> OneTimeResponses = new QueuedAVLTree<string, Master.GetContents>(WebServer.OneTimePageResponsesStorageQueueSize);
         protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
@@ -648,7 +662,8 @@ namespace LamestWebserver.RequestHandlers
         {
             return new HttpPacket()
             {
-                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData))
+                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
+                Cookies = sessionData.SetCookies
             };
         }
 
@@ -733,6 +748,90 @@ namespace LamestWebserver.RequestHandlers
             ReaderWriterLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
+        }
+    }
+
+    public class DirectoryResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetDirectoryContents>
+    {
+        protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        protected AVLHashMap<string, Master.GetDirectoryContents> DirectoryResponses = new AVLHashMap<string, Master.GetDirectoryContents>(WebServer.DirectoryResponseStorageHashMapSize);
+
+        [ThreadStatic]
+        private static string _subUrl = "";
+
+        public DirectoryResponseRequestHandler()
+        {
+            Master.AddDirectoryFunctionEvent += AddDirectoryFunction;
+            Master.RemoveDirectoryFunctionEvent += RemoveDirectoryFunction;
+        }
+
+        /// <inheritdoc />
+        public override HttpPacket GetRetriableResponse(Master.GetDirectoryContents requestFunction, HttpPacket requestPacket, SessionData sessionData)
+        {
+            return new HttpPacket()
+            {
+                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData, _subUrl)),
+                Cookies = sessionData.SetCookies
+            };
+        }
+
+        /// <inheritdoc />
+        public override Master.GetDirectoryContents GetResponseFunction(HttpPacket requestPacket)
+        {
+            Master.GetDirectoryContents response = null;
+            string bestUrlMatch = requestPacket.RequestUrl;
+
+            if (bestUrlMatch.StartsWith("/"))
+                bestUrlMatch = bestUrlMatch.Remove(0);
+
+            while (true)
+            {
+                for (int i = bestUrlMatch.Length - 2; i >= 0; i--)
+                {
+                    if (bestUrlMatch[i] == '/')
+                    {
+                        bestUrlMatch = bestUrlMatch.Substring(0, i + 1);
+                        break;
+                    }
+
+                    if (i == 0)
+                    {
+                        bestUrlMatch = "";
+                        break;
+                    }
+                }
+
+                ReaderWriterLock.EnterReadLock();
+                response = DirectoryResponses[bestUrlMatch];
+                ReaderWriterLock.ExitReadLock();
+
+                if (response != null || bestUrlMatch.Length == 0)
+                {
+                    break;
+                }
+            }
+
+            _subUrl = requestPacket.RequestUrl.Substring(bestUrlMatch.Length).TrimStart('/');
+
+            return response;
+        }
+
+        private void AddDirectoryFunction(string URL, Master.GetDirectoryContents function)
+        {
+            ReaderWriterLock.EnterWriteLock();
+            DirectoryResponses.Add(URL, function);
+            ReaderWriterLock.ExitWriteLock();
+
+            ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is now available at the Webserver. (WebserverApi)");
+        }
+
+        private void RemoveDirectoryFunction(string URL)
+        {
+            ReaderWriterLock.EnterWriteLock();
+            DirectoryResponses.Remove(URL);
+            ReaderWriterLock.ExitWriteLock();
+
+            ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
         }
     }
 }
