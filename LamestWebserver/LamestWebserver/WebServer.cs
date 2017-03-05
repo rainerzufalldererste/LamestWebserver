@@ -15,6 +15,7 @@ using System.Runtime.Serialization;
 using LamestWebserver.Synchronization;
 using ThreadState = System.Threading.ThreadState;
 using System.Reflection;
+using LamestWebserver.RequestHandlers;
 using Newtonsoft.Json;
 
 namespace LamestWebserver
@@ -497,7 +498,7 @@ namespace LamestWebserver
                 try
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
-                    HttpPacket htp = HttpPacket.Constructor(ref msg_, client.Client.RemoteEndPoint, lastmsg);
+                    HttpPacket htp = HttpPacket.Constructor(ref msg_, client.Client.RemoteEndPoint, lastmsg, nws);
 
                     byte[] buffer;
 
@@ -545,7 +546,6 @@ namespace LamestWebserver
                             pageResponseWriteLock.ExitReadLock();
 
                             WebSocketCommunicationHandler currentWebSocketHandler;
-                            
 
                             pageResponseWriteLock.EnterReadLock();
 
@@ -561,7 +561,7 @@ namespace LamestWebserver
 
                                 ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (WebSocket Upgrade Request)", stopwatch);
 
-                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler, (ushort) this.Port);
+                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler);
 
                                 return;
                             }
@@ -592,8 +592,7 @@ namespace LamestWebserver
 
                                 int tries = 0;
 
-                                SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, Folder,
-                                    htp.RequestUrl, msg_, client, nws, (ushort)this.Port);
+                                SessionData sessionData = new SessionData(htp);
 
                                 RetryGetData:
 
@@ -704,8 +703,7 @@ namespace LamestWebserver
 
                                         int tries = 0;
 
-                                        SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, Folder,
-                                            htp.RequestUrl, msg_, client, nws, (ushort)this.Port);
+                                        SessionData sessionData = new SessionData(htp);
 
                                         RetryGetData:
 
@@ -1373,31 +1371,6 @@ namespace LamestWebserver
 
                 ret += "'" + variable.Key + "': " + variable.Value + "\n";
             }
-        }
-    }
-
-    public class PreloadedFile
-    {
-        public string Filename;
-        public byte[] Contents;
-        public int Size;
-        public DateTime LastModified;
-        public bool IsBinary;
-        public int LoadCount;
-
-        public PreloadedFile(string filename, byte[] contents, int size, DateTime lastModified, bool isBinary)
-        {
-            Filename = filename;
-            Contents = contents;
-            Size = size;
-            LastModified = lastModified;
-            IsBinary = isBinary;
-            LoadCount = 1;
-        }
-
-        internal PreloadedFile Clone()
-        {
-            return new PreloadedFile((string) Filename.Clone(), Contents.ToArray(), Size, LastModified, IsBinary);
         }
     }
 }

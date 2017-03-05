@@ -393,7 +393,7 @@ namespace LamestWebserver.NotificationService
         /// </summary>
         public uint ConnectedClients { get; private set; } = 0;
 
-        private readonly IPAddress _externalAddress = null;
+        private readonly IPEndPoint _externalEndpoint = null;
 
         /// <summary>
         /// The thread that handles the keepalive sending
@@ -433,10 +433,10 @@ namespace LamestWebserver.NotificationService
         /// </summary>
         /// <param name="URL">the URL at which the Websocket Response will be available at</param>
         /// <param name="notifyForKeepalives">shall the OnNotification event be fired if the Notification is just a KeepAliveMessage</param>
-        /// <param name="externalAddress">at which IP-Address is the server registered at externally</param>
+        /// <param name="externalEndpoint">at which IP-Address and port is the server at for the client?</param>
         /// <param name="traceMessagesClient">shall the communication be logged in the client browser console? (for debugging)</param>
         /// <param name="maximumLastMessageTime">the maximum time at which the server decides not to sent a keepalive package after not hearing from the client. (null means DefaultMaximumLastMessageTime)</param>
-        public NotificationHandler(string URL, bool notifyForKeepalives = false, IPAddress externalAddress = null, bool traceMessagesClient = false, TimeSpan? maximumLastMessageTime = null) : base(URL)
+        public NotificationHandler(string URL, bool notifyForKeepalives = false, IPEndPoint externalEndpoint = null, bool traceMessagesClient = false, TimeSpan? maximumLastMessageTime = null) : base(URL)
         {
             if (maximumLastMessageTime.HasValue)
                 MaximumLastMessageTime = maximumLastMessageTime.Value;
@@ -444,7 +444,7 @@ namespace LamestWebserver.NotificationService
             NotifyForKeepalives = notifyForKeepalives;
             TraceMessagesClient = traceMessagesClient;
 
-            this._externalAddress = externalAddress;
+            this._externalEndpoint = externalEndpoint;
 
             OnMessage += (input, proxy) => HandleResponse(new NotificationResponse(input, proxy, URL, this));
             OnConnect += proxy => Connect(proxy);
@@ -463,7 +463,7 @@ namespace LamestWebserver.NotificationService
         /// The javascript code that handles the Notification based Communication to the server
         /// </summary>
         public JSElement ConnectionElement => new JSPlainText("<script type='text/javascript'>" +
-                                NotificationHelper.JsonNotificationCode(AbstractSessionIdentificator.CurrentSession, URL, ID, _externalAddress, TraceMessagesClient) + "</script>");
+                                NotificationHelper.JsonNotificationCode(AbstractSessionIdentificator.CurrentSession, URL, ID, _externalEndpoint, TraceMessagesClient) + "</script>");
 
         /// <summary>
         /// The method which handles the sending of keepalive packages to the clients whenever the maximum time is reached.
@@ -686,7 +686,7 @@ namespace LamestWebserver.NotificationService
 
             string ssid = packet.SSID;
 
-            response.SessionData = new SessionIdentificatorSlim(URL, response.HandlerProxy.Port, ssid);
+            response.SessionData = new SessionIdentificatorSlim(URL, ssid);
 
             switch(response.NotificationType)
             {

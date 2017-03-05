@@ -38,11 +38,6 @@ namespace LamestWebserver
         /// </summary>
         public string RequestedFile { get; protected set; }
 
-        /// <summary>
-        /// The Port of the currently responding server
-        /// </summary>
-        public ushort Port { get; protected set; }
-
         // ===============================================================================================================================================
         // ===============================================================================================================================================
 
@@ -383,10 +378,9 @@ namespace LamestWebserver
     /// </summary>
     public class SessionIdentificatorSlim : AbstractSessionIdentificator
     {
-        internal SessionIdentificatorSlim(string file, ushort port, string sessionId)
+        internal SessionIdentificatorSlim(string file, string sessionId)
         {
             base.RequestedFile = file;
-            base.Port = port;
             base.Ssid = sessionId;
 
             base.PerFileVariables = SessionContainer.GetFileDictionary(file);

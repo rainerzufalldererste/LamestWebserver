@@ -7,16 +7,11 @@ namespace LamestWebserver.NotificationService
 {
     internal static class NotificationHelper
     {
-        internal static string JsonNotificationCode(AbstractSessionIdentificator sessionData, string destinationURL, string NotificationHandlerID, IPAddress address, bool trace = false, int timeKeepaliveClientside = 8000)
+        internal static string JsonNotificationCode(AbstractSessionIdentificator sessionData, string destinationURL, string NotificationHandlerID, IPEndPoint endpoint, bool trace = false, int timeKeepaliveClientside = 8000)
         {
             destinationURL = destinationURL.TrimStart('/', ' ');
 
             string sendMsgMethodName = GetFunctionName(NotificationHandlerID);
-
-            string addr = address?.ToString();
-
-            if (addr != null)
-                addr += ":" + sessionData.Port;
 
             return "var conn; var excepted = 0; var interval_" + sendMsgMethodName + ";  function initconn_" + sendMsgMethodName + "(){ " +
 #if DEBUG
@@ -25,7 +20,7 @@ namespace LamestWebserver.NotificationService
                    (trace ? "console.log(\"+> Trying to open new Connection... (from Client)\");" : "") + 
 #endif
 
-                   " try{ conn = new WebSocket('ws://" + (addr ?? ((sessionData as SessionData)?.ServerEndPoint.ToString() ?? "SERVER_HOST_NOT_DEFINDED")) + "/" + destinationURL + 
+                   " try{ conn = new WebSocket('ws://" + endpoint.Address + ":" + endpoint.Port + "/" + destinationURL + 
                    "'); conn.onmessage = function(event) { var rcv = window.JSON.parse(event.data); var answer = true; if(rcv." + JsonNotificationPacket.NoReply_string +
                    ") answer = false; " +
 #if DEBUG

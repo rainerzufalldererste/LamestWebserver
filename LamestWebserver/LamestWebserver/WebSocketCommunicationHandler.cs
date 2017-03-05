@@ -128,7 +128,7 @@ namespace LamestWebserver
     /// </summary>
     public class WebSocketHandlerProxy
     {
-        private NetworkStream _networkStream;
+        private Stream _networkStream;
         private readonly WebSocketCommunicationHandler _handler;
         private readonly ComposableHandler _websocketHandler;
 
@@ -146,20 +146,14 @@ namespace LamestWebserver
         /// When did we send the last message to the client
         /// </summary>
         public DateTime LastMessageSent = DateTime.UtcNow;
-        
-        /// <summary>
-        /// At which port did the client connect to the server
-        /// </summary>
-        public readonly ushort Port;
 
         [ThreadStatic] internal static WebSocketHandlerProxy CurrentProxy;
 
-        internal WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler, ushort port)
+        internal WebSocketHandlerProxy(Stream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler)
         {
             this._networkStream = stream;
             this._handler = handler;
             this._websocketHandler = websocketHandler;
-            this.Port = port;
 
             CurrentProxy = this;
             HandleConnection();
@@ -464,7 +458,7 @@ namespace LamestWebserver
             return true;
         }
 
-        internal NetworkStream GetNetworkStream()
+        internal Stream GetStream()
         {
             return _networkStream;
         }

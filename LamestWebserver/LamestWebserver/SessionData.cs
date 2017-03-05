@@ -35,50 +35,22 @@ namespace LamestWebserver
         public List<string> HttpPostValues { get; private set; }
 
         /// <summary>
-        /// the workingpath of the current server
-        /// </summary>
-        public string ServerWorkingPath { get; private set; }
-
-        /// <summary>
         /// the raw packet sent to the server
         /// </summary>
         public string RawHttpPacket { get; private set; }
-
-        /// <summary>
-        /// The original tcpClient of the server. Handle with care.
-        /// </summary>
-        public System.Net.Sockets.TcpClient ClientTpcConnection { get; private set; }
-
-        /// <summary>
-        /// The original networkStream of the server. Handle with care.
-        /// </summary>
-        public System.Net.Sockets.NetworkStream ServerNetworkStream { get; private set; }
-
-        /// <summary>
-        /// The EndPoint of the connected client
-        /// </summary>
-        public System.Net.EndPoint ClientEndPoint { get; private set; }
-
-        /// <summary>
-        /// The EndPoint of the server
-        /// </summary>
-        public System.Net.EndPoint ServerEndPoint { get; private set; }
 
         /// <summary>
         /// The cookies sent by the client to the server
         /// </summary>
         public AVLTree<string, string> Cookies { get; private set; }
 
-        internal SessionData(List<string> additionalHEAD, List<string> additionalPOST, List<string> valuesHEAD, List<string> valuesPOST, List<KeyValuePair<string, string>> Cookies,
-            string path, string file, string packet, System.Net.Sockets.TcpClient client, System.Net.Sockets.NetworkStream nws, ushort port)
+        internal SessionData(HttpPacket httpPacket)
         {
-            this.HttpHeadParameters = additionalHEAD;
-            this.HttpPostParameters = additionalPOST;
-            this.HttpHeadValues = valuesHEAD;
-            this.HttpPostValues = valuesPOST;
-            this.ServerWorkingPath = path;
-            base.RequestedFile = file;
-            base.Port = port;
+            this.HttpHeadParameters = httpPacket.VariablesHEAD;
+            this.HttpPostParameters = httpPacket.VariablesPOST;
+            this.HttpHeadValues = httpPacket.ValuesHEAD;
+            this.HttpPostValues = httpPacket.ValuesPOST;
+            base.RequestedFile = httpPacket.RequestUrl;
 
             this.Cookies = new AVLTree<string, string>();
 
@@ -90,12 +62,7 @@ namespace LamestWebserver
                 }
             }
 
-            this.RawHttpPacket = packet;
-            this.ClientTpcConnection = client;
-            this.ServerNetworkStream = nws;
-
-            this.ClientEndPoint = ClientTpcConnection?.Client.RemoteEndPoint;
-            this.ServerEndPoint = ClientTpcConnection?.Client.LocalEndPoint;
+            this.RawHttpPacket = httpPacket.RawRequest;
 
             if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
             {
@@ -106,7 +73,7 @@ namespace LamestWebserver
                 base.Ssid = this.Cookies["ssid"];
             }
 
-            base.PerFileVariables = SessionContainer.GetFileDictionary(file);
+            base.PerFileVariables = SessionContainer.GetFileDictionary(httpPacket.RequestUrl);
             this._userInfo = SessionContainer.GetUserInfoFromSsid(Ssid);
 
             CurrentSession = this;

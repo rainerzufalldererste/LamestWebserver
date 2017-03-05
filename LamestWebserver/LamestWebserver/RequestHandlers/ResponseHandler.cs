@@ -1,27 +1,46 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
 
-namespace LamestWebserver
+namespace LamestWebserver.RequestHandlers
 {
     public class ResponseHandler
     {
         protected List<IRequestHandler> RequestHandlers = new List<IRequestHandler>();
+        protected List<IRequestHandler> SecondaryRequestHandlers = new List<IRequestHandler>();
+
+        protected UsableWriteLock RequestWriteLock = new UsableWriteLock();
 
         public HttpPacket GetResponse(HttpPacket requestPacket)
         {
-            foreach (IRequestHandler requestHandler in RequestHandlers)
+            while (requestPacket.RequestUrl.Length >= 2 && (requestPacket.RequestUrl[0] == ' ' || requestPacket.RequestUrl[0] == '/'))
             {
-                var response = requestHandler.GetResponse(requestPacket);
+                requestPacket.RequestUrl = requestPacket.RequestUrl.Remove(0, 1);
+            }
 
-                if (response != null)
-                    return response;
+            using (RequestWriteLock.LockRead())
+            {
+                foreach (IRequestHandler requestHandler in RequestHandlers)
+                {
+                    var response = requestHandler.GetResponse(requestPacket);
+
+                    if (response != null)
+                        return response;
+                }
+
+                foreach (IRequestHandler requestHandler in SecondaryRequestHandlers)
+                {
+                    var response = requestHandler.GetResponse(requestPacket);
+
+                    if (response != null)
+                        return response;
+                }
             }
 
             return null;
@@ -29,13 +48,32 @@ namespace LamestWebserver
 
         public void AddRequestHandler(IRequestHandler handler)
         {
-            if (!RequestHandlers.Contains(handler))
-                RequestHandlers.Add(handler);
+            using (RequestWriteLock.LockWrite())
+                if (!RequestHandlers.Contains(handler))
+                    RequestHandlers.Add(handler);
         }
 
         public void RemoveRequestHandler(IRequestHandler handler)
         {
-            RequestHandlers.Remove(handler);
+            using (RequestWriteLock.LockWrite())
+                RequestHandlers.Remove(handler);
+        }
+
+        public void AddSecondaryRequestHandler(IRequestHandler handler)
+        {
+            using (RequestWriteLock.LockWrite())
+            {
+                if (SecondaryRequestHandlers.Contains(handler))
+                    SecondaryRequestHandlers.Remove(handler);
+
+                SecondaryRequestHandlers.Insert(0, handler);
+            }
+        }
+
+        public void RemoveSecondaryRequestHandler(IRequestHandler handler)
+        {
+            using (RequestWriteLock.LockWrite())
+                SecondaryRequestHandlers.Remove(handler);
         }
     }
 
@@ -143,6 +181,7 @@ namespace LamestWebserver
 
             return "";
         }
+
         public static string GetMimeType(string extention)
         {
             switch (extention)
@@ -339,11 +378,11 @@ namespace LamestWebserver
 
                 if (notModified)
                 {
-                    return new HttpPacket() { Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf };
+                    return new HttpPacket() {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf};
                 }
                 else
                 {
-                    return new HttpPacket() { ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified };
+                    return new HttpPacket() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
                 }
             }
             catch (Exception e)
@@ -420,10 +459,9 @@ namespace LamestWebserver
                     catch (Exception)
                     {
                     }
-                    ;
                 }
 
-                ServerHandler.LogMessage("The cache of the URL '" + e.Name + "' has been updated.");
+                ServerHandler.LogMessage("The cached file of the URL '" + e.Name + "' has been updated.");
             };
 
             FileSystemWatcher.EnableRaisingEvents = true;
@@ -443,6 +481,258 @@ namespace LamestWebserver
             }
 
             return true;
+        }
+    }
+
+    public class PreloadedFile
+    {
+        public string Filename;
+        public byte[] Contents;
+        public int Size;
+        public DateTime LastModified;
+        public bool IsBinary;
+        public int LoadCount;
+
+        public PreloadedFile(string filename, byte[] contents, int size, DateTime lastModified, bool isBinary)
+        {
+            Filename = filename;
+            Contents = contents;
+            Size = size;
+            LastModified = lastModified;
+            IsBinary = isBinary;
+            LoadCount = 1;
+        }
+
+        internal PreloadedFile Clone()
+        {
+            return new PreloadedFile((string) Filename.Clone(), Contents.ToArray(), Size, LastModified, IsBinary);
+        }
+    }
+
+    public class ErrorRequestHandler : IRequestHandler
+    {
+        /// <inheritdoc />
+        public HttpPacket GetResponse(HttpPacket requestPacket)
+        {
+            if (requestPacket.RequestUrl.EndsWith("/"))
+            {
+                return new HttpPacket()
+                {
+                    Status = "403 Forbidden",
+                    BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                        "Error 403: Forbidden",
+                        "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
+                        "</div></p>"))
+                };
+            }
+            else
+            {
+                return new HttpPacket()
+                {
+                    Status = "404 File Not Found",
+                    BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                        "Error 404: Page Not Found",
+                        "<p>The URL you requested did not match any page or file on the server.</p>" +
+
+                        "</div></p>"))
+                };
+            }
+        }
+    }
+
+    public abstract class AbstractMutexRetriableRequestHandler : IRequestHandler
+    {
+        private Random random = new Random();
+
+        /// <inheritdoc />
+        public HttpPacket GetResponse(HttpPacket requestPacket)
+        {
+            var requestFunction = GetResponseFunction(requestPacket);
+
+            if (requestFunction == null)
+                return null;
+
+            int tries = 0;
+            var sessionData = new SessionData(requestPacket);
+
+            RETRY:
+
+            while (tries < 10)
+            {
+                try
+                {
+                    return GetRetriableResponse(requestFunction, requestPacket, sessionData);
+                }
+                catch (MutexRetryException)
+                {
+                    tries++;
+
+                    if (tries == 10)
+                    {
+                        throw;
+                    }
+
+                    goto RETRY;
+                }
+            }
+
+            return null;
+        }
+
+        public abstract HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, SessionData sessionData);
+
+        public abstract Master.GetContents GetResponseFunction(HttpPacket requestPacket);
+    }
+
+    public class PageResponseRequestHandler : AbstractMutexRetriableRequestHandler
+    {
+        protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        protected AVLHashMap<string, Master.GetContents> PageResponses = new AVLHashMap<string, Master.GetContents>(WebServer.PageResponseStorageHashMapSize);
+
+        public PageResponseRequestHandler()
+        {
+            Master.AddFunctionEvent += AddFunction;
+            Master.RemoveFunctionEvent += RemoveFunction;
+        }
+
+        /// <inheritdoc />
+        public override HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, SessionData sessionData)
+        {
+            return new HttpPacket()
+            {
+                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData))
+            };
+        }
+
+        /// <inheritdoc />
+        public override Master.GetContents GetResponseFunction(HttpPacket requestPacket)
+        {
+            ReaderWriterLock.EnterReadLock();
+            var response = PageResponses[requestPacket.RequestUrl];
+            ReaderWriterLock.ExitReadLock();
+
+            return response;
+        }
+
+        private void AddFunction(string url, Master.GetContents getc)
+        {
+            ReaderWriterLock.EnterWriteLock();
+            PageResponses.Add(url, getc);
+            ReaderWriterLock.ExitWriteLock();
+
+            ServerHandler.LogMessage("The URL '" + url + "' is now assigned to a Page. (WebserverApi)");
+        }
+
+        private void RemoveFunction(string url)
+        {
+            ReaderWriterLock.EnterWriteLock();
+            PageResponses.Remove(url);
+            ReaderWriterLock.ExitWriteLock();
+
+            ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a Page anymore. (WebserverApi)");
+        }
+    }
+
+    public class OneTimePageResponseRequestHandler : AbstractMutexRetriableRequestHandler
+    {
+        protected QueuedAVLTree<string, Master.GetContents> OneTimeResponses = new QueuedAVLTree<string, Master.GetContents>(WebServer.OneTimePageResponsesStorageQueueSize);
+        protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+
+        public OneTimePageResponseRequestHandler()
+        {
+            Master.AddOneTimeFunctionEvent += AddOneTimeFunction;
+        }
+
+        /// <inheritdoc />
+        public override HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, SessionData sessionData)
+        {
+            return new HttpPacket()
+            {
+                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData))
+            };
+        }
+
+        /// <inheritdoc />
+        public override Master.GetContents GetResponseFunction(HttpPacket requestPacket)
+        {
+            ReaderWriterLock.EnterWriteLock();
+            var response = OneTimeResponses[requestPacket.RequestUrl];
+
+            if (response != null)
+                OneTimeResponses.Remove(requestPacket.RequestUrl);
+
+            ReaderWriterLock.ExitWriteLock();
+
+            return response;
+        }
+
+        private void AddOneTimeFunction(string url, Master.GetContents getc)
+        {
+            ReaderWriterLock.EnterWriteLock();
+            OneTimeResponses.Add(url, getc);
+            ReaderWriterLock.ExitWriteLock();
+
+            ServerHandler.LogMessage("The URL '" + url + "' is now assigned to a Page. (WebserverApi/OneTimeFunction)");
+        }
+    }
+
+    public class WebSocketRequestHandler : IRequestHandler
+    {
+        protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        protected AVLHashMap<string, WebSocketCommunicationHandler> WebSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(WebServer.WebSocketResponsePageStorageHashMapSize);
+
+        public WebSocketRequestHandler()
+        {
+            Master.AddWebsocketHandlerEvent += AddWebsocketHandler;
+            Master.RemoveWebsocketHandlerEvent += RemoveWebsocketHandler;
+        }
+
+        /// <inheritdoc />
+        public HttpPacket GetResponse(HttpPacket requestPacket)
+        {
+            ReaderWriterLock.EnterReadLock();
+
+            WebSocketCommunicationHandler currentWebSocketHandler;
+
+            if (requestPacket.IsWebsocketUpgradeRequest && WebSocketResponses.TryGetValue(requestPacket.RequestUrl, out currentWebSocketHandler))
+            {
+                ReaderWriterLock.ExitReadLock();
+                var handler =
+                    (Fleck.Handlers.ComposableHandler)
+                    Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(Encoding.UTF8.GetBytes(requestPacket.RawRequest)), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose,
+                        currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
+
+                byte[] msg = handler.CreateHandshake();
+                requestPacket.Stream.Write(msg, 0, msg.Length);
+
+                var proxy = new WebSocketHandlerProxy(requestPacket.Stream, currentWebSocketHandler, handler);
+
+                throw new WebSocketManagementOvertakeFlagException(); // <- Signalize the outside world, that the websocket handler has taken over the network stream.
+            }
+            else
+            {
+                ReaderWriterLock.ExitReadLock();
+            }
+
+            return null;
+        }
+
+        private void AddWebsocketHandler(WebSocketCommunicationHandler handler)
+        {
+            ReaderWriterLock.EnterWriteLock();
+            WebSocketResponses.Add(handler.URL, handler);
+            ReaderWriterLock.ExitWriteLock();
+
+            ServerHandler.LogMessage("The URL '" + handler.URL + "' is now assigned to a Page. (Websocket)");
+        }
+
+        private void RemoveWebsocketHandler(string URL)
+        {
+            ReaderWriterLock.EnterWriteLock();
+            WebSocketResponses.Remove(URL);
+            ReaderWriterLock.ExitWriteLock();
+
+            ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
         }
     }
 }
