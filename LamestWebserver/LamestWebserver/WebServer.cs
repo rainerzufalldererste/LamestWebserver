@@ -78,7 +78,7 @@ namespace LamestWebserver
         private bool _running = true;
         private ReaderWriterLockSlim _runningLock = new ReaderWriterLockSlim();
 
-        internal AVLTree<string, PreloadedFile> cache = new AVLTree<string, PreloadedFile>();
+        internal AVLTree<string, PreloadedFile> Cache = new AVLTree<string, PreloadedFile>();
 
         /// <summary>
         /// The size of the Page Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
@@ -124,7 +124,7 @@ namespace LamestWebserver
         private FileSystemWatcher fileSystemWatcher = null;
         internal UsableMutex CacheMutex = new UsableMutex();
 
-        private readonly byte[] crlf = new UTF8Encoding().GetBytes("\r\n");
+        private readonly byte[] crlf = Encoding.UTF8.GetBytes("\r\n");
         private Task<TcpClient> tcpRcvTask;
 
         private Random random = new Random();
@@ -867,7 +867,7 @@ namespace LamestWebserver
                         {
                             using (CacheMutex.Lock())
                             {
-                                cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, false));
+                                Cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, false));
                             }
                         }
                     }
@@ -905,7 +905,7 @@ namespace LamestWebserver
                     {
                         using (CacheMutex.Lock())
                         {
-                            cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, isBinary));
+                            Cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, isBinary));
                         }
 
                         ServerHandler.LogMessage("The URL '" + URL + "' is now available through the cache.");
@@ -984,7 +984,7 @@ namespace LamestWebserver
         {
             using (CacheMutex.Lock())
             {
-                if (cache.TryGetValue(name, out file))
+                if (Cache.TryGetValue(name, out file))
                 {
                     file.LoadCount++;
                     file = file.Clone();
@@ -1091,7 +1091,7 @@ namespace LamestWebserver
         {
             using (CacheMutex.Lock())
             {
-                return cache.ContainsKey(name);
+                return Cache.ContainsKey(name);
             }
         }
 
@@ -1103,24 +1103,24 @@ namespace LamestWebserver
             {
                 using (CacheMutex.Lock())
                 {
-                    PreloadedFile file, oldfile = cache["/" + e.OldName];
+                    PreloadedFile file, oldfile = Cache["/" + e.OldName];
 
                     try
                     {
-                        if (cache.TryGetValue(e.OldName, out file))
+                        if (Cache.TryGetValue(e.OldName, out file))
                         {
-                            cache.Remove("/" + e.OldName);
+                            Cache.Remove("/" + e.OldName);
                             file.Filename = "/" + e.Name;
                             file.Contents = ReadFile(file.Filename, new UTF8Encoding(), file.IsBinary);
                             file.Size = file.Contents.Length;
                             file.LastModified = File.GetLastWriteTimeUtc(Folder + e.Name);
-                            cache.Add(e.Name, file);
+                            Cache.Add(e.Name, file);
                         }
                     }
                     catch (Exception)
                     {
                         oldfile.Filename = "/" + e.Name;
-                        cache["/" + e.Name] = oldfile;
+                        Cache["/" + e.Name] = oldfile;
                     }
                 }
 
@@ -1131,7 +1131,7 @@ namespace LamestWebserver
             {
                 using (CacheMutex.Lock())
                 {
-                    cache.Remove("/" + e.Name);
+                    Cache.Remove("/" + e.Name);
                 }
 
                 ServerHandler.LogMessage("The URL '" + e.Name + "' has been deleted from the cache and filesystem.");
@@ -1141,7 +1141,7 @@ namespace LamestWebserver
             {
                 using (CacheMutex.Lock())
                 {
-                    PreloadedFile file = cache["/" + e.Name];
+                    PreloadedFile file = Cache["/" + e.Name];
 
                     try
                     {
@@ -1376,7 +1376,7 @@ namespace LamestWebserver
         }
     }
 
-    internal class PreloadedFile
+    public class PreloadedFile
     {
         public string Filename;
         public byte[] Contents;

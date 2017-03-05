@@ -96,6 +96,11 @@ namespace LamestWebserver
         public HttpType HttpType;
 
         /// <summary>
+        /// Retrieves the raw request code.
+        /// </summary>
+        public string RawRequest { get; protected set; } = null;
+
+        /// <summary>
         /// returns the contents of the complete package to be sent via tcp to the client 
         /// </summary>
         /// <param name="enc">a UTF8Encoding</param>
@@ -164,6 +169,8 @@ namespace LamestWebserver
         public static HttpPacket Constructor(ref string input, EndPoint endp, string lastPacket)
         {
             HttpPacket h = new HttpPacket();
+
+            h.RawRequest = input;
             
             string[] linput = null;
 

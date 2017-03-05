@@ -150,7 +150,7 @@ namespace LamestWebserver
         /// <summary>
         /// At which port did the client connect to the server
         /// </summary>
-        public ushort Port;
+        public readonly ushort Port;
 
         [ThreadStatic] internal static WebSocketHandlerProxy CurrentProxy;
 
@@ -168,15 +168,15 @@ namespace LamestWebserver
         /// <summary>
         /// Sends a message to the client
         /// </summary>
-        /// <param name="Message">the message to send</param>
-        public async void Respond(string Message)
+        /// <param name="message">the message to send</param>
+        public async void Respond(string message)
         {
             if (_networkStream == null || !IsActive)
                 return;
 
             try
             {
-                byte[] buffer = _websocketHandler.TextFrame.Invoke(Message);
+                byte[] buffer = _websocketHandler.TextFrame.Invoke(message);
                 await _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
                 _handler.CallOnResponded();
@@ -186,9 +186,9 @@ namespace LamestWebserver
                 IsActive = false;
                 return;
             }
-            catch (ThreadAbortException e)
+            catch (ThreadAbortException)
             {
-                throw e;
+                throw;
             }
             catch (IOException)
             {

@@ -240,7 +240,7 @@ namespace LamestWebserver
                                             if (WebServer.RunningServers[i].Port == Int32.Parse(id))
                                             {
                                                 using (WebServer.RunningServers[i].CacheMutex.Lock())
-                                                    WebServer.RunningServers[i].cache.Clear();
+                                                    WebServer.RunningServers[i].Cache.Clear();
                                                 Console.WriteLine("Done!");
                                                 break;
                                             }
@@ -303,7 +303,7 @@ namespace LamestWebserver
                                                 using (WebServer.RunningServers[i].CacheMutex.Lock())
                                                 {
                                                     WebServer.RunningServers[i].useCache = false;
-                                                    WebServer.RunningServers[i].cache.Clear();
+                                                    WebServer.RunningServers[i].Cache.Clear();
                                                 }
 
                                                 Console.WriteLine("Done!");
