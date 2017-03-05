@@ -121,7 +121,7 @@ namespace LamestWebserver
             sb.Append("Date: " + Date + "\r\n");
             sb.Append("Server: LamestWebserver (LameOS)\r\n");
 
-            if (Cookies != null)
+            if (Cookies != null && Cookies.Count > 0)
             {
                 sb.Append("Set-Cookie: ");
 

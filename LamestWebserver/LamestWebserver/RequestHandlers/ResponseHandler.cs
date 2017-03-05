@@ -106,28 +106,50 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public virtual HttpPacket GetResponse(HttpPacket requestPacket)
         {
-            string fileName = Folder + requestPacket.RequestUrl;
+            string fileName = requestPacket.RequestUrl;
+            byte[] contents = null;
+            DateTime? lastModified = null;
+            bool notModified = false;
+            string extention = null;
 
-            if (File.Exists(fileName))
+            if (fileName.Length == 0 || fileName[0] != '/')
+                fileName = fileName.Insert(0, "/");
+
+            if (fileName[fileName.Length - 1] == '/') // is directory?
             {
-                var extention = GetExtention(fileName);
-                bool isBinary = FileIsBinary(fileName, extention);
+                fileName += "index.html";
+                extention = "html";
 
-                return new HttpPacket()
+                if (File.Exists(Folder + fileName))
                 {
-                    BinaryData = ReadFile(fileName, isBinary),
-                    ContentType = GetMimeType(extention)
-                };
+                    contents = ReadFile(fileName);
+                    lastModified = File.GetLastWriteTimeUtc(Folder + fileName);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else if (File.Exists(Folder + fileName))
+            {
+                extention = GetExtention(fileName);
+                bool isBinary = FileIsBinary(fileName, extention);
+                contents = ReadFile(fileName, isBinary);
+                lastModified = File.GetLastWriteTimeUtc(Folder + fileName);
+            }
+            else
+            {
+                return null;
             }
 
-            return null;
+            return new HttpPacket() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
         }
 
         protected byte[] ReadFile(string filename, bool isBinary = false)
         {
             int i = 10;
 
-            while (i-- > 0) // Chris: if the file has currently been changed you probably have to wait until the writing process has finished
+            while (i-- > 0) // if the file has currently been changed you probably have to wait until the writing process has finished
             {
                 try
                 {
@@ -146,7 +168,7 @@ namespace LamestWebserver.RequestHandlers
                 }
                 catch (IOException)
                 {
-                    Thread.Sleep(2); // Chris: if the file has currently been changed you probably have to wait until the writing process has finished
+                    Thread.Sleep(2); // if the file has currently been changed you probably have to wait until the writing process has finished
                 }
             }
 

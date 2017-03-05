@@ -50,7 +50,7 @@ namespace LamestWebserver
                                 {
                                     for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                     {
-                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Folder: " + WebServer.RunningServers[i].Folder + " Threads: " +
+                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Threads: " +
                                                           WebServer.RunningServers[i].GetThreadCount());
                                     }
                                 }
@@ -223,103 +223,7 @@ namespace LamestWebserver
                             }
                             break;
                         }
-
-                        case "frefresh":
-                        {
-                            using (outputMutex.Lock())
-                            {
-                                try
-                                {
-                                    Console.WriteLine("Port: ");
-                                    string id = Console.ReadLine();
-                                    
-                                    using (WebServer.RunningServerMutex.Lock())
-                                    {
-                                        for (int i = 0; i < WebServer.RunningServers.Count; i++)
-                                        {
-                                            if (WebServer.RunningServers[i].Port == Int32.Parse(id))
-                                            {
-                                                using (WebServer.RunningServers[i].CacheMutex.Lock())
-                                                    WebServer.RunningServers[i].Cache.Clear();
-                                                Console.WriteLine("Done!");
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine("Failed!" + e);
-                                }
-                            }
-                            break;
-                        }
-
-                        case "cache":
-                        {
-                            using (outputMutex.Lock())
-                            {
-                                try
-                                {
-                                    Console.WriteLine("Port: ");
-                                    string id = Console.ReadLine();
-
-                                    using (WebServer.RunningServerMutex.Lock())
-                                    {
-                                        for (int i = 0; i < WebServer.RunningServers.Count; i++)
-                                        {
-                                            if (WebServer.RunningServers[i].Port == Int32.Parse(id))
-                                            {
-                                                WebServer.RunningServers[i].useCache = true;
-                                                Console.WriteLine("Done!");
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine("Failed!" + e);
-                                }
-                            }
-                            break;
-                        }
-
-                        case "uncache":
-                        {
-                            using (outputMutex.Lock())
-                            {
-                                try
-                                {
-                                    Console.WriteLine("Port: ");
-                                    string id = Console.ReadLine();
-
-                                    using (WebServer.RunningServerMutex.Lock())
-                                    {
-                                        for (int i = 0; i < WebServer.RunningServers.Count; i++)
-                                        {
-                                            if (WebServer.RunningServers[i].Port == Int32.Parse(id))
-                                            {
-                                                using (WebServer.RunningServers[i].CacheMutex.Lock())
-                                                {
-                                                    WebServer.RunningServers[i].useCache = false;
-                                                    WebServer.RunningServers[i].Cache.Clear();
-                                                }
-
-                                                Console.WriteLine("Done!");
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine("Failed!" + e);
-                                }
-                            }
-                            break;
-                        }
-
+                            
                         case "explicitlog":
                         {
                             using (outputMutex.Lock())
@@ -392,10 +296,6 @@ namespace LamestWebserver
                                     Console.WriteLine("nolog        -    disables logging");
                                     Console.WriteLine("cls          -    deletes the log");
                                     Console.WriteLine("autocls      -    deletes the log automatically at sizes");
-                                    Console.WriteLine("cache        -    enables the cache of a port");
-                                    Console.WriteLine("uncache      -    disables the cache of a port");
-                                    Console.WriteLine("frefresh     -    refreshes the file cache of a port");
-                                    //Console.WriteLine("cachesz      -    sets the maximum file cache of a port");
                                     Console.WriteLine("help         -    Displays this list of cmds");
                                     Console.WriteLine("exit         -    Exit the ServerHandler");
                                 }
