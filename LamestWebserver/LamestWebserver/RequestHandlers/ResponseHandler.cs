@@ -12,6 +12,9 @@ namespace LamestWebserver.RequestHandlers
 {
     public class ResponseHandler
     {
+        public static ResponseHandler CurrentResponseHandler => _responseHandler;
+        private static ResponseHandler _responseHandler = new ResponseHandler();
+
         protected List<IRequestHandler> RequestHandlers = new List<IRequestHandler>();
         protected List<IRequestHandler> SecondaryRequestHandlers = new List<IRequestHandler>();
 
@@ -100,6 +103,9 @@ namespace LamestWebserver.RequestHandlers
 
         public FileRequestHandler(string folder)
         {
+            if (folder.EndsWith("\\"))
+                folder = folder.Substring(0, folder.Length - 1);
+
             Folder = folder;
         }
 

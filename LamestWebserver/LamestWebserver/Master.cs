@@ -257,7 +257,7 @@ namespace LamestWebserver
         /// <param name="silent">shall the server print output to the console?</param>
         public static void StartServer(int port, string directory, bool silent = false)
         {
-            new WebServer(port, directory, silent);
+            new WebServer(port, directory);
         }
 
         /// <summary>

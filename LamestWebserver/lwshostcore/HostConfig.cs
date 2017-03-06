@@ -13,7 +13,7 @@ namespace lwshostcore
     {
         public string[] BinaryDirectories = new string[0];
         public int[] Ports = new[] {80};
-        public string WebserverFileDirectory = "lwshost\\web";
+        public string[] WebserverFileDirectories = {"lwshost\\web"};
         public SessionContainer.ESessionIdRereferencingMode SessionIdRereferencingMode = SessionContainer.ESessionIdRereferencingMode.Keep;
         public SessionContainer.ESessionIdTransmissionType SessionIdTransmissionType = SessionContainer.ESessionIdTransmissionType.Cookie;
         public int MaxUserCount = 256;

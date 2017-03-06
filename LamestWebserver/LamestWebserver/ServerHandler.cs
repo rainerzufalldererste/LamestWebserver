@@ -88,7 +88,7 @@ namespace LamestWebserver
                                     string prt = Console.ReadLine();
                                     Console.WriteLine("Folder: (\"./web\")");
                                     string fld = Console.ReadLine();
-                                    new WebServer(Int32.Parse(prt), fld, true);
+                                    new WebServer(int.Parse(prt), fld);
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e)
@@ -107,7 +107,7 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("New TimeStep in ms:");
                                     string prt = Console.ReadLine();
-                                    cmdsleep = Int32.Parse(prt);
+                                    cmdsleep = int.Parse(prt);
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e)

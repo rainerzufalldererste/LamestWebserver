@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using lwshostcore;
 using LamestWebserver;
+using LamestWebserver.RequestHandlers;
 
 namespace lwshostsvc
 {
@@ -141,17 +142,30 @@ namespace lwshostsvc
                 hosts.ForEach(h => h.Stop());
             }).Start();
 
-            lwshostcore.HostConfig.CurrentHostConfig.ApplyConfig();
+            HostConfig.CurrentHostConfig.ApplyConfig();
 
-            foreach (var port in lwshostcore.HostConfig.CurrentHostConfig.Ports)
+            ResponseHandler.CurrentResponseHandler.AddSecondaryRequestHandler(new ErrorRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
+
+            foreach (var directory in HostConfig.CurrentHostConfig.WebserverFileDirectories)
+            {
+                ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(directory));
+                ServerHandler.LogMessage($"Added WebserverFileDirectory '{directory}'");
+            }
+
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
+
+            foreach (var port in HostConfig.CurrentHostConfig.Ports)
             {
                 try
                 {
-                    LamestWebserver.Master.StartServer(port, lwshostcore.HostConfig.CurrentHostConfig.WebserverFileDirectory);
+                    new WebServer(port);
                 }
                 catch (Exception e)
                 {
-                    LamestWebserver.ServerHandler.LogMessage("Failed to bind port " + port + ":\n" + e);
+                    ServerHandler.LogMessage("Failed to bind port " + port + ":\n" + e);
                 }
             }
 
@@ -164,7 +178,7 @@ namespace lwshostsvc
             }
             else
             {
-                ServerHandler.LogMessage($"{WebServer.ServerCount} port-listening Servers started.");
+                ServerHandler.LogMessage($"{WebServer.ServerCount} port-listening Server(s) started.");
             }
 
             // Discover the HostServiceDefaultResponse

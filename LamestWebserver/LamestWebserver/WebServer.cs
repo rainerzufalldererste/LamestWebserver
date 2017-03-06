@@ -42,8 +42,6 @@ namespace LamestWebserver
         /// </summary>
         public readonly int Port;
 
-        private ResponseHandler ResponseHandler;
-
         internal bool Running
         {
             get
@@ -114,25 +112,23 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="port">the port listen to</param>
         /// <param name="folder">the folder to listen to</param>
-        public WebServer(int port, string folder) : this(port, folder, true)
+        public WebServer(int port, string folder) : this(port, true)
         {
-        }
-
-        internal WebServer(int port, string folder, bool silent = false)
-        {
-            ResponseHandler = new ResponseHandler();
-            ResponseHandler.AddSecondaryRequestHandler(new ErrorRequestHandler());
-            ResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
-            ResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
-            ResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
-            ResponseHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
-            ResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddSecondaryRequestHandler(new ErrorRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
 
             if (!TcpPortIsUnused(port))
             {
                 throw new InvalidOperationException("The tcp port " + port + " is currently used by another application.");
             }
+        }
 
+        public WebServer(int port, bool silent = false)
+        {
             this.Port = port;
             this._tcpListener = new TcpListener(IPAddress.Any, port);
             _mThread = new Thread(new ThreadStart(HandleTcpListener));
@@ -431,7 +427,7 @@ namespace LamestWebserver
 
                             try
                             {
-                                response = ResponseHandler.GetResponse(htp);
+                                response = ResponseHandler.CurrentResponseHandler.GetResponse(htp);
 
                                 buffer = response.GetPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
