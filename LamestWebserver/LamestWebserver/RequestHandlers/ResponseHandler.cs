@@ -727,11 +727,14 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public HttpPacket GetResponse(HttpPacket requestPacket)
         {
+            if (!requestPacket.IsWebsocketUpgradeRequest)
+                return null;
+
             ReaderWriterLock.EnterReadLock();
 
             WebSocketCommunicationHandler currentWebSocketHandler;
 
-            if (requestPacket.IsWebsocketUpgradeRequest && WebSocketResponses.TryGetValue(requestPacket.RequestUrl, out currentWebSocketHandler))
+            if (WebSocketResponses.TryGetValue(requestPacket.RequestUrl, out currentWebSocketHandler))
             {
                 ReaderWriterLock.ExitReadLock();
                 var handler =

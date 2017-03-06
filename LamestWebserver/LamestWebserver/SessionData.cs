@@ -54,9 +54,9 @@ namespace LamestWebserver
 
             this.Cookies = new AVLTree<string, string>();
 
-            if (Cookies != null)
+            if (httpPacket.Cookies != null)
             {
-                foreach (KeyValuePair<string, string> kvp in Cookies)
+                foreach (KeyValuePair<string, string> kvp in httpPacket.Cookies)
                 {
                     this.Cookies.Add(kvp);
                 }
