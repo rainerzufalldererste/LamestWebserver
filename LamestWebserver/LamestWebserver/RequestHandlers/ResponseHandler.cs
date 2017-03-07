@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Web.UI;
 using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
+using Newtonsoft.Json;
 
 namespace LamestWebserver.RequestHandlers
 {
@@ -181,7 +184,37 @@ namespace LamestWebserver.RequestHandlers
             throw new Exception("Failed to read from '" + filename + "'.");
         }
 
-        protected bool FileIsBinary(string fileName, string extention)
+        public static byte[] ReadFile(string filename)
+        {
+            int i = 10;
+
+            while (i-- > 0) // if the file has currently been changed you probably have to wait until the writing process has finished
+            {
+                try
+                {
+                    if (FileIsBinary(filename, GetExtention(filename)))
+                    {
+                        return File.ReadAllBytes(filename);
+                    }
+
+                    if (Equals(WebServer.GetEncoding(filename), Encoding.UTF8))
+                    {
+                        return File.ReadAllBytes(filename);
+                    }
+
+                    string content = File.ReadAllText(filename);
+                    return Encoding.UTF8.GetBytes(content);
+                }
+                catch (IOException)
+                {
+                    Thread.Sleep(2); // if the file has currently been changed you probably have to wait until the writing process has finished
+                }
+            }
+
+            throw new Exception("Failed to read from '" + filename + "'.");
+        }
+
+        public static bool FileIsBinary(string fileName, string extention)
         {
             if (fileName.Length < 2)
                 return true;
@@ -316,10 +349,12 @@ namespace LamestWebserver.RequestHandlers
 
     public class CachedFileRequestHandler : FileRequestHandler
     {
-        internal AVLTree<string, PreloadedFile> Cache = new AVLTree<string, PreloadedFile>();
+        public static int CacheHashMapSize = 1024;
+
+        internal AVLHashMap<string, PreloadedFile> Cache = new AVLHashMap<string, PreloadedFile>(CacheHashMapSize);
         internal FileSystemWatcher FileSystemWatcher = null;
         internal UsableMutex CacheMutex = new UsableMutex();
-        private static readonly byte[] CrLf = Encoding.UTF8.GetBytes("\r\n");
+        internal static readonly byte[] CrLf = Encoding.UTF8.GetBytes("\r\n");
 
         /// <inheritdoc />
         public CachedFileRequestHandler(string folder) : base(folder)
@@ -526,6 +561,86 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
+    public class PackedFileRequestHandler : IRequestHandler
+    {
+        private AVLHashMap<string, PreloadedFile> Cache;
+
+        public PackedFileRequestHandler(string directoryPath, int? HashMapSize)
+        {
+            if (HashMapSize.HasValue)
+                Cache = new AVLHashMap<string, PreloadedFile>();
+            else
+                Cache = new AVLHashMap<string, PreloadedFile>(1024);
+
+            string[] files = Directory.GetFiles(directoryPath);
+
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is adding {files.Length} Files...");
+
+            foreach (string file in files)
+            {
+                var stopwatch = Stopwatch.StartNew();
+
+                var contents = FileRequestHandler.ReadFile(file);
+                Cache.Add(file, new PreloadedFile(file, contents, contents.Length, DateTime.UtcNow, true));
+
+                ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} added '{file}'.", stopwatch);
+            }
+        }
+
+        public PackedFileRequestHandler(string filename)
+        {
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is reading Files from '{filename}'...");
+
+            byte[] bytes = File.ReadAllBytes(filename);
+            byte[] decompressed = Compression.GZipCompression.Decompress(bytes);
+            
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} decompressed Files: {bytes.Length} bytes -> {decompressed.Length} bytes.");
+
+            string s = Encoding.UTF8.GetString(decompressed);
+
+            Cache = JsonConvert.DeserializeObject<AVLHashMap<string, PreloadedFile>>(s);
+
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} deserialized {Cache.Count} Files.");
+        }
+
+        public void SaveToPackedFile(string filename)
+        {
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is saving Files to '{filename}'...");
+
+            string json = JsonConvert.SerializeObject(Cache, Formatting.None);
+
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} serialized {Cache.Count} Files.");
+
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+
+            if(File.Exists(filename))
+                File.Delete(filename);
+
+            byte[] compressed = Compression.GZipCompression.Compress(bytes);
+
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} compressed Files: {bytes.Length} bytes -> {compressed.Length} bytes.");
+
+            File.WriteAllBytes(filename, compressed);
+
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} wrote Files to '{filename}'.");
+        }
+
+        /// <inheritdoc />
+        public HttpPacket GetResponse(HttpPacket requestPacket)
+        {
+            var file = Cache[requestPacket.RequestUrl];
+
+            if (file == null)
+                return null;
+
+            if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value <= file.LastModified)
+                return new HttpPacket() {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
+
+            return new HttpPacket() {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(requestPacket.RequestUrl), ModifiedDate = file.LastModified };
+        }
+    }
+
+    [Serializable]
     public class PreloadedFile
     {
         public string Filename;

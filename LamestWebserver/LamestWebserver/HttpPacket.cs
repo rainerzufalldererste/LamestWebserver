@@ -172,6 +172,7 @@ namespace LamestWebserver
         /// <param name="input">the packet from the client decoded to string</param>
         /// <param name="endp">the ipendpoint of the client for strange chrome POST hacks</param>
         /// <param name="lastPacket">the string contents of the last packet (Chrome POST packets are split in two packets)</param>
+        /// <param name="stream">the stream at which the packet arrived (only used for sessionData)</param>
         /// <returns>the corresponding HTTP Packet</returns>
         public static HttpPacket Constructor(ref string input, EndPoint endp, string lastPacket, Stream stream)
         {
