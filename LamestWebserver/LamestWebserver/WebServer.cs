@@ -31,7 +31,7 @@ namespace LamestWebserver
         /// <summary>
         /// The IP and Port of the currently Connected Client.
         /// </summary>
-        [ThreadStatic] public static string CurrentClientRemoteEndpoint = "<?>";
+        [ThreadStatic] public static string CurrentClientRemoteEndpoint = null;
 
         private readonly TcpListener _tcpListener;
         private readonly List<Thread> _threads = new List<Thread>();
@@ -120,15 +120,15 @@ namespace LamestWebserver
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
-
-            if (!TcpPortIsUnused(port))
-            {
-                throw new InvalidOperationException("The tcp port " + port + " is currently used by another application.");
-            }
         }
 
         public WebServer(int port, bool silent = false)
         {
+            if (!TcpPortIsUnused(port))
+            {
+                throw new InvalidOperationException("The tcp port " + port + " is currently used by another application.");
+            }
+
             this.Port = port;
             this._tcpListener = new TcpListener(IPAddress.Any, port);
             _mThread = new Thread(new ThreadStart(HandleTcpListener));
@@ -429,10 +429,15 @@ namespace LamestWebserver
                             {
                                 response = ResponseHandler.CurrentResponseHandler.GetResponse(htp);
 
+                                if (response == null)
+                                    goto InvalidResponse;
+
                                 buffer = response.GetPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
 
                                 ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(ResponseHandler)}.", stopwatch);
+
+                                continue;
                             }
                             catch (ThreadAbortException)
                             {
@@ -448,54 +453,56 @@ namespace LamestWebserver
                                 {
                                     Status = "500 Internal Server Error",
                                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
-                                    "Error 500: Internal Server Error",
-                                    "<p>An Exception occured while processing the response.</p><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                + GetErrorMsg(e, AbstractSessionIdentificator.CurrentSession, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
-                                                + "</div></p>"))
+                                        "Error 500: Internal Server Error",
+                                        "<p>An Exception occured while processing the response.</p><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + GetErrorMsg(e, AbstractSessionIdentificator.CurrentSession, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
+                                        + "</div></p>"))
                                 };
 
-                                buffer = htp.GetPackage(enc);
+                                buffer = htp_.GetPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
+
+                                continue;
                             }
 
-                            if (response == null)
+
+                            InvalidResponse:
+
+                            if (htp.RequestUrl.EndsWith("/"))
                             {
-                                if (htp.RequestUrl.EndsWith("/"))
+                                buffer = new HttpPacket()
                                 {
-                                    buffer = new HttpPacket()
-                                    {
-                                        Status = "403 Forbidden",
-                                        BinaryData = enc.GetBytes(Master.GetErrorMsg(
-                                            "Error 403: Forbidden",
-                                            "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
+                                    Status = "403 Forbidden",
+                                    BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                                        "Error 403: Forbidden",
+                                        "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
 #if DEBUG
-                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
-                                            msg_.Replace("\r\n", "<br>") +
+                                        "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
+                                        msg_.Replace("\r\n", "<br>") +
 #endif
-                                            "</div></p>"))
-                                    }.GetPackage(enc);
-                                }
-                                else
-                                {
-                                    buffer = new HttpPacket()
-                                    {
-                                        Status = "404 File Not Found",
-                                        BinaryData = enc.GetBytes(Master.GetErrorMsg(
-                                            "Error 404: Page Not Found",
-                                            "<p>The URL you requested did not match any page or file on the server.</p>" +
-#if DEBUG
-                                            "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
-                                            msg_.Replace("\r\n", "<br>") +
-#endif
-                                            "</div></p>"))
-                                    }.GetPackage(enc);
-                                }
-
-                                nws.Write(buffer, 0, buffer.Length);
-
-                                ServerHandler.LogMessage(
-                                    "Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 403/404.", stopwatch);
+                                        "</div></p>"))
+                                }.GetPackage(enc);
                             }
+                            else
+                            {
+                                buffer = new HttpPacket()
+                                {
+                                    Status = "404 File Not Found",
+                                    BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                                        "Error 404: Page Not Found",
+                                        "<p>The URL you requested did not match any page or file on the server.</p>" +
+#if DEBUG
+                                        "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
+                                        msg_.Replace("\r\n", "<br>") +
+#endif
+                                        "</div></p>"))
+                                }.GetPackage(enc);
+                            }
+
+                            nws.Write(buffer, 0, buffer.Length);
+
+                            ServerHandler.LogMessage(
+                                "Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 403/404.", stopwatch);
                         }
                     }
                     catch (Exception e)

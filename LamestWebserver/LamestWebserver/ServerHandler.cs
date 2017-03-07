@@ -309,9 +309,12 @@ namespace LamestWebserver
 
                         default:
                         {
-                            using (outputMutex.Lock())
+                            if (Running)
                             {
-                                Console.WriteLine("Invalid command '" + s + "'! If you need help, type 'help'.");
+                                using (outputMutex.Lock())
+                                {
+                                    Console.WriteLine("Invalid command '" + s + "'! If you need help, type 'help'.");
+                                }
                             }
                             break;
                         }
@@ -344,7 +347,7 @@ namespace LamestWebserver
 
             internal Output(string msg, StackTrace stackTrace, string endpoint)
             {
-                this.msg = $"[{DateTime.Now}] @{endpoint ?? "<?>"} " + msg;
+                this.msg = $"[{DateTime.Now}] " + (endpoint == null ? "" : ("@" + endpoint + " ")) + msg;
 
                 if (stackTrace != null && stackTrace.GetFrame(4).GetMethod().DeclaringType.Namespace.Contains("LamestWebserver"))
                     for (int i = 4; i < stackTrace.FrameCount; i++)
@@ -426,13 +429,13 @@ namespace LamestWebserver
                             {
                                 output.RemoveRange(0, autocls_s);
                             }
-                            catch (Exception)
+                            catch
                             {
                             }
                         }
                     }
                 }
-                catch (Exception) { }
+                catch { }
             }).Start();
 
             if (!Running && !nolog)

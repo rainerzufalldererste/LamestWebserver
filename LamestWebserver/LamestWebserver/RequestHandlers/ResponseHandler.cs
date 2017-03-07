@@ -373,6 +373,8 @@ namespace LamestWebserver.RequestHandlers
                         {
                             Cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, false));
                         }
+
+                        ServerHandler.LogMessage("The URL '" + requestPacket.RequestUrl + "' is now available through the cache.");
                     }
                     else
                     {
