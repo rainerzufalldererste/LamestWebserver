@@ -31,7 +31,7 @@ namespace UnitTests
         public class Couple : IEquatable<Couple> { public Person man, woman; public bool Equals(Couple other) { return man.Equals(other.man) && woman.Equals(other.woman); } };
 
         [TestMethod]
-        public void testSerializeClassAVLTree()
+        public void TestSerializeClassAvlTree()
         {
             Console.WriteLine("Building Class AVLTree...");
 
@@ -65,7 +65,7 @@ namespace UnitTests
         }
 
         [TestMethod]
-        public void testSerializeClassAVLHashMap()
+        public void TestSerializeClassAvlHashMap()
         {
             Console.WriteLine("Building Class AVLHashMap...");
 
@@ -98,40 +98,6 @@ namespace UnitTests
             }
         }
 
-        [TestMethod]
-        public void testSerializeClassQueuedAVLTree()
-        {
-            Console.WriteLine("Building Class QueuedAVLTree...");
-
-            QueuedAVLTree<Person, Couple> qtree = new QueuedAVLTree<Person, Couple>();
-            int count = 1000;
-
-            for (int i = 0; i < count; i++)
-            {
-                Person a = new Person() { age = i, name = "a" + i };
-                Person b = new Person() { age = i, name = "b" + i };
-                Couple c = new Couple() { man = a, woman = b };
-
-                qtree.Add(a, c);
-                qtree.Add(b, c);
-            }
-
-            Console.WriteLine("Serializing...");
-            Serializer.WriteXmlData(qtree, "qtree");
-
-            Console.WriteLine("Deserializing...");
-            qtree = Serializer.ReadXmlData<QueuedAVLTree<Person, Couple>>("qtree");
-
-            Console.WriteLine("Validating...");
-            for (int i = 0; i < count; i++)
-            {
-                Assert.IsTrue(qtree[new Person() { age = i, name = "a" + i }].woman.Equals(new Person() { age = i, name = "b" + i }));
-                Assert.IsTrue(qtree[new Person() { age = i, name = "b" + i }].woman.Equals(new Person() { age = i, name = "b" + i }));
-                Assert.IsTrue(qtree[new Person() { age = i, name = "a" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
-                Assert.IsTrue(qtree[new Person() { age = i, name = "b" + i }].man.Equals(new Person() { age = i, name = "a" + i }));
-            }
-        }
-
         public class ContainerClass
         {
             public string one = "1";
@@ -139,12 +105,10 @@ namespace UnitTests
             public string two = "2";
             public AVLHashMap<Person, Couple> hashmap = new AVLHashMap<Person, Couple>();
             public string three = "3";
-            public QueuedAVLTree<Person, Couple> qtree = new QueuedAVLTree<Person, Couple>(100);
-            public string four = "4";
         }
 
         [TestMethod]
-        public void testSerializeMultiple()
+        public void TestSerializeMultiple()
         {
             Console.WriteLine("Testing embedded behaviour of AVLTree, AVLHashmap, QueuedAVLTree");
 
@@ -161,9 +125,6 @@ namespace UnitTests
             container.hashmap.Add(berta, new Couple() { man = berta, woman = carla });
             container.hashmap.Add(carla, new Couple() { man = carla, woman = anna });
 
-            container.qtree.Add(anna, new Couple() { man = diane, woman = anna });
-            container.qtree.Add(diane, new Couple() { man = diane, woman = anna });
-
             Console.WriteLine("Serializing...");
             Serializer.WriteXmlData(container, "container");
 
@@ -175,49 +136,44 @@ namespace UnitTests
 
             Assert.IsTrue(container.tree.Count == 1);
             Assert.IsTrue(container.hashmap.Count == 3);
-            Assert.IsTrue(container.qtree.Count == 2);
 
             Assert.IsTrue(container.one == "1");
             Assert.IsTrue(container.two == "2");
             Assert.IsTrue(container.three == "3");
-            Assert.IsTrue(container.four == "4");
 
             Assert.IsTrue(container.tree[anna].Equals(new Couple() { man = anna, woman = berta }));
 
             Assert.IsTrue(container.hashmap[anna].Equals(new Couple() { man = anna, woman = berta }));
             Assert.IsTrue(container.hashmap[berta].Equals(new Couple() { man = berta, woman = carla }));
             Assert.IsTrue(container.hashmap[carla].Equals(new Couple() { man = carla, woman = anna }));
-
-            Assert.IsTrue(container.qtree[anna].Equals(new Couple() { man = diane, woman = anna }));
-            Assert.IsTrue(container.qtree[diane].Equals(new Couple() { man = diane, woman = anna }));
         }
 
         [TestMethod]
-        public void testAVLHashMaps()
+        public void TestAvlHashMaps()
         {
             hashmap = new AVLHashMap<string, string>(1);
-            executeTestHashMap();
+            ExecuteTestHashMap();
             hashmap.Clear();
             
             hashmap = new AVLHashMap<string, string>(10);
-            executeTestHashMap();
+            ExecuteTestHashMap();
             hashmap.Clear();
 
             hashmap = new AVLHashMap<string, string>(1024);
-            executeTestHashMap();
+            ExecuteTestHashMap();
             hashmap.Clear();
         }
 
         [TestMethod]
-        public void testAVLTrees()
+        public void TestAvlTrees()
         {
             tree = new AVLTree<string, string>();
-            executeTestTree();
+            ExecuteTestTree();
             tree.Clear();
         }
 
         [TestMethod]
-        public void testQueuedAVLTrees()
+        public void TestQueuedAvlTrees()
         {
             qtree = new QueuedAVLTree<string, string>(1);
             List<string> hashes = new List<string>();
@@ -258,15 +214,15 @@ namespace UnitTests
             qtree.Validate();
 
             qtree = new QueuedAVLTree<string, string>(10);
-            executeTestQueuedTree(10);
+            ExecuteTestQueuedTree(10);
             qtree.Clear();
 
             qtree = new QueuedAVLTree<string, string>(1024);
-            executeTestQueuedTree(1024);
+            ExecuteTestQueuedTree(1024);
             qtree.Clear();
         }
 
-        public void executeTestHashMap()
+        public void ExecuteTestHashMap()
         {
             List<string> hashes = new List<string>();
             List<string> values = new List<string>();
@@ -386,7 +342,7 @@ namespace UnitTests
             hashmap.Validate();
         }
 
-        public void executeTestTree()
+        public void ExecuteTestTree()
         {
             List<string> hashes = new List<string>();
             List<string> values = new List<string>();
@@ -501,7 +457,7 @@ namespace UnitTests
             tree.Validate();
         }
 
-        public void executeTestQueuedTree(int size)
+        public void ExecuteTestQueuedTree(int size)
         {
             List<string> hashes = new List<string>();
             List<string> values = new List<string>();

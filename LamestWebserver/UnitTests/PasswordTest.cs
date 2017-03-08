@@ -10,7 +10,7 @@ namespace UnitTests
     public class PasswordTest
     {
         [TestMethod]
-        public void testPassword()
+        public void TestPassword()
         {
             Console.WriteLine("Testing Passwords...\n" + new string('_', 1024/16));
 
@@ -35,7 +35,7 @@ namespace UnitTests
         }
 
         [TestMethod]
-        public void testSerializePassword()
+        public void TestSerializePassword()
         {
             Console.WriteLine("Testing Serialized Passwords...\n" + new string('_', 1024 / 16));
 

@@ -11,19 +11,18 @@ namespace UnitTests
         public static void Main(string[] args)
         {
             new EncryptDecryptTests().TestEncryptDecrypt();
-            new CollectionSerializerTests().testCollectionJsonSerialisazion();
+            new CollectionSerializerTests().TestCollectionJsonSerialisazion();
             new UsableMutexTest().TestUsableMutexes();
             new WriteLockTest().TestWriteLock();
-            new CollectionUnitTests().testSerializeMultiple();
-            new CollectionUnitTests().testSerializeClassAVLTree();
-            new CollectionUnitTests().testSerializeClassAVLHashMap();
-            new CollectionUnitTests().testSerializeClassQueuedAVLTree();
-            new CollectionUnitTests().testAVLHashMaps();
-            new CollectionUnitTests().testAVLTrees();
-            new CollectionUnitTests().testQueuedAVLTrees();
+            new CollectionUnitTests().TestSerializeMultiple();
+            new CollectionUnitTests().TestSerializeClassAvlTree();
+            new CollectionUnitTests().TestSerializeClassAvlHashMap();
+            new CollectionUnitTests().TestAvlHashMaps();
+            new CollectionUnitTests().TestAvlTrees();
+            new CollectionUnitTests().TestQueuedAvlTrees();
             new PacketUnitTest().TestCookies();
-            new PasswordTest().testPassword();
-            new PasswordTest().testSerializePassword();
+            new PasswordTest().TestPassword();
+            new PasswordTest().TestSerializePassword();
         }
     }
 }

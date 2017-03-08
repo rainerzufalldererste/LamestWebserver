@@ -41,7 +41,7 @@ namespace UnitTests
         }
 
         [TestMethod]
-        public void testCollectionJsonSerialisazion()
+        public void TestCollectionJsonSerialisazion()
         {
             AVLTree<TestKey, TestValue> avlTree = new AVLTree<TestKey, TestValue>();
             Dictionary<TestKey, TestValue> referenceDictionary = new Dictionary<TestKey, TestValue>();

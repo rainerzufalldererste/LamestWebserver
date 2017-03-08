@@ -28,13 +28,7 @@ namespace LamestWebserver.Serialization
         /// <returns>The deserialized object</returns>
         public static T ReadXmlData<T>(string filename)
         {
-            string xmlString = File.ReadAllText(filename);
-
-            using (MemoryStream memStream = new MemoryStream(Encoding.Unicode.GetBytes(xmlString)))
-            {
-                XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(typeof(T));
-                return (T)serializer.Deserialize(memStream);
-            }
+            return ReadXmlDataInMemory<T>(File.ReadAllText(filename));
         }
 
         /// <summary>
@@ -65,15 +59,7 @@ namespace LamestWebserver.Serialization
                 Directory.CreateDirectory(Path.GetDirectoryName(filename));
             }
 
-            StringBuilder output = new StringBuilder();
-
-            using (StringWriter textWriter = new StringWriter(output))
-            {
-                XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(typeof(T));
-                serializer.Serialize(textWriter, data);
-            }
-
-            File.WriteAllText(filename, output.ToString());
+            File.WriteAllText(filename, WriteXmlDataInMemory(data));
         }
 
         /// <summary>
@@ -102,9 +88,7 @@ namespace LamestWebserver.Serialization
         /// <returns>The deserialized object</returns>
         public static T ReadJsonData<T>(string filename) where T : new()
         {
-            string jsonString = File.ReadAllText(filename);
-
-            return (T) JsonConvert.DeserializeObject(jsonString, typeof(T));
+            return ReadJsonDataInMemory<T>(File.ReadAllText(filename));
         }
 
         /// <summary>
@@ -132,7 +116,7 @@ namespace LamestWebserver.Serialization
                 Directory.CreateDirectory(Path.GetDirectoryName(filename));
             }
 
-            File.WriteAllText(filename, JsonConvert.SerializeObject(data, humanReadable ? Formatting.Indented : Formatting.None));
+            File.WriteAllText(filename, WriteJsonDataInMemory(data, humanReadable));
         }
 
         /// <summary>
@@ -175,14 +159,7 @@ namespace LamestWebserver.Serialization
         /// <returns>The deserialized object</returns>
         public static T ReadBinaryData<T>(string filename)
         {
-            byte[] binaryData = File.ReadAllBytes(filename);
-
-            using (MemoryStream memStream = new MemoryStream(binaryData))
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-
-                return (T)formatter.Deserialize(memStream);
-            }
+            return ReadBinaryDataInMemory<T>(File.ReadAllBytes(filename));
         }
 
         /// <summary>
@@ -214,17 +191,7 @@ namespace LamestWebserver.Serialization
                 Directory.CreateDirectory(Path.GetDirectoryName(filename));
             }
 
-            if (File.Exists(filename))
-            {
-                File.Delete(filename);
-            }
-
-            using (FileStream fs = File.Create(filename))
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-
-                formatter.Serialize(fs, data);
-            }
+            File.WriteAllBytes(filename, WriteBinaryDataInMemory(data));
         }
 
         /// <summary>
