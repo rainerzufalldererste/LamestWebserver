@@ -131,7 +131,7 @@ namespace LamestWebserver.Collections
                 count++;
             }
             else
-                AVLNode.AddItem(head, key, value, this, ref count);
+                AVLNode.AddItem(key, value, this, ref count);
         }
 
         /// <inheritdoc />
@@ -878,10 +878,8 @@ namespace LamestWebserver.Collections
                 tree.count--;
             }
 
-            internal static void AddItem(AVLNode headNode, TKey key, TValue value, QueuedAVLTree<TKey, TValue> tree, ref int elementCount)
+            internal static void AddItem(TKey key, TValue value, QueuedAVLTree<TKey, TValue> tree, ref int elementCount)
             {
-                int compare = key.CompareTo(headNode.key);
-
                 if(!tree.ContainsKey(key))
                 {
                     tree.queue.CheckRoom(tree);
@@ -893,7 +891,10 @@ namespace LamestWebserver.Collections
                         goto LukeIDeletedYourFather;
                     }
                 }
-                
+
+                AVLNode headNode = tree.head;
+                int compare = key.CompareTo(headNode.key);
+
                 while (true)
                 {
                     if (compare < 0)

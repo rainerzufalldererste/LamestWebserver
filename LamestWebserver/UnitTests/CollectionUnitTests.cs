@@ -173,6 +173,29 @@ namespace UnitTests
         }
 
         [TestMethod]
+        public void TestQueuedAvlTreesError()
+        {
+            Console.Write("--- THE BUG HAS BEEN: ");
+
+            var qt = new QueuedAVLTree<string, string>(10);
+
+            for (int i = 0; i < 20; i += 2)
+                qt.Add(new KeyValuePair<string, string>(i.ToString("00"), i.ToString("00")));
+
+            Assert.IsTrue(qt.Count == 10);
+
+            for (int i = 1; i < 21; i += 2)
+            {
+                qt.Add(new KeyValuePair<string, string>(i.ToString("00"), i.ToString("00")));
+                Assert.IsTrue(qt[i.ToString("00")] == i.ToString("00"));
+                qt.Validate();
+                Assert.IsTrue(qt.Count == 10);
+            }
+
+            Console.WriteLine("FIXED! --- ");
+        }
+
+        [TestMethod]
         public void TestQueuedAvlTrees()
         {
             qtree = new QueuedAVLTree<string, string>(1);
@@ -589,7 +612,9 @@ namespace UnitTests
                 Assert.IsTrue(qtree.Count == size);
                 hashes.Add(SessionContainer.GenerateHash());
                 values.Add(SessionContainer.GenerateHash());
+                qtree.Validate();
                 qtree[hashes[size + i]] = values[size + i];
+                qtree.Validate();
                 Assert.IsTrue(qtree[hashes[size + i]] == values[size + i]);
                 Assert.IsTrue(qtree.Keys.Contains(hashes[size + i]));
                 Assert.IsTrue(qtree.Values.Contains(values[size + i]));

@@ -10,6 +10,7 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new CompressionTest().TestCompressDecompress();
             new EncryptDecryptTests().TestEncryptDecrypt();
             new CollectionSerializerTests().TestCollectionJsonSerialisazion();
             new UsableMutexTest().TestUsableMutexes();
@@ -19,6 +20,7 @@ namespace UnitTests
             new CollectionUnitTests().TestSerializeClassAvlHashMap();
             new CollectionUnitTests().TestAvlHashMaps();
             new CollectionUnitTests().TestAvlTrees();
+            new CollectionUnitTests().TestQueuedAvlTreesError();
             new CollectionUnitTests().TestQueuedAvlTrees();
             new PacketUnitTest().TestCookies();
             new PasswordTest().TestPassword();

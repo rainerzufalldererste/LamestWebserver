@@ -88,8 +88,6 @@ namespace lwshostcore
 
             ServerHandler.LogMessage("[lwshost] [Processing File] " + file);
 
-            bool newDir = false;
-
             try
             {
                 string newFileName = Directory.GetCurrentDirectory() + "\\lwshost\\CurrentRun\\" + ID + file.Replace(directoryPath, "");
@@ -100,7 +98,6 @@ namespace lwshostcore
                 File.Copy(file, newFileName);
                 Thread.Sleep(100);
                 file = newFileName;
-                newDir = true;
 
                 ServerHandler.LogMessage("[lwshost] [File Load] Created a local copy at " + newFileName);
             }
@@ -118,14 +115,14 @@ namespace lwshostcore
 
                 foreach (var type in types)
                 {
-                    bool IgnoreDiscovery = false;
+                    bool ignoreDiscovery = false;
 
                     try
                     {
                         foreach (var attribute in type.GetCustomAttributes())
-                            IgnoreDiscovery |= (attribute is IgnoreDiscovery);
+                            ignoreDiscovery |= (attribute is IgnoreDiscovery);
 
-                        if (IgnoreDiscovery)
+                        if (ignoreDiscovery)
                         {
                             ServerHandler.LogMessage($"[lwshost] [HostIgnore] Ignoring: {type.Namespace}.{type.Name}");
                             continue;
