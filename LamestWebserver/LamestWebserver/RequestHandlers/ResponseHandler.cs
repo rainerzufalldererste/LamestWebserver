@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Web.UI;
 using LamestWebserver.Collections;
+using LamestWebserver.Serialization;
 using LamestWebserver.Synchronization;
 using Newtonsoft.Json;
 
@@ -551,7 +553,7 @@ namespace LamestWebserver.RequestHandlers
                 if (Cache.TryGetValue(name, out file))
                 {
                     file.LoadCount++;
-                    file = file.Clone();
+                    file = (PreloadedFile)file.Clone();
                 }
                 else
                     return false;
@@ -565,14 +567,14 @@ namespace LamestWebserver.RequestHandlers
     {
         private AVLHashMap<string, PreloadedFile> Cache;
 
-        public PackedFileRequestHandler(string directoryPath, int? HashMapSize)
+        public PackedFileRequestHandler(string directoryPath, bool includeSubdirectories, int? HashMapSize = null)
         {
             if (HashMapSize.HasValue)
                 Cache = new AVLHashMap<string, PreloadedFile>();
             else
                 Cache = new AVLHashMap<string, PreloadedFile>(1024);
 
-            string[] files = Directory.GetFiles(directoryPath);
+            string[] files = Directory.GetFiles(directoryPath, "*", includeSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
 
             ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is adding {files.Length} Files...");
 
@@ -581,7 +583,7 @@ namespace LamestWebserver.RequestHandlers
                 var stopwatch = Stopwatch.StartNew();
 
                 var contents = FileRequestHandler.ReadFile(file);
-                Cache.Add(file, new PreloadedFile(file, contents, contents.Length, DateTime.UtcNow, true));
+                Cache.Add(file.Substring(directoryPath.Length).TrimStart('\\', '/').Replace("\\", "/"), new PreloadedFile(file, contents, contents.Length, DateTime.UtcNow, true));
 
                 ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} added '{file}'.", stopwatch);
             }
@@ -596,9 +598,7 @@ namespace LamestWebserver.RequestHandlers
             
             ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} decompressed Files: {bytes.Length} bytes -> {decompressed.Length} bytes.");
 
-            string s = Encoding.UTF8.GetString(decompressed);
-
-            Cache = JsonConvert.DeserializeObject<AVLHashMap<string, PreloadedFile>>(s);
+            Cache = Serializer.ReadBinaryDataInMemory<AVLHashMap<string, PreloadedFile>>(decompressed);
 
             ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} deserialized {Cache.Count} Files.");
         }
@@ -607,11 +607,9 @@ namespace LamestWebserver.RequestHandlers
         {
             ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is saving Files to '{filename}'...");
 
-            string json = JsonConvert.SerializeObject(Cache, Formatting.None);
+            byte[] bytes = Serializer.WriteBinaryDataInMemory(Cache);
 
             ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} serialized {Cache.Count} Files.");
-
-            byte[] bytes = Encoding.UTF8.GetBytes(json);
 
             if(File.Exists(filename))
                 File.Delete(filename);
@@ -636,12 +634,12 @@ namespace LamestWebserver.RequestHandlers
             if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value <= file.LastModified)
                 return new HttpPacket() {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
 
-            return new HttpPacket() {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(requestPacket.RequestUrl), ModifiedDate = file.LastModified };
+            return new HttpPacket() {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
         }
     }
 
     [Serializable]
-    public class PreloadedFile
+    public class PreloadedFile : ICloneable
     {
         public string Filename;
         public byte[] Contents;
@@ -649,6 +647,11 @@ namespace LamestWebserver.RequestHandlers
         public DateTime LastModified;
         public bool IsBinary;
         public int LoadCount;
+
+        /// <summary>
+        /// Empty Deserialization constructor
+        /// </summary>
+        public PreloadedFile() { }
 
         public PreloadedFile(string filename, byte[] contents, int size, DateTime lastModified, bool isBinary)
         {
@@ -660,7 +663,8 @@ namespace LamestWebserver.RequestHandlers
             LoadCount = 1;
         }
 
-        internal PreloadedFile Clone()
+        /// <inheritdoc />
+        public object Clone()
         {
             return new PreloadedFile((string) Filename.Clone(), Contents.ToArray(), Size, LastModified, IsBinary);
         }

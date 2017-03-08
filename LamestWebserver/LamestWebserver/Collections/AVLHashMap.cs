@@ -16,6 +16,7 @@ namespace LamestWebserver.Collections
     /// </summary>
     /// <typeparam name="TKey">The Type of the Keys (implement IComparable, IEquatable&lt;TKey&gt;)</typeparam>
     /// <typeparam name="TValue">The Type of the Values</typeparam>
+    [Serializable]
     public class AVLHashMap<TKey, TValue> : IDictionary<TKey, TValue>, ISerializable, IXmlSerializable where TKey : IEquatable<TKey>, IComparable
     {
         private int _size = 1024;
