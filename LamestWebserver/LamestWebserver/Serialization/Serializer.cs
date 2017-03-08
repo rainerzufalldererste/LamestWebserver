@@ -30,7 +30,22 @@ namespace LamestWebserver.Serialization
         {
             string xmlString = File.ReadAllText(filename);
 
-            using (MemoryStream memStream = new MemoryStream(Encoding.Unicode.GetBytes(xmlString))) // Yes, it actually seems like this is all really necessary here :/
+            using (MemoryStream memStream = new MemoryStream(Encoding.Unicode.GetBytes(xmlString)))
+            {
+                XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(typeof(T));
+                return (T)serializer.Deserialize(memStream);
+            }
+        }
+
+        /// <summary>
+        /// Retrieves XML-Serialized data from a string.
+        /// </summary>
+        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
+        /// <param name="xml">The serialized object</param>
+        /// <returns>The deserialized object</returns>
+        public static T ReadXmlDataInMemory<T>(string xml)
+        {
+            using (MemoryStream memStream = new MemoryStream(Encoding.Unicode.GetBytes(xml)))
             {
                 XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(typeof(T));
                 return (T)serializer.Deserialize(memStream);
@@ -62,7 +77,25 @@ namespace LamestWebserver.Serialization
         }
 
         /// <summary>
-        /// Retrieves JSON-Serialized data from a file.
+        /// Serializes an Object to an XML-string.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        public static string WriteXmlDataInMemory<T>(T data)
+        {
+            StringBuilder output = new StringBuilder();
+
+            using (StringWriter textWriter = new StringWriter(output))
+            {
+                XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(typeof(T));
+                serializer.Serialize(textWriter, data);
+            }
+
+            return output.ToString();
+        }
+
+        /// <summary>
+        /// Retrieves a JSON-Serialized object from a file.
         /// </summary>
         /// <typeparam name="T">The Type of the data to deserialize</typeparam>
         /// <param name="filename">The name of the file</param>
@@ -75,7 +108,18 @@ namespace LamestWebserver.Serialization
         }
 
         /// <summary>
-        /// Writes an Object to an JSON-File.
+        /// Retrieves JSON-Serialized data from a json string.
+        /// </summary>
+        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
+        /// <param name="json">The serialized Object</param>
+        /// <returns>The deserialized object</returns>
+        public static T ReadJsonDataInMemory<T>(string json) where T : new()
+        {
+            return (T)JsonConvert.DeserializeObject(json, typeof(T));
+        }
+
+        /// <summary>
+        /// Writes an Object to a JSON-File.
         /// </summary>
         /// <typeparam name="T">The Type of the Object</typeparam>
         /// <param name="data">The Object</param>
@@ -92,7 +136,18 @@ namespace LamestWebserver.Serialization
         }
 
         /// <summary>
-        /// Writes an Object to an JSON-File.
+        /// Writes an Object to a json string.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        /// <param name="humanReadable">Shall the file contain linefeeds</param>
+        public static string WriteJsonDataInMemory<T>(T data, bool humanReadable)
+        {
+            return JsonConvert.SerializeObject(data, humanReadable ? Formatting.Indented : Formatting.None);
+        }
+
+        /// <summary>
+        /// Writes an Object to a JSON-File.
         /// </summary>
         /// <typeparam name="T">The Type of the Object</typeparam>
         /// <param name="data">The Object</param>
@@ -100,6 +155,16 @@ namespace LamestWebserver.Serialization
         public static void WriteJsonData<T>(T data, string filename)
         {
             WriteJsonData(data, filename, false);
+        }
+
+        /// <summary>
+        /// Writes an Object to a json string.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        public static string WriteJsonDataInMemory<T>(T data)
+        {
+            return WriteJsonDataInMemory(data, false);
         }
 
         /// <summary>
@@ -113,6 +178,22 @@ namespace LamestWebserver.Serialization
             byte[] binaryData = File.ReadAllBytes(filename);
 
             using (MemoryStream memStream = new MemoryStream(binaryData))
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                return (T)formatter.Deserialize(memStream);
+            }
+        }
+
+        /// <summary>
+        /// Retrieves Binary-Serialized data from a byte[].
+        /// </summary>
+        /// <typeparam name="T">The Type of the data to deserialize</typeparam>
+        /// <param name="data">The serizalized object</param>
+        /// <returns>The deserialized object</returns>
+        public static T ReadBinaryDataInMemory<T>(byte[] data)
+        {
+            using (MemoryStream memStream = new MemoryStream(data))
             {
                 BinaryFormatter formatter = new BinaryFormatter();
 
@@ -143,6 +224,23 @@ namespace LamestWebserver.Serialization
                 BinaryFormatter formatter = new BinaryFormatter();
 
                 formatter.Serialize(fs, data);
+            }
+        }
+
+        /// <summary>
+        /// Serializes an Object to a byte[].
+        /// </summary>
+        /// <typeparam name="T">The Type of the Object</typeparam>
+        /// <param name="data">The Object</param>
+        public static byte[] WriteBinaryDataInMemory<T>(T data)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                formatter.Serialize(ms, data);
+
+                return ms.ToArray();
             }
         }
     }
