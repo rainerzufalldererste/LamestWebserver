@@ -14,6 +14,9 @@ namespace LamestWebserver
     {
         internal static bool Running = false;
 
+        /// <summary>
+        /// Shall messages be logged?
+        /// </summary>
         public static bool LogMessages
         {
             get

@@ -12,6 +12,9 @@ namespace LamestWebserver
         /// </summary>
         public string URL { get; protected set; }
 
+        /// <summary>
+        /// The file to load and process to display the page.
+        /// </summary>
         protected readonly string File;
 
         /// <summary>

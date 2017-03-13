@@ -103,26 +103,32 @@ namespace LamestWebserver
         private AVLTree<int, NetworkStream> networkStreams = new AVLTree<int, NetworkStream>();
 
         Mutex cleanMutex = new Mutex();
-        private bool silent;
         
         private Task<TcpClient> tcpRcvTask;
 
         /// <summary>
-        /// Starts a new Webserver.
+        /// Starts a new Webserver and adds the folder and default components to the CurrentResponseHandler. If you are just adding a server listening on another port as well - just use the other constructor.
         /// </summary>
-        /// <param name="port">the port listen to</param>
-        /// <param name="folder">the folder to listen to</param>
-        public WebServer(int port, string folder) : this(port, true)
+        /// <param name="port">the port to listen to</param>
+        /// <param name="folder">one folder to view at (can be null)</param>
+        public WebServer(int port, string folder) : this(port)
         {
-            ResponseHandler.CurrentResponseHandler.AddSecondaryRequestHandler(new ErrorRequestHandler());
+            ResponseHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
+
+            if(folder != null)
+                ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
+
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
         }
 
-        public WebServer(int port, bool silent = false)
+        /// <summary>
+        /// Starts a new Webserver listening to all previously added Responses.
+        /// </summary>
+        /// <param name="port">the port to listen to</param>
+        public WebServer(int port)
         {
             if (!TcpPortIsUnused(port))
             {
@@ -133,7 +139,6 @@ namespace LamestWebserver
             this._tcpListener = new TcpListener(IPAddress.Any, port);
             _mThread = new Thread(new ThreadStart(HandleTcpListener));
             _mThread.Start();
-            this.silent = silent;
 
             using (RunningServerMutex.Lock())
                 RunningServers.Add(this);
@@ -306,8 +311,6 @@ namespace LamestWebserver
             {
                 ServerHandler.LogMessage("The TcpListener couldn't be started. The Port is probably blocked.\n" + e);
 
-                if (!silent)
-                    Console.WriteLine("Failed to start TcpListener.\n" + e);
                 return;
             }
 
@@ -335,8 +338,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    if (!silent)
-                        ServerHandler.LogMessage("The TcpListener failed.\n" + e);
+                    ServerHandler.LogMessage("The TcpListener failed.\n" + e);
                 }
             }
         }

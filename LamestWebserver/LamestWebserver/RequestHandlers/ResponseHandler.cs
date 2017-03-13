@@ -2,30 +2,46 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
-using System.Web.UI;
 using LamestWebserver.Collections;
 using LamestWebserver.Serialization;
 using LamestWebserver.Synchronization;
-using Newtonsoft.Json;
 
 namespace LamestWebserver.RequestHandlers
 {
+    /// <summary>
+    /// A ResponseHandler contains tools to resolve HTTP-Requests to responses.
+    /// </summary>
     public class ResponseHandler
     {
-        public static ResponseHandler CurrentResponseHandler => _responseHandler;
-        private static ResponseHandler _responseHandler = new ResponseHandler();
+        /// <summary>
+        /// The ResponseHandler used in the Webservers.
+        /// </summary>
+        public static ResponseHandler CurrentResponseHandler { get; } = new ResponseHandler();
 
+        /// <summary>
+        /// The RequestHandlers to look through primarily.
+        /// </summary>
         protected List<IRequestHandler> RequestHandlers = new List<IRequestHandler>();
+
+        /// <summary>
+        /// The RequestHandlers to look through seconarily (e.g. ErrorRequestHandlers).
+        /// </summary>
         protected List<IRequestHandler> SecondaryRequestHandlers = new List<IRequestHandler>();
 
+        /// <summary>
+        /// A WriteLock to safely add and remove response handlers.
+        /// </summary>
         protected UsableWriteLock RequestWriteLock = new UsableWriteLock();
 
-        public HttpPacket GetResponse(HttpPacket requestPacket)
+        /// <summary>
+        /// Retrieves a response (or null) from a given http packet by looking through all primary and secondary request handlers as long as none has a propper response to it.
+        /// </summary>
+        /// <param name="requestPacket">the http-packet to reply to</param>
+        /// <returns>the response http packet or null</returns>
+        public virtual HttpPacket GetResponse(HttpPacket requestPacket)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
@@ -66,6 +82,10 @@ namespace LamestWebserver.RequestHandlers
             return null;
         }
 
+        /// <summary>
+        /// Adds a new request handler.
+        /// </summary>
+        /// <param name="handler">the handler to add</param>
         public void AddRequestHandler(IRequestHandler handler)
         {
             using (RequestWriteLock.LockWrite())
@@ -73,39 +93,106 @@ namespace LamestWebserver.RequestHandlers
                     RequestHandlers.Add(handler);
         }
 
+
+        /// <summary>
+        /// Adds a new request handler at the specified position (or 0).
+        /// </summary>
+        /// <param name="handler">the handler to add</param>
+        /// <param name="index">the position where to add the request handler.</param>
+        public void InsertRequestHandler(IRequestHandler handler, int index = 0)
+        {
+            using (RequestWriteLock.LockWrite())
+                RequestHandlers.Insert(index, handler);
+        }
+
+        /// <summary>
+        /// Removes a specific requestHandler.
+        /// </summary>
+        /// <param name="handler">the handler to remove.</param>
         public void RemoveRequestHandler(IRequestHandler handler)
         {
             using (RequestWriteLock.LockWrite())
                 RequestHandlers.Remove(handler);
         }
 
-        public void AddSecondaryRequestHandler(IRequestHandler handler)
+        /// <summary>
+        /// Removes all request handlers with a certain type.
+        /// </summary>
+        /// <param name="handlertype">the type of the handler.</param>
+        public void RemoveRequestHandlers(Type handlertype)
+        {
+            using (RequestWriteLock.LockWrite())
+                for (int i = RequestHandlers.Count - 1; i >= 0; i--)
+                    if (RequestHandlers[i].GetType() == handlertype)
+                        RequestHandlers.RemoveAt(i);
+        }
+
+        /// <summary>
+        /// Inserts a secondary request handler at a specified position (or 0).
+        /// </summary>
+        /// <param name="handler">the handler to insert</param>
+        /// <param name="index">the index where to insert the handler</param>
+        public void InsertSecondaryRequestHandler(IRequestHandler handler, int index = 0)
         {
             using (RequestWriteLock.LockWrite())
             {
                 if (SecondaryRequestHandlers.Contains(handler))
                     SecondaryRequestHandlers.Remove(handler);
 
-                SecondaryRequestHandlers.Insert(0, handler);
+                SecondaryRequestHandlers.Insert(index, handler);
             }
         }
 
+        /// <summary>
+        /// Removes a handler from the secondary request handlers
+        /// </summary>
+        /// <param name="handler">the handler to remove</param>
         public void RemoveSecondaryRequestHandler(IRequestHandler handler)
         {
             using (RequestWriteLock.LockWrite())
                 SecondaryRequestHandlers.Remove(handler);
         }
+
+        /// <summary>
+        /// Removes all request handlers of a specific type from the secondary request handlers.
+        /// </summary>
+        /// <param name="handlertype">the type of the handlers to remove</param>
+        public void RemoveSecondaryRequestHandlers(Type handlertype)
+        {
+            using (RequestWriteLock.LockWrite())
+                for (int i = SecondaryRequestHandlers.Count - 1; i >= 0; i--)
+                    if (SecondaryRequestHandlers[i].GetType() == handlertype)
+                        SecondaryRequestHandlers.RemoveAt(i);
+        }
     }
 
+    /// <summary>
+    /// An Interface for HTTP-Request handlers.
+    /// </summary>
     public interface IRequestHandler
     {
+        /// <summary>
+        /// Retrieves a response from a http-request.
+        /// </summary>
+        /// <param name="requestPacket">the request packet</param>
+        /// <returns>the response packet</returns>
         HttpPacket GetResponse(HttpPacket requestPacket);
     }
 
+    /// <summary>
+    /// The Request Handler that delivers files from local storage.
+    /// </summary>
     public class FileRequestHandler : IRequestHandler
     {
+        /// <summary>
+        /// The folder in local storage, where the files are located.
+        /// </summary>
         public readonly string Folder;
 
+        /// <summary>
+        /// Constructs a new FileRequestHandler.
+        /// </summary>
+        /// <param name="folder">the folder where to look for the the requested files.</param>
         public FileRequestHandler(string folder)
         {
             if (folder.EndsWith("\\"))
@@ -120,7 +207,6 @@ namespace LamestWebserver.RequestHandlers
             string fileName = requestPacket.RequestUrl;
             byte[] contents = null;
             DateTime? lastModified = null;
-            bool notModified = false;
             string extention = null;
 
             if (fileName.Length == 0 || fileName[0] != '/')
@@ -156,6 +242,12 @@ namespace LamestWebserver.RequestHandlers
             return new HttpPacket() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
         }
 
+        /// <summary>
+        /// Reads a file from local storage.
+        /// </summary>
+        /// <param name="filename">the name of the file</param>
+        /// <param name="isBinary">shall the file be read as binary file?</param>
+        /// <returns>a byte[] contatining the file contents</returns>
         protected byte[] ReadFile(string filename, bool isBinary = false)
         {
             int i = 10;
@@ -186,6 +278,11 @@ namespace LamestWebserver.RequestHandlers
             throw new Exception("Failed to read from '" + filename + "'.");
         }
 
+        /// <summary>
+        /// Reads a file from local storage.
+        /// </summary>
+        /// <param name="filename">the name of the file</param>
+        /// <returns>a byte[] contatining the file contents</returns>
         public static byte[] ReadFile(string filename)
         {
             int i = 10;
@@ -216,6 +313,12 @@ namespace LamestWebserver.RequestHandlers
             throw new Exception("Failed to read from '" + filename + "'.");
         }
 
+        /// <summary>
+        /// Checks if a given file should be binary.
+        /// </summary>
+        /// <param name="fileName">the name of the file</param>
+        /// <param name="extention">the extention of the file</param>
+        /// <returns></returns>
         public static bool FileIsBinary(string fileName, string extention)
         {
             if (fileName.Length < 2)
@@ -240,6 +343,11 @@ namespace LamestWebserver.RequestHandlers
             }
         }
 
+        /// <summary>
+        /// Eetrieves the extention of a file.
+        /// </summary>
+        /// <param name="fileName">the file name</param>
+        /// <returns>the extention</returns>
         public static string GetExtention(string fileName)
         {
             if (fileName.Length < 2)
@@ -257,6 +365,11 @@ namespace LamestWebserver.RequestHandlers
             return "";
         }
 
+        /// <summary>
+        /// Returns the mime-type of a given file.
+        /// </summary>
+        /// <param name="extention">the extention of the file</param>
+        /// <returns>the mime-type as string</returns>
         public static string GetMimeType(string extention)
         {
             switch (extention)
@@ -349,8 +462,14 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
+    /// <summary>
+    /// A RequestHanlder that delivers Files from local storage - which will be cached on use.
+    /// </summary>
     public class CachedFileRequestHandler : FileRequestHandler
     {
+        /// <summary>
+        /// The size of the cache hash map. this does not limit the amount of cached items - it's just there to preference size or performance.
+        /// </summary>
         public static int CacheHashMapSize = 1024;
 
         internal AVLHashMap<string, PreloadedFile> Cache = new AVLHashMap<string, PreloadedFile>(CacheHashMapSize);
@@ -408,7 +527,7 @@ namespace LamestWebserver.RequestHandlers
 
                         using (CacheMutex.Lock())
                         {
-                            Cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, false));
+                            Cache.Add(fileName, new PreloadedFile(fileName, contents, lastModified.Value, false));
                         }
 
                         ServerHandler.LogMessage("The URL '" + requestPacket.RequestUrl + "' is now available through the cache.");
@@ -445,7 +564,7 @@ namespace LamestWebserver.RequestHandlers
 
                     using (CacheMutex.Lock())
                     {
-                        Cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, isBinary));
+                        Cache.Add(fileName, new PreloadedFile(fileName, contents, lastModified.Value, isBinary));
                     }
 
                     ServerHandler.LogMessage("The URL '" + requestPacket.RequestUrl + "' is now available through the cache.");
@@ -546,6 +665,12 @@ namespace LamestWebserver.RequestHandlers
             FileSystemWatcher.EnableRaisingEvents = true;
         }
 
+        /// <summary>
+        /// Gets a file from the cache.
+        /// </summary>
+        /// <param name="name">the name of the file.</param>
+        /// <param name="file">the PreloadedFile object of this file</param>
+        /// <returns>true if found - false if not found.</returns>
         protected bool GetFromCache(string name, out PreloadedFile file)
         {
             using (CacheMutex.Lock())
@@ -563,16 +688,25 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
+    /// <summary>
+    /// Reads or writes an entire dictionary from / to a file which can be loaded at startup so that the file size is compressed and not anyone can easily look at the files inside.
+    /// </summary>
     public class PackedFileRequestHandler : IRequestHandler
     {
-        private AVLHashMap<string, PreloadedFile> Cache;
+        private readonly AVLHashMap<string, PreloadedFile> _cache;
 
+        /// <summary>
+        /// Creates a new PackedFileRequestHandler from a directory. Use SaveToPackedFile-Method to save it.
+        /// </summary>
+        /// <param name="directoryPath">the path of the directory to read</param>
+        /// <param name="includeSubdirectories">shall subdirectories be included</param>
+        /// <param name="HashMapSize">the size of the hashmap containing the files. this does not limit the number of contained files - only to preference performance or size.</param>
         public PackedFileRequestHandler(string directoryPath, bool includeSubdirectories, int? HashMapSize = null)
         {
             if (HashMapSize.HasValue)
-                Cache = new AVLHashMap<string, PreloadedFile>();
+                _cache = new AVLHashMap<string, PreloadedFile>();
             else
-                Cache = new AVLHashMap<string, PreloadedFile>(1024);
+                _cache = new AVLHashMap<string, PreloadedFile>(1024);
 
             string[] files = Directory.GetFiles(directoryPath, "*", includeSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
 
@@ -583,12 +717,16 @@ namespace LamestWebserver.RequestHandlers
                 var stopwatch = Stopwatch.StartNew();
 
                 var contents = FileRequestHandler.ReadFile(file);
-                Cache.Add(file.Substring(directoryPath.Length).TrimStart('\\', '/').Replace("\\", "/"), new PreloadedFile(file, contents, contents.Length, DateTime.UtcNow, true));
+                _cache.Add(file.Substring(directoryPath.Length).TrimStart('\\', '/').Replace("\\", "/"), new PreloadedFile(file, contents, DateTime.UtcNow, true));
 
                 ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} added '{file}'.", stopwatch);
             }
         }
 
+        /// <summary>
+        /// Creates a new PackedFileRequestHandler from a packed file.
+        /// </summary>
+        /// <param name="filename">the name of the file to load</param>
         public PackedFileRequestHandler(string filename)
         {
             ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is reading Files from '{filename}'...");
@@ -598,18 +736,22 @@ namespace LamestWebserver.RequestHandlers
             
             ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} decompressed Files: {bytes.Length} bytes -> {decompressed.Length} bytes.");
 
-            Cache = Serializer.ReadBinaryDataInMemory<AVLHashMap<string, PreloadedFile>>(decompressed);
+            _cache = Serializer.ReadBinaryDataInMemory<AVLHashMap<string, PreloadedFile>>(decompressed);
 
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} deserialized {Cache.Count} Files.");
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} deserialized {_cache.Count} Files.");
         }
 
+        /// <summary>
+        /// Saves the storage to a packed file.
+        /// </summary>
+        /// <param name="filename">the name of the packed file.</param>
         public void SaveToPackedFile(string filename)
         {
             ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is saving Files to '{filename}'...");
 
-            byte[] bytes = Serializer.WriteBinaryDataInMemory(Cache);
+            byte[] bytes = Serializer.WriteBinaryDataInMemory(_cache);
 
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} serialized {Cache.Count} Files.");
+            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} serialized {_cache.Count} Files.");
 
             if(File.Exists(filename))
                 File.Delete(filename);
@@ -626,7 +768,7 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public HttpPacket GetResponse(HttpPacket requestPacket)
         {
-            var file = Cache[requestPacket.RequestUrl];
+            var file = _cache[requestPacket.RequestUrl];
 
             if (file == null)
                 return null;
@@ -638,14 +780,40 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
+    /// <summary>
+    /// A Cacheable preloaded file.
+    /// </summary>
     [Serializable]
     public class PreloadedFile : ICloneable
     {
+        /// <summary>
+        /// The name of the file.
+        /// </summary>
         public string Filename;
+
+        /// <summary>
+        /// The contents of the file.
+        /// </summary>
         public byte[] Contents;
+
+        /// <summary>
+        /// The size of the file.
+        /// </summary>
         public int Size;
+        
+        /// <summary>
+        /// The last-modified date of the file.
+        /// </summary>
         public DateTime LastModified;
+
+        /// <summary>
+        /// is the file just binary data?
+        /// </summary>
         public bool IsBinary;
+
+        /// <summary>
+        /// The amount of times the file has been requested.
+        /// </summary>
         public int LoadCount;
 
         /// <summary>
@@ -653,11 +821,18 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         public PreloadedFile() { }
 
-        public PreloadedFile(string filename, byte[] contents, int size, DateTime lastModified, bool isBinary)
+        /// <summary>
+        /// Constructs a new Preloaded file.
+        /// </summary>
+        /// <param name="filename">The name of the file.</param>
+        /// <param name="contents">The contents of the file.</param>
+        /// <param name="lastModified">The last-modified date of the file.</param>
+        /// <param name="isBinary">is the file just binary data?</param>
+        public PreloadedFile(string filename, byte[] contents, DateTime lastModified, bool isBinary)
         {
             Filename = filename;
             Contents = contents;
-            Size = size;
+            Size = contents.Length;
             LastModified = lastModified;
             IsBinary = isBinary;
             LoadCount = 1;
@@ -666,10 +841,13 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public object Clone()
         {
-            return new PreloadedFile((string) Filename.Clone(), Contents.ToArray(), Size, LastModified, IsBinary);
+            return new PreloadedFile((string) Filename.Clone(), Contents.ToArray(), LastModified, IsBinary);
         }
     }
 
+    /// <summary>
+    /// Displays error messages for every request that passed through.
+    /// </summary>
     public class ErrorRequestHandler : IRequestHandler
     {
         /// <inheritdoc />
@@ -701,9 +879,13 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
+    /// <summary>
+    /// Provides functionality for Retriable Responses (MutexRetryException triggered retrying)
+    /// </summary>
+    /// <typeparam name="T">the type of method to call</typeparam>
     public abstract class AbstractMutexRetriableResponse<T> : IRequestHandler
     {
-        private Random random = new Random();
+        private readonly Random _random = new Random();
 
         /// <inheritdoc />
         public HttpPacket GetResponse(HttpPacket requestPacket)
@@ -733,7 +915,7 @@ namespace LamestWebserver.RequestHandlers
                         throw;
                     }
 
-                    Thread.Sleep(random.Next(25 * tries));
+                    Thread.Sleep(_random.Next(25 * tries));
                     goto RETRY;
                 }
             }
@@ -741,16 +923,42 @@ namespace LamestWebserver.RequestHandlers
             return null;
         }
 
+        /// <summary>
+        /// Responds to the request packet by calling the requestFunction with the sessionData and the requested packet.
+        /// The retriable part of the response delivery.
+        /// </summary>
+        /// <param name="requestFunction">the function to call</param>
+        /// <param name="requestPacket">the http-request</param>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the http response-packet</returns>
         public abstract HttpPacket GetRetriableResponse(T requestFunction, HttpPacket requestPacket, SessionData sessionData);
 
+        /// <summary>
+        /// Gets the response function which can be called multiple times in GetRetriableResponse.
+        /// </summary>
+        /// <param name="requestPacket">the http-request</param>
+        /// <returns>the method to call.</returns>
         public abstract T GetResponseFunction(HttpPacket requestPacket);
     }
 
+    /// <summary>
+    /// A response handler for PageResponses
+    /// </summary>
     public class PageResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetContents>
     {
+        /// <summary>
+        /// A ReaderWriterLock for accessing pages synchronously.
+        /// </summary>
         protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+
+        /// <summary>
+        /// The currently listed PageResponses.
+        /// </summary>
         protected AVLHashMap<string, Master.GetContents> PageResponses = new AVLHashMap<string, Master.GetContents>(WebServer.PageResponseStorageHashMapSize);
 
+        /// <summary>
+        /// Constructs a new PageResponseRequestHandler and registers this RequestHandler as listening for new PageResponses.
+        /// </summary>
         public PageResponseRequestHandler()
         {
             Master.AddFunctionEvent += AddFunction;
@@ -796,11 +1004,24 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
+    /// <summary>
+    /// A response handler for OneTime-PageResponses
+    /// </summary>
     public class OneTimePageResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetContents>
     {
-        protected QueuedAVLTree<string, Master.GetContents> OneTimeResponses = new QueuedAVLTree<string, Master.GetContents>(WebServer.OneTimePageResponsesStorageQueueSize);
+        /// <summary>
+        /// A ReaderWriterLock for accessing pages synchronously.
+        /// </summary>
         protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
+        /// <summary>
+        /// The currently listed OneTime-PageResponses.
+        /// </summary>
+        protected QueuedAVLTree<string, Master.GetContents> OneTimeResponses = new QueuedAVLTree<string, Master.GetContents>(WebServer.OneTimePageResponsesStorageQueueSize);
+
+        /// <summary>
+        /// Constructs a new OneTimePageResponseRequestHandler and registers this RequestHandler as listening for new OneTime-PageResponses.
+        /// </summary>
         public OneTimePageResponseRequestHandler()
         {
             Master.AddOneTimeFunctionEvent += AddOneTimeFunction;
@@ -840,11 +1061,24 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
+    /// <summary>
+    /// A response handler for WebSocketResponses
+    /// </summary>
     public class WebSocketRequestHandler : IRequestHandler
     {
+        /// <summary>
+        /// A ReaderWriterLock for accessing pages synchronously.
+        /// </summary>
         protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+
+        /// <summary>
+        /// The currently listed WebSocketResponses.
+        /// </summary>
         protected AVLHashMap<string, WebSocketCommunicationHandler> WebSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(WebServer.WebSocketResponsePageStorageHashMapSize);
 
+        /// <summary>
+        /// Constructs a new WebSocketRequestHandler and registers this RequestHandler as listening for new WebSocketResponses.
+        /// </summary>
         public WebSocketRequestHandler()
         {
             Master.AddWebsocketHandlerEvent += AddWebsocketHandler;
@@ -903,14 +1137,27 @@ namespace LamestWebserver.RequestHandlers
         }
     }
 
+    /// <summary>
+    /// A response handler for DirectoryResponses
+    /// </summary>
     public class DirectoryResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetDirectoryContents>
     {
+        /// <summary>
+        /// A ReaderWriterLock for accessing pages synchronously.
+        /// </summary>
         protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+
+        /// <summary>
+        /// The currently listed DirectoryResponses.
+        /// </summary>
         protected AVLHashMap<string, Master.GetDirectoryContents> DirectoryResponses = new AVLHashMap<string, Master.GetDirectoryContents>(WebServer.DirectoryResponseStorageHashMapSize);
 
         [ThreadStatic]
         private static string _subUrl = "";
 
+        /// <summary>
+        /// Constructs a new DirectoryResponseRequestHandler and registers this RequestHandler as listening for new DirectoryResponses.
+        /// </summary>
         public DirectoryResponseRequestHandler()
         {
             Master.AddDirectoryFunctionEvent += AddDirectoryFunction;

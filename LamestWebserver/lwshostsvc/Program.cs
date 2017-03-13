@@ -146,7 +146,7 @@ namespace lwshostsvc
 
             HostConfig.CurrentHostConfig.ApplyConfig();
 
-            ResponseHandler.CurrentResponseHandler.AddSecondaryRequestHandler(new ErrorRequestHandler());
+            ResponseHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
