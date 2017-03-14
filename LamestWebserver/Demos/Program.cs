@@ -33,6 +33,10 @@ namespace Demos
 
                     Console.WriteLine("LamestWebserver Demos.\n\nType 'exit' to quit.");
 
+#if DEBUG
+                    ServerHandler.StartHandler();
+#endif
+
                     // Keep the Server available until we enter exit.
                     while (Console.ReadLine() != "exit") { }
                 }

@@ -7,7 +7,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.CodeDom;
+using System.Net;
 using System.Reflection;
+using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
 
 namespace LamestWebserver.WebServices
@@ -37,6 +39,59 @@ namespace LamestWebserver.WebServices
         }
     }
 
+    public class WebServiceIncompatibleException : WebServiceException
+    {
+        /// <inheritdoc />
+        public WebServiceIncompatibleException(string description) : base(description)
+        {
+        }
+    }
+
+    [Serializable]
+    public class WebServiceResponse
+    {
+        public object ReturnValue = null;
+        public Exception ExceptionThrown = null;
+        public WebServiceReturnType ReturnType = WebServiceReturnType.ReturnVoid;
+
+        public static WebServiceResponse Return() => new WebServiceResponse();
+
+        public static WebServiceResponse Return(object value)
+            => new WebServiceResponse()
+            {
+                ReturnValue = value,
+                ReturnType = WebServiceReturnType.ReturnValue
+            };
+
+        public static WebServiceResponse Exception(Exception exception)
+            => new WebServiceResponse()
+            {
+                ExceptionThrown = exception,
+                    ReturnType = WebServiceReturnType.ExceptionThrown
+            };
+
+    }
+
+    public class WebServiceRequest
+    {
+        public string URL;
+        public string Method;
+        public object[] Parameters;
+
+        public static WebServiceRequest Request(string URL, string Method, params object[] Parameters)
+            => new WebServiceRequest()
+            {
+                Method = Method,
+                URL = URL,
+                Parameters = Parameters
+            };
+    }
+
+    public enum WebServiceReturnType : byte
+    {
+        ReturnValue, ReturnVoid, ExceptionThrown
+    }
+
     public class WebServiceHandler
     {
         private static WebServiceHandler _currentServiceHandler;
@@ -60,6 +115,8 @@ namespace LamestWebserver.WebServices
         private UsableMutexSlim _listMutex = new UsableMutexSlim();
         private Dictionary<Type, object> ServerWebServiceVariants = new Dictionary<Type, object>();
         private Dictionary<Type, object> ClientWebServiceVariants = new Dictionary<Type, object>();
+
+        private AVLHashMap<string, IPEndPoint> UrlToServerHashMap = new AVLHashMap<string, IPEndPoint>();
 
         public T GetService<T>() where T : IWebService, new()
         {
@@ -102,6 +159,27 @@ namespace LamestWebserver.WebServices
             var ret = resultType.GetConstructor(new Type[0]).Invoke(new object[0]);
 
             return (T)ret;
+        }
+
+        public T GetServerService<T>() where T : IWebService, new()
+        {
+            return default(T);
+        }
+
+        public WebServiceResponse Request(WebServiceRequest webServiceRequest)
+        {
+            IPEndPoint endPoint = UrlToServerHashMap[webServiceRequest.URL];
+
+            if (endPoint == null)
+            {
+
+            }
+            else
+            {
+                
+            }
+
+            return WebServiceResponse.Exception(new ServiceNotAvailableException("test test test 123"));
         }
     }
 }
