@@ -467,6 +467,8 @@ namespace LamestWebserver
                                 buffer = htp_.GetPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
 
+                                ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e, stopwatch);
+
                                 continue;
                             }
 
