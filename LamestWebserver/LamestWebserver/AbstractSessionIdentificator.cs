@@ -38,11 +38,6 @@ namespace LamestWebserver
         /// </summary>
         public string RequestedFile { get; protected set; }
 
-        /// <summary>
-        /// The Port of the currently responding server
-        /// </summary>
-        public ushort Port { get; protected set; }
-
         // ===============================================================================================================================================
         // ===============================================================================================================================================
 
@@ -155,7 +150,7 @@ namespace LamestWebserver
         /// <param name="value">The value of the variable</param>
         public void SetGlobalVariable<T>(string name, T value)
         {
-            SetValueToDictionary(name, value, SessionContainer.globalVariables);
+            SetValueToDictionary(name, value, SessionContainer.GlobalVariables);
         }
 
         /// <summary>
@@ -165,7 +160,7 @@ namespace LamestWebserver
         /// <returns>the value of the variable (or null if not existent)</returns>
         public object GetGlobalVariable(string name)
         {
-            return GetObjectFromDictionary(name, SessionContainer.globalVariables);
+            return GetObjectFromDictionary(name, SessionContainer.GlobalVariables);
         }
 
         /// <summary>
@@ -327,6 +322,32 @@ namespace LamestWebserver
         }
 
 
+        /// <summary>
+        /// Retrieves a collection of all global variables.
+        /// </summary>
+        /// <returns>a collection of all global variables.</returns>
+        public AVLTree<string, object> GetGlobalVariables()
+        {
+            return SessionContainer.GlobalVariables;
+        }
+
+        /// <summary>
+        /// Retrieves a collection of the per file user variables.
+        /// </summary>
+        /// <returns>a collection of the per file user variables.</returns>
+        public IDictionary<string, object> GetUserPerFileVariables()
+        {
+            return _userInfo.PerFileVariables[RequestedFile];
+        }
+
+        /// <summary>
+        /// Retrieves a collection of the per file variables.
+        /// </summary>
+        /// <returns>a collection of the per file user variables.</returns>
+        public IDictionary<string, object> GetPerFileVariables()
+        {
+            return PerFileVariables;
+        }
     }
 
     /// <summary>
@@ -357,10 +378,9 @@ namespace LamestWebserver
     /// </summary>
     public class SessionIdentificatorSlim : AbstractSessionIdentificator
     {
-        internal SessionIdentificatorSlim(string file, ushort port, string sessionId)
+        internal SessionIdentificatorSlim(string file, string sessionId)
         {
             base.RequestedFile = file;
-            base.Port = port;
             base.Ssid = sessionId;
 
             base.PerFileVariables = SessionContainer.GetFileDictionary(file);

@@ -3,16 +3,24 @@ using System.Threading;
 
 namespace LamestWebserver.Synchronization
 {
+    /// <summary>
+    /// Locks and Releases a ILockable object using IDisposable.
+    /// </summary>
     public class UsableLocker : IDisposable
     {
-        private ILockable obj;
+        private readonly ILockable obj;
 
+        /// <summary>
+        /// Constructs a new UsableLocker
+        /// </summary>
+        /// <param name="obj">the ILockable object</param>
         public UsableLocker(ILockable obj)
         {
             this.obj = obj;
             obj.Mutex.WaitOne();
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
             obj.Mutex.ReleaseMutex();
@@ -41,23 +49,33 @@ namespace LamestWebserver.Synchronization
         }
     }
 
+    /// <summary>
+    /// Locks and Releases a Mutex via IDisposable.
+    /// </summary>
     public class UsableMutexLocker : IDisposable
     {
-        private Mutex mutex;
-        private bool locked = false;
+        private readonly Mutex _mutex;
+        private readonly bool _locked = false;
 
+        /// <summary>
+        /// Creates a new UsableMutexLocker.
+        /// </summary>
+        /// <param name="mutex">the mutex to lock</param>
         public UsableMutexLocker(Mutex mutex)
         {
-            this.mutex = mutex;
+            this._mutex = mutex;
+
             if(!mutex.WaitOne(100))
                 throw new MutexRetryException();
-            locked = true;
+
+            _locked = true;
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
-            if (locked)
-                mutex.ReleaseMutex();
+            if (_locked)
+                _mutex.ReleaseMutex();
         }
 
         /// <summary>
@@ -83,8 +101,14 @@ namespace LamestWebserver.Synchronization
         }
     }
 
+    /// <summary>
+    /// A Lockable object
+    /// </summary>
     public interface ILockable
     {
+        /// <summary>
+        /// the mutex that is locked.
+        /// </summary>
         Mutex Mutex { get; }
     }
 }

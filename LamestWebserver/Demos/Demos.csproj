@@ -48,19 +48,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CardGame.cs" />
-    <Compile Include="jsconn.cs" />
-    <Compile Include="pageBuilderTest.cs" />
-    <Compile Include="pageFillerTest.cs" />
+    <Compile Include="MainPage.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="XmlTest.cs" />
+    <Compile Include="Tut01.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="web\test.hcs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LamestWebserver\LamestWebserver.csproj">
@@ -69,19 +63,13 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="web\cgame\card.png">
+    <Content Include="web\lwsfooter.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\gic.html">
+    <Content Include="web\script.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\ilias.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\index.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\pftest.html">
+    <Content Include="web\style.css">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

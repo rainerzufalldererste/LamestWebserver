@@ -14,14 +14,14 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// Additional Attributes added to the Element
         /// </summary>
-        public string descriptionTags = "";
+        public string DescriptionTags = "";
 
         /// <summary>
         /// Constructs a new JSElement and sets it's ID to a HashValue
         /// </summary>
         protected JSElement()
         {
-            ID = SessionContainer.generateHash();
+            ID = SessionContainer.GenerateHash();
         }
 
         /// <summary>
@@ -79,8 +79,8 @@ namespace LamestWebserver.JScriptBuilder
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (!string.IsNullOrWhiteSpace(descriptionTags))
-                ret += descriptionTags;
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
 
             return ret;
         }
@@ -557,6 +557,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="element">the element which innerHTML you want to override</param>
         /// <param name="URL">the event to reach</param>
+        /// <param name="executeOnComplete">code to execute when the action is done</param>
         public override JSDirectFunctionCall SetInnerHTMLWithNameValueAsync(IJSValue element, string URL, params IJSPiece[] executeOnComplete)
         {
             if (URL.Contains('?') && URL[URL.Length - 1] != '?')

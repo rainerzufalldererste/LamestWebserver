@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Net;
+using System.Net.Sockets;
 using System.Web;
 
 namespace LamestWebserver
@@ -96,6 +98,16 @@ namespace LamestWebserver
         public HttpType HttpType;
 
         /// <summary>
+        /// Retrieves the raw request code.
+        /// </summary>
+        public string RawRequest { get; protected set; } = null;
+
+        /// <summary>
+        /// The current stream which is used for communicating.
+        /// </summary>
+        public Stream Stream;
+
+        /// <summary>
         /// returns the contents of the complete package to be sent via tcp to the client 
         /// </summary>
         /// <param name="enc">a UTF8Encoding</param>
@@ -109,7 +121,7 @@ namespace LamestWebserver
             sb.Append("Date: " + Date + "\r\n");
             sb.Append("Server: LamestWebserver (LameOS)\r\n");
 
-            if (Cookies != null)
+            if (Cookies != null && Cookies.Count > 0)
             {
                 sb.Append("Set-Cookie: ");
 
@@ -160,10 +172,14 @@ namespace LamestWebserver
         /// <param name="input">the packet from the client decoded to string</param>
         /// <param name="endp">the ipendpoint of the client for strange chrome POST hacks</param>
         /// <param name="lastPacket">the string contents of the last packet (Chrome POST packets are split in two packets)</param>
+        /// <param name="stream">the stream at which the packet arrived (only used for sessionData)</param>
         /// <returns>the corresponding HTTP Packet</returns>
-        public static HttpPacket Constructor(ref string input, EndPoint endp, string lastPacket)
+        public static HttpPacket Constructor(ref string input, EndPoint endp, string lastPacket, Stream stream)
         {
             HttpPacket h = new HttpPacket();
+
+            h.RawRequest = input;
+            h.Stream = stream;
             
             string[] linput = null;
 
@@ -401,7 +417,7 @@ namespace LamestWebserver
                 else
                     return GetCookiesAndModified(h, linput);
 
-                return Constructor(ref input, endp, null);
+                return Constructor(ref input, endp, null, stream);
             }
 
             return h;

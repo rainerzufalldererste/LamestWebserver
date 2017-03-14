@@ -12,15 +12,32 @@ namespace LamestWebserver
     /// </summary>
     public class ServerHandler
     {
-        internal static List<WebServer> RunningServers = new List<WebServer>();
-        internal static bool Running = true;
+        internal static bool Running = false;
+
+        /// <summary>
+        /// Shall messages be logged?
+        /// </summary>
+        public static bool LogMessages
+        {
+            get
+            {
+                return !nolog;
+            }
+            set
+            {
+                nolog = !value;
+            }
+        }
 
         /// <summary>
         /// Starts the IO-Loop for handling the server and showing logs.
         /// </summary>
         public static void StartHandler()
         {
-            Console.WriteLine("\n▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█,                             \r\n▓▓▓  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▌\"\"▓▓▓▓▓▓▓▓▓▓▓▓▓▓██                             \r\n▓▓▓  ▐▓▓▓▓▓▓▌▀\"\"▀▀▓▓▓▀▀▀\"\"▀█▀\"\"▀▓▓▓█▀\"\"▀▀▓▓▓▀▀\"\"▀█▓▀`  ▀▀▓▓▀▀▀▓▓▀▀▀▓▓██                             \r\n▓▓▓  ▐▓▓▓▓▓▌,,&▄  ▐▓▓  ╓&   ╔&   ▓▌  Æ▄╕  ▓Γ .▄&,,█NL  N▄▓▓,,▄▓▓,,▐▓▓██                             \r\n▓▓▓  ▐▓▓▓▓▓▀      ▐▓▓  ▓▓▌  ▓▓▌  ▓        ▓▌,    `█▓▌  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓██                             \r\n▓▓▓  \"\"\"\"\"▐  ╙▀▀   █▓  ▓▓▌  ▓▓▌  ▓▌  ▀▀` ,▓  \"▀▀  ▄▓▌  ▀▀▓▓  ▓▓▓  ▐▓▓██                             \r\n▓▓▓ggggggg▄█&╦╦g█gg█▓gg▓▓█gg▓▓▌g▄▓▓█▄╦╦g▄▓▓▓▌g╦╦g█▓▓▓▄ggg▓▓gg▓▓▓gg▓▓▓██                             \r\n▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█▀█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█`\'▌ ▀▓▓▓▓▓▓▓▓▓█,\r\n▓▓  ▐▓▓▌  █▓▓  ▄▓▓▓▓▓▓▓▓▓▌  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█  █▓┐ ▐▓▓▓▓▓▓▓▓██\r\n▓▓▌  ▓█    ▓█  ▓▓▀    ╙█▓▌     `▀▓▓▀    \"█▓█┘    ▀▓▓▌ ╙  ╟  █▓▓▌  ▓▀`   \"█▓▓  `  ▓  █▓▓▓  █▓▓  ▐▓▓██\r\n▓▓▓  ▓  ▓  ▐  ╔▓  ≤▀▀L  ▓▌  █▓█  ▓█  ▀▀&g▄▓  Æ▀▀  ╘▓   ▄▓█L  ▓▌  █▌  ▀▀&  ▓▓  ╔▓█▓  ▓▓▓▓▌ ╟▓▓gg▓▓▓██\r\n▓▓▓▌   ╒▓█    █▓  ╔╦╦╦╦╦▓▌  ▓▓▓  ╟█▌⌂╥⌐, `▓  ╦╦╦╦╦╦▓  ▐▓▓▓▓  ╘  ▓▓   ╦╦╦╦╦▓▓  ▓▓▓▓  ▓▓▓▓▌ ▐▓▓▓▓▓▓▓██\r\n▓▓▓▓   █▓▓▌  ,▓▓▌  ``  ▄▓▌   `  ┌█▌  ``  ╔▓▌  ``  ▓▓  ▐▓▓▓▓▓   Æ▓▓█,  `  ╔▓▓  ▓▓▓▓, ▀▓▓█  ▓▓▓  ╟▓▓██\r\n▓▓▓▓███▓▓▓▓███▓▓▓▓█▓▓█▓▓▓████▓▓█▓▓▓▓█▓▓█▓▓▓▓▓█▓▓█▓▓▓███▓▓▓▓▓███▓▓▓▓▓▓▓▓█▓▓▓▓██▓▓▓▓▓┐ ╙▀ ,█▓▓▓▀ ▄▓▓██\r\n▓██████████████████████████████████████████████████████████████████████████████████████▄█████▌██████\r\n  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n");
+            nolog = false;
+            Running = true;
+
+            Console.WriteLine("\n  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█,                             \n  ▓▓▓  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▌\"\"▓▓▓▓▓▓▓▓▓▓▓▓▓▓██                             \n  ▓▓▓  ▐▓▓▓▓▓▓▌▀\"\"▀▀▓▓▓▀▀▀\"\"▀█▀\"\"▀▓▓▓█▀\"\"▀▀▓▓▓▀▀\"\"▀█▓▀`  ▀▀▓▓▀▀▀▓▓▀▀▀▓▓██                             \n  ▓▓▓  ▐▓▓▓▓▓▌,,&▄  ▐▓▓  ╓&   ╔&   ▓▌  Æ▄╕  ▓Γ .▄&,,█NL  N▄▓▓,,▄▓▓,,▐▓▓██                             \n  ▓▓▓  ▐▓▓▓▓▓▀      ▐▓▓  ▓▓▌  ▓▓▌  ▓        ▓▌,    `█▓▌  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓██                             \n  ▓▓▓  \"\"\"\"\"▐  ╙▀▀   █▓  ▓▓▌  ▓▓▌  ▓▌  ▀▀` ,▓  \"▀▀  ▄▓▌  ▀▀▓▓  ▓▓▓  ▐▓▓██                             \n  ▓▓▓ggggggg▄█&╦╦g█gg█▓gg▓▓█gg▓▓▌g▄▓▓█▄╦╦g▄▓▓▓▌g╦╦g█▓▓▓▄ggg▓▓gg▓▓▓gg▓▓▓██                             \n  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█▀█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█`\'▌ ▀▓▓▓▓▓▓▓▓▓█,\n  ▓▓  ▐▓▓▌  █▓▓  ▄▓▓▓▓▓▓▓▓▓▌  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█  █▓┐ ▐▓▓▓▓▓▓▓▓██\n  ▓▓▌  ▓█    ▓█  ▓▓▀    ╙█▓▌     `▀▓▓▀    \"█▓█┘    ▀▓▓▌ ╙  ╟  █▓▓▌  ▓▀`   \"█▓▓  `  ▓  █▓▓▓  █▓▓  ▐▓▓██\n  ▓▓▓  ▓  ▓  ▐  ╔▓  ≤▀▀L  ▓▌  █▓█  ▓█  ▀▀&g▄▓  Æ▀▀  ╘▓   ▄▓█L  ▓▌  █▌  ▀▀&  ▓▓  ╔▓█▓  ▓▓▓▓▌ ╟▓▓gg▓▓▓██\n  ▓▓▓▌   ╒▓█    █▓  ╔╦╦╦╦╦▓▌  ▓▓▓  ╟█▌⌂╥⌐, `▓  ╦╦╦╦╦╦▓  ▐▓▓▓▓  ╘  ▓▓   ╦╦╦╦╦▓▓  ▓▓▓▓  ▓▓▓▓▌ ▐▓▓▓▓▓▓▓██\n  ▓▓▓▓   █▓▓▌  ,▓▓▌  ``  ▄▓▌   `  ┌█▌  ``  ╔▓▌  ``  ▓▓  ▐▓▓▓▓▓   Æ▓▓█,  `  ╔▓▓  ▓▓▓▓, ▀▓▓█  ▓▓▓  ╟▓▓██\n  ▓▓▓▓███▓▓▓▓███▓▓▓▓█▓▓█▓▓▓████▓▓█▓▓▓▓█▓▓█▓▓▓▓▓█▓▓█▓▓▓███▓▓▓▓▓███▓▓▓▓▓▓▓▓█▓▓▓▓██▓▓▓▓▓┐ ╙▀ ,█▓▓▓▀ ▄▓▓██\n  ▓██████████████████████████████████████████████████████████████████████████████████████▄█████▌██████\n    ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n");
             Console.WriteLine("LamestWebserver Version " + typeof(ServerHandler).Assembly.GetName().Version + "\n");
             
             Thread outp = new Thread(ShowMsgs);
@@ -28,7 +45,7 @@ namespace LamestWebserver
             explicitLogging = true;
             outp.Start();
 
-            while (true)
+            while (Running)
             {
                 string s = Console.ReadLine();
 
@@ -46,9 +63,13 @@ namespace LamestWebserver
                         {
                             using (outputMutex.Lock())
                             {
-                                for (int i = 0; i < RunningServers.Count; i++)
+                                using (WebServer.RunningServerMutex.Lock())
                                 {
-                                    Console.WriteLine("Port: " + RunningServers[i].port + " Folder: " + RunningServers[i].folder + " Threads: " + RunningServers[i].GetThreadCount());
+                                    for (int i = 0; i < WebServer.RunningServers.Count; i++)
+                                    {
+                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Threads: " +
+                                                          WebServer.RunningServers[i].GetThreadCount());
+                                    }
                                 }
                                 Console.WriteLine("Done!");
                             }
@@ -63,16 +84,8 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("Port: ");
                                     string id = Console.ReadLine();
-                                    for (int i = 0; i < RunningServers.Count; i++)
-                                    {
-                                        if (RunningServers[i].port == Int32.Parse(id))
-                                        {
-                                            RunningServers[i].StopServer();
-                                            RunningServers.RemoveAt(i);
-                                            Console.WriteLine("Done!");
-                                            break;
-                                        }
-                                    }
+                                    Master.StopServer(int.Parse(id));
+                                    Console.WriteLine("Done!");
                                 }
                                 catch (Exception e)
                                 {
@@ -92,7 +105,7 @@ namespace LamestWebserver
                                     string prt = Console.ReadLine();
                                     Console.WriteLine("Folder: (\"./web\")");
                                     string fld = Console.ReadLine();
-                                    RunningServers.Add(new WebServer(Int32.Parse(prt), fld, true));
+                                    new WebServer(int.Parse(prt), fld);
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e)
@@ -111,7 +124,7 @@ namespace LamestWebserver
                                 {
                                     Console.WriteLine("New TimeStep in ms:");
                                     string prt = Console.ReadLine();
-                                    cmdsleep = Int32.Parse(prt);
+                                    cmdsleep = int.Parse(prt);
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e)
@@ -188,10 +201,7 @@ namespace LamestWebserver
                             {
                                 try
                                 {
-                                    lock (output)
-                                    {
-                                        output = new List<Output>();
-                                    }
+                                    output = new List<Output>();
                                     Console.WriteLine("Done!");
                                 }
                                 catch (Exception e)
@@ -230,89 +240,7 @@ namespace LamestWebserver
                             }
                             break;
                         }
-
-                        case "frefresh":
-                        {
-                            using (outputMutex.Lock())
-                            {
-                                try
-                                {
-                                    Console.WriteLine("Port: ");
-                                    string id = Console.ReadLine();
-                                    for (int i = 0; i < RunningServers.Count; i++)
-                                    {
-                                        if (RunningServers[i].port == Int32.Parse(id))
-                                        {
-                                            lock (RunningServers[i].cache)
-                                            {
-                                                RunningServers[i].cache.Clear();
-                                                Console.WriteLine("Done!");
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine("Failed!" + e);
-                                }
-                            }
-                            break;
-                        }
-
-                        case "cache":
-                        {
-                            using (outputMutex.Lock())
-                            {
-                                try
-                                {
-                                    Console.WriteLine("Port: ");
-                                    string id = Console.ReadLine();
-                                    for (int i = 0; i < RunningServers.Count; i++)
-                                    {
-                                        if (RunningServers[i].port == Int32.Parse(id))
-                                        {
-                                            RunningServers[i].useCache = true;
-                                            Console.WriteLine("Done!");
-                                            break;
-                                        }
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine("Failed!" + e);
-                                }
-                            }
-                            break;
-                        }
-
-                        case "uncache":
-                        {
-                            using (outputMutex.Lock())
-                            {
-                                try
-                                {
-                                    Console.WriteLine("Port: ");
-                                    string id = Console.ReadLine();
-                                    for (int i = 0; i < RunningServers.Count; i++)
-                                    {
-                                        if (RunningServers[i].port == Int32.Parse(id))
-                                        {
-                                            RunningServers[i].useCache = false;
-                                            RunningServers[i].cache.Clear();
-                                            Console.WriteLine("Done!");
-                                            break;
-                                        }
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine("Failed!" + e);
-                                }
-                            }
-                            break;
-                        }
-
+                            
                         case "explicitlog":
                         {
                             using (outputMutex.Lock())
@@ -385,10 +313,6 @@ namespace LamestWebserver
                                     Console.WriteLine("nolog        -    disables logging");
                                     Console.WriteLine("cls          -    deletes the log");
                                     Console.WriteLine("autocls      -    deletes the log automatically at sizes");
-                                    Console.WriteLine("cache        -    enables the cache of a port");
-                                    Console.WriteLine("uncache      -    disables the cache of a port");
-                                    Console.WriteLine("frefresh     -    refreshes the file cache of a port");
-                                    //Console.WriteLine("cachesz      -    sets the maximum file cache of a port");
                                     Console.WriteLine("help         -    Displays this list of cmds");
                                     Console.WriteLine("exit         -    Exit the ServerHandler");
                                 }
@@ -402,9 +326,12 @@ namespace LamestWebserver
 
                         default:
                         {
-                            using (outputMutex.Lock())
+                            if (Running)
                             {
-                                Console.WriteLine("Invalid command '" + s + "'! If you need help, type 'help'.");
+                                using (outputMutex.Lock())
+                                {
+                                    Console.WriteLine("Invalid command '" + s + "'! If you need help, type 'help'.");
+                                }
                             }
                             break;
                         }
@@ -413,11 +340,20 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// Stops the Handler and all running Servers.
+        /// </summary>
+        public static void StopHandler()
+        {
+            Running = false;
+            Master.StopServers();
+        }
+
         private static List<Output> output = new List<Output>();
         private static int cmdsleep = 300;
         private static int autocls = 1000, autocls_s = 250;
         private static bool explicitLogging = false;
-        private static bool nolog = false;
+        private static bool nolog = true;
         private static UsableMutexSlim outputMutex = new UsableMutexSlim();
         private static bool silent = false;
 
@@ -428,9 +364,9 @@ namespace LamestWebserver
 
             internal Output(string msg, StackTrace stackTrace, string endpoint)
             {
-                this.msg = $"[{DateTime.Now}] @{endpoint ?? "<?>"} " + msg;
+                this.msg = $"[{DateTime.Now}] " + (endpoint == null ? "" : ("@" + endpoint + " ")) + msg;
 
-                if (stackTrace != null && stackTrace.GetFrame(4).GetMethod().DeclaringType.Namespace.Contains("LamestWebserver"))
+                if (stackTrace != null && stackTrace.FrameCount > 4 && stackTrace.GetFrame(4).GetMethod().DeclaringType.Namespace.Contains("LamestWebserver"))
                     for (int i = 4; i < stackTrace.FrameCount; i++)
                     {
                         var frame = stackTrace.GetFrame(i);
@@ -500,7 +436,7 @@ namespace LamestWebserver
             {
                 try
                 {
-                    lock (output)
+                    using (outputMutex.Lock())
                     {
                         output.Add(new Output(message, stackTrace, endpoint));
 
@@ -510,14 +446,32 @@ namespace LamestWebserver
                             {
                                 output.RemoveRange(0, autocls_s);
                             }
-                            catch (Exception)
+                            catch
                             {
                             }
                         }
                     }
                 }
-                catch (Exception) { }
+                catch {Console.WriteLine("Failed to process message (" + message + ").");}
             }).Start();
+
+            if (!Running && !nolog)
+            {
+                using (outputMutex.Lock())
+                {
+                    foreach (Output outp in output)
+                    {
+                        Console.WriteLine(outp.msg);
+                    }
+
+                    output.Clear();
+                }
+            }
+        }
+
+        internal static void LogMessage(string text, Stopwatch stopwatch)
+        {
+            LogMessage($"[in {((double)stopwatch.ElapsedTicks/(double)TimeSpan.TicksPerMillisecond):0.000}ms] {text}");
         }
 
         private static void ShowMsgs()

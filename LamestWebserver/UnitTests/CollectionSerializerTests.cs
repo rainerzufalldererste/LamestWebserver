@@ -41,14 +41,14 @@ namespace UnitTests
         }
 
         [TestMethod]
-        public void testCollectionJsonSerialisazion()
+        public void TestCollectionJsonSerialisazion()
         {
             AVLTree<TestKey, TestValue> avlTree = new AVLTree<TestKey, TestValue>();
             Dictionary<TestKey, TestValue> referenceDictionary = new Dictionary<TestKey, TestValue>();
 
             for (int i = 0; i < 1024; i++)
             {
-                string value = SessionContainer.generateHash();
+                string value = SessionContainer.GenerateHash();
                 var testKey = new TestKey() {testInt = i, testString = value};
 
                 avlTree.Add(new KeyValuePair<TestKey, TestValue>(testKey, new TestValue() {testString = value, key = testKey}));

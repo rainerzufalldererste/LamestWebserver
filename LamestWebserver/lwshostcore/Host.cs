@@ -15,7 +15,7 @@ namespace lwshostcore
     public class Host
     {
         private FileSystemWatcher fileSystemWatcher;
-        private string ID = SessionContainer.generateHash();
+        private string ID = SessionContainer.GenerateHash();
         private string directoryPath;
 
         public AVLHashMap<string, IEnumerable<Type>> TypesPerFile = new AVLHashMap<string, IEnumerable<Type>>();
@@ -52,15 +52,19 @@ namespace lwshostcore
         {
             fileSystemWatcher.Changed += (sender, args) =>
             {
-                ID = SessionContainer.generateHash();
+                ID = SessionContainer.GenerateHash();
                 ProcessFile(args.FullPath);
-                ServerHandler.LogMessage("[lwshost] [Updated File] " + args.FullPath);
+
+                if (args.FullPath.EndsWith(".exe") || args.FullPath.EndsWith(".dll"))
+                    ServerHandler.LogMessage("[lwshost] [Updated File] " + args.FullPath);
             };
 
             fileSystemWatcher.Created += (sender, args) =>
             {
                 ProcessFile(args.FullPath);
-                ServerHandler.LogMessage("[lwshost] [Added File] " + args.FullPath);
+
+                if (args.FullPath.EndsWith(".exe") || args.FullPath.EndsWith(".dll"))
+                    ServerHandler.LogMessage("[lwshost] [Added File] " + args.FullPath);
             };
 
             fileSystemWatcher.Renamed += (sender, args) =>
@@ -84,8 +88,6 @@ namespace lwshostcore
 
             ServerHandler.LogMessage("[lwshost] [Processing File] " + file);
 
-            bool newDir = false;
-
             try
             {
                 string newFileName = Directory.GetCurrentDirectory() + "\\lwshost\\CurrentRun\\" + ID + file.Replace(directoryPath, "");
@@ -96,12 +98,12 @@ namespace lwshostcore
                 File.Copy(file, newFileName);
                 Thread.Sleep(100);
                 file = newFileName;
-                newDir = true;
 
                 ServerHandler.LogMessage("[lwshost] [File Load] Created a local copy at " + newFileName);
             }
-            catch
+            catch (IOException e)
             {
+                ServerHandler.LogMessage("[lwshost] [File Load] Failed to copy file to currentRun directory:\n" + e);
             }
 
             try
@@ -113,14 +115,14 @@ namespace lwshostcore
 
                 foreach (var type in types)
                 {
-                    bool IgnoreDiscovery = false;
+                    bool ignoreDiscovery = false;
 
                     try
                     {
                         foreach (var attribute in type.GetCustomAttributes())
-                            IgnoreDiscovery |= (attribute is IgnoreDiscovery);
+                            ignoreDiscovery |= (attribute is IgnoreDiscovery);
 
-                        if (IgnoreDiscovery)
+                        if (ignoreDiscovery)
                         {
                             ServerHandler.LogMessage($"[lwshost] [HostIgnore] Ignoring: {type.Namespace}.{type.Name}");
                             continue;

@@ -128,7 +128,7 @@ namespace LamestWebserver
     /// </summary>
     public class WebSocketHandlerProxy
     {
-        private NetworkStream _networkStream;
+        private Stream _networkStream;
         private readonly WebSocketCommunicationHandler _handler;
         private readonly ComposableHandler _websocketHandler;
 
@@ -147,21 +147,13 @@ namespace LamestWebserver
         /// </summary>
         public DateTime LastMessageSent = DateTime.UtcNow;
 
-        private int _exceptedTries = 0;
-        
-        /// <summary>
-        /// At which port did the client connect to the server
-        /// </summary>
-        public ushort Port;
-
         [ThreadStatic] internal static WebSocketHandlerProxy CurrentProxy;
 
-        internal WebSocketHandlerProxy(NetworkStream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler, ushort port)
+        internal WebSocketHandlerProxy(Stream stream, WebSocketCommunicationHandler handler, ComposableHandler websocketHandler)
         {
             this._networkStream = stream;
             this._handler = handler;
             this._websocketHandler = websocketHandler;
-            this.Port = port;
 
             CurrentProxy = this;
             HandleConnection();
@@ -170,28 +162,27 @@ namespace LamestWebserver
         /// <summary>
         /// Sends a message to the client
         /// </summary>
-        /// <param name="Message">the message to send</param>
-        public async void Respond(string Message)
+        /// <param name="message">the message to send</param>
+        public async void Respond(string message)
         {
             if (_networkStream == null || !IsActive)
                 return;
 
             try
             {
-                byte[] buffer = _websocketHandler.TextFrame.Invoke(Message);
+                byte[] buffer = _websocketHandler.TextFrame.Invoke(message);
                 await _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
                 _handler.CallOnResponded();
-                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
                 IsActive = false;
                 return;
             }
-            catch (ThreadAbortException e)
+            catch (ThreadAbortException)
             {
-                throw e;
+                throw;
             }
             catch (IOException)
             {
@@ -226,7 +217,6 @@ namespace LamestWebserver
                 byte[] buffer = _websocketHandler.PongFrame.Invoke(bytes);
                 _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -270,7 +260,6 @@ namespace LamestWebserver
                 byte[] buffer = _websocketHandler.PingFrame.Invoke(bytes);
                 _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
-                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -315,7 +304,6 @@ namespace LamestWebserver
                 _networkStream.WriteAsync(buffer, 0, buffer.Length);
                 LastMessageSent = DateTime.UtcNow;
                 _handler.CallOnResponded();
-                _exceptedTries = 0;
             }
             catch (ObjectDisposedException)
             {
@@ -381,8 +369,6 @@ namespace LamestWebserver
                         Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
 
                         _websocketHandler.Receive(trimmedBuffer);
-
-                        _exceptedTries = 0;
                     }
                     else
                     {
@@ -444,8 +430,6 @@ namespace LamestWebserver
                     Array.Copy(currentBuffer, trimmedBuffer, trimmedBuffer.Length);
 
                     _websocketHandler.Receive(trimmedBuffer);
-
-                    _exceptedTries = 0;
                 }
                 else
                 {
@@ -474,7 +458,7 @@ namespace LamestWebserver
             return true;
         }
 
-        internal NetworkStream GetNetworkStream()
+        internal Stream GetStream()
         {
             return _networkStream;
         }

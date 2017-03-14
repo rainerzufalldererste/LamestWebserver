@@ -257,7 +257,7 @@ namespace LamestWebserver
         /// <param name="silent">shall the server print output to the console?</param>
         public static void StartServer(int port, string directory, bool silent = false)
         {
-            ServerHandler.RunningServers.Add(new WebServer(port, directory, true, silent));
+            new WebServer(port, directory);
         }
 
         /// <summary>
@@ -265,15 +265,18 @@ namespace LamestWebserver
         /// </summary>
         public static void StopServers()
         {
-            for (int i = ServerHandler.RunningServers.Count - 1; i > -1; i--)
+            using (WebServer.RunningServerMutex.Lock())
             {
-                try
+                for (int i = WebServer.RunningServers.Count - 1; i > -1; i--)
                 {
-                    ServerHandler.RunningServers[i].StopServer();
-                    ServerHandler.RunningServers.RemoveAt(i);
-                }
-                catch
-                {
+                    try
+                    {
+                        WebServer.RunningServers[i].Stop();
+                        WebServer.RunningServers.RemoveAt(i);
+                    }
+                    catch
+                    {
+                    }
                 }
             }
 
@@ -287,23 +290,23 @@ namespace LamestWebserver
         /// <param name="port">the port of the server to stop</param>
         public static void StopServer(int port)
         {
-            for (int i = ServerHandler.RunningServers.Count - 1; i > -1; i--)
+            using (WebServer.RunningServerMutex.Lock())
             {
-                if (ServerHandler.RunningServers[i].port == port)
+                for (int i = WebServer.RunningServers.Count - 1; i > -1; i--)
                 {
-                    try
+                    if (WebServer.RunningServers[i].Port == port)
                     {
-                        ServerHandler.RunningServers[i].StopServer();
-                        ServerHandler.RunningServers.RemoveAt(i);
-                    }
-                    catch (Exception)
-                    {
+                        try
+                        {
+                            WebServer.RunningServers[i].Stop();
+                            WebServer.RunningServers.RemoveAt(i);
+                        }
+                        catch (Exception)
+                        {
+                        }
                     }
                 }
             }
-
-            if(ServerHandler.RunningServers.Count == 0)
-                StopServers();
         }
 
         /// <summary>
@@ -363,8 +366,8 @@ namespace LamestWebserver
             return new string(s);
         }
 
-        internal static Action<WebSocketCommunicationHandler> AddWebsocketHandlerEvent;
-        internal static Action<string> RemoveWebsocketHandlerEvent;
+        internal static event Action<WebSocketCommunicationHandler> AddWebsocketHandlerEvent = x => { };
+        internal static event Action<string> RemoveWebsocketHandlerEvent = x => { };
 
         /// <summary>
         /// Adds a WebSocketCommunicationHandler to all listening Servers.

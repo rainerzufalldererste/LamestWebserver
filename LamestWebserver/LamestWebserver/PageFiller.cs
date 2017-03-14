@@ -13,23 +13,30 @@ namespace LamestWebserver
         public string URL { get; protected set; }
 
         /// <summary>
+        /// The file to load and process to display the page.
+        /// </summary>
+        protected readonly string File;
+
+        /// <summary>
         /// Replace the HREFs on this Page to include the sessionID
         /// </summary>
-        protected bool replaceHREFs = true;
+        protected bool ReplaceHrefs = true;
 
         /// <summary>
         /// The constructor for a PageFiller
         /// </summary>
         /// <param name="URL">the url this page will be available at</param>
-        public PageFiller(string URL)
+        /// <param name="file">the file to load and process from local storage</param>
+        public PageFiller(string URL, string file)
         {
             this.URL = URL;
-            register();
+            File = file;
+            Register();
         }
 
-        private void register()
+        private void Register()
         {
-            Master.AddFuntionToServer(URL, this.getContents);
+            Master.AddFuntionToServer(URL, this.GetContents);
         }
 
         /// <summary>
@@ -40,18 +47,18 @@ namespace LamestWebserver
             Master.RemoveFunctionFromServer(URL);
         }
 
-        private string getContents(SessionData sessionData)
+        private string GetContents(SessionData sessionData)
         {
             string ret = "";
 
             try
             {
-                ret = System.IO.File.ReadAllText(((SessionData)sessionData).ServerWorkingPath + "\\" + URL);
+                ret = System.IO.File.ReadAllText(File);
 
-                processData(((SessionData)sessionData), ref ret);
+                ProcessData(((SessionData)sessionData), ref ret);
 
-                if (replaceHREFs)
-                    processHREFs(ref ret, ((SessionData)sessionData));
+                if (ReplaceHrefs)
+                    ProcessHrefs(ref ret, ((SessionData)sessionData));
 
                 processInsertions(ref ret, ((SessionData)sessionData));
             }
@@ -94,7 +101,7 @@ namespace LamestWebserver
             }
         }
 
-        private void processHREFs(ref string ret, SessionData sessionData)
+        private void ProcessHrefs(ref string ret, SessionData sessionData)
         {
             // href="#" untouched
             // href="somelink.html?123=bla" even with onclick="xyz" will contain the ssid in post
@@ -178,7 +185,7 @@ namespace LamestWebserver
                                     ret = ret.Remove(onclickEndPos + 1, 1);
                                     ret = ret.Insert(onclickEndPos + 1, "\"");
 
-                                    string hash = SessionContainer.generateUnusedHash();
+                                    string hash = SessionContainer.GenerateUnusedHash();
                                     string add = ";var f_"
                                         + hash + "=document.createElement('form');f_"
                                         + hash + ".setAttribute('method','POST');f_"
@@ -244,7 +251,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="output">the page to return</param>
-        public abstract void processData(SessionData sessionData, ref string output);
+        public abstract void ProcessData(SessionData sessionData, ref string output);
 
         /// <summary>
         /// sets a value in the document
@@ -252,7 +259,7 @@ namespace LamestWebserver
         /// <param name="key">the key of the value</param>
         /// <param name="value">the value to set</param>
         /// <param name="output">the current page input</param>
-        public void setValue(string key, string value, ref string output)
+        public void SetValue(string key, string value, ref string output)
         {
             if (key == null)
                 return;

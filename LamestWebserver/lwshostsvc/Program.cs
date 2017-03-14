@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using lwshostcore;
 using LamestWebserver;
+using LamestWebserver.RequestHandlers;
 
 namespace lwshostsvc
 {
@@ -135,23 +137,50 @@ namespace lwshostsvc
 
             }
 
+            ServerHandler.LogMessages = false;
+
             new Thread(() => {
                 ServerHandler.StartHandler();
                 hosts.ForEach(h => h.Stop());
             }).Start();
 
-            lwshostcore.HostConfig.CurrentHostConfig.ApplyConfig();
+            HostConfig.CurrentHostConfig.ApplyConfig();
 
-            foreach (var port in lwshostcore.HostConfig.CurrentHostConfig.Ports)
+            ResponseHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
+
+            foreach (var directory in HostConfig.CurrentHostConfig.WebserverFileDirectories)
+            {
+                ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(directory));
+                ServerHandler.LogMessage($"Added WebserverFileDirectory '{directory}'");
+            }
+
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
+
+            foreach (var port in HostConfig.CurrentHostConfig.Ports)
             {
                 try
                 {
-                    LamestWebserver.Master.StartServer(port, lwshostcore.HostConfig.CurrentHostConfig.WebserverFileDirectory);
+                    new WebServer(port);
                 }
                 catch (Exception e)
                 {
-                    LamestWebserver.ServerHandler.LogMessage("Failed to bind port " + port + ":\n" + e);
+                    ServerHandler.LogMessage("Failed to bind port " + port + ":\n" + e);
                 }
+            }
+
+            if (WebServer.ServerCount == 0)
+            {
+                ServerHandler.LogMessage("No server started. Aborting.\n\nPress Enter to Quit.");
+                ServerHandler.StopHandler();
+                Thread.Sleep(5000);
+                return;
+            }
+            else
+            {
+                ServerHandler.LogMessage($"{WebServer.ServerCount} port-listening Server(s) started.");
             }
 
             // Discover the HostServiceDefaultResponse

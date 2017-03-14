@@ -46,7 +46,7 @@ namespace LamestWebserver.Security
             if (string.IsNullOrEmpty(password))
                 throw new InvalidOperationException("You have to set a password.");
 
-            salt = SessionContainer.getComplexHash(new UTF8Encoding().GetBytes(SessionContainer.generateHash() + SessionContainer.generateHash() + SessionContainer.generateHash() + SessionContainer.generateHash()));
+            salt = SessionContainer.GetComplexHash(new UTF8Encoding().GetBytes(SessionContainer.GenerateHash() + SessionContainer.GenerateHash() + SessionContainer.GenerateHash() + SessionContainer.GenerateHash()));
 
             hash = GenerateSaltedHash(password, salt);
         }
@@ -76,7 +76,7 @@ namespace LamestWebserver.Security
         private byte[] GenerateSaltedHash(string password, byte[] salt)
         {
             byte[] bytes = new UTF8Encoding().GetBytes(password);
-            byte[] hash = SessionContainer.getComplexHash(bytes);
+            byte[] hash = SessionContainer.GetComplexHash(bytes);
 
             System.Diagnostics.Debug.Assert(hash.Length == salt.Length, "Hash and Salt are of different lengths.");
 
@@ -85,7 +85,7 @@ namespace LamestWebserver.Security
                 hash[i] ^= salt[i];
             }
 
-            hash = SessionContainer.getComplexHash(hash);
+            hash = SessionContainer.GetComplexHash(hash);
 
             return hash;
         }

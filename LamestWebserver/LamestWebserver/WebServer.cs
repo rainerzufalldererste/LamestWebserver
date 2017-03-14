@@ -9,26 +9,40 @@ using System.Threading;
 using System.Net.Sockets;
 using System.Drawing;
 using System.IO.Compression;
-using LamestWebserver.ScriptHook;
 using LamestWebserver.Collections;
 using System.IO;
-using System.Windows.Forms;
+using System.Runtime.Serialization;
 using LamestWebserver.Synchronization;
 using ThreadState = System.Threading.ThreadState;
+using System.Reflection;
+using LamestWebserver.RequestHandlers;
+using Newtonsoft.Json;
 
 namespace LamestWebserver
 {
-    public class WebServer
+    /// <summary>
+    /// A Webserver. The central unit in LamestWebserver.
+    /// </summary>
+    public class WebServer : IDisposable
     {
-        [ThreadStatic] public static string CurrentClientRemoteEndpoint = "<?>";
+        internal static List<WebServer> RunningServers = new List<WebServer>();
+        internal static UsableMutexSlim RunningServerMutex = new UsableMutexSlim();
 
-        TcpListener tcpListener;
-        List<Thread> threads = new List<Thread>();
-        Thread mThread;
-        public int port;
-        public string folder = "./web";
+        /// <summary>
+        /// The IP and Port of the currently Connected Client.
+        /// </summary>
+        [ThreadStatic] public static string CurrentClientRemoteEndpoint = null;
 
-        internal bool running
+        private readonly TcpListener _tcpListener;
+        private readonly List<Thread> _threads = new List<Thread>();
+        private readonly Thread _mThread;
+        
+        /// <summary>
+        /// The Port, the server is listening at.
+        /// </summary>
+        public readonly int Port;
+
+        internal bool Running
         {
             get
             {
@@ -45,10 +59,20 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// The number of currently running servers.
+        /// </summary>
+        public static int ServerCount
+        {
+            get
+            {
+                using (RunningServerMutex.Lock())
+                    return RunningServers.Count;
+            }
+        }
+
         private bool _running = true;
         private ReaderWriterLockSlim _runningLock = new ReaderWriterLockSlim();
-
-        internal AVLTree<string, PreloadedFile> cache = new AVLTree<string, PreloadedFile>();
 
         /// <summary>
         /// The size of the Page Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
@@ -75,117 +99,91 @@ namespace LamestWebserver
         /// </summary>
         public static int RequestMaxPacketSize = 4096;
 
-        private ReaderWriterLockSlim pageResponseWriteLock = new ReaderWriterLockSlim();
-
-        private AVLHashMap<string, Master.GetContents> pageResponses = new AVLHashMap<string, Master.GetContents>(PageResponseStorageHashMapSize);
-        private QueuedAVLTree<string, Master.GetContents> oneTimePageResponses = new QueuedAVLTree<string, Master.GetContents>(OneTimePageResponsesStorageQueueSize);
-        private AVLHashMap<string, WebSocketCommunicationHandler> webSocketResponses = new AVLHashMap<string, WebSocketCommunicationHandler>(WebSocketResponsePageStorageHashMapSize);
-        private AVLHashMap<string, Master.GetDirectoryContents> directoryResponses = new AVLHashMap<string, Master.GetDirectoryContents>(DirectoryResponseStorageHashMapSize);
-
         private Mutex networkStreamsMutex = new Mutex();
         private AVLTree<int, NetworkStream> networkStreams = new AVLTree<int, NetworkStream>();
 
-        private bool csharp_bridge = true;
-        internal bool useCache = true;
-
         Mutex cleanMutex = new Mutex();
-        private bool silent;
-
-        private FileSystemWatcher fileSystemWatcher = null;
-        private UsableMutex cacheMutex = new UsableMutex();
-
-        private readonly byte[] crlf = new UTF8Encoding().GetBytes("\r\n");
+        
         private Task<TcpClient> tcpRcvTask;
 
-        private Random random = new Random();
-
-        public WebServer(int port, string folder, bool silent = false) : this(port, folder, true, silent)
+        /// <summary>
+        /// Starts a new Webserver and adds the folder and default components to the CurrentResponseHandler. If you are just adding a server listening on another port as well - just use the other constructor.
+        /// </summary>
+        /// <param name="port">the port to listen to</param>
+        /// <param name="folder">one folder to view at (can be null)</param>
+        public WebServer(int port, string folder) : this(port)
         {
+            ResponseHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
+
+            if(folder != null)
+                ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
+
+            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
         }
 
-        internal WebServer(int port, string folder, bool cs_bridge, bool silent = false)
+        /// <summary>
+        /// Starts a new Webserver listening to all previously added Responses.
+        /// </summary>
+        /// <param name="port">the port to listen to</param>
+        public WebServer(int port)
         {
             if (!TcpPortIsUnused(port))
             {
-                if (!silent)
-                    Console.WriteLine("Failed to start the WebServer. The tcp port " + port + " is currently used by another application.");
-
-                throw new InvalidOperationException("The tcp port " + port + " is currently used.");
+                throw new InvalidOperationException("The tcp port " + port + " is currently used by another application.");
             }
 
-            this.csharp_bridge = cs_bridge;
+            this.Port = port;
+            this._tcpListener = new TcpListener(IPAddress.Any, port);
 
-            if (cs_bridge)
-            {
-                Master.AddFunctionEvent += AddFunction;
-                Master.RemoveFunctionEvent += RemoveFunction;
-                Master.AddOneTimeFunctionEvent += AddOneTimeFunction;
-                Master.AddDirectoryFunctionEvent += AddDirectoryFunction;
-                Master.RemoveDirectoryFunctionEvent += RemoveDirectoryFunction;
+            _mThread = new Thread(new ThreadStart(HandleTcpListener));
+            _mThread.Start();
 
-                // Websockets
-                Master.AddWebsocketHandlerEvent += AddWebsocketHandler;
-                Master.RemoveWebsocketHandlerEvent += RemoveWebsocketHandler;
-            }
-
-            this.port = port;
-            this.tcpListener = new TcpListener(IPAddress.Any, port);
-            mThread = new Thread(new ThreadStart(HandleTcpListener));
-            mThread.Start();
-            this.silent = silent;
-            this.folder = folder;
-
-            if (useCache)
-                setupFileSystemWatcher();
-
-            if (!silent)
-                Console.WriteLine("WebServer started on port " + port + ".");
+            using (RunningServerMutex.Lock())
+                RunningServers.Add(this);
         }
 
+        /// <inheritdoc />
         ~WebServer()
         {
-            if (csharp_bridge)
-            {
-                Master.AddFunctionEvent -= AddFunction;
-                Master.RemoveFunctionEvent -= RemoveFunction;
-                Master.AddOneTimeFunctionEvent -= AddOneTimeFunction;
-                Master.AddWebsocketHandlerEvent -= AddWebsocketHandler;
-                Master.RemoveWebsocketHandlerEvent -= RemoveWebsocketHandler;
-                Master.AddDirectoryFunctionEvent -= AddDirectoryFunction;
-                Master.RemoveDirectoryFunctionEvent -= RemoveDirectoryFunction;
-            }
-
             try
             {
-                StopServer();
+                Stop();
             }
             catch (Exception)
             {
             }
         }
 
-        public void StopServer()
+        /// <inheritdoc />
+        public void Dispose()
         {
-            running = false;
+            Stop();
+        }
+
+        /// <summary>
+        /// Stops the Server from running.
+        /// </summary>
+        public void Stop()
+        {
+            Running = false;
 
             try
             {
-                tcpListener.Stop();
+                _tcpListener.Stop();
             }
-            catch (Exception e)
+            catch
             {
-                if (!silent)
-                    Console.WriteLine(port + ": " + e.Message);
             }
 
             try
             {
-                Master.ForceQuitThread(mThread);
+                Master.ForceQuitThread(_mThread);
             }
-            catch (Exception e)
+            catch
             {
-                if (!silent)
-                    Console.WriteLine(port + ": " + e.Message);
             }
 
             try
@@ -196,9 +194,6 @@ namespace LamestWebserver
             {
             }
 
-            if (!silent)
-                Console.WriteLine("Main Thread stopped! - port: " + port + " - folder: " + folder);
-
             networkStreamsMutex.WaitOne();
 
             foreach (KeyValuePair<int, NetworkStream> networkStream in networkStreams)
@@ -208,35 +203,41 @@ namespace LamestWebserver
 
             networkStreamsMutex.ReleaseMutex();
 
-            int i = threads.Count;
+            int i = _threads.Count;
 
-            while (threads.Count > 0)
+            while (_threads.Count > 0)
             {
                 try
                 {
-                    Master.ForceQuitThread(threads[0]);
+                    Master.ForceQuitThread(_threads[0]);
                 }
-                catch (Exception e)
+                catch
                 {
-                    if (!silent)
-                        Console.WriteLine(port + ": " + e.Message);
                 }
-                threads.RemoveAt(0);
 
-                if (!silent)
-                    Console.WriteLine("Thread stopped! (" + (i - threads.Count) + "/" + i + ") - port: " + port + " - folder: " + folder);
+                _threads.RemoveAt(0);
             }
+
+            using (RunningServerMutex.Lock())
+                RunningServers.Remove(this);
+            
+            if (RunningServers.Count == 0)
+                Master.StopServers();
         }
 
+        /// <summary>
+        /// Retrieves the number of used threads by this Webserver.
+        /// </summary>
+        /// <returns>the number of used threads by this Webserver</returns>
         public int GetThreadCount()
         {
             int num = 1;
 
             CleanThreads();
 
-            for (int i = 0; i < threads.Count; i++)
+            for (int i = 0; i < _threads.Count; i++)
             {
-                if (threads[i] != null && threads[i].IsAlive)
+                if (_threads[i] != null && _threads[i].IsAlive)
                 {
                     num++;
                 }
@@ -245,19 +246,19 @@ namespace LamestWebserver
             return num;
         }
 
-        public void CleanThreads()
+        internal void CleanThreads()
         {
             cleanMutex.WaitOne();
 
-            int threadCount = threads.Count;
+            int threadCount = _threads.Count;
             int i = 0;
 
-            while (i < threads.Count)
+            while (i < _threads.Count)
             {
-                if (threads[i] == null ||
-                    threads[i].ThreadState == ThreadState.Running ||
-                    threads[i].ThreadState == ThreadState.Unstarted ||
-                    threads[i].ThreadState == ThreadState.AbortRequested)
+                if (_threads[i] == null ||
+                    _threads[i].ThreadState == ThreadState.Running ||
+                    _threads[i].ThreadState == ThreadState.Unstarted ||
+                    _threads[i].ThreadState == ThreadState.AbortRequested)
                 {
                     i++;
                 }
@@ -265,7 +266,7 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        threads[i].Abort();
+                        _threads[i].Abort();
                     }
                     catch (Exception)
                     {
@@ -273,7 +274,7 @@ namespace LamestWebserver
 
                     networkStreamsMutex.WaitOne();
 
-                    var networkStream = networkStreams[threads[i].ManagedThreadId];
+                    var networkStream = networkStreams[_threads[i].ManagedThreadId];
 
                     if (networkStream != null)
                     {
@@ -285,116 +286,51 @@ namespace LamestWebserver
                         {
                         }
 
-                        networkStreams.Remove(threads[i].ManagedThreadId);
+                        networkStreams.Remove(_threads[i].ManagedThreadId);
                     }
 
                     networkStreamsMutex.ReleaseMutex();
 
-                    threads.RemoveAt(i);
+                    _threads.RemoveAt(i);
                 }
             }
 
-            int threadCountAfter = threads.Count;
+            int threadCountAfter = _threads.Count;
 
             cleanMutex.ReleaseMutex();
 
             ServerHandler.LogMessage("Cleaning up threads. Before: " + threadCount + ", After: " + threadCountAfter + ".");
         }
 
-        private void AddFunction(string URL, Master.GetContents getc)
-        {
-            pageResponseWriteLock.EnterWriteLock();
-            pageResponses.Add(URL, getc);
-            pageResponseWriteLock.ExitWriteLock();
-
-            ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi)");
-        }
-
-        private void AddOneTimeFunction(string URL, Master.GetContents getc)
-        {
-            pageResponseWriteLock.EnterWriteLock();
-            oneTimePageResponses.Add(URL, getc);
-            pageResponseWriteLock.ExitWriteLock();
-
-            ServerHandler.LogMessage("The URL '" + URL + "' is now assigned to a Page. (WebserverApi/OneTimeFunction)");
-        }
-
-        private void RemoveFunction(string URL)
-        {
-            pageResponseWriteLock.EnterWriteLock();
-            pageResponses.Remove(URL);
-            pageResponseWriteLock.ExitWriteLock();
-
-            ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (WebserverApi)");
-        }
-
-        private void AddDirectoryFunction(string URL, Master.GetDirectoryContents function)
-        {
-            pageResponseWriteLock.EnterWriteLock();
-            directoryResponses.Add(URL, function);
-            pageResponseWriteLock.ExitWriteLock();
-
-            ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is now available at the Webserver. (WebserverApi)");
-        }
-
-        private void RemoveDirectoryFunction(string URL)
-        {
-            pageResponseWriteLock.EnterWriteLock();
-            directoryResponses.Remove(URL);
-            pageResponseWriteLock.ExitWriteLock();
-
-            ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
-        }
-
-        private void AddWebsocketHandler(WebSocketCommunicationHandler handler)
-        {
-            pageResponseWriteLock.EnterWriteLock();
-            webSocketResponses.Add(handler.URL, handler);
-            pageResponseWriteLock.ExitWriteLock();
-
-            ServerHandler.LogMessage("The URL '" + handler.URL + "' is now assigned to a Page. (Websocket)");
-        }
-
-        private void RemoveWebsocketHandler(string URL)
-        {
-            pageResponseWriteLock.EnterWriteLock();
-            webSocketResponses.Remove(URL);
-            pageResponseWriteLock.ExitWriteLock();
-
-            ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
-        }
-
         private void HandleTcpListener()
         {
             try
             {
-                tcpListener.Start();
+                _tcpListener.Start();
             }
             catch (Exception e)
             {
                 ServerHandler.LogMessage("The TcpListener couldn't be started. The Port is probably blocked.\n" + e);
 
-                if (!silent)
-                    Console.WriteLine("Failed to start TcpListener.\n" + e);
                 return;
             }
 
-            while (running)
+            while (Running)
             {
                 try
                 {
-                    tcpRcvTask = tcpListener.AcceptTcpClientAsync();
+                    tcpRcvTask = _tcpListener.AcceptTcpClientAsync();
                     tcpRcvTask.Wait();
                     TcpClient tcpClient = tcpRcvTask.Result;
                     Thread t = new Thread(HandleClient);
-                    threads.Add(t);
+                    _threads.Add(t);
                     t.Start((object) tcpClient);
                     ServerHandler.LogMessage("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
-                    if (threads.Count%25 == 0)
+                    if (_threads.Count%25 == 0)
                     {
-                        threads.Add(new Thread(new ThreadStart(CleanThreads)));
-                        threads[threads.Count - 1].Start();
+                        _threads.Add(new Thread(new ThreadStart(CleanThreads)));
+                        _threads[_threads.Count - 1].Start();
                     }
                 }
                 catch (ThreadAbortException)
@@ -403,8 +339,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    if (!silent)
-                        ServerHandler.LogMessage("The TcpListener failed.\n" + e);
+                    ServerHandler.LogMessage("The TcpListener failed.\n" + e);
                 }
             }
         }
@@ -412,6 +347,8 @@ namespace LamestWebserver
         private void HandleClient(object obj)
         {
             TcpClient client = (TcpClient) obj;
+            client.NoDelay = true;
+
             NetworkStream nws = client.GetStream();
             UTF8Encoding enc = new UTF8Encoding();
             string lastmsg = null;
@@ -419,29 +356,32 @@ namespace LamestWebserver
 
             byte[] msg;
             int bytes = 0;
+            
+            networkStreamsMutex.WaitOne();
+            networkStreams.Add(Thread.CurrentThread.ManagedThreadId, nws);
+            networkStreamsMutex.ReleaseMutex();
 
-            ThreadedWorker.CurrentWorker.EnqueueJob((Action<NetworkStream>) (networkStream =>
-            {
-                networkStreamsMutex.WaitOne();
-                networkStreams.Add(Thread.CurrentThread.ManagedThreadId, networkStream);
-                networkStreamsMutex.ReleaseMutex();
-            }), nws);
+            Stopwatch stopwatch = new Stopwatch();
 
-            while (running)
+            while (Running)
             {
                 msg = new byte[RequestMaxPacketSize];
 
                 try
                 {
+                    if(stopwatch.IsRunning)
+                        stopwatch.Reset();
+
                     bytes = nws.Read(msg, 0, RequestMaxPacketSize);
+                    stopwatch.Start();
                 }
-                catch (ThreadAbortException e)
+                catch (ThreadAbortException)
                 {
                     break;
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.LogMessage("An error occured in the client handler:  " + e);
+                    ServerHandler.LogMessage("An error occured in the client handler:  " + e, stopwatch);
                     break;
                 }
 
@@ -453,7 +393,7 @@ namespace LamestWebserver
                 try
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
-                    HttpPacket htp = HttpPacket.Constructor(ref msg_, client.Client.RemoteEndPoint, lastmsg);
+                    HttpPacket htp = HttpPacket.Constructor(ref msg_, client.Client.RemoteEndPoint, lastmsg, nws);
 
                     byte[] buffer;
 
@@ -483,344 +423,96 @@ namespace LamestWebserver
                             buffer = htp_.GetPackage(enc);
                             nws.Write(buffer, 0, buffer.Length);
 
-                            ServerHandler.LogMessage("Client requested an empty URL. We sent Error 501.");
+                            ServerHandler.LogMessage("Client requested an empty URL. We sent Error 501.", stopwatch);
                         }
                         else
                         {
                             lastmsg = null;
+                            HttpPacket response = null;
 
-                            while (htp.RequestUrl.Length >= 2 && (htp.RequestUrl[0] == ' ' || htp.RequestUrl[0] == '/'))
+                            try
                             {
-                                htp.RequestUrl = htp.RequestUrl.Remove(0, 1);
+                                response = ResponseHandler.CurrentResponseHandler.GetResponse(htp);
+
+                                if (response == null)
+                                    goto InvalidResponse;
+
+                                buffer = response.GetPackage(enc);
+                                nws.Write(buffer, 0, buffer.Length);
+
+                                ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(ResponseHandler)}.", stopwatch);
+
+                                continue;
                             }
-
-                            Master.GetContents currentRequest;
-
-                            pageResponseWriteLock.EnterReadLock();
-                            currentRequest = pageResponses[htp.RequestUrl];
-                            pageResponseWriteLock.ExitReadLock();
-
-                            WebSocketCommunicationHandler currentWebSocketHandler;
-                            
-
-                            pageResponseWriteLock.EnterReadLock();
-
-                            if (htp.IsWebsocketUpgradeRequest && webSocketResponses.TryGetValue(htp.RequestUrl, out currentWebSocketHandler))
+                            catch (ThreadAbortException)
                             {
-                                pageResponseWriteLock.ExitReadLock();
-                                var handler =
-                                    (Fleck.Handlers.ComposableHandler)
-                                    Fleck.HandlerFactory.BuildHandler(Fleck.RequestParser.Parse(msg), currentWebSocketHandler._OnMessage, currentWebSocketHandler._OnClose,
-                                        currentWebSocketHandler._OnBinary, currentWebSocketHandler._OnPing, currentWebSocketHandler._OnPong);
-                                msg = handler.CreateHandshake();
-                                nws.Write(msg, 0, msg.Length);
-
-                                ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (WebSocket Upgrade Request)");
-
-                                var proxy = new WebSocketHandlerProxy(nws, currentWebSocketHandler, handler, (ushort) this.port);
-
                                 return;
                             }
-                            else
+                            catch (WebSocketManagementOvertakeFlagException)
                             {
-                                pageResponseWriteLock.ExitReadLock();
+                                return;
                             }
-
-                            if (currentRequest == null)
+                            catch (Exception e)
                             {
-                                pageResponseWriteLock.EnterReadLock();
-                                currentRequest = oneTimePageResponses[htp.RequestUrl];
-                                pageResponseWriteLock.ExitReadLock();
-
-                                if (currentRequest != null)
+                                HttpPacket htp_ = new HttpPacket()
                                 {
-                                    pageResponseWriteLock.EnterWriteLock();
-                                    oneTimePageResponses.Remove(htp.RequestUrl);
-                                    pageResponseWriteLock.ExitWriteLock();
-                                }
-                            }
-
-                            if (currentRequest != null)
-                            {
-                                HttpPacket htp_ = new HttpPacket();
-
-                                Exception error = null;
-
-                                int tries = 0;
-
-                                RetryGetData:
-
-                                try
-                                {
-                                    SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                        htp.RequestUrl, msg_, client, nws, (ushort) this.port);
-
-                                    htp_.BinaryData = enc.GetBytes(currentRequest.Invoke(sessionData));
-
-                                    if (sessionData.SetCookies.Count > 0)
-                                    {
-                                        htp_.Cookies = sessionData.SetCookies;
-                                    }
-                                }
-                                catch (MutexRetryException e)
-                                {
-                                    ServerHandler.LogMessage("MutexRetryException. Retrying...");
-
-                                    if (tries >= 10)
-                                    {
-                                        htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
-                                                                                          + htp.RequestUrl + "'",
-                                            $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
-                                            + e.ToString().Replace("\r\n", "<br>")
-#if DEBUG
-                                            + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                            + msg_.Replace("\r\n", "<br>")
-#endif
-                                            + "</div></p>"));
-
-                                        error = e;
-                                        goto SendPackage;
-                                    }
-
-                                    tries++;
-                                    Thread.Sleep(random.Next((25)*tries));
-                                    goto RetryGetData;
-                                }
-                                catch (Exception e)
-                                {
-                                    htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
-                                                                                      + htp.RequestUrl + "'", "<b>An Error occured while processing the output</b><br>"
-                                                                                                                  + e.ToString().Replace("\r\n", "<br>")
-#if DEBUG
-                                                                                                                  +
-                                                                                                                  "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                                                                                  + msg_.Replace("\r\n", "<br>")
-#endif
-                                                                                                                  + "</div></p>"));
-
-                                    error = e;
-                                }
-
-                                SendPackage:
+                                    Status = "500 Internal Server Error",
+                                    BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                                        "Error 500: Internal Server Error",
+                                        "<p>An Exception occured while processing the response.</p><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + GetErrorMsg(e, AbstractSessionIdentificator.CurrentSession, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
+                                        + "</div></p>"))
+                                };
 
                                 buffer = htp_.GetPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
 
-                                if (error == null)
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# WebserverApi)");
-                                else
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl +
-                                                             "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
+                                continue;
                             }
-                            else if (htp.RequestUrl.ToLower().EndsWith(".hcs") && File.Exists((folder != "/" ? folder : "") + "/" + htp.RequestUrl))
+
+
+                            InvalidResponse:
+
+                            if (htp.RequestUrl.EndsWith("/"))
                             {
-                                string result = "";
-                                Exception error = null;
-
-                                try
+                                buffer = new HttpPacket()
                                 {
-                                    result = Hook.resolveScriptFromFile(folder + htp.RequestUrl,
-                                        new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder, htp.RequestUrl, msg_, client,
-                                            nws, (ushort) this.port));
-                                }
-                                catch (Exception e)
-                                {
-                                    result = Master.GetErrorMsg("Exception in C# Script for '"
-                                                                + htp.RequestUrl + "'", "<b>An Error occured while processing the output</b><br>"
-                                                                                            + e.ToString().Replace("\r\n", "<br>")
+                                    Status = "403 Forbidden",
+                                    BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                                        "Error 403: Forbidden",
+                                        "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
 #if DEBUG
-                                                                                            +
-                                                                                            "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                                                            + msg_.Replace("\r\n", "<br>")
+                                        "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
+                                        msg_.Replace("\r\n", "<br>") +
 #endif
-                                                                                            + "</div></p>");
-
-                                    error = e;
-                                }
-
-                                HttpPacket htp_ = new HttpPacket {BinaryData = enc.GetBytes(result)};
-                                buffer = htp_.GetPackage(enc);
-                                nws.Write(buffer, 0, buffer.Length);
-
-                                buffer = null;
-                                result = null;
-
-                                if (error == null)
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# Script)");
-                                else
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'. (C# Script)\nThe URL crashed with the following Exception:\n" +
-                                                             error);
+                                        "</div></p>"))
+                                }.GetPackage(enc);
                             }
                             else
                             {
-                                var response = GetFile(htp.RequestUrl, htp, enc, msg_);
-
-                                if (response != null)
+                                buffer = new HttpPacket()
                                 {
-                                    buffer = response.GetPackage(enc);
-                                    nws.Write(buffer, 0, buffer.Length);
-
-                                    buffer = null;
-
-                                    ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "'.");
-                                }
-                                else
-                                {
-                                    Master.GetDirectoryContents directory = null;
-                                    string bestUrlMatch = htp.RequestUrl;
-
-                                    if (bestUrlMatch.StartsWith("/"))
-                                        bestUrlMatch = bestUrlMatch.Remove(0);
-
-                                    while (true)
-                                    {
-                                        for (int i = bestUrlMatch.Length - 2; i >= 0; i--)
-                                        {
-                                            if (bestUrlMatch[i] == '/')
-                                            {
-                                                bestUrlMatch = bestUrlMatch.Substring(0, i + 1);
-                                                break;
-                                            }
-
-                                            if (i == 0)
-                                            {
-                                                bestUrlMatch = "";
-                                                break;
-                                            }
-                                        }
-
-                                        pageResponseWriteLock.EnterReadLock();
-                                        directory = directoryResponses[bestUrlMatch];
-                                        pageResponseWriteLock.ExitReadLock();
-
-                                        if (directory != null || bestUrlMatch.Length == 0)
-                                        {
-                                            break;
-                                        }
-                                    }
-
-                                    if (directory != null)
-                                    {
-                                        HttpPacket htp_ = new HttpPacket();
-                                        string subDir = htp.RequestUrl.Substring(bestUrlMatch.Length).TrimStart('/');
-
-                                        Exception error = null;
-
-                                        int tries = 0;
-                                        RetryGetData:
-
-                                        try
-                                        {
-                                            SessionData sessionData = new SessionData(htp.VariablesHEAD, htp.VariablesPOST, htp.ValuesHEAD, htp.ValuesPOST, htp.Cookies, folder,
-                                                htp.RequestUrl, msg_, client, nws, (ushort) this.port);
-
-                                            htp_.BinaryData = enc.GetBytes(directory.Invoke(sessionData, subDir));
-
-                                            if (sessionData.SetCookies.Count > 0)
-                                            {
-                                                htp_.Cookies = sessionData.SetCookies;
-                                            }
-                                        }
-                                        catch (MutexRetryException e)
-                                        {
-                                            ServerHandler.LogMessage("MutexRetryException. Retrying...");
-
-                                            if (tries >= 10)
-                                            {
-                                                htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Page Response for '"
-                                                                                                  + htp.RequestUrl + "'",
-                                                    $"<b>An Error occured while processing the output ({tries} Retries)</b><br>"
-                                                    + e.ToString().Replace("\r\n", "<br>")
+                                    Status = "404 File Not Found",
+                                    BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                                        "Error 404: Page Not Found",
+                                        "<p>The URL you requested did not match any page or file on the server.</p>" +
 #if DEBUG
-                                                    + "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                    + msg_.Replace("\r\n", "<br>")
+                                        "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
+                                        msg_.Replace("\r\n", "<br>") +
 #endif
-                                                    + "</div></p>"));
-
-                                                error = e;
-                                                goto SendPackage;
-                                            }
-
-                                            tries++;
-                                            Thread.Sleep(random.Next((25)*tries));
-                                            goto RetryGetData;
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            htp_.BinaryData = enc.GetBytes(Master.GetErrorMsg("Exception in Directory Response for '"
-                                                                                              + htp.RequestUrl + "' in Directory Response '" + bestUrlMatch + "'",
-                                                "<b>An Error occured while processing the output</b><br>"
-                                                + e.ToString().Replace("\r\n", "<br>")
-#if DEBUG
-                                                +
-                                                "<hr><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                                + msg_.Replace("\r\n", "<br>")
-#endif
-                                                + "</div></p>"));
-
-                                            error = e;
-                                        }
-
-                                        SendPackage:
-
-                                        buffer = htp_.GetPackage(enc);
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        if (error == null)
-                                            ServerHandler.LogMessage("Client requested the Directory URL '" + subDir + "' in Directory Page '" + bestUrlMatch +
-                                                                     "'. (C# WebserverApi)");
-                                        else
-                                            ServerHandler.LogMessage("Client requested the Directory URL '" + subDir + "' in Directory Page '" + bestUrlMatch +
-                                                                     "'. (C# WebserverApi)\nThe URL crashed with the following Exception:\n" + error);
-                                    }
-                                    else
-                                    {
-                                        if (htp.RequestUrl.EndsWith("/"))
-                                        {
-                                            buffer = new HttpPacket()
-                                            {
-                                                Status = "403 Forbidden",
-                                                BinaryData = enc.GetBytes(Master.GetErrorMsg(
-                                                    "Error 403: Forbidden",
-                                                    "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
-#if DEBUG
-                                                    "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
-                                                    msg_.Replace("\r\n", "<br>") +
-#endif
-                                                    "</div></p>"))
-                                            }.GetPackage(enc);
-                                        }
-                                        else
-                                        {
-                                            buffer = new HttpPacket()
-                                            {
-                                                Status = "404 File Not Found",
-                                                BinaryData = enc.GetBytes(Master.GetErrorMsg(
-                                                    "Error 404: Page Not Found",
-                                                    "<p>The URL you requested did not match any page or file on the server.</p>" +
-#if DEBUG
-                                                    "<p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
-                                                    msg_.Replace("\r\n", "<br>") +
-#endif
-                                                    "</div></p>"))
-                                            }.GetPackage(enc);
-                                        }
-
-                                        nws.Write(buffer, 0, buffer.Length);
-
-                                        ServerHandler.LogMessage("Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 404.");
-                                    }
-                                }
+                                        "</div></p>"))
+                                }.GetPackage(enc);
                             }
+
+                            nws.Write(buffer, 0, buffer.Length);
+
+                            ServerHandler.LogMessage(
+                                "Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 403/404.", stopwatch);
                         }
-                    }
-                    catch (ThreadAbortException)
-                    {
-                        return;
                     }
                     catch (Exception e)
                     {
-                        ServerHandler.LogMessage("An error occured in the client handler: " + e);
+                        ServerHandler.LogMessage("An error occured in the client handler: " + e, stopwatch);
                     }
                 }
                 catch (ThreadAbortException)
@@ -829,385 +521,9 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.LogMessage("An error occured in the client handler: " + e);
+                    ServerHandler.LogMessage("An error occured in the client handler: " + e, stopwatch);
                 }
             }
-        }
-
-        private HttpPacket GetFile(string URL, HttpPacket requestPacket, UTF8Encoding enc, string fullPacketString)
-        {
-            string fileName = URL;
-            byte[] contents = null;
-            DateTime? lastModified = null;
-            PreloadedFile file;
-            bool notModified = false;
-            string extention = null;
-
-            try
-            {
-                if (fileName.Length == 0 || fileName[0] != '/')
-                    fileName = fileName.Insert(0, "/");
-
-                if (fileName[fileName.Length - 1] == '/') // is directory?
-                {
-                    fileName += "index.html";
-                    extention = "html";
-
-                    if (useCache && getFromCache(fileName, out file))
-                    {
-                        lastModified = file.LastModified;
-
-                        if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value < lastModified)
-                        {
-                            contents = file.Contents;
-
-                            extention = getExtention(fileName);
-                        }
-                        else
-                        {
-                            contents = file.Contents;
-
-                            notModified = requestPacket.ModifiedDate != null;
-                        }
-                    }
-                    else if (File.Exists(folder + fileName))
-                    {
-                        contents = ReadFile(fileName, enc);
-                        lastModified = File.GetLastWriteTimeUtc(folder + fileName);
-
-                        if (useCache)
-                        {
-                            using (cacheMutex.Lock())
-                            {
-                                cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, false));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-                else if (useCache && getFromCache(fileName, out file))
-                {
-                    extention = getExtention(fileName);
-                    lastModified = file.LastModified;
-
-                    if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value < lastModified)
-                    {
-                        contents = file.Contents;
-
-                        extention = getExtention(fileName);
-                    }
-                    else
-                    {
-                        contents = file.Contents;
-
-                        notModified = requestPacket.ModifiedDate != null;
-                    }
-                }
-                else if (File.Exists(folder + fileName))
-                {
-                    extention = getExtention(fileName);
-                    bool isBinary = fileIsBinary(fileName, extention);
-                    contents = ReadFile(fileName, enc, isBinary);
-                    lastModified = File.GetLastWriteTimeUtc(folder + fileName);
-
-                    if (useCache)
-                    {
-                        using (cacheMutex.Lock())
-                        {
-                            cache.Add(fileName, new PreloadedFile(fileName, contents, contents.Length, lastModified.Value, isBinary));
-                        }
-
-                        ServerHandler.LogMessage("The URL '" + URL + "' is now available through the cache.");
-                    }
-                }
-                else
-                {
-                    return null;
-                }
-
-                if (notModified)
-                {
-                    return new HttpPacket() {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = crlf};
-                }
-                else
-                {
-                    return new HttpPacket() {ContentType = getMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
-                }
-            }
-            catch (Exception e)
-            {
-                return new HttpPacket()
-                {
-                    Status = "500 Internal Server Error",
-                    BinaryData = enc.GetBytes(Master.GetErrorMsg(
-                        "Error 500: Internal Server Error",
-                        "<p>An Exception occurred while sending the response:<br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                        + e.ToString().Replace("\r\n", "<br>") + "</div><br>"
-#if DEBUG
-                        + "<hr><br><p>The Package you were sending:<br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>" +
-                        fullPacketString.Replace("\r\n", "<br>")
-#endif
-                        + "</div>"))
-                };
-            }
-        }
-
-        internal bool fileIsBinary(string fileName, string extention)
-        {
-            if (fileName.Length < 2)
-                return true;
-
-            switch (extention)
-            {
-                case "html":
-                case "css":
-                case "js":
-                case "txt":
-                case "htm":
-                case "xml":
-                case "json":
-                case "rtf":
-                case "xhtml":
-                case "shtml":
-                case "csv":
-                    return false;
-                default:
-                    return true;
-            }
-        }
-
-        private string getExtention(string fileName)
-        {
-            if (fileName.Length < 2)
-                return "";
-
-            for (int i = fileName.Length - 2; i >= 0; i--)
-            {
-                if (fileName[i] == '.')
-                {
-                    fileName = fileName.Substring(i + 1).ToLower();
-                    return fileName;
-                }
-            }
-
-            return "";
-        }
-
-        internal bool getFromCache(string name, out PreloadedFile file)
-        {
-            using (cacheMutex.Lock())
-            {
-                if (cache.TryGetValue(name, out file))
-                {
-                    file.LoadCount++;
-                    file = file.Clone();
-                }
-                else
-                    return false;
-            }
-
-            return true;
-        }
-
-        internal string getMimeType(string extention)
-        {
-            switch (extention)
-            {
-                case "html":
-                    return "text/html";
-                case "css":
-                    return "text/css";
-                case "js":
-                    return "text/javascript";
-                case "htm":
-                case "xhtml":
-                case "shtml":
-                    return "text/html";
-                case "txt":
-                    return "text/plain";
-                case "png":
-                    return "image/png";
-                case "jpeg":
-                case "jpg":
-                case "jpe":
-                    return "image/jpeg";
-                case "pdf":
-                    return "application/pdf";
-                case "zip":
-                    return "application/zip";
-                case "ico":
-                    return "image/x-icon";
-                case "xml":
-                    return "text/xml";
-                case "json":
-                    return "application/json";
-                case "rtf":
-                    return "text/rtf";
-                case "csv":
-                    return "text/comma-separated-values";
-                case "doc":
-                case "dot":
-                    return "application/msword";
-                case "docx":
-                    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-                case "xls":
-                case "xla":
-                    return "application/msexcel";
-                case "xlsx":
-                    return "application/vnd.openxmlformats-officedocument. spreadsheetml.sheet";
-                case "ppt":
-                case "ppz":
-                case "pps":
-                case "pot":
-                    return "application/mspowerpoint";
-                case "gif":
-                    return "image/gif";
-                case "bmp":
-                    return "image";
-                case "wav":
-                    return "audio/x-wav";
-                case "mp2":
-                case "mp3":
-                case "aac":
-                    return "audio/x-mpeg";
-                case "aif":
-                case "aiff":
-                case "aifc":
-                    return "audio/x-aiff";
-                case "mpeg":
-                case "mpg":
-                case "mpe":
-                    return "video/mpeg";
-                case "qt":
-                case "mov":
-                    return "video/quicktime";
-                case "avi":
-                    return "video/x-msvideo";
-                case "tiff":
-                case "tif":
-                    return "image/tiff";
-                case "swf":
-                case "cab":
-                    return "application/x-shockwave-flash";
-                case "hlp":
-                case "chm":
-                    return "application/mshelp";
-                case "midi":
-                case "mid":
-                    return "audio/x-midi";
-                default:
-                    return "application/octet-stream";
-            }
-        }
-
-        internal bool cacheHas(string name)
-        {
-            using (cacheMutex.Lock())
-            {
-                return cache.ContainsKey(name);
-            }
-        }
-
-        internal void setupFileSystemWatcher()
-        {
-            fileSystemWatcher = new FileSystemWatcher(folder);
-
-            fileSystemWatcher.Renamed += (object sender, RenamedEventArgs e) =>
-            {
-                using (cacheMutex.Lock())
-                {
-                    PreloadedFile file, oldfile = cache["/" + e.OldName];
-
-                    try
-                    {
-                        if (cache.TryGetValue(e.OldName, out file))
-                        {
-                            cache.Remove("/" + e.OldName);
-                            file.Filename = "/" + e.Name;
-                            file.Contents = ReadFile(file.Filename, new UTF8Encoding(), file.IsBinary);
-                            file.Size = file.Contents.Length;
-                            file.LastModified = File.GetLastWriteTimeUtc(folder + e.Name);
-                            cache.Add(e.Name, file);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        oldfile.Filename = "/" + e.Name;
-                        cache["/" + e.Name] = oldfile;
-                    }
-                }
-
-                ServerHandler.LogMessage("The URL '" + e.OldName + "' has been renamed to '" + e.Name + "' in the cache and filesystem.");
-            };
-
-            fileSystemWatcher.Deleted += (object sender, FileSystemEventArgs e) =>
-            {
-                using (cacheMutex.Lock())
-                {
-                    cache.Remove("/" + e.Name);
-                }
-
-                ServerHandler.LogMessage("The URL '" + e.Name + "' has been deleted from the cache and filesystem.");
-            };
-
-            fileSystemWatcher.Changed += (object sender, FileSystemEventArgs e) =>
-            {
-                using (cacheMutex.Lock())
-                {
-                    PreloadedFile file = cache["/" + e.Name];
-
-                    try
-                    {
-                        if (file != null)
-                        {
-                            file.Contents = ReadFile(file.Filename, new UTF8Encoding(), file.IsBinary);
-                            file.Size = file.Contents.Length;
-                            file.LastModified = DateTime.Now;
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-                    ;
-                }
-
-                ServerHandler.LogMessage("The cache of the URL '" + e.Name + "' has been updated.");
-            };
-
-            fileSystemWatcher.EnableRaisingEvents = true;
-        }
-
-        internal byte[] ReadFile(string filename, UTF8Encoding enc, bool isBinary = false)
-        {
-            int i = 10;
-
-            while (i-- > 0) // Chris: if the file has currently been changed you probably have to wait until the writing process has finished
-            {
-                try
-                {
-                    if (isBinary)
-                    {
-                        return File.ReadAllBytes(folder + filename);
-                    }
-
-                    if (Equals(GetEncoding(folder + filename), Encoding.UTF8))
-                    {
-                        return File.ReadAllBytes(folder + filename);
-                    }
-
-                    string content = File.ReadAllText(folder + filename);
-                    return Encoding.UTF8.GetBytes(content);
-                }
-                catch (IOException)
-                {
-                    Thread.Sleep(2); // Chris: if the file has currently been changed you probably have to wait until the writing process has finished
-                }
-            }
-
-            throw new Exception("Failed to read from '" + filename + "'.");
         }
 
         /// <summary>
@@ -1250,30 +566,145 @@ namespace LamestWebserver
                 return reader.CurrentEncoding;
             }
         }
-    }
 
-    internal class PreloadedFile
-    {
-        public string Filename;
-        public byte[] Contents;
-        public int Size;
-        public DateTime LastModified;
-        public bool IsBinary;
-        public int LoadCount;
+        /// <summary>
+        /// Shall the ErrorMsg contain the current SessionData if possible?
+        /// </summary>
+        public static bool ErrorMsgContainSessionData = true;
 
-        public PreloadedFile(string filename, byte[] contents, int size, DateTime lastModified, bool isBinary)
+        /// <summary>
+        /// Shall exception-messages be encrypted?
+        /// </summary>
+        public static bool EncryptErrorMsgs = false;
+
+        /// <summary>
+        /// The Key for the exception-message encryption.
+        /// </summary>
+        public static byte[] ErrorMsgKey { set { _errorMsgKey = value; } }
+
+        /// <summary>
+        /// The IV for the exception-message encryption.
+        /// </summary>
+        public static byte[] ErrorMsgIV { set { _errorMsgIV = value; } }
+
+        private static byte[] _errorMsgKey = Security.Encryption.GetKey();
+        private static byte[] _errorMsgIV = Security.Encryption.GetIV();
+
+        /// <summary>
+        /// Retrieves an error message
+        /// </summary>
+        /// <param name="exception">the exception that happened</param>
+        /// <param name="sessionData">the sessionData (can be null)</param>
+        /// <param name="httpPacket">the http-request</param>
+        /// <returns>a nice error message</returns>
+        public static string GetErrorMsg(Exception exception, AbstractSessionIdentificator sessionData, string httpPacket)
         {
-            Filename = filename;
-            Contents = contents;
-            Size = size;
-            LastModified = lastModified;
-            IsBinary = isBinary;
-            LoadCount = 1;
+            string ret = exception.ToString() + "\n\n";
+
+            ret += "The package you were sending:\n\n" + httpPacket;
+
+            if (ErrorMsgContainSessionData && sessionData != null)
+            {
+                ret += "\n\n______________________________________________________________________________________________\n\n";
+
+                if (sessionData is SessionData)
+                {
+                    SessionData _sessionData = (SessionData)sessionData;
+
+                    if (_sessionData.HttpHeadParameters.Count > 0)
+                    {
+                        ret += "\n\nHTTP-Head:\n\n";
+
+                        for (int i = 0; i < _sessionData.HttpHeadParameters.Count; i++)
+                            ret += "'" + _sessionData.HttpHeadParameters[i] + "': " + _sessionData.HttpHeadValues[i] + "\n";
+                    }
+
+                    if (_sessionData.HttpPostParameters.Count > 0)
+                    {
+                        ret += "\n\nHTTP-Post:\n\n";
+
+                        for (int i = 0; i < _sessionData.HttpPostParameters.Count; i++)
+                            ret += "'" + _sessionData.HttpPostParameters[i] + "': " + _sessionData.HttpPostValues[i] + "\n";
+                    }
+                }
+
+                IDictionary<string, object> currentDictionary = null;
+
+                if (sessionData.KnownUser)
+                {
+                    currentDictionary = sessionData._userInfo.UserGlobalVariables;
+
+                    if (currentDictionary != null && currentDictionary.Count > 0)
+                    {
+                        ret += "\n\nUserGlobalVars:\n\n";
+
+                        SerializeValues(currentDictionary, ref ret);
+                    }
+
+                    currentDictionary = sessionData.GetUserPerFileVariables();
+
+                    if (currentDictionary != null && currentDictionary.Count > 0)
+                    {
+                        ret += "\n\nUserFileVars:\n\n";
+
+                        SerializeValues(currentDictionary, ref ret);
+                    }
+                }
+
+                currentDictionary = sessionData.GetGlobalVariables();
+
+                if (currentDictionary != null && currentDictionary.Count > 0)
+                {
+                    ret += "\n\nGlobalVars:\n\n";
+
+                    SerializeValues(currentDictionary, ref ret);
+                }
+
+                currentDictionary = sessionData.GetPerFileVariables();
+
+                if (currentDictionary != null && currentDictionary.Count > 0)
+                {
+                    ret += "\n\nFileVars:\n\n";
+
+                    SerializeValues(currentDictionary, ref ret);
+                }
+            }
+
+            if (EncryptErrorMsgs)
+            {
+                ret = Security.Encryption.Encrypt(ret, _errorMsgKey, _errorMsgIV);
+
+                for (int i = ret.Length - 1; i >= 0; i--)
+                {
+                    if (i % 128 == 0)
+                        ret = ret.Insert(i, "\n");
+                }
+
+                ret = "The Error-Message has been encrypted for security reasons.\nIf this error occurs multiple times, please contact the developers and send them this piece of code.\n" + ret;
+            }
+
+            return ret;
         }
 
-        internal PreloadedFile Clone()
+        private static void SerializeValues(IDictionary<string, object> data, ref string ret)
         {
-            return new PreloadedFile((string) Filename.Clone(), Contents.ToArray(), Size, LastModified, IsBinary);
+            foreach (var variable in data)
+            {
+                try
+                {
+                    if (variable.Value.GetType().GetInterfaces().Contains(typeof(ISerializable)) ||
+                        (from attrib in variable.Value.GetType().GetCustomAttributes() where attrib is SerializableAttribute select attrib).Any())
+                    {
+                        ret += "'" + variable.Key + "': \n" + Newtonsoft.Json.JsonConvert.SerializeObject(variable.Value, Formatting.Indented) + "\n\n";
+                        continue;
+                    }
+                }
+                catch
+                {
+                }
+
+                ret += "'" + variable.Key + "': " + variable.Value + "\n";
+            }
         }
     }
 }
