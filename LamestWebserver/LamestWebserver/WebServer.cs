@@ -137,6 +137,7 @@ namespace LamestWebserver
 
             this.Port = port;
             this._tcpListener = new TcpListener(IPAddress.Any, port);
+
             _mThread = new Thread(new ThreadStart(HandleTcpListener));
             _mThread.Start();
 
@@ -346,6 +347,8 @@ namespace LamestWebserver
         private void HandleClient(object obj)
         {
             TcpClient client = (TcpClient) obj;
+            client.NoDelay = true;
+
             NetworkStream nws = client.GetStream();
             UTF8Encoding enc = new UTF8Encoding();
             string lastmsg = null;
