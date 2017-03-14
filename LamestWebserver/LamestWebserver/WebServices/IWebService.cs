@@ -14,8 +14,14 @@ using LamestWebserver.Synchronization;
 
 namespace LamestWebserver.WebServices
 {
-    public interface IWebService : IURLIdentifyable
+    public abstract class IWebService : IURLIdentifyable
     {
+        public string URL { get; }
+
+        protected IWebService()
+        {
+            URL = this.GetType().FullName;
+        }
     }
 
     public abstract class WebServiceException : Exception
@@ -113,8 +119,8 @@ namespace LamestWebserver.WebServices
         }
 
         private UsableMutexSlim _listMutex = new UsableMutexSlim();
-        private Dictionary<Type, object> ServerWebServiceVariants = new Dictionary<Type, object>();
-        private Dictionary<Type, object> ClientWebServiceVariants = new Dictionary<Type, object>();
+        private Dictionary<Type, object> RequesterWebServiceVariants = new Dictionary<Type, object>();
+        private Dictionary<Type, object> ResponderWebServiceVariants = new Dictionary<Type, object>();
 
         private AVLHashMap<string, IPEndPoint> UrlToServerHashMap = new AVLHashMap<string, IPEndPoint>();
 
@@ -125,32 +131,40 @@ namespace LamestWebserver.WebServices
 
             AssemblyBuilder asmBuilder = Thread.GetDomain()
                 .DefineDynamicAssembly(new AssemblyName(typeof(IWebService).Namespace + "." + typeof(IWebService).Name + "." + typeof(T).Namespace + "." + typeof(T).Name),
-                    AssemblyBuilderAccess.RunAndCollect | AssemblyBuilderAccess.RunAndSave);
+                    AssemblyBuilderAccess.RunAndCollect);
 
             ModuleBuilder moduleBuilder =
                 asmBuilder.DefineDynamicModule(typeof(IWebService).Namespace + "." + typeof(IWebService).Name + "." + typeof(T).Namespace + "." + typeof(T).Name);
 
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("GENERATED_WEBSVC__" + typeof(T).Namespace + "_" + typeof(T).Name, TypeAttributes.Public | TypeAttributes.Class,
+            TypeBuilder typeBuilder = moduleBuilder.DefineType(typeof(IWebService).Namespace + "." + typeof(IWebService).Name + "." + typeof(T).Namespace + "." + typeof(T).Name, TypeAttributes.Public | TypeAttributes.Class,
                 typeof(T));
 
-            var constructorBuilder = typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
-            var ilgen = constructorBuilder.GetILGenerator();
-            ilgen.Emit(OpCodes.Call, typeof(T).GetConstructor(new Type[0]));
-            ilgen.Emit(OpCodes.Ret);
+            if (typeof(T).GetConstructor(new Type[0]) == null)
+            {
+                var constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Any, new Type[0]);
+                var ilgen = constructorBuilder.GetILGenerator();
+                ilgen.Emit(OpCodes.Call, typeof(T).GetConstructor(new Type[0]));
+                ilgen.Emit(OpCodes.Ret);
+            }
+            else
+            {
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+            }
 
-            foreach (var method in typeof(T).GetMethods(BindingFlags.Public))
+            var methods = typeof(T).GetMethods();
+
+            foreach (var method in methods)
             {
                 if (method.IsVirtual && method.IsPublic && !method.IsAbstract && !method.IsStatic && !method.IsFinal && !method.IsGenericMethod && !method.IsGenericMethodDefinition)
                 {
-                    MethodBuilder methBuilder = typeBuilder.DefineMethod(method.Name, MethodAttributes.Public | MethodAttributes.NewSlot | MethodAttributes.Virtual |
-                                                                                      MethodAttributes.Final, method.ReturnType,
-                        (from param in method.GetParameters() select param.GetType()).ToArray());
-
-                    ILGenerator il = methBuilder.GetILGenerator();
-                    il.Emit(OpCodes.Call, method);
-                    il.Emit(OpCodes.Ret);
-
-                    typeBuilder.DefineMethodOverride(methBuilder, method);
+                    try
+                    {
+                        GetRequesterMethod(typeBuilder, method);
+                    }
+                    catch (Exception e)
+                    {
+                        ServerHandler.LogMessage($"Failed to get Service for '{method.Name}'.\n" + e);
+                    }
                 }
             }
 
@@ -161,7 +175,35 @@ namespace LamestWebserver.WebServices
             return (T)ret;
         }
 
-        public T GetServerService<T>() where T : IWebService, new()
+        public void GetRequesterMethod(TypeBuilder typeBuilder, MethodInfo method)
+        {
+            MethodBuilder methBuilder = typeBuilder.DefineMethod(method.Name, MethodAttributes.Public | MethodAttributes.HideBySig | 
+                                                                              MethodAttributes.Final, method.ReturnType,
+                (from param in method.GetParameters() select param.GetType()).ToArray());
+
+            ILGenerator il = methBuilder.GetILGenerator();
+            il.Emit(OpCodes.Nop);
+            il.Emit(OpCodes.Call, method);
+            il.Emit(OpCodes.Newobj, typeof(WebServiceRequest).GetConstructors().First());
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, typeof(IWebService).GetMethod("get_" + nameof(IWebService.URL)));
+            il.Emit(OpCodes.Stfld, typeof(WebServiceRequest).GetField(nameof(IWebService.URL)));
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Call, typeof(MethodBase).GetMethod(nameof(MethodBase.GetCurrentMethod)));
+            il.Emit(OpCodes.Callvirt, typeof(MemberInfo).GetMethod("get_" + nameof(MemberInfo.Name)));
+            il.Emit(OpCodes.Stfld, typeof(WebServiceRequest).GetField(nameof(WebServiceRequest.Method)));
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Ldnull);
+            il.Emit(OpCodes.Stfld, typeof(WebServiceRequest).GetField(nameof(WebServiceRequest.Parameters)));
+            il.Emit(OpCodes.Callvirt, typeof(WebServiceHandler).GetMethod(nameof(WebServiceHandler.Request)));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ret);
+
+            typeBuilder.DefineMethodOverride(methBuilder, method);
+        }
+
+        public T GetResponderService<T>() where T : IWebService, new()
         {
             return default(T);
         }

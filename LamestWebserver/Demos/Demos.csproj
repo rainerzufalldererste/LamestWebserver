@@ -38,6 +38,10 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="SDILReader, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>.\SDILReader.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -64,6 +68,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="SDILReader.dll" />
+    <Content Include="SDILReader.pdb" />
     <Content Include="web\lwsfooter.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

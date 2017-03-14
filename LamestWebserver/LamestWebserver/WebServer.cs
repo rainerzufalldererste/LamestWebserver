@@ -459,13 +459,15 @@ namespace LamestWebserver
                                     Status = "500 Internal Server Error",
                                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
                                         "Error 500: Internal Server Error",
-                                        "<p>An Exception occured while processing the response.</p><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        "<p>An Exception occured while processing the response.</p><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;word-break: break-word;'>"
                                         + GetErrorMsg(e, AbstractSessionIdentificator.CurrentSession, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                         + "</div></p>"))
                                 };
 
                                 buffer = htp_.GetPackage(enc);
                                 nws.Write(buffer, 0, buffer.Length);
+
+                                ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e, stopwatch);
 
                                 continue;
                             }

@@ -15,57 +15,71 @@ namespace Demos
     public class WebServiceHelperClient : ElementResponse
     {
         /// <inheritdoc />
-        public WebServiceHelperClient() : base("websvc/client")
+        public WebServiceHelperClient() : base("websvc/requester")
         {
+            SDILReader.Globals.LoadOpCodes();
         }
 
         /// <inheritdoc />
         protected override HElement GetElement(SessionData sessionData)
         {
-            var client0 = MethodBase.GetMethodFromHandle(typeof(WebServiceTestClient).GetMethod("CallSomethingVoid").MethodHandle).GetMethodBody();
-            var client1 = MethodBase.GetMethodFromHandle(typeof(WebServiceTestClient).GetMethod("CallSomethingReturn").MethodHandle).GetMethodBody();
-            var client2 = MethodBase.GetMethodFromHandle(typeof(WebServiceTestClient).GetMethod("CallSomethingParamsVoid").MethodHandle).GetMethodBody();
-            var client3 = MethodBase.GetMethodFromHandle(typeof(WebServiceTestClient).GetMethod("CallSomethingParamsReturn").MethodHandle).GetMethodBody();
+            var client0 = new SDILReader.MethodBodyReader(typeof(WebServiceTestRequester).GetMethod("CallSomethingVoid")).GetBodyCode();
+            var client1 = new SDILReader.MethodBodyReader(typeof(WebServiceTestRequester).GetMethod("CallSomethingReturn")).GetBodyCode();
+            var client2 = new SDILReader.MethodBodyReader(typeof(WebServiceTestRequester).GetMethod("CallSomethingParamsVoid")).GetBodyCode();
+            var client3 = new SDILReader.MethodBodyReader(typeof(WebServiceTestRequester).GetMethod("CallSomethingParamsReturn")).GetBodyCode();
+
+            var url = new WebServiceTestRequester().URL;
+
+            var product = WebServiceHandler.CurrentServiceHandler.GetService<WebServiceTest>();
 
             return MainPage.GetPage(new List<HElement>()
             {
-                new HText(client0.ToString()),
-                new HText(client1.ToString()),
-                new HText(client2.ToString()),
-                new HText(client3.ToString()),
+                new HHeadline(url),
+                new HHeadline(nameof(WebServiceTestRequester.CallSomethingVoid), 2),
+                new HText(client0) {Class = "code"},
+                new HHeadline(nameof(WebServiceTestRequester.CallSomethingReturn), 2),
+                new HText(client1) {Class = "code"},
+                new HHeadline(nameof(WebServiceTestRequester.CallSomethingParamsVoid), 2),
+                new HText(client2) {Class = "code"},
+                new HHeadline(nameof(WebServiceTestRequester.CallSomethingParamsReturn), 2),
+                new HText(client3) {Class = "code"},
             }, nameof(WebServiceTest) + ".cs");
         }
     }
     public class WebServiceHelperServer : ElementResponse
     {
         /// <inheritdoc />
-        public WebServiceHelperServer() : base("websvc/server")
+        public WebServiceHelperServer() : base("websvc/responder")
         {
         }
 
         /// <inheritdoc />
         protected override HElement GetElement(SessionData sessionData)
         {
-            var client0 = MethodBase.GetMethodFromHandle(typeof(WebServiceTestServer).GetMethod("CallSomethingVoidServer").MethodHandle).GetMethodBody();
-            var client1 = MethodBase.GetMethodFromHandle(typeof(WebServiceTestServer).GetMethod("CallSomethingReturnServer").MethodHandle).GetMethodBody();
-            var client2 = MethodBase.GetMethodFromHandle(typeof(WebServiceTestServer).GetMethod("CallSomethingParamsVoidServer").MethodHandle).GetMethodBody();
-            var client3 = MethodBase.GetMethodFromHandle(typeof(WebServiceTestServer).GetMethod("CallSomethingParamsReturnServer").MethodHandle).GetMethodBody();
+            var server0 = new SDILReader.MethodBodyReader(typeof(WebServiceTestResponder).GetMethod("CallSomethingVoidServer")).GetBodyCode();
+            var server1 = new SDILReader.MethodBodyReader(typeof(WebServiceTestResponder).GetMethod("CallSomethingReturnServer")).GetBodyCode();
+            var server2 = new SDILReader.MethodBodyReader(typeof(WebServiceTestResponder).GetMethod("CallSomethingParamsVoidServer")).GetBodyCode();
+            var server3 = new SDILReader.MethodBodyReader(typeof(WebServiceTestResponder).GetMethod("CallSomethingParamsReturnServer")).GetBodyCode();
+
+            var url = new WebServiceTestResponder().URL;
 
             return MainPage.GetPage(new List<HElement>()
             {
-                new HText(client0.ToString()),
-                new HText(client1.ToString()),
-                new HText(client2.ToString()),
-                new HText(client3.ToString()),
+                new HHeadline(url),
+                new HHeadline(nameof(WebServiceTestResponder.CallSomethingVoidServer), 2),
+                new HText(server0) {Class = "code"},
+                new HHeadline(nameof(WebServiceTestResponder.CallSomethingReturnServer), 2),
+                new HText(server1) {Class = "code"},
+                new HHeadline(nameof(WebServiceTestResponder.CallSomethingParamsVoidServer), 2),
+                new HText(server2) {Class = "code"},
+                new HHeadline(nameof(WebServiceTestResponder.CallSomethingParamsReturnServer), 2),
+                new HText(server3) {Class = "code"},
             }, nameof(WebServiceTest) + ".cs");
         }
     }
 
     public class WebServiceTest : LamestWebserver.WebServices.IWebService
     {
-        /// <inheritdoc />
-        public string URL => "testURL";
-
         public virtual void CallSomethingVoid()
         {
             string hello = "world";
@@ -108,7 +122,7 @@ namespace Demos
         }
     }
 
-    public class WebServiceTestServer : WebServiceTest
+    public class WebServiceTestResponder : WebServiceTest
     {
         public WebServiceResponse CallSomethingVoidServer(WebServiceRequest request)
         {
@@ -167,7 +181,7 @@ namespace Demos
         }
     }
 
-    public class WebServiceTestClient : WebServiceTest
+    public class WebServiceTestRequester : WebServiceTest
     {
         public override void CallSomethingVoid()
         {
