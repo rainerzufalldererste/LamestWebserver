@@ -816,6 +816,96 @@ namespace LamestWebserver.UI
     }
 
     /// <summary>
+    /// A "del" tag, representing crossed out text
+    /// </summary>
+    public class HCrossedOut : HElement
+    {
+        /// <summary>
+        /// The Text to display
+        /// </summary>
+        public string Text;
+
+        /// <summary>
+        /// Constructs a new HBold
+        /// </summary>
+        /// <param name="text">the text</param>
+        public HCrossedOut(string text)
+        {
+            Text = text;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "<del ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</del>";
+
+            return ret;
+        }
+    }
+
+    /// <summary>
+    /// A "u" tag, representing underlined out text
+    /// </summary>
+    public class HUnderlined : HElement
+    {
+        /// <summary>
+        /// The Text to display
+        /// </summary>
+        public string Text;
+
+        /// <summary>
+        /// Constructs a new HBold
+        /// </summary>
+        /// <param name="text">the text</param>
+        public HUnderlined(string text)
+        {
+            Text = text;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "<u ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</u>";
+
+            return ret;
+        }
+    }
+
+    /// <summary>
     /// A h(1-6) tag in html (h1 by default) representing a Headline
     /// </summary>
     public class HHeadline : HElement
@@ -1435,6 +1525,123 @@ namespace LamestWebserver.UI
     }
 
     /// <summary>
+    /// A container for inline elements - represented by a span-HTML tag
+    /// </summary>
+    public class HInlineContainer : HContainer
+    {
+        /// <summary>
+        /// Constructs a new inline container containing the given elements.
+        /// </summary>
+        /// <param name="elements">the contained elements</param>
+        public HInlineContainer(params HElement[] elements) : base(elements)
+        {
+            
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "<span ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
+
+            ret += ">";
+
+            if (!string.IsNullOrWhiteSpace(Text))
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+
+            for (int i = 0; i < Elements.Count; i++)
+            {
+                ret += Elements[i].GetContent(sessionData);
+            }
+
+            ret += "</span>";
+
+            return ret;
+        }
+    }
+
+    /// <summary>
+    /// A 'blockquote' tag - representing a quote.
+    /// </summary>
+    public class HQuote : HContainer
+    {
+        /// <summary>
+        /// The source of the Quote
+        /// </summary>
+        public string Source;
+
+        /// <summary>
+        /// Creates a new HQuote object
+        /// </summary>
+        /// <param name="text">the quoted text</param>
+        /// <param name="source">the source of the quote</param>
+        /// <param name="elements">the contained elements</param>
+        public HQuote(string text, string source = null, params HElement[] elements) : base(elements)
+        {
+            Text = text;
+            Source = source;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "<blockquote ";
+
+            if (!string.IsNullOrWhiteSpace(Source))
+                ret += "cite='" + Source + "' ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
+
+            ret += ">";
+
+            if (!string.IsNullOrWhiteSpace(Text))
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+
+            for (int i = 0; i < Elements.Count; i++)
+            {
+                ret += Elements[i].GetContent(sessionData);
+            }
+
+            ret += "</blockquote>";
+
+            return ret;
+        }
+    }
+
+    /// <summary>
     /// A form element used for sending contents via POST to the server
     /// </summary>
     public class HForm : HContainer
@@ -1547,6 +1754,70 @@ namespace LamestWebserver.UI
             }
 
             ret += "</form>";
+
+            return ret;
+        }
+    }
+
+
+
+    /// <summary>
+    /// A 'fieldset' tag - a panel contining multiple inputs / elements
+    /// </summary>
+    public class HPanel : HContainer
+    {
+        /// <summary>
+        /// The title of the panel.
+        /// </summary>
+        public string Legend;
+
+        /// <summary>
+        /// Creates a new HFieldSet object
+        /// <param name="legend">the displayed name of the panel</param>
+        /// <param name="elements">the contained elements</param>
+        /// </summary>
+        public HPanel(string legend = null, params HElement[] elements) : base(elements)
+        {
+            Legend = legend;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(AbstractSessionIdentificator sessionData)
+        {
+            string ret = "<fieldset ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
+
+            ret += ">";
+
+            if (!string.IsNullOrWhiteSpace(Legend))
+                ret += "<legend>" + Legend + "</legend>";
+
+            if (!string.IsNullOrWhiteSpace(Text))
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+
+            for (int i = 0; i < Elements.Count; i++)
+            {
+                ret += Elements[i].GetContent(sessionData);
+            }
+
+            ret += "</fieldset>";
 
             return ret;
         }
@@ -2085,13 +2356,24 @@ namespace LamestWebserver.UI
         /// <param name="tagName">the name of the custom tag</param>
         /// <param name="descriptionTags">Additional attributs</param>
         /// <param name="hasContent">if false, the element won't have a start and end tag but will only consist of a single tag (like img)</param>
-        /// <param name="text">the text displayed in the content of this element</param>
-        public HTag(string tagName, string descriptionTags, bool hasContent = false, string text = "")
+        /// <param name="text">the contatined text in this element</param>
+        public HTag(string tagName, string descriptionTags, bool hasContent, string text = "")
         {
             this.TagName = tagName;
             this.DescriptionTags = descriptionTags;
             this.HasContent = hasContent;
             this.Text = text;
+        }
+
+        /// <summary>
+        /// Constructs a new custom tag
+        /// </summary>
+        /// <param name="tagName">the name of the custom tag</param>
+        /// <param name="descriptionTags">Additional attributes</param>
+        /// <param name="text">the contatined text in this element (or null if no content)</param>
+        public HTag(string tagName, string descriptionTags, string text = null) : this(tagName, descriptionTags, text != null, text)
+        {
+            
         }
 
         /// <summary>

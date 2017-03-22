@@ -75,6 +75,20 @@ namespace Demos
                 },
                 new List<HElement>()
                 {
+                    new HText(nameof(HUnderlined)),
+                    new HText("An underlined text."),
+                    new HText("<u>"),
+                    new HUnderlined("Offer of the week")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HCrossedOut)),
+                    new HText("An underlined text."),
+                    new HText("<del>"),
+                    new HCrossedOut("Free Pasta!")
+                },
+                new List<HElement>()
+                {
                     new HText(nameof(HTextBlock)),
                     new HText("Can combine text with e.g. bold and italic text. (Every HElement)"),
                     new HText("<p>"),
@@ -134,7 +148,14 @@ namespace Demos
                     new HText(nameof(HContainer)),
                     new HText("A Container for other elements."),
                     new HText("<div>"),
-                    new HContainer(new HText("hello"), new HBold("yello"), new HNewLine(), new HButton("cello", HButton.EButtonType.button))
+                    new HContainer(new HText("hello"), new HBold("yello")) + new HContainer(new HButton("cello", HButton.EButtonType.button))
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HInlineContainer)),
+                    new HText("An Inline-Container for other elements and text."),
+                    new HText("<span>"),
+                    new HInlineContainer(new HText("hello"), new HBold("yello")) + new HInlineContainer(new HButton("cello", HButton.EButtonType.button))
                 },
                 new List<HElement>()
                 {
@@ -201,6 +222,14 @@ namespace Demos
                         else
                             return new HString($"You entered '{result}'").GetContent(innerSessionData);
                     })
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HPanel)),
+                    new HText("A grouped collection of elements."),
+                    new HText("<fieldset>"),
+                    new HPanel(null, new HButton("button", HButton.EButtonType.submit))
+                     + new HPanel("Your Title could be here", new HButton("button2", HButton.EButtonType.submit))
                 },
                 new List<HElement>()
                 {
@@ -310,6 +339,13 @@ namespace Demos
                 },
                 new List<HElement>()
                 {
+                    new HText(nameof(HQuote)),
+                    new HText("A quote."),
+                    new HText("<blockquote>"),
+                    new HQuote("Sources shall be quoted.\n- Some Guy on the Internet", "http://some.source.com/")
+                },
+                new List<HElement>()
+                {
                     new HText(nameof(HScript)),
                     new HText("A script embedded in the webpage."),
                     new HText("<script>"),
@@ -325,7 +361,15 @@ namespace Demos
                     new HText("A linked script file embedded in the webpage."),
                     new HText("<script>"),
                     new HScriptLink("script.js")
-                }
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HTag)),
+                    new HText("A custom html tag."),
+                    new HText("custom"),
+                    new HTag("a", "href=\"\"", true, "I am a Link")
+                    + new HTag("img", "src=\"lwsfooter.png\"")
+                },
             });
         }
     }
