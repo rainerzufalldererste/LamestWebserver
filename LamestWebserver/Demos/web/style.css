@@ -106,6 +106,15 @@ p.code {
     font-family: Consolas, "Courier New", monospace;
 } 
 
+p.smallcode {
+    background: #f3f3f3;
+    padding: 5px 10px;
+    font-size: 11pt;
+    color: #8c8c8c;
+    font-family: Consolas, "Courier New", monospace;
+    border: 3px solid #ececec;
+} 
+
 comment {
     color:#ccc;
 } 

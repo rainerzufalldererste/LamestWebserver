@@ -43,6 +43,10 @@ namespace Demos
             // We're using yield return here so it's easier to add to the page.
             yield return new HHeadline("Tutorial 01: HElements");
 
+            yield return new HText("Constructed Pages in LamestWebserver are built out of HElement objects, which are mostly a direct representation of the HTML-Tag counterparts. You can find these Elements in the Namespace 'LamestWebserver.UI'.");
+
+            yield return new HHeadline("Basic Elements", 2);
+
             yield return new HTable(new List<List<HElement>>()
             {
                 new List<HElement>()
@@ -64,7 +68,7 @@ namespace Demos
                     new HText(nameof(HBold)),
                     new HText("A bold text."),
                     new HText("<b>"),
-                    new HBold("Some Headline")
+                    new HBold("Some bold text.")
                 },
                 new List<HElement>()
                 {
@@ -131,17 +135,52 @@ namespace Demos
                 },
                 new List<HElement>()
                 {
-                    new HText(nameof(HLink)),
-                    new HText("A link"),
-                    new HText("<a>"),
-                    new HLink("Go back to the MainPage", "/")
+                    new HText(nameof(HImage)),
+                    new HText("An image."),
+                    new HText("<img>"),
+                    new HImage("lwsfooter.png")
                 },
                 new List<HElement>()
                 {
-                    new HText(nameof(HButton)),
-                    new HText("A Button."),
-                    new HText("<button>"),
-                    new HButton("button", HButton.EButtonType.button, "")
+                    new HText(nameof(HLine)),
+                    new HText("A horizontal line."),
+                    new HText("<hr>"),
+                    new HLine()
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HQuote)),
+                    new HText("A quote."),
+                    new HText("<blockquote>"),
+                    new HQuote("Sources shall be quoted.\n- Some Guy on the Internet", "http://some.source.com/")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HCanvas)),
+                    new HText("A HTML-Canvas for drawing on using JavaScript code."),
+                    new HText("<canvas>"),
+                    new HCanvas() {Style = "width:100px; height:100px; background-color:#fb905f;"}
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HTag)),
+                    new HText("A custom html tag."),
+                    new HText("custom"),
+                    new HTag("a", "href=\"\"", true, "I am a Link")
+                    + new HTag("img", "src=\"lwsfooter.png\"")
+                },
+            });
+
+            yield return new HHeadline("Container Elements", 2);
+
+            yield return new HTable(new List<List<HElement>>()
+            {
+                new List<HElement>()
+                {
+                    new HBold("Class"),
+                    new HBold("Purpose"),
+                    new HBold("HTML-Tag"),
+                    new HBold("Example")
                 },
                 new List<HElement>()
                 {
@@ -159,15 +198,118 @@ namespace Demos
                 },
                 new List<HElement>()
                 {
-                    new HText(nameof(HImage)),
-                    new HText("An image."),
-                    new HText("<img>"),
-                    new HImage("lwsfooter.png")
+                    new HText(nameof(HPanel)),
+                    new HText("A grouped collection of elements."),
+                    new HText("<fieldset>"),
+                    new HPanel(null, new HButton("button", HButton.EButtonType.submit))
+                     + new HPanel("Your Title could be here", new HButton("button2", HButton.EButtonType.submit))
+                },
+            });
+
+            yield return new HHeadline("Interactive Elements", 2);
+
+            yield return new HTable(new List<List<HElement>>()
+            {
+                new List<HElement>()
+                {
+                    new HBold("Class"),
+                    new HBold("Purpose"),
+                    new HBold("HTML-Tag"),
+                    new HBold("Example")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HLink)),
+                    new HText("A link"),
+                    new HText("<a>"),
+                    new HLink("Go back to the MainPage", "/")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HButton)),
+                    new HText("A Button."),
+                    new HText("<button>"),
+                    new HButton("button", HButton.EButtonType.button, "")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HForm)),
+                    new HText("A collection of inputs that can be sent to another page via HTTP POST."),
+                    new HText("<form>"),
+                    new HForm("") {Elements = {new HTextInput("text", "", "insert your text here."), new HButton("submit", HButton.EButtonType.submit)}}
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HTextInput)),
+                    new HText("A simpler way to get a text input."),
+                    new HText("<input>"),
+                    new HTextInput("textInput4", "", "placeholder text")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HTextArea)),
+                    new HText("A mutliline text input."),
+                    new HText("<textarea>"),
+                    new HTextArea("this\n is\n  some\n   text", null, 5)
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HPasswordInput)),
+                    new HText("A simpler way to get a password input."),
+                    new HText("<input>"),
+                    new HPasswordInput("passwordInput2", "placeholder text")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HCheckBox)),
+                    new HText("A simpler way to get a checkbox input."),
+                    new HText("<input> <label>"),
+                    new HCheckBox("checkBox1", "checkBox1Value", null, true) + new HNewLine()
+                    + new HCheckBox("checkBox2", "checkBox2Value", "Check Box Text", true) + new HNewLine()
+                    + new HCheckBox("checkBox3", "checkBox3Value", null, false) + new HNewLine()
+                    + new HCheckBox("checkBox4", "checkBox4Value", "Next Check Box text", false)
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HRadioButton)),
+                    new HText("A simpler way to get a radio button input."),
+                    new HText("<input> <label>"),
+                    new HRadioButton("radioButton1", "radioButton1Value", null, true) + new HNewLine()
+                    + new HRadioButton("radioButton2", "radioButton2Value", "Radio Button Text", true) + new HNewLine()
+                    + new HRadioButton("radioButton3", "radioButton3Value", null, false) + new HNewLine()
+                    + new HRadioButton("radioButton4", "radioButton4Value", "Next Radio Button text", false)
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HDropDownMenu)),
+                    new HText("A dropdown menu."),
+                    new HText("<select>"),
+                    new HDropDownMenu("dropDown", new Tuple<string, string>("Some", "first"), new Tuple<string, string>("Thing", "second"))
+                    + new HNewLine()
+                    + new HNewLine()
+                    + new HDropDownMenu("dropDown", 3, true, new Tuple<string, string>("Some", "first"), new Tuple<string, string>("Thing", "second"),
+                        new Tuple<string, string>("With", "third"), new Tuple<string, string>("More", "fourth"),
+                        new Tuple<string, string>("Concurrent", "fifth"), new Tuple<string, string>("Options", "sixth"))
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HSingleSelector)),
+                    new HText("A list of radio-buttons, in which only one can be selected once."),
+                    new HText("<input> <label>"),
+                    new HSingleSelector("groupedRadioButtons", new List<Tuple<string, string>>()
+                    {
+                        new Tuple<string, string>("Zero", "zerothItem"),
+                        new Tuple<string, string>("First", "firstItem"),
+                        new Tuple<string, string>("Second", "secondItem"),
+                        new Tuple<string, string>("Third", "thirdItem"),
+                        new Tuple<string, string>("Fourth", "fourthItem"),
+                        new Tuple<string, string>("Fifth", "fifthItem")
+                    }, 2, true)
                 },
                 new List<HElement>()
                 {
                     new HText(nameof(HInput)),
-                    new HText("An input element."),
+                    new HText("A custom input element."),
                     new HText("<input>"),
                     new HInput(HInput.EInputType.text, "textInput", "textInput") + new HNewLine()
                     + new HInput(HInput.EInputType.button, "buttonInput", "buttonInput") + new HNewLine()
@@ -193,69 +335,18 @@ namespace Demos
                     + new HInput(HInput.EInputType.url, "urlInput", "urlInput") + new HNewLine()
                     + new HInput(HInput.EInputType.week, "weekInput", "weekInput") + new HNewLine()
                 },
-                new List<HElement>()
-                {
-                    new HText(nameof(HTextArea)),
-                    new HText("A mutliline text input."),
-                    new HText("<textarea>"),
-                    new HTextArea("this\n is\n  some\n   text", null, 5)
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HForm)),
-                    new HText("A collection of inputs that can be sent to another page via HTTP POST."),
-                    new HText("<form>"),
-                    new HForm("") {Elements = {new HInput(HInput.EInputType.text, "text", "insert your text here."), new HButton("submit", HButton.EButtonType.submit)}}
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HRuntimeCode)),
-                    new HText("Code that will be executed at runtime (mostly just to add code in a big HElement block like this one here)."),
-                    new HText("-"),
-                    new HRuntimeCode((innerSessionData) => // The code returns string and takes an AbstractSessionIdentificator
-                    {
-                        string result = (innerSessionData as SessionData)?.GetHttpPostValue("text");
-                            // only SessionData can get Post Values - other AbstractSessionIdentificators could be initiated from Websockets.
+            });
+            
+            yield return new HHeadline("Structural Elements", 2);
 
-                        if (result == null) // GetHttpPostValue returns null if the value could not be found.
-                            return new HString("You can enter a text in the HForm example above and click on the submit button.").GetContent(innerSessionData);
-                        else
-                            return new HString($"You entered '{result}'").GetContent(innerSessionData);
-                    })
-                },
+            yield return new HTable(new List<List<HElement>>()
+            {
                 new List<HElement>()
                 {
-                    new HText(nameof(HPanel)),
-                    new HText("A grouped collection of elements."),
-                    new HText("<fieldset>"),
-                    new HPanel(null, new HButton("button", HButton.EButtonType.submit))
-                     + new HPanel("Your Title could be here", new HButton("button2", HButton.EButtonType.submit))
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HLine)),
-                    new HText("A horizontal line."),
-                    new HText("<hr>"),
-                    new HLine()
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HCanvas)),
-                    new HText("A HTML-Canvas for drawing on using JavaScript code."),
-                    new HText("<canvas>"),
-                    new HCanvas() {Style = "width:100px; height:100px; background-color:#fb905f;"}
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HDropDownMenu)),
-                    new HText("A dropdown menu."),
-                    new HText("<select>"),
-                    new HDropDownMenu("dropDown", new Tuple<string, string>("Some", "first"), new Tuple<string, string>("Thing", "second"))
-                    + new HNewLine()
-                    + new HNewLine()
-                    + new HDropDownMenu("dropDown", 3, true, new Tuple<string, string>("Some", "first"), new Tuple<string, string>("Thing", "second"),
-                        new Tuple<string, string>("With", "third"), new Tuple<string, string>("More", "fourth"),
-                        new Tuple<string, string>("Concurrent", "fifth"), new Tuple<string, string>("Options", "sixth"))
+                    new HBold("Class"),
+                    new HBold("Purpose"),
+                    new HBold("HTML-Tag"),
+                    new HBold("Example")
                 },
                 new List<HElement>()
                 {
@@ -288,61 +379,47 @@ namespace Demos
                         }
                     })
                 },
+            });
+
+            yield return new HHeadline("Runtime-Dependent Elements", 2);
+
+            yield return new HTable(new List<List<HElement>>()
+            {
                 new List<HElement>()
                 {
-                    new HText(nameof(HTextInput)),
-                    new HText("A simpler way to get a text input."),
-                    new HText("<input>"),
-                    new HTextInput("textInput4", "", "placeholder text")
+                    new HBold("Class"),
+                    new HBold("Purpose"),
+                    new HBold("HTML-Tag"),
+                    new HBold("Example")
                 },
                 new List<HElement>()
                 {
-                    new HText(nameof(HPasswordInput)),
-                    new HText("A simpler way to get a password input."),
-                    new HText("<input>"),
-                    new HPasswordInput("passwordInput2", "placeholder text")
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HCheckBox)),
-                    new HText("A simpler way to get a checkbox input."),
-                    new HText("<input> <label>"),
-                    new HCheckBox("checkBox1", "checkBox1Value", null, true) + new HNewLine()
-                    + new HCheckBox("checkBox2", "checkBox2Value", "Check Box Text", true) + new HNewLine()
-                    + new HCheckBox("checkBox3", "checkBox3Value", null, false) + new HNewLine()
-                    + new HCheckBox("checkBox4", "checkBox4Value", "Next Check Box text", false)
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HRadioButton)),
-                    new HText("A simpler way to get a radio button input."),
-                    new HText("<input> <label>"),
-                    new HRadioButton("radioButton1", "radioButton1Value", null, true) + new HNewLine()
-                    + new HRadioButton("radioButton2", "radioButton2Value", "Radio Button Text", true) + new HNewLine()
-                    + new HRadioButton("radioButton3", "radioButton3Value", null, false) + new HNewLine()
-                    + new HRadioButton("radioButton4", "radioButton4Value", "Next Radio Button text", false)
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HSingleSelector)),
-                    new HText("A list of radio-buttons, in which only one can be selected once."),
-                    new HText("<input> <label>"),
-                    new HSingleSelector("groupedRadioButtons", new List<Tuple<string, string>>()
+                    new HText(nameof(HRuntimeCode)),
+                    new HText("Code that will be executed at runtime (mostly just to add code in a big HElement block like this one here)."),
+                    new HText("-"),
+                    new HRuntimeCode((innerSessionData) => // The code returns string and takes an AbstractSessionIdentificator
                     {
-                        new Tuple<string, string>("Zero", "zerothItem"),
-                        new Tuple<string, string>("First", "firstItem"),
-                        new Tuple<string, string>("Second", "secondItem"),
-                        new Tuple<string, string>("Third", "thirdItem"),
-                        new Tuple<string, string>("Fourth", "fourthItem"),
-                        new Tuple<string, string>("Fifth", "fifthItem")
-                    }, 2, true)
+                        string result = (innerSessionData as SessionData)?.GetHttpPostValue("text");
+                        // only SessionData can get Post Values - other AbstractSessionIdentificators could be initiated from Websockets.
+
+                        if (result == null) // GetHttpPostValue returns null if the value could not be found.
+                            return new HString("You can enter a text in the HForm example above and click on the submit button.").GetContent(innerSessionData);
+                        else
+                            return new HString($"You entered '{result}'").GetContent(innerSessionData);
+                    })
                 },
+            });
+
+            yield return new HHeadline("JavaScript Embedding Elements", 2);
+
+            yield return new HTable(new List<List<HElement>>()
+            {
                 new List<HElement>()
                 {
-                    new HText(nameof(HQuote)),
-                    new HText("A quote."),
-                    new HText("<blockquote>"),
-                    new HQuote("Sources shall be quoted.\n- Some Guy on the Internet", "http://some.source.com/")
+                    new HBold("Class"),
+                    new HBold("Purpose"),
+                    new HBold("HTML-Tag"),
+                    new HBold("Example")
                 },
                 new List<HElement>()
                 {
@@ -361,14 +438,6 @@ namespace Demos
                     new HText("A linked script file embedded in the webpage."),
                     new HText("<script>"),
                     new HScriptLink("script.js")
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HTag)),
-                    new HText("A custom html tag."),
-                    new HText("custom"),
-                    new HTag("a", "href=\"\"", true, "I am a Link")
-                    + new HTag("img", "src=\"lwsfooter.png\"")
                 },
             });
         }
