@@ -73,6 +73,7 @@
     <Compile Include="RequestHandlers\ResponseHandler.cs" />
     <Compile Include="Security\Encryption.cs" />
     <Compile Include="ThreadedWorker.cs" />
+    <Compile Include="UI\ComplexElements.cs" />
     <Compile Include="UI\PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />
     <Compile Include="PageResponse.cs" />

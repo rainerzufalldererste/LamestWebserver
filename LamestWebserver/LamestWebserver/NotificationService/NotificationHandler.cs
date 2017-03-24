@@ -113,7 +113,7 @@ namespace LamestWebserver.NotificationService
         {
             return
                 new ExecuteScriptNotification(
-                    JSElement.getByID(divId)
+                    JSElement.GetByID(divId)
                         .InnerHTML.Set(content)
                         .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
@@ -162,8 +162,8 @@ namespace LamestWebserver.NotificationService
         public static Notification AddContentToDiv(string divId, IJSValue content)
         {
             return new ExecuteScriptNotification(
-                JSElement.getByID(divId).InnerHTML.Set(
-                    JSElement.getByID(divId).InnerHTML + content
+                JSElement.GetByID(divId).InnerHTML.Set(
+                    JSElement.GetByID(divId).InnerHTML + content
                 ).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
         

@@ -241,7 +241,7 @@ namespace Demos
                 new List<HElement>()
                 {
                     new HText(nameof(HTextInput)),
-                    new HText("A simpler way to get a text input."),
+                    new HText("A simple text input."),
                     new HText("<input>"),
                     new HTextInput("textInput4", "", "placeholder text")
                 },
@@ -255,14 +255,14 @@ namespace Demos
                 new List<HElement>()
                 {
                     new HText(nameof(HPasswordInput)),
-                    new HText("A simpler way to get a password input."),
+                    new HText("A simple password input."),
                     new HText("<input>"),
                     new HPasswordInput("passwordInput2", "placeholder text")
                 },
                 new List<HElement>()
                 {
                     new HText(nameof(HCheckBox)),
-                    new HText("A simpler way to get a checkbox input."),
+                    new HText("A simple checkbox input."),
                     new HText("<input> <label>"),
                     new HCheckBox("checkBox1", "checkBox1Value", null, true) + new HNewLine()
                     + new HCheckBox("checkBox2", "checkBox2Value", "Check Box Text", true) + new HNewLine()
@@ -272,7 +272,7 @@ namespace Demos
                 new List<HElement>()
                 {
                     new HText(nameof(HRadioButton)),
-                    new HText("A simpler way to get a radio button input."),
+                    new HText("A simple radio button input."),
                     new HText("<input> <label>"),
                     new HRadioButton("radioButton1", "radioButton1Value", null, true) + new HNewLine()
                     + new HRadioButton("radioButton2", "radioButton2Value", "Radio Button Text", true) + new HNewLine()
@@ -427,7 +427,7 @@ namespace Demos
                     new HText("A script embedded in the webpage."),
                     new HText("<script>"),
                     new HScript("")
-                    + new HScript(ScriptCollection.GetPageReloadInMilliseconds, new object[] {60000})
+                    + new HScript(ScriptCollection.GetPageReloadInMilliseconds, new object[] {60000000})
                     // the first parameter is a delegate, the second one is the parameters expected for this delegate to work
                     // the delegates in ScriptCollection specify the parameters in their comments
                     // In this case the parameters are obviously the milliseconds to wait.
@@ -438,6 +438,35 @@ namespace Demos
                     new HText("A linked script file embedded in the webpage."),
                     new HText("<script>"),
                     new HScriptLink("script.js")
+                },
+            });
+
+            yield return new HLine();
+
+            yield return new HHeadline("Advanced Interactive Elements", 2);
+
+            yield return new HTable(new List<List<HElement>>()
+            {
+                new List<HElement>()
+                {
+                    new HBold("Class"),
+                    new HBold("Purpose"),
+                    new HBold("HTML-Tag"),
+                    new HBold("Example")
+                },
+                new List<HElement>()
+                {
+                    new HText(nameof(HLinkSearchBox)),
+                    new HText("A search box for links."),
+                    new HText("<input>"),
+                    new HLinkSearchBox("responseURL", (identificator, s) => {
+                        List<Tuple<string, string>> list = new List<Tuple<string, string>>();
+                        for(int i = 0; i < s.Length; i++)
+                        {
+                            list.Add(Tuple.Create(s.Substring(0, i + 1), "/#" + s[i].ToString()));
+                        }
+                        return list;
+                    })
                 },
             });
         }

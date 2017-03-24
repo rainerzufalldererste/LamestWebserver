@@ -104,7 +104,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public static JSElementValue getByID(string id)
+        public static JSElementValue GetByID(string id)
         {
             return new JSElementValue(new JSFunctionCall("document.getElementById", new JSStringValue(id)));
         }
@@ -306,10 +306,10 @@ namespace LamestWebserver.JScriptBuilder
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
                     URL += HttpUtility.UrlEncode(Value) + "&checked=";
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".checked, true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + GetByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".checked, true);xmlhttp.send();")).DefineAndCall();
 
                 default:
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".value, true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + GetByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".value, true);xmlhttp.send();")).DefineAndCall();
             }
         }
 
@@ -341,12 +341,12 @@ namespace LamestWebserver.JScriptBuilder
                     URL += HttpUtility.UrlEncode(Value) + "&checked=";
                     return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
                         + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(AbstractSessionIdentificator.CurrentSession)); return ret; })).Invoke()
-                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + GetByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
 
                 default:
                     return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
                         + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(AbstractSessionIdentificator.CurrentSession)); return ret; })).Invoke()
-                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSFunctionCall.EncodeURIComponent(getByID(ID).Value).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ",true);xmlhttp.send();")).DefineAndCall();
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSFunctionCall.EncodeURIComponent(GetByID(ID).Value).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ",true);xmlhttp.send();")).DefineAndCall();
             }
         }
     }
@@ -549,7 +549,7 @@ namespace LamestWebserver.JScriptBuilder
                 URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
             }
 
-            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + GetByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
         }
 
         /// <summary>
@@ -573,7 +573,7 @@ namespace LamestWebserver.JScriptBuilder
                 URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
             }
 
-            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
+            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + GetByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
                 + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(AbstractSessionIdentificator.CurrentSession)); return ret; })).Invoke()
                 + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSFunctionCall.EncodeURIComponent(new JSValue("elem.selectedOptions[0].value")).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + "+ \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += " + JSFunctionCall.EncodeURIComponent(new JSValue("elem.selectedOptions[i].value")).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ";if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
         }
