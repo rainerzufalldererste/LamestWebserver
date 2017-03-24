@@ -51,7 +51,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected abstract string GetContents(SessionData sessionData);
+        protected abstract string GetContents(AbstractSessionIdentificator sessionData);
     }
 
     /// <summary>
@@ -72,7 +72,7 @@ namespace LamestWebserver
                 Master.AddFuntionToServer(URL, GetContentSyncronously);
         }
 
-        private string GetContentSyncronously(SessionData sessionData)
+        private string GetContentSyncronously(AbstractSessionIdentificator sessionData)
         {
             using (mutex.Lock())
             {
@@ -85,7 +85,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected abstract override string GetContents(SessionData sessionData);
+        protected abstract override string GetContents(AbstractSessionIdentificator sessionData);
     }
 
     /// <summary>
@@ -119,7 +119,7 @@ namespace LamestWebserver
             Master.RemoveFunctionFromServer(URL);
         }
 
-        private string GetContents(SessionData sessionData)
+        private string GetContents(AbstractSessionIdentificator sessionData)
         {
             return GetElement(sessionData) * sessionData;
         }
@@ -129,7 +129,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected abstract HElement GetElement(SessionData sessionData);
+        protected abstract HElement GetElement(AbstractSessionIdentificator sessionData);
     }
 
     /// <summary>
@@ -150,7 +150,7 @@ namespace LamestWebserver
                 Master.AddFuntionToServer(URL, getContents);
         }
 
-        private string getContents(SessionData sessionData)
+        private string getContents(AbstractSessionIdentificator sessionData)
         {
             using (mutex.Lock())
             {
@@ -163,7 +163,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected abstract override HElement GetElement(SessionData sessionData);
+        protected abstract override HElement GetElement(AbstractSessionIdentificator sessionData);
     }
 
     /// <summary>
@@ -193,7 +193,7 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="subUrl">the requested Sub-URL of the request</param>
         /// <returns></returns>
-        protected abstract string GetContent(SessionData sessionData, string subUrl);
+        protected abstract string GetContent(AbstractSessionIdentificator sessionData, string subUrl);
         
         /// <summary>
         /// Removes this DirectoryResponse from the Server.
@@ -231,7 +231,7 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="subUrl">the requested Sub-URL of the request</param>
         /// <returns></returns>
-        protected abstract HElement GetContent(SessionData sessionData, string subUrl);
+        protected abstract HElement GetContent(AbstractSessionIdentificator sessionData, string subUrl);
 
         /// <summary>
         /// Removes this DirectoryElementResponse from the Server.

@@ -20,7 +20,7 @@ namespace Demos
         {
         }
 
-        protected override string GetContents(SessionData sessionData)
+        protected override string GetContents(AbstractSessionIdentificator sessionData)
         {
             // Get the default layout around the elements retrieved by GetElements()
             HElement page = MainPage.GetPage(GetElements(), nameof(Tut01) + ".cs");
@@ -438,35 +438,6 @@ namespace Demos
                     new HText("A linked script file embedded in the webpage."),
                     new HText("<script>"),
                     new HScriptLink("script.js")
-                },
-            });
-
-            yield return new HLine();
-
-            yield return new HHeadline("Advanced Interactive Elements", 2);
-
-            yield return new HTable(new List<List<HElement>>()
-            {
-                new List<HElement>()
-                {
-                    new HBold("Class"),
-                    new HBold("Purpose"),
-                    new HBold("HTML-Tag"),
-                    new HBold("Example")
-                },
-                new List<HElement>()
-                {
-                    new HText(nameof(HLinkSearchBox)),
-                    new HText("A search box for links."),
-                    new HText("<input>"),
-                    new HLinkSearchBox("responseURL", (identificator, s) => {
-                        List<Tuple<string, string>> list = new List<Tuple<string, string>>();
-                        for(int i = 0; i < s.Length; i++)
-                        {
-                            list.Add(Tuple.Create(s.Substring(0, i + 1), "/#" + s[i].ToString()));
-                        }
-                        return list;
-                    })
                 },
             });
         }

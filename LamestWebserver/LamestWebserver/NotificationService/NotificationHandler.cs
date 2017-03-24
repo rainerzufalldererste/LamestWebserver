@@ -100,7 +100,7 @@ namespace LamestWebserver.NotificationService
         /// <returns>the specified notification</returns>
         public static Notification ExecuteScript(IJSPiece piece)
         {
-            return new ExecuteScriptNotification(piece.getCode(AbstractSessionIdentificator.CurrentSession));
+            return new ExecuteScriptNotification(piece.GetJsCode(AbstractSessionIdentificator.CurrentSession));
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace LamestWebserver.NotificationService
                 new ExecuteScriptNotification(
                     JSElement.GetByID(divId)
                         .InnerHTML.Set(content)
-                        .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                        .GetJsCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace LamestWebserver.NotificationService
                 new ExecuteScriptNotification(
                     JSElement.Body
                         .InnerHTML.Set(content)
-                        .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                        .GetJsCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace LamestWebserver.NotificationService
             return new ExecuteScriptNotification(
                 JSElement.GetByID(divId).InnerHTML.Set(
                     JSElement.GetByID(divId).InnerHTML + content
-                ).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                ).GetJsCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
         
         /// <summary>
@@ -185,7 +185,7 @@ namespace LamestWebserver.NotificationService
         public static Notification ReloadPage()
         {
             return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(JSValue.CurrentBrowserURL)
-                .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                .GetJsCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
 
         /// <summary>
@@ -196,7 +196,7 @@ namespace LamestWebserver.NotificationService
         public static Notification Redirect(IJSValue newPageUrl)
         {
             return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(newPageUrl)
-                .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                .GetJsCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
         }
 
         /// <summary>
@@ -588,7 +588,7 @@ namespace LamestWebserver.NotificationService
         {
             return
                 SendingFunction.callFunction(
-                    new JSValue(messageGetter.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner)));
+                    new JSValue(messageGetter.GetJsCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner)));
         }
 
         /// <summary>

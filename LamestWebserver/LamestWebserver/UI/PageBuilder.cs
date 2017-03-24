@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using LamestWebserver.JScriptBuilder;
 
 namespace LamestWebserver.UI
 {
@@ -1924,12 +1925,12 @@ namespace LamestWebserver.UI
             {
                 if (!string.IsNullOrWhiteSpace(_onclick))
                 {
-                    ret += "onclick=\"" + _onclick + ";";
+                    ret += "onclick='" + _onclick + ";";
 
                     if (!string.IsNullOrWhiteSpace(_href) && _type != EButtonType.submit)
-                        ret += "location.href='" + _href + "'\" ";
+                        ret += "location.href=\"" + _href + "\"'; ";
                     else
-                        ret += "\" ";
+                        ret += "\' ";
                 }
                 else if (!string.IsNullOrWhiteSpace(_href) && _type != EButtonType.submit)
                 {
