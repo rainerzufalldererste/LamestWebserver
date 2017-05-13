@@ -12,10 +12,10 @@ namespace LamestWebserver.UI
         public string Value = "";
         public string Placeholder = "";
         private readonly string _pageUrl;
-        private readonly Func<AbstractSessionIdentificator, string, IEnumerable<Tuple<string, string>>> _func;
+        private readonly Func<SessionData, string, IEnumerable<Tuple<string, string>>> _func;
         public string ContainerID;
 
-        public HLinkSearchBox(Func<AbstractSessionIdentificator, string, IEnumerable<Tuple<string, string>>> responseFunction, string responseUrl = null, string placeholder = null)
+        public HLinkSearchBox(Func<SessionData, string, IEnumerable<Tuple<string, string>>> responseFunction, string responseUrl = null, string placeholder = null)
         {
             if (responseUrl == null)
                 responseUrl = SessionContainer.GenerateUnusedHash();
@@ -30,7 +30,7 @@ namespace LamestWebserver.UI
         }
 
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData)
+        public override string GetContent(SessionData sessionData)
         {
             var input = new JSInput(HInput.EInputType.text, Name, Value) {Class = Class, Style = Style, Title = Title};
 
@@ -51,13 +51,13 @@ namespace LamestWebserver.UI
             return input + container;
         }
 
-        protected string GetResponse(AbstractSessionIdentificator sessionData)
+        protected string GetResponse(SessionData sessionData)
         {
             string param = "";
 
-            if (sessionData is SessionData)
+            if (sessionData is HttpSessionData)
             {
-                param = ((SessionData) sessionData).GetHttpHeadValue("value");
+                param = ((HttpSessionData) sessionData).GetHttpHeadValue("value");
             }
 
             if (param == null)
@@ -134,16 +134,16 @@ namespace LamestWebserver.UI
             Values.Add(new Tuple<string, IEnumerable<HElement>>(value, element));
         }
 
-        public string GetCurrentValue(AbstractSessionIdentificator sessionData)
+        public string GetCurrentValue(SessionData sessionData)
         {
-            if (!(sessionData is SessionData))
+            if (!(sessionData is HttpSessionData))
                 return null;
             else
-                return ((SessionData) sessionData).GetHttpPostValue(Name);
+                return ((HttpSessionData) sessionData).GetHttpPostValue(Name);
         }
 
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData)
+        public override string GetContent(SessionData sessionData)
         {
             if (Values == null || Values.Count == 0)
                 throw new ArgumentException($"No Values given to cycle through.");

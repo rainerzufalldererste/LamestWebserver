@@ -29,7 +29,7 @@ namespace Demos
         /// </summary>
         /// <param name="sessionData">the sessionData for the current user</param>
         /// <returns>the response</returns>
-        protected override HElement GetElement(AbstractSessionIdentificator sessionData)
+        protected override HElement GetElement(SessionData sessionData)
         {
             // Create a new Page outline for the browser. 
             var page = new PageBuilder("LamestWebserver Reference"); // <- the title displayed in the browser window.
