@@ -387,6 +387,9 @@ namespace LamestWebserver
                             newKey = newKey.Remove(newKey.Length - 1);
                         }
 
+                        newKey = HttpUtility.UrlDecode(newKey);
+                        newValue = HttpUtility.UrlDecode(newValue);
+
                         h.VariablesHttpPost.Add(newKey, newValue);
                     }
 
