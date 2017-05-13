@@ -16,7 +16,7 @@ namespace Demos
         }
 
         /// <inheritdoc />
-        protected override HElement GetElement(AbstractSessionIdentificator sessionData)
+        protected override HElement GetElement(SessionData sessionData)
         {
             return MainPage.GetPage(GetContents(), nameof(Tut02) + ".cs");
         }

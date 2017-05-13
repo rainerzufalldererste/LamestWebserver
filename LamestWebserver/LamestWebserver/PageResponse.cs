@@ -51,7 +51,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected abstract string GetContents(AbstractSessionIdentificator sessionData);
+        protected abstract string GetContents(SessionData sessionData);
     }
 
     /// <summary>
@@ -72,7 +72,7 @@ namespace LamestWebserver
                 Master.AddFuntionToServer(URL, GetContentSyncronously);
         }
 
-        private string GetContentSyncronously(AbstractSessionIdentificator sessionData)
+        private string GetContentSyncronously(SessionData sessionData)
         {
             using (mutex.Lock())
             {
@@ -85,7 +85,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected abstract override string GetContents(AbstractSessionIdentificator sessionData);
+        protected abstract override string GetContents(SessionData sessionData);
     }
 
     /// <summary>
@@ -119,7 +119,7 @@ namespace LamestWebserver
             Master.RemoveFunctionFromServer(URL);
         }
 
-        private string GetContents(AbstractSessionIdentificator sessionData)
+        private string GetContents(SessionData sessionData)
         {
             return GetElement(sessionData) * sessionData;
         }
@@ -129,7 +129,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected abstract HElement GetElement(AbstractSessionIdentificator sessionData);
+        protected abstract HElement GetElement(SessionData sessionData);
     }
 
     /// <summary>
@@ -150,7 +150,7 @@ namespace LamestWebserver
                 Master.AddFuntionToServer(URL, getContents);
         }
 
-        private string getContents(AbstractSessionIdentificator sessionData)
+        private string getContents(SessionData sessionData)
         {
             using (mutex.Lock())
             {
@@ -163,7 +163,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the response</returns>
-        protected abstract override HElement GetElement(AbstractSessionIdentificator sessionData);
+        protected abstract override HElement GetElement(SessionData sessionData);
     }
 
     /// <summary>
@@ -193,7 +193,7 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="subUrl">the requested Sub-URL of the request</param>
         /// <returns></returns>
-        protected abstract string GetContent(AbstractSessionIdentificator sessionData, string subUrl);
+        protected abstract string GetContent(SessionData sessionData, string subUrl);
         
         /// <summary>
         /// Removes this DirectoryResponse from the Server.
@@ -231,7 +231,7 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="subUrl">the requested Sub-URL of the request</param>
         /// <returns></returns>
-        protected abstract HElement GetContent(AbstractSessionIdentificator sessionData, string subUrl);
+        protected abstract HElement GetContent(SessionData sessionData, string subUrl);
 
         /// <summary>
         /// Removes this DirectoryElementResponse from the Server.
@@ -297,7 +297,7 @@ namespace LamestWebserver
         /// <summary>
         /// adds a page to the server, that redirects to "destinationURL" and executes the given code
         /// </summary>
-        public static void AddRedirectWithCode(string originURL, string destinationURL, Action<SessionData> action, bool copyPOST = false)
+        public static void AddRedirectWithCode(string originURL, string destinationURL, Action<HttpSessionData> action, bool copyPOST = false)
         {
             AddInstantPageResponse(originURL, sessionData =>
             {
@@ -309,7 +309,7 @@ namespace LamestWebserver
         /// <summary>
         /// adds a page to the server, that redirects to "destinationURLifTRUE" if the conditional code returns true and redirects to "destinationURLifFALSE" if the conditional code returns false
         /// </summary>
-        public static void AddConditionalRedirect(string originalURL, string destinationURLifTRUE, string destinationURLifFALSE, Func<SessionData, bool> conditionalCode, bool copyPOST = false)
+        public static void AddConditionalRedirect(string originalURL, string destinationURLifTRUE, string destinationURLifFALSE, Func<HttpSessionData, bool> conditionalCode, bool copyPOST = false)
         {
             AddInstantPageResponse(originalURL, sessionData =>
             {
@@ -323,7 +323,7 @@ namespace LamestWebserver
         /// <summary>
         /// adds a page to the server, that redirects if the conditional code returns true and executes other code if the conditional code returns false
         /// </summary>
-        public static void AddRedirectOrCode(string originalURL, string destinationURLifTRUE, Master.GetContents codeIfFALSE, Func<SessionData, bool> conditionalCode, bool copyPOST = false)
+        public static void AddRedirectOrCode(string originalURL, string destinationURLifTRUE, Master.GetContents codeIfFALSE, Func<HttpSessionData, bool> conditionalCode, bool copyPOST = false)
         {
             AddInstantPageResponse(originalURL, sessionData =>
             {
@@ -354,7 +354,7 @@ namespace LamestWebserver
         /// <param name="instantlyRemove">runtime code should instantly remove these - constructors should not remove, since then they'll be gone the next compile</param>
         /// <param name="action">the code to execute</param>
         /// <param name="copyPOST">specifies whether all POST values given should be copied throughout the whole redirecting process</param>
-        public static string AddOneTimeRedirectWithCode(string destinationURL, bool instantlyRemove, Action<SessionData> action, bool copyPOST = false)
+        public static string AddOneTimeRedirectWithCode(string destinationURL, bool instantlyRemove, Action<HttpSessionData> action, bool copyPOST = false)
         {
             return AddOneTimeInstantPageResponse(sessionData =>
             {
@@ -391,7 +391,7 @@ namespace LamestWebserver
         /// <param name="conditionalCode">the conditional code to execute</param>
         /// <param name="copyPOST">specifies whether all POST values given should be copied throughout the whole redirecting process</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string AddOneTimeConditionalRedirect(string destinationURLifTRUE, string destinationURLifFALSE, bool instantlyRemove, Func<SessionData, bool> conditionalCode, bool copyPOST = false)
+        public static string AddOneTimeConditionalRedirect(string destinationURLifTRUE, string destinationURLifFALSE, bool instantlyRemove, Func<HttpSessionData, bool> conditionalCode, bool copyPOST = false)
         {
             return AddOneTimeInstantPageResponse(sessionData =>
             {
@@ -412,7 +412,7 @@ namespace LamestWebserver
         /// <param name="conditionalCode">the conditional code to execute</param>
         /// <param name="copyPOST">specifies whether all POST values given should be copied throughout the whole redirecting process</param>
         /// <returns>the name at which this temporary page will be available at.</returns>
-        public static string AddOneTimeRedirectOrCode(string destinationURLifTRUE, Master.GetContents codeIfFALSE, bool instantlyRemove, Func<SessionData, bool> conditionalCode, bool copyPOST = false)
+        public static string AddOneTimeRedirectOrCode(string destinationURLifTRUE, Master.GetContents codeIfFALSE, bool instantlyRemove, Func<HttpSessionData, bool> conditionalCode, bool copyPOST = false)
         {
             return AddOneTimeInstantPageResponse(sessionData =>
             {
@@ -431,7 +431,7 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="copyPOST">shall the POST-Values be copied?</param>
         /// <returns>the page as string</returns>
-        public static string GenerateRedirectCode(string destinationURL, AbstractSessionIdentificator sessionData = null, bool copyPOST = false)
+        public static string GenerateRedirectCode(string destinationURL, SessionData sessionData = null, bool copyPOST = false)
         {
             if(!copyPOST)
             {
@@ -484,7 +484,7 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="copyPOST">shall the POST-Values be copied?</param>
         /// <returns>the page as string</returns>
-        public static string GenerateRedirectInMillisecondsCode(string destinationURL, string message, int milliseconds, SessionData sessionData = null, bool copyPOST = false)
+        public static string GenerateRedirectInMillisecondsCode(string destinationURL, string message, int milliseconds, HttpSessionData sessionData = null, bool copyPOST = false)
         {
             if (!copyPOST)
             {

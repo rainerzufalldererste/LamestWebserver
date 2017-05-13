@@ -5,161 +5,416 @@ using LamestWebserver.Collections;
 namespace LamestWebserver
 {
     /// <summary>
-    /// Contains all Session dependent Information
+    /// Contains the current SessionData
     /// </summary>
-    public class SessionData : AbstractSessionIdentificator
+    public abstract class SessionData
     {
+        internal IDictionary<string, object> PerFileVariables;
+        internal SessionContainer.UserInfo _userInfo;
+        
         /// <summary>
-        /// The Variables mentioned in the HTTP head (http://www.link.com/?IamAHeadVariable)
+        /// contains the current session identificator for this thread
         /// </summary>
-        public List<string> HttpHeadParameters { get; private set; }
-
-        /// <summary>
-        /// Cookies to set in the client browser
-        /// </summary>
-        public List<KeyValuePair<string, string>> SetCookies = new List<KeyValuePair<string, string>>();
-
-        /// <summary>
-        /// The Variables mentinoed in the HTTP POST packet
-        /// </summary>
-        public List<string> HttpPostParameters { get; private set; }
+        [ThreadStatic]
+        public static SessionData CurrentSession = null;
 
         /// <summary>
-        /// The Values of the Variables mentinoed in the HTTP head (they don't have to have values!) (http://www.link.com/?IamAHeadVariable=IamAHeadValue)
+        /// The name of the current user (the sessionID handles this!) (the current user could by incognito due to a missing sessionID)
         /// </summary>
-        public List<string> HttpHeadValues { get; private set; }
+        public string UserName => _userInfo?.UserName;
 
         /// <summary>
-        /// The Values of the Variables mentinoed in the HTTP POST packet (they don't have to have values!)
+        /// Represents the state of the current viewer of the page - true if this user has a special hash
         /// </summary>
-        public List<string> HttpPostValues { get; private set; }
+        public bool KnownUser { get { return _userInfo != null; } }
 
         /// <summary>
-        /// the raw packet sent to the server
+        /// The SSID of the current Request
         /// </summary>
-        public string RawHttpPacket { get; private set; }
+        public string Ssid { get; protected set; }
 
         /// <summary>
-        /// The cookies sent by the client to the server
+        /// the currently requested file
         /// </summary>
-        public AVLTree<string, string> Cookies { get; private set; }
+        public string RequestedFile { get; protected set; }
 
-        internal SessionData(HttpPacket httpPacket)
-        {
-            this.HttpHeadParameters = httpPacket.VariablesHEAD;
-            this.HttpPostParameters = httpPacket.VariablesPOST;
-            this.HttpHeadValues = httpPacket.ValuesHEAD;
-            this.HttpPostValues = httpPacket.ValuesPOST;
-            base.RequestedFile = httpPacket.RequestUrl;
+        /// <summary>
+        /// The Variables mentioned in the HTTP head (http://www.link.com/?IamAHeadVariable=IamTheCorrespondingValue)
+        /// </summary>
+        public AVLTree<string, string> HttpHeadVariables { get; protected set; } = new AVLTree<string, string>();
 
-            this.Cookies = new AVLTree<string, string>();
+        /// <summary>
+        /// The Variables mentinoed in the HTTP POST packet (they don't have to have values!)
+        /// </summary>
+        public AVLTree<string, string> HttpPostVariables { get; protected set; } = new AVLTree<string, string>();
 
-            if (httpPacket.Cookies != null)
-            {
-                foreach (KeyValuePair<string, string> kvp in httpPacket.Cookies)
-                {
-                    this.Cookies.Add(kvp);
-                }
-            }
-
-            this.RawHttpPacket = httpPacket.RawRequest;
-
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
-            {
-                base.Ssid = GetHttpPostValue("ssid");
-            }
-            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
-            {
-                base.Ssid = this.Cookies["ssid"];
-            }
-
-            base.PerFileVariables = SessionContainer.GetFileDictionary(httpPacket.RequestUrl);
-            this._userInfo = SessionContainer.GetUserInfoFromSsid(Ssid);
-
-            CurrentSession = this;
-        }
+        // ===============================================================================================================================================
+        // ===============================================================================================================================================
 
         /// <summary>
         /// get the value of a HTTP HEAD variable by name. (null if not existent)
         /// </summary>
         /// <param name="name">The name of the HTTP HEAD variable</param>
         /// <returns>the value of the given HTTP HEAD variable (or null if not existent)</returns>
-        public string GetHttpHeadValue(string name)
-        {
-            for (int i = 0; i < HttpHeadParameters.Count; i++)
-            {
-                if (name == HttpHeadParameters[i])
-                    return HttpHeadValues[i];
-            }
-
-            return null;
-        }
+        public string GetHttpHeadValue(string name) => HttpHeadVariables[name];
 
         /// <summary>
         /// get the value of a HTTP POST variable by name. (null if not existent)
         /// </summary>
         /// <param name="name">The name of the HTTP POST variable</param>
         /// <returns>the value of the given HTTP POST variable (or null if not existent)</returns>
-        public string GetHttpPostValue(string name)
+        public string GetHttpPostValue(string name) => HttpPostVariables[name];
+
+        // ===============================================================================================================================================
+        // ===============================================================================================================================================
+
+        private T2 GetObjectFromDictionary<T, T2>(T key, IDictionary<T, T2> IDictionary)
         {
-            for (int i = 0; i < HttpPostParameters.Count; i++)
+            return IDictionary.ContainsKey(key) ? IDictionary[key] : default(T2);
+        }
+
+        private void SetValueToDictionary<T, T2>(T key, T2 value, IDictionary<T, T2> IDictionary)
+        {
+            if (value == null)
             {
-                if (name == HttpPostParameters[i])
-                    return HttpPostValues[i];
+                IDictionary.Remove(key);
             }
-
-            return null;
+            else
+            {
+                IDictionary[key] = value;
+            }
         }
 
+        // ===============================================================================================================================================
+        // ===============================================================================================================================================
+
         /// <summary>
-        /// Registers the user and assigns a SSID
+        /// Get the value of a variable defined at a certain scope by name
         /// </summary>
-        /// <param name="userName">the User to register</param>
-        /// <returns>the SSID for the user</returns>
-        public string RegisterUser(string userName)
+        /// <param name="name">name of the variable</param>
+        /// <param name="scope">scope at which the variable is defined</param>
+        /// <returns>returns the value of the variable (or null if not existent or exception if you really want to mess things up, dude!)</returns>
+        public object GetVariable(string name, EVariableScope scope)
         {
-            bool isNewSSID;
+            switch (scope)
+            {
+                case EVariableScope.File:
+                    return GetFileVariable(name);
 
-            Ssid = SessionContainer.GetSSIDforUser(userName, out isNewSSID, out _userInfo);
-            
-            if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
-                SetCookies.Add(new KeyValuePair<string, string>("ssid", Ssid));
+                case EVariableScope.User:
+                    return GetUserVariable(name);
 
-            return Ssid;
+                case EVariableScope.FileAndUser:
+                    return GetUserFileVariable(name);
+
+                case EVariableScope.Global:
+                    return GetGlobalVariable(name);
+
+                default:
+                    throw new Exception("Error: The scope has to be set to one of the predefined states!");
+            }
         }
 
         /// <summary>
-        /// _FORCES_ to get a new SSID for the current user if needed for higher level security (call before building the site)
+        /// Get the value of a variable defined at a certain scope by name
         /// </summary>
-        /// <returns>the new ssid</returns>
-        public string ForceGetNextSsid()
+        /// <param name="name">name of the variable</param>
+        /// <param name="scope">scope at which the variable is defined</param>
+        /// <returns>returns the value of the variable (or null if not existent or exception if you really want to mess things up, dude!)</returns>
+        public T GetVariable<T>(string name, EVariableScope scope)
+        {
+            object o = GetVariable(name, scope);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
+        }
+
+        // ===============================================================================================================================================
+        // ===============================================================================================================================================
+
+        /// <summary>
+        /// Set the value of a variable defined at a certain scope by name
+        /// </summary>
+        /// <typeparam name="T">The type of the value</typeparam>
+        /// <param name="name">name of the variable</param>
+        /// <param name="value">the value to set to the variable</param>
+        /// <param name="scope">scope at which the variable is/will be defined</param>
+        public void SetVariable<T>(string name, T value, EVariableScope scope)
+        {
+            switch (scope)
+            {
+                case EVariableScope.File:
+                    SetFileVariable(name, value);
+                    break;
+
+                case EVariableScope.User:
+                    SetUserVariable(name, value);
+                    break;
+
+                case EVariableScope.FileAndUser:
+                    SetUserFileVariable(name, value);
+                    break;
+
+                case EVariableScope.Global:
+                    SetGlobalVariable(name, value);
+                    break;
+
+                default:
+                    throw new Exception("Error: The scope has to be set to one of the predefined states!");
+            }
+        }
+
+        // ===============================================================================================================================================
+        // ===============================================================================================================================================
+
+        /// <summary>
+        /// set the value of a variable saved globally (available from everywhere on this server)
+        /// </summary>
+        /// <typeparam name="T">The Type of the Value</typeparam>
+        /// <param name="name">The name of the variable</param>
+        /// <param name="value">The value of the variable</param>
+        public void SetGlobalVariable<T>(string name, T value)
+        {
+            SetValueToDictionary(name, value, SessionContainer.GlobalVariables);
+        }
+
+        /// <summary>
+        /// get the value (or null if not existent) from the variables saved globally (available from everywhere on this server)
+        /// </summary>
+        /// <param name="name">the name of the variable</param>
+        /// <returns>the value of the variable (or null if not existent)</returns>
+        public object GetGlobalVariable(string name)
+        {
+            return GetObjectFromDictionary(name, SessionContainer.GlobalVariables);
+        }
+
+        /// <summary>
+        /// get the value (or null if not existent) from the variables saved globally (available from everywhere on this server) and casts it to a specified Type T
+        /// </summary>
+        /// <typeparam name="T">The type T to cast the value to</typeparam>
+        /// <param name="name">the name of the variable</param>
+        /// <returns>the value of the variable (or null if not existent)</returns>
+        public T GetGlobalVariable<T>(string name)
+        {
+            object o = GetGlobalVariable(name);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
+        }
+
+        // ===============================================================================================================================================
+        // ===============================================================================================================================================
+
+        /// <summary>
+        /// set the value of a variable saved globally for the current _USER_AND_FILE_COMBINATION_
+        /// </summary>
+        /// <typeparam name="T">The Type of the Value</typeparam>
+        /// <param name="name">The name of the variable</param>
+        /// <param name="value">The value of the variable</param>
+        public void SetUserFileVariable<T>(string name, T value)
         {
             if (!KnownUser)
                 throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
 
-            Ssid = SessionContainer.ForceGetNextSSID(UserName);
+            SetValueToDictionary(name, value, _userInfo.PerFileVariables[RequestedFile]);
+        }
 
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
-                SetCookies.Add(new KeyValuePair<string, string>("ssid", Ssid));
+        /// <summary>
+        /// get the value (or null if not existent) from the variables saved globally for the current _USER_AND_FILE_COMBINATION_
+        /// </summary>
+        /// <param name="name">the name of the variable</param>
+        /// <returns>the value of the variable (or null if not existent)</returns>
+        public object GetUserFileVariable(string name)
+        {
+            if (!KnownUser)
+                return null;
 
-            return Ssid;
+            return GetObjectFromDictionary(name, _userInfo.PerFileVariables[RequestedFile]);
+        }
+
+        /// <summary>
+        /// get the value (or null if not existent) from the variables saved globally for the current _USER_AND_FILE_COMBINATION_ and casts it to a specified Type T
+        /// </summary>
+        /// <typeparam name="T">The type T to cast the value to</typeparam>
+        /// <param name="name">the name of the variable</param>
+        /// <returns>the value of the variable (or null if not existent)</returns>
+        public T GetUserFileVariable<T>(string name)
+        {
+            object o = GetUserFileVariable(name);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
+        }
+
+        // ===============================================================================================================================================
+        // ===============================================================================================================================================
+
+        /// <summary>
+        /// set the value of a variable saved globally for the current _USER_
+        /// </summary>
+        /// <typeparam name="T">The Type of the Value</typeparam>
+        /// <param name="name">The name of the variable</param>
+        /// <param name="value">The value of the variable</param>
+        public void SetUserVariable<T>(string name, T value)
+        {
+            if (!KnownUser)
+                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
+
+            SetValueToDictionary(name, value, _userInfo.UserGlobalVariables);
+        }
+
+        /// <summary>
+        /// get the value (or null if not existent) from the variables saved globally for the current _USER_
+        /// </summary>
+        /// <param name="name">the name of the variable</param>
+        /// <returns>the value of the variable (or null if not existent)</returns>
+        public object GetUserVariable(string name)
+        {
+            if (!KnownUser)
+                return null;
+
+            return GetObjectFromDictionary(name, _userInfo.UserGlobalVariables);
+        }
+
+        /// <summary>
+        /// get the value (or null if not existent) from the variables saved globally for the current _USER_ and casts it to a specified Type T
+        /// </summary>
+        /// <typeparam name="T">The type T to cast the value to</typeparam>
+        /// <param name="name">the name of the variable</param>
+        /// <returns>the value of the variable (or null if not existent)</returns>
+        public T GetUserVariable<T>(string name)
+        {
+            object o = GetUserVariable(name);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
+        }
+
+        // ===============================================================================================================================================
+        // ===============================================================================================================================================
+
+        /// <summary>
+        /// set the value of a variable saved globally for the current _FILE_
+        /// </summary>
+        /// <typeparam name="T">The Type of the Value</typeparam>
+        /// <param name="name">The name of the variable</param>
+        /// <param name="value">The value of the variable</param>
+        public void SetFileVariable<T>(string name, T value)
+        {
+            SetValueToDictionary(name, value, PerFileVariables);
+        }
+
+        /// <summary>
+        /// get the value (or null if not existent) from the variables saved globally for the current _FILE_
+        /// </summary>
+        /// <param name="name">the name of the variable</param>
+        /// <returns>the value of the variable (or null if not existent)</returns>
+        public object GetFileVariable(string name)
+        {
+            return GetObjectFromDictionary(name, PerFileVariables);
+        }
+
+        /// <summary>
+        /// get the value (or null if not existent) from the variables saved globally for the current _FILE_ and casts it to a specified Type T
+        /// </summary>
+        /// <typeparam name="T">The type T to cast the value to</typeparam>
+        /// <param name="name">the name of the variable</param>
+        /// <returns>the value of the variable (or null if not existent)</returns>
+        public T GetFileVariable<T>(string name)
+        {
+            object o = GetFileVariable(name);
+
+            if (o == null)
+                return default(T);
+
+            return (T)o;
+        }
+
+        /// <summary>
+        /// Tells if a user has ever been registered with the given name
+        /// </summary>
+        /// <param name="userName">the name of the user</param>
+        /// <returns>true if the user has ever existed</returns>
+        public bool UserExists(string userName)
+        {
+            return SessionContainer.GetUserInfoFromName(userName) != null;
         }
 
 
-        
         /// <summary>
-        /// deletes the registration of the current user.
+        /// Retrieves a collection of all global variables.
         /// </summary>
-        public void LogoutUser()
+        /// <returns>a collection of all global variables.</returns>
+        public AVLTree<string, object> GetGlobalVariables()
         {
-            if (KnownUser)
-            {
-                SessionContainer.ForceGetNextSSID(UserName);
-                Ssid = "";
+            return SessionContainer.GlobalVariables;
+        }
 
-                if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
-                    SetCookies.Add(new KeyValuePair<string, string>("ssid", ""));
-            }
+        /// <summary>
+        /// Retrieves a collection of the per file user variables.
+        /// </summary>
+        /// <returns>a collection of the per file user variables.</returns>
+        public IDictionary<string, object> GetUserPerFileVariables()
+        {
+            return _userInfo.PerFileVariables[RequestedFile];
+        }
+
+        /// <summary>
+        /// Retrieves a collection of the per file variables.
+        /// </summary>
+        /// <returns>a collection of the per file user variables.</returns>
+        public IDictionary<string, object> GetPerFileVariables()
+        {
+            return PerFileVariables;
         }
     }
+
+    /// <summary>
+    /// contains all available scopes for variables
+    /// </summary>
+    public enum EVariableScope : byte
+    {
+        /// <summary>
+        /// available for all visitors of this page
+        /// </summary>
+        File,
+        /// <summary>
+        /// Available globally for this USER
+        /// </summary>
+        User,
+        /// <summary>
+        /// Available for the current User on only this page
+        /// </summary>
+        FileAndUser,
+        /// <summary>
+        /// Available for all Users on any page
+        /// </summary>
+        Global
+    }
+
+    /// <summary>
+    /// A slim variant of SessionData used in WebSockets
+    /// </summary>
+    public class SessionIdentificatorSlim : SessionData
+    {
+        internal SessionIdentificatorSlim(string file, string sessionId)
+        {
+            base.RequestedFile = file;
+            base.Ssid = sessionId;
+
+            base.PerFileVariables = SessionContainer.GetFileDictionary(file);
+            this._userInfo = SessionContainer.GetUserInfoFromSsid(Ssid);
+
+            CurrentSession = this;
+        }
+    }
+
 }

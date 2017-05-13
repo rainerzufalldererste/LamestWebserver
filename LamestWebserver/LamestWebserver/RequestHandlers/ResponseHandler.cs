@@ -896,7 +896,7 @@ namespace LamestWebserver.RequestHandlers
                 return null;
 
             int tries = 0;
-            var sessionData = new SessionData(requestPacket);
+            var sessionData = new HttpSessionData(requestPacket);
 
             RETRY:
 
@@ -931,7 +931,7 @@ namespace LamestWebserver.RequestHandlers
         /// <param name="requestPacket">the http-request</param>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the http response-packet</returns>
-        public abstract HttpPacket GetRetriableResponse(T requestFunction, HttpPacket requestPacket, SessionData sessionData);
+        public abstract HttpPacket GetRetriableResponse(T requestFunction, HttpPacket requestPacket, HttpSessionData sessionData);
 
         /// <summary>
         /// Gets the response function which can be called multiple times in GetRetriableResponse.
@@ -966,7 +966,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, SessionData sessionData)
+        public override HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, HttpSessionData sessionData)
         {
             return new HttpPacket()
             {
@@ -1028,7 +1028,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, SessionData sessionData)
+        public override HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, HttpSessionData sessionData)
         {
             return new HttpPacket()
             {
@@ -1165,7 +1165,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override HttpPacket GetRetriableResponse(Master.GetDirectoryContents requestFunction, HttpPacket requestPacket, SessionData sessionData)
+        public override HttpPacket GetRetriableResponse(Master.GetDirectoryContents requestFunction, HttpPacket requestPacket, HttpSessionData sessionData)
         {
             return new HttpPacket()
             {

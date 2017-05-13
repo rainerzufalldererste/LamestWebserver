@@ -20,7 +20,7 @@ namespace Demos
         {
         }
 
-        protected override string GetContents(AbstractSessionIdentificator sessionData)
+        protected override string GetContents(SessionData sessionData)
         {
             // Get the default layout around the elements retrieved by GetElements()
             HElement page = MainPage.GetPage(GetElements(), nameof(Tut01) + ".cs");
@@ -399,7 +399,7 @@ namespace Demos
                     new HText("-"),
                     new HRuntimeCode((innerSessionData) => // The code returns string and takes an AbstractSessionIdentificator
                     {
-                        string result = (innerSessionData as SessionData)?.GetHttpPostValue("text");
+                        string result = (innerSessionData as HttpSessionData)?.GetHttpPostValue("text");
                         // only SessionData can get Post Values - other AbstractSessionIdentificators could be initiated from Websockets.
 
                         if (result == null) // GetHttpPostValue returns null if the value could not be found.

@@ -4,7 +4,9 @@ using System.IO;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using System.Linq;
 using System.Web;
+using LamestWebserver.Collections;
 
 namespace LamestWebserver
 {
@@ -70,22 +72,12 @@ namespace LamestWebserver
         /// <summary>
         /// HEAD variables set or mentioned in the request
         /// </summary>
-        public List<string> VariablesHEAD = new List<string>();
-
-        /// <summary>
-        /// the values of the set HEAD values
-        /// </summary>
-        public List<string> ValuesHEAD = new List<string>();
+        public AVLTree<string, string> VariablesHttpHead = new AVLTree<string, string>();
         
         /// <summary>
         /// POST variables set or mentioned in the request
         /// </summary>
-        public List<string> VariablesPOST = new List<string>();
-        
-        /// <summary>
-        /// the values of the set HEAD values
-        /// </summary>
-        public List<string> ValuesPOST = new List<string>();
+        public AVLTree<string, string> VariablesHttpPost = new AVLTree<string, string>();
 
         /// <summary>
         /// Is the sent package a upgradeRequest to a WebSocket?
@@ -222,39 +214,46 @@ namespace LamestWebserver
                             {
                                 if(add[it] == '&')
                                 {
-                                    h.VariablesHEAD.Add(add.Substring(0, it));
-                                    h.ValuesHEAD.Add("");
+                                    h.VariablesHttpHead.Add(add.Substring(0, it), "");
                                     add = add.Remove(0, it + 1);
                                     it = 0;
                                 }
                             }
 
-                            h.VariablesHEAD.Add(add);
-                            h.ValuesHEAD.Add("");
+                            h.VariablesHttpHead.Add(add, "");
                         }
                     }
 
-                    for (int j = 0; j < h.VariablesHEAD.Count; j++)
+                    var variables = h.VariablesHttpHead.Keys;
+
+                    foreach (var variable in variables)
                     {
-                        for (int k = 0; k < h.VariablesHEAD[j].Length; k++)
+                        h.VariablesHttpHead.Remove(variable);
+
+                        string newKey = variable;
+                        string newValue = "";
+
+                        for (int j = 0; j < variable.Length; j++)
                         {
-                            if (h.VariablesHEAD[j][k] == '=')
+                            if (variable[j] == '=')
                             {
-                                if (k + 1 < h.VariablesHEAD[j].Length)
+                                if (j + 1 < variable.Length)
                                 {
-                                    h.ValuesHEAD[j] = h.VariablesHEAD[j].Substring(k + 1);
-                                    h.VariablesHEAD[j] = h.VariablesHEAD[j].Substring(0, k);
+                                    newKey = variable.Substring(j + 1);
+                                    newValue = variable.Substring(0, j);
                                 }
                             }
                         }
 
-                        if(h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '=' || h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '&')
+                        if (newKey.Last() == '=' || newKey.Last() == '&')
                         {
-                            h.VariablesHEAD[j] = h.VariablesHEAD[j].Remove(h.VariablesHEAD[j].Length - 1);
+                            newKey = newKey.Remove(newKey.Length - 1);
                         }
 
-                        h.ValuesHEAD[j] = HttpUtility.UrlDecode(h.ValuesHEAD[j]);
-                        h.VariablesHEAD[j] = HttpUtility.UrlDecode(h.VariablesHEAD[j]);
+                        newKey = HttpUtility.UrlDecode(newKey);
+                        newValue = HttpUtility.UrlDecode(newValue);
+
+                        h.VariablesHttpHead.Add(newKey, newValue);
                     }
 
                     h.Version = linput[i].Substring(index + 1);
@@ -294,39 +293,47 @@ namespace LamestWebserver
                             {
                                 if (add[it] == '&')
                                 {
-                                    h.VariablesHEAD.Add(add.Substring(0, it));
-                                    h.ValuesHEAD.Add("");
+                                    h.VariablesHttpHead.Add(add.Substring(0, it), "");
                                     add = add.Remove(0, it + 1);
                                     it = 0;
                                 }
                             }
 
-                            h.VariablesHEAD.Add(add);
-                            h.ValuesHEAD.Add("");
+                            h.VariablesHttpHead.Add(add, "");
                         }
                     }
 
-                    for (int j = 0; j < h.VariablesHEAD.Count; j++)
+
+                    var variables = h.VariablesHttpHead.Keys;
+
+                    foreach (var variable in variables)
                     {
-                        for (int k = 0; k < h.VariablesHEAD[j].Length; k++)
+                        h.VariablesHttpHead.Remove(variable);
+
+                        string newKey = variable;
+                        string newValue = "";
+
+                        for (int j = 0; j < variable.Length; j++)
                         {
-                            if(h.VariablesHEAD[j][k] == '=')
+                            if (variable[j] == '=')
                             {
-                                if (k + 1 < h.VariablesHEAD[j].Length)
+                                if (j + 1 < variable.Length)
                                 {
-                                    h.ValuesHEAD[j] = h.VariablesHEAD[j].Substring(k + 1);
-                                    h.VariablesHEAD[j] = h.VariablesHEAD[j].Substring(0, k);
+                                    newKey = variable.Substring(j + 1);
+                                    newValue = variable.Substring(0, j);
                                 }
                             }
                         }
 
-                        if (h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '=' || h.VariablesHEAD[j][h.VariablesHEAD[j].Length - 1] == '&')
+                        if (newKey.Last() == '=' || newKey.Last() == '&')
                         {
-                            h.VariablesHEAD[j] = h.VariablesHEAD[j].Remove(h.VariablesHEAD[j].Length - 1);
+                            newKey = newKey.Remove(newKey.Length - 1);
                         }
 
-                        h.ValuesHEAD[j] = HttpUtility.UrlDecode(h.ValuesHEAD[j]);
-                        h.VariablesHEAD[j] = HttpUtility.UrlDecode(h.VariablesHEAD[j]);
+                        newKey = HttpUtility.UrlDecode(newKey);
+                        newValue = HttpUtility.UrlDecode(newValue);
+
+                        h.VariablesHttpHead.Add(newKey, newValue);
                     }
 
                     h.Version = linput[i].Substring(index + 1);
@@ -340,14 +347,11 @@ namespace LamestWebserver
                             {
                                 for (int k = j; k < linput.Length; k++)
                                 {
-                                    string[] s = linput[k].Replace('+',' ').Split('&');
+                                    // Retrieve POST values and build keyValue pairs with "" as value (will be extracted from the key later)
+                                    var kvpairs = from string key in linput[k].Replace('+', ' ').Split('&') select new KeyValuePair<string, string>(key, "");
 
-                                    for (int l = 0; l < s.Length; l++)
-                                    {
-                                        h.ValuesPOST.Add("");
-                                    }
-
-                                    h.VariablesPOST.AddRange(s);
+                                    foreach (var variable in kvpairs)
+                                        h.VariablesHttpPost.Add(variable);
                                 }
 
                                 goto SEARCHINGFORPOSTBODY_DONE;
@@ -357,31 +361,37 @@ namespace LamestWebserver
 
                     SEARCHINGFORPOSTBODY_DONE:
 
-                    for (int j = 0; j < h.VariablesPOST.Count; j++)
+                    var postVariables = h.VariablesHttpPost.Keys;
+
+                    foreach (string variable in postVariables)
                     {
-                        for (int k = 0; k < h.VariablesPOST[j].Length; k++)
+                        string newKey = variable;
+                        string newValue = "";
+
+                        h.VariablesHttpPost.Remove(variable);
+
+                        for (int k = 0; k < variable.Length; k++)
                         {
-                            if (h.VariablesPOST[j][k] == '=')
+                            if (variable[k] == '=')
                             {
-                                if (k + 1 < h.VariablesPOST[j].Length)
+                                if (k + 1 < variable.Length)
                                 {
-                                    h.ValuesPOST[j] = h.VariablesPOST[j].Substring(k + 1);
-                                    h.VariablesPOST[j] = h.VariablesPOST[j].Substring(0, k);
+                                    newValue = variable.Substring(k + 1);
+                                    newKey = variable.Substring(0, k);
                                 }
                             }
                         }
 
-                        if (h.VariablesPOST[j][h.VariablesPOST[j].Length - 1] == '=' || h.VariablesPOST[j][h.VariablesPOST[j].Length - 1] == '&')
+                        if (newKey.Last() == '=' || newKey.Last() == '&')
                         {
-                            h.VariablesPOST[j] = h.VariablesPOST[j].Remove(h.VariablesPOST[j].Length - 1);
+                            newKey = newKey.Remove(newKey.Length - 1);
                         }
 
-                        h.ValuesPOST[j] = HttpUtility.UrlDecode(h.ValuesPOST[j]);
-                        h.VariablesPOST[j] = HttpUtility.UrlDecode(h.VariablesPOST[j]);
+                        h.VariablesHttpPost.Add(newKey, newValue);
                     }
 
                     // Crazy hack for Chrome POST packets
-                    if(h.VariablesPOST.Count == 0)
+                    if(h.VariablesHttpPost.Count == 0)
                     {
                         // is there a content-length?
                         bool contlfound = false;

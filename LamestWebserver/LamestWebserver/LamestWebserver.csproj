@@ -60,7 +60,7 @@
     <Compile Include="Collections\QueuedAVLTree.cs" />
     <Compile Include="Collections\SerializableKeyValuePair.cs" />
     <Compile Include="Attributes\HostAttributes.cs" />
-    <Compile Include="AbstractSessionIdentificator.cs" />
+    <Compile Include="SessionData.cs" />
     <Compile Include="Compression\GZipCompression.cs" />
     <Compile Include="JScriptBuilder\JSElement.cs" />
     <Compile Include="NotificationService\NotificationHelper.cs" />
@@ -82,7 +82,7 @@
     <Compile Include="Security\Password.cs" />
     <Compile Include="Serialization\Serializer.cs" />
     <Compile Include="SessionContainer.cs" />
-    <Compile Include="SessionData.cs" />
+    <Compile Include="HttpSessionData.cs" />
     <Compile Include="Synchronization\UsableLocker.cs" />
     <Compile Include="Synchronization\UsableMutex.cs" />
     <Compile Include="Synchronization\UsableWriteLock.cs" />

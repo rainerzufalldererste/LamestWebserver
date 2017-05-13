@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using LamestWebserver.NotificationService;
 using LamestWebserver.UI;
+using System.Web;
 
 namespace LamestWebserver
 {
@@ -94,7 +95,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="data">the current SessionData</param>
         /// <returns>the response as string</returns>
-        public delegate string GetContents(SessionData data);
+        public delegate string GetContents(HttpSessionData data);
 
         /// <summary>
         /// The prototype for a response of a directory page from the server.
@@ -102,7 +103,7 @@ namespace LamestWebserver
         /// <param name="data">the current SessionData</param>
         /// <param name="subUrl">the sub-URL of this directory request</param>
         /// <returns>the response as string</returns>
-        public delegate string GetDirectoryContents(SessionData data, string subUrl);
+        public delegate string GetDirectoryContents(HttpSessionData data, string subUrl);
 
         /// <summary>
         /// the prototype for adding new pages to the servers.
@@ -148,6 +149,20 @@ namespace LamestWebserver
         /// the event, thath raises if a directory page is removed
         /// </summary>
         public static event RemoveFunction RemoveDirectoryFunctionEvent = (url) => { };
+
+        /// <summary>
+        /// Decodes the characters of a HTML string.
+        /// </summary>
+        /// <param name="s">the string to decode</param>
+        /// <returns>the decoded string</returns>
+        public static string DecodeHtml(string s) => HttpUtility.HtmlDecode(s);
+
+        /// <summary>
+        /// Decodes the characters of a Url string.
+        /// </summary>
+        /// <param name="s">the string to decode</param>
+        /// <returns>the decoded string</returns>
+        public static string DecodeUrl(string s) => HttpUtility.UrlDecode(s);
 
         /// <summary>
         /// Adds an arbitrary response to the listening servers

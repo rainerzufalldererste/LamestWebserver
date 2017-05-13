@@ -111,7 +111,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="port">the port to listen to</param>
         /// <param name="folder">one folder to view at (can be null)</param>
-        public WebServer(int port, string folder) : this(port)
+        public WebServer(int port, string folder = null) : this(port)
         {
             ResponseHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
@@ -128,7 +128,7 @@ namespace LamestWebserver
         /// Starts a new Webserver listening to all previously added Responses.
         /// </summary>
         /// <param name="port">the port to listen to</param>
-        public WebServer(int port)
+        private WebServer(int port)
         {
             if (!TcpPortIsUnused(port))
             {
@@ -460,7 +460,7 @@ namespace LamestWebserver
                                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
                                         "Error 500: Internal Server Error",
                                         "<p>An Exception occured while processing the response.</p><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
-                                        + GetErrorMsg(e, AbstractSessionIdentificator.CurrentSession, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
+                                        + GetErrorMsg(e, SessionData.CurrentSession, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                         + "</div></p>"))
                                 };
 
@@ -599,7 +599,7 @@ namespace LamestWebserver
         /// <param name="sessionData">the sessionData (can be null)</param>
         /// <param name="httpPacket">the http-request</param>
         /// <returns>a nice error message</returns>
-        public static string GetErrorMsg(Exception exception, AbstractSessionIdentificator sessionData, string httpPacket)
+        public static string GetErrorMsg(Exception exception, SessionData sessionData, string httpPacket)
         {
             string ret = exception.ToString() + "\n\n";
 
@@ -609,24 +609,22 @@ namespace LamestWebserver
             {
                 ret += "\n\n______________________________________________________________________________________________\n\n";
 
-                if (sessionData is SessionData)
+                if (sessionData is HttpSessionData)
                 {
-                    SessionData _sessionData = (SessionData)sessionData;
-
-                    if (_sessionData.HttpHeadParameters.Count > 0)
+                    if (sessionData.HttpHeadVariables.Count > 0)
                     {
                         ret += "\n\nHTTP-Head:\n\n";
 
-                        for (int i = 0; i < _sessionData.HttpHeadParameters.Count; i++)
-                            ret += "'" + _sessionData.HttpHeadParameters[i] + "': " + _sessionData.HttpHeadValues[i] + "\n";
+                        foreach (var variable in sessionData.HttpHeadVariables)
+                            ret += "'" + variable.Key + "': " +variable.Value + "\n";
                     }
 
-                    if (_sessionData.HttpPostParameters.Count > 0)
+                    if (sessionData.HttpPostVariables.Count > 0)
                     {
                         ret += "\n\nHTTP-Post:\n\n";
 
-                        for (int i = 0; i < _sessionData.HttpPostParameters.Count; i++)
-                            ret += "'" + _sessionData.HttpPostParameters[i] + "': " + _sessionData.HttpPostValues[i] + "\n";
+                        foreach (var variable in sessionData.HttpPostVariables)
+                            ret += "'" + variable.Key + "': " + variable.Value + "\n";
                     }
                 }
 

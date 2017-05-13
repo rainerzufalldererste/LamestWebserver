@@ -12,31 +12,31 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="arguments">the arguments</param>
-        public delegate string ScriptFuction(AbstractSessionIdentificator sessionData, object[] arguments);
+        public delegate string ScriptFuction(SessionData sessionData, object[] arguments);
 
         /// <summary>
         /// Reloads the current page in X milliseconds redirecting all HTTP-POST values to the new page. parameters: { int milliseconds }
         /// </summary>
         /// <inheritdoc />
-        public static string GetPageReloadWithFullPostInMilliseconds(AbstractSessionIdentificator sessionData, object[] millisecondsAsInt)
+        public static string GetPageReloadWithFullPostInMilliseconds(SessionData sessionData, object[] millisecondsAsInt)
         {
             if (millisecondsAsInt.Length != 1)
                 throw new ArgumentException("the argument has to be an object[1] containing one integer number");
 
             if ((SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie &&
-                 (!(sessionData is SessionData) || ((SessionData) sessionData).HttpPostParameters.Count == 0)) || sessionData == null || string.IsNullOrWhiteSpace(sessionData.Ssid))
+                 (!(sessionData is HttpSessionData) || sessionData.HttpPostVariables.Count == 0)) || sessionData == null || string.IsNullOrWhiteSpace(sessionData.Ssid))
                 return "setTimeout(function() { window.location = window.location; }," + int.Parse(millisecondsAsInt[0].ToString()) + ");";
 
             string ret =
                 "setTimeout(function(){var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action',window.location);f.setAttribute('enctype','application/x-www-form-urlencoded');var i;";
 
-            if (sessionData is SessionData)
+            if (sessionData is HttpSessionData)
             {
-                for (int i = 0; i < ((SessionData) sessionData).HttpPostParameters.Count; i++)
+                foreach (var variable in sessionData.HttpPostVariables)
                 {
                     ret += "i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','"
-                           + ((SessionData) sessionData).HttpPostParameters[i].Replace("\n", "\\n") + "');i.setAttribute('value','"
-                           + ((SessionData) sessionData).HttpPostValues[i].Replace("\n", "\\n") + "');f.appendChild(i);";
+                           + variable.Key.Replace("\n", "\\n") + "');i.setAttribute('value','"
+                           + variable.Value.Replace("\n", "\\n") + "');f.appendChild(i);";
                 }
             }
 
@@ -50,7 +50,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="arguments">the arguments</param>
-        public static string GetPageReloadInMilliseconds(AbstractSessionIdentificator sessionData, object[] arguments)
+        public static string GetPageReloadInMilliseconds(SessionData sessionData, object[] arguments)
         {
             if (arguments.Length != 1)
                 throw new ArgumentException("the argument has to be an object[1] containing one integer number");
@@ -71,7 +71,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="arguments">the arguments</param>
-        public static string GetPageReferalToXInMilliseconds(AbstractSessionIdentificator sessionData, object[] arguments)
+        public static string GetPageReferalToXInMilliseconds(SessionData sessionData, object[] arguments)
         {
             if (arguments.Length != 2)
                 throw new ArgumentException("the argument has to be an object[2] containing one string and one integer number");
@@ -94,7 +94,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="arguments">the arguments</param>
-        public static string GetPageReferalToX(AbstractSessionIdentificator sessionData, object[] arguments)
+        public static string GetPageReferalToX(SessionData sessionData, object[] arguments)
         {
             if (arguments.Length != 1)
                 throw new ArgumentException("the argument has to be an object[1] containing one string");
@@ -116,26 +116,26 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="arguments">the arguments</param>
-        public static string GetPageReferalWithFullPostInMilliseconds(AbstractSessionIdentificator sessionData, object[] arguments)
+        public static string GetPageReferalWithFullPostInMilliseconds(SessionData sessionData, object[] arguments)
         {
             if (arguments.Length != 2)
                 throw new ArgumentException("the argument has to be an object[2] containing one string and one integer number");
 
             if ((SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie &&
-                 (!(sessionData is SessionData) || ((SessionData) sessionData).HttpPostParameters.Count == 0)) || sessionData == null || string.IsNullOrWhiteSpace(sessionData.Ssid))
+                 (!(sessionData is HttpSessionData) || sessionData.HttpPostVariables.Count == 0)) || sessionData == null || string.IsNullOrWhiteSpace(sessionData.Ssid))
                 return "onload = setTimeout(function() { window.location = '" + arguments[0] + "'; }," + int.Parse(arguments[1].ToString()) + ");";
 
             string ret = "onload = setTimeout(function(){var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action','"
                          + arguments[0]
                          + "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i;";
 
-            if (sessionData is SessionData)
+            if (sessionData is HttpSessionData)
             {
-                for (int i = 0; i < ((SessionData) sessionData).HttpPostParameters.Count; i++)
+                foreach (var variable in sessionData.HttpPostVariables)
                 {
                     ret += "i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','"
-                           + ((SessionData) sessionData).HttpPostParameters[i].Replace("\n", "\\n") + "');i.setAttribute('value','"
-                           + ((SessionData) sessionData).HttpPostValues[i].Replace("\n", "\\n") + "');f.appendChild(i);";
+                           + variable.Key.Replace("\n", "\\n") + "');i.setAttribute('value','"
+                           + variable.Value.Replace("\n", "\\n") + "');f.appendChild(i);";
                 }
             }
 
