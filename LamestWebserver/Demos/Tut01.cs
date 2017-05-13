@@ -399,9 +399,8 @@ namespace Demos
                     new HText("-"),
                     new HRuntimeCode((innerSessionData) => // The code returns string and takes an AbstractSessionIdentificator
                     {
-                        string result = (innerSessionData as HttpSessionData)?.GetHttpPostValue("text");
-                        // only SessionData can get Post Values - other AbstractSessionIdentificators could be initiated from Websockets.
-
+                        string result = innerSessionData.GetHttpPostValue("text");
+                        
                         if (result == null) // GetHttpPostValue returns null if the value could not be found.
                             return new HString("You can enter a text in the HForm example above and click on the submit button.").GetContent(innerSessionData);
                         else
