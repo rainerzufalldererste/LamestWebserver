@@ -17,6 +17,8 @@ using ThreadState = System.Threading.ThreadState;
 using System.Reflection;
 using LamestWebserver.RequestHandlers;
 using Newtonsoft.Json;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Authentication;
 
 namespace LamestWebserver
 {
@@ -105,6 +107,16 @@ namespace LamestWebserver
         Mutex cleanMutex = new Mutex();
         
         private Task<TcpClient> tcpRcvTask;
+        
+        /// <summary>
+        /// SSL Certificate. server will use ssl if certificate not null.
+        /// </summary>
+        public X509Certificate2 Certificate { get; set; }
+
+        /// <summary>
+        /// Enabled SSL Protocols supported by the server.
+        /// </summary>
+        public SslProtocols EnabledSslProtocols { get; set; } = SslProtocols.Tls12;
 
         /// <summary>
         /// Starts a new Webserver and adds the folder and default components to the CurrentResponseHandler. If you are just adding a server listening on another port as well - just use the other constructor.
