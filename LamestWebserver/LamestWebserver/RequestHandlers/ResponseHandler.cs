@@ -41,7 +41,7 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         /// <param name="requestPacket">the http-packet to reply to</param>
         /// <returns>the response http packet or null</returns>
-        public virtual HttpPacket GetResponse(HttpPacket requestPacket)
+        public virtual HttpResponse GetResponse(HttpRequest requestPacket)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
 
@@ -176,7 +176,7 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         /// <param name="requestPacket">the request packet</param>
         /// <returns>the response packet</returns>
-        HttpPacket GetResponse(HttpPacket requestPacket);
+        HttpResponse GetResponse(HttpRequest requestPacket);
     }
 
     /// <summary>
@@ -202,7 +202,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public virtual HttpPacket GetResponse(HttpPacket requestPacket)
+        public virtual HttpResponse GetResponse(HttpRequest requestPacket)
         {
             string fileName = requestPacket.RequestUrl;
             byte[] contents = null;
@@ -239,7 +239,7 @@ namespace LamestWebserver.RequestHandlers
                 return null;
             }
 
-            return new HttpPacket() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
+            return new HttpResponse() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
         }
 
         /// <summary>
@@ -484,7 +484,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override HttpPacket GetResponse(HttpPacket requestPacket)
+        public override HttpResponse GetResponse(HttpRequest requestPacket)
         {
             string fileName = requestPacket.RequestUrl;
             byte[] contents = null;
@@ -576,16 +576,16 @@ namespace LamestWebserver.RequestHandlers
 
                 if (notModified)
                 {
-                    return new HttpPacket() {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf};
+                    return new HttpResponse() {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf};
                 }
                 else
                 {
-                    return new HttpPacket() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
+                    return new HttpResponse() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
                 }
             }
             catch (Exception e)
             {
-                return new HttpPacket()
+                return new HttpResponse()
                 {
                     Status = "500 Internal Server Error",
                     BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
@@ -766,7 +766,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public HttpPacket GetResponse(HttpPacket requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket)
         {
             var file = _cache[requestPacket.RequestUrl];
 
@@ -774,9 +774,9 @@ namespace LamestWebserver.RequestHandlers
                 return null;
 
             if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value <= file.LastModified)
-                return new HttpPacket() {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
+                return new HttpResponse() {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
 
-            return new HttpPacket() {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
+            return new HttpResponse() {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
         }
     }
 
@@ -851,11 +851,11 @@ namespace LamestWebserver.RequestHandlers
     public class ErrorRequestHandler : IRequestHandler
     {
         /// <inheritdoc />
-        public HttpPacket GetResponse(HttpPacket requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket)
         {
             if (requestPacket.RequestUrl.EndsWith("/"))
             {
-                return new HttpPacket()
+                return new HttpResponse()
                 {
                     Status = "403 Forbidden",
                     BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
@@ -866,7 +866,7 @@ namespace LamestWebserver.RequestHandlers
             }
             else
             {
-                return new HttpPacket()
+                return new HttpResponse()
                 {
                     Status = "404 File Not Found",
                     BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
@@ -888,7 +888,7 @@ namespace LamestWebserver.RequestHandlers
         private readonly Random _random = new Random();
 
         /// <inheritdoc />
-        public HttpPacket GetResponse(HttpPacket requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket)
         {
             var requestFunction = GetResponseFunction(requestPacket);
 
@@ -931,14 +931,14 @@ namespace LamestWebserver.RequestHandlers
         /// <param name="requestPacket">the http-request</param>
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the http response-packet</returns>
-        public abstract HttpPacket GetRetriableResponse(T requestFunction, HttpPacket requestPacket, HttpSessionData sessionData);
+        public abstract HttpResponse GetRetriableResponse(T requestFunction, HttpRequest requestPacket, HttpSessionData sessionData);
 
         /// <summary>
         /// Gets the response function which can be called multiple times in GetRetriableResponse.
         /// </summary>
         /// <param name="requestPacket">the http-request</param>
         /// <returns>the method to call.</returns>
-        public abstract T GetResponseFunction(HttpPacket requestPacket);
+        public abstract T GetResponseFunction(HttpRequest requestPacket);
     }
 
     /// <summary>
@@ -966,9 +966,9 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, HttpSessionData sessionData)
+        public override HttpResponse GetRetriableResponse(Master.GetContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpPacket()
+            return new HttpResponse()
             {
                 BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
                 Cookies = sessionData.SetCookies
@@ -976,7 +976,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override Master.GetContents GetResponseFunction(HttpPacket requestPacket)
+        public override Master.GetContents GetResponseFunction(HttpRequest requestPacket)
         {
             ReaderWriterLock.EnterReadLock();
             var response = PageResponses[requestPacket.RequestUrl];
@@ -1028,9 +1028,9 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override HttpPacket GetRetriableResponse(Master.GetContents requestFunction, HttpPacket requestPacket, HttpSessionData sessionData)
+        public override HttpResponse GetRetriableResponse(Master.GetContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpPacket()
+            return new HttpResponse()
             {
                 BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
                 Cookies = sessionData.SetCookies
@@ -1038,7 +1038,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override Master.GetContents GetResponseFunction(HttpPacket requestPacket)
+        public override Master.GetContents GetResponseFunction(HttpRequest requestPacket)
         {
             ReaderWriterLock.EnterWriteLock();
             var response = OneTimeResponses[requestPacket.RequestUrl];
@@ -1086,7 +1086,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public HttpPacket GetResponse(HttpPacket requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket)
         {
             if (!requestPacket.IsWebsocketUpgradeRequest)
                 return null;
@@ -1165,9 +1165,9 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override HttpPacket GetRetriableResponse(Master.GetDirectoryContents requestFunction, HttpPacket requestPacket, HttpSessionData sessionData)
+        public override HttpResponse GetRetriableResponse(Master.GetDirectoryContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpPacket()
+            return new HttpResponse()
             {
                 BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData, _subUrl)),
                 Cookies = sessionData.SetCookies
@@ -1175,7 +1175,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override Master.GetDirectoryContents GetResponseFunction(HttpPacket requestPacket)
+        public override Master.GetDirectoryContents GetResponseFunction(HttpRequest requestPacket)
         {
             Master.GetDirectoryContents response = null;
             string bestUrlMatch = requestPacket.RequestUrl;
