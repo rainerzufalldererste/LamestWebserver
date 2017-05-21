@@ -393,13 +393,13 @@ namespace LamestWebserver
                 try
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
-                    HttpPacket htp = HttpPacket.Constructor(ref msg_, client.Client.RemoteEndPoint, lastmsg, nws);
+                    HttpRequest htp = HttpRequest.Constructor(ref msg_, lastmsg, nws);
 
                     byte[] buffer;
 
                     try
                     {
-                        if (htp.Version == null)
+                        if (htp.IsIncompleteRequest)
                         {
                             lastmsg = msg_;
                         }
@@ -407,7 +407,7 @@ namespace LamestWebserver
                         {
                             lastmsg = null;
 
-                            HttpPacket htp_ = new HttpPacket()
+                            HttpResponse htp_ = new HttpResponse()
                             {
                                 Status = "501 Not Implemented",
                                 BinaryData = enc.GetBytes(Master.GetErrorMsg(
@@ -420,7 +420,7 @@ namespace LamestWebserver
                                     "</div></p>"))
                             };
 
-                            buffer = htp_.GetPackage(enc);
+                            buffer = htp_.GetPackage();
                             nws.Write(buffer, 0, buffer.Length);
 
                             ServerHandler.LogMessage("Client requested an empty URL. We sent Error 501.", stopwatch);
@@ -428,7 +428,7 @@ namespace LamestWebserver
                         else
                         {
                             lastmsg = null;
-                            HttpPacket response = null;
+                            HttpResponse response = null;
 
                             try
                             {
@@ -437,7 +437,7 @@ namespace LamestWebserver
                                 if (response == null)
                                     goto InvalidResponse;
 
-                                buffer = response.GetPackage(enc);
+                                buffer = response.GetPackage();
                                 nws.Write(buffer, 0, buffer.Length);
 
                                 ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(ResponseHandler)}.", stopwatch);
@@ -454,7 +454,7 @@ namespace LamestWebserver
                             }
                             catch (Exception e)
                             {
-                                HttpPacket htp_ = new HttpPacket()
+                                HttpResponse htp_ = new HttpResponse()
                                 {
                                     Status = "500 Internal Server Error",
                                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
@@ -464,7 +464,7 @@ namespace LamestWebserver
                                         + "</div></p>"))
                                 };
 
-                                buffer = htp_.GetPackage(enc);
+                                buffer = htp_.GetPackage();
                                 nws.Write(buffer, 0, buffer.Length);
 
                                 ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e, stopwatch);
@@ -477,7 +477,7 @@ namespace LamestWebserver
 
                             if (htp.RequestUrl.EndsWith("/"))
                             {
-                                buffer = new HttpPacket()
+                                buffer = new HttpResponse()
                                 {
                                     Status = "403 Forbidden",
                                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
@@ -488,11 +488,11 @@ namespace LamestWebserver
                                         msg_.Replace("\r\n", "<br>") +
 #endif
                                         "</div></p>"))
-                                }.GetPackage(enc);
+                                }.GetPackage();
                             }
                             else
                             {
-                                buffer = new HttpPacket()
+                                buffer = new HttpResponse()
                                 {
                                     Status = "404 File Not Found",
                                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
@@ -503,7 +503,7 @@ namespace LamestWebserver
                                         msg_.Replace("\r\n", "<br>") +
 #endif
                                         "</div></p>"))
-                                }.GetPackage(enc);
+                                }.GetPackage();
                             }
 
                             nws.Write(buffer, 0, buffer.Length);
