@@ -461,7 +461,7 @@ namespace LamestWebserver
                 {
                    string[] beginEndPair = linput[i].Substring(("Range: bytes=").Length).Split('-');
                    int val1, val2;
-                   if(int.TryParse(beginEndPair[0],out val1) && int.TryParse(beginEndPair[1],out val2))
+                   if(beginEndPair.Length > 1 && int.TryParse(beginEndPair[0],out val1) && int.TryParse(beginEndPair[1],out val2))
                    {
                         packet.Range = new Tuple<int, int>(val1, val2);
                    }
