@@ -72,6 +72,14 @@ namespace LamestWebserver
         /// </summary>
         public bool IsIncompleteRequest = false;
 
+        /// <summary>
+        /// describes the range of bytes there are requested
+        /// item1 = begin
+        /// item2 = end
+        /// is null when all bytes are requested
+        /// </summary>
+        public Tuple<int, int> Range = null;
+
         private HttpRequest()
         {
         }
@@ -449,8 +457,13 @@ namespace LamestWebserver
                 {
                     packet.IsWebsocketUpgradeRequest = true;
                 }
+                else if(packet.Range == null && linput[i].Contains("Range: bytes="))
+                {
+                   string[] beginEndPair = linput[i].Substring(("Range: bytes=").Length).Split('-');
+                   packet.Range = new Tuple<int, int>(int.Parse(beginEndPair[0]), int.Parse(beginEndPair[1])); 
+                }
             }
-
+            
             return packet;
         }
     }

@@ -34,6 +34,13 @@ namespace LamestWebserver
         private int _contentLength = 0;
 
         /// <summary>
+        /// describes the range of bytes there are requested
+        /// item1 = begin
+        /// item2 = end
+        /// is null when all bytes are requested
+        /// </summary>
+        public Tuple<int, int> Range = null;
+        /// <summary>
         /// The content-type of the response
         /// </summary>
         public string ContentType = "text/html";
