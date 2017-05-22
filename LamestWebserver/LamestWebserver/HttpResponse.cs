@@ -34,6 +34,14 @@ namespace LamestWebserver
         private int _contentLength = 0;
 
         /// <summary>
+        /// describes the range of bytes this package sends
+        /// item1 = begin
+        /// item2 = end
+        /// is null when all bytes are requested
+        /// </summary>
+        public Tuple<int, int> Range = null;
+
+        /// <summary>
         /// The content-type of the response
         /// </summary>
         public string ContentType = "text/html";
@@ -100,6 +108,11 @@ namespace LamestWebserver
 
             if (ContentType != null)
                 sb.Append("Content-Type: " + ContentType + "; charset=UTF-8\r\n");
+
+            if(Range != null)
+            {
+
+            }
 
             sb.Append("Content-Length: " + _contentLength + "\r\n\r\n");
 
