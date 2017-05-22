@@ -111,7 +111,12 @@ namespace LamestWebserver
 
             if(Range != null)
             {
-
+                sb.Append("Content-Range: bytes " + Range.Item1 + "-" + Range.Item2 + "/" + _contentLength + "\r\n");
+         
+                int rangeSize = Range.Item2 - Range.Item1 + 1;
+                byte[] byteRange = new Byte[rangeSize];
+                Array.Copy(BinaryData, Range.Item1, byteRange, 0, rangeSize);
+                BinaryData = byteRange;
             }
 
             sb.Append("Content-Length: " + _contentLength + "\r\n\r\n");
