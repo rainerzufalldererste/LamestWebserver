@@ -599,6 +599,12 @@ namespace LamestWebserver.RequestHandlers
 
         internal void SetupFileSystemWatcher()
         {
+            if (!Directory.Exists(Folder))
+            {
+                ServerHandler.LogMessage($"The given Directory '{Folder}' to deliver responses from does not exist. Server Environment Path: '{Environment.CurrentDirectory}'.");
+                return;
+            }
+
             FileSystemWatcher = new FileSystemWatcher(Folder);
 
             FileSystemWatcher.Renamed += (object sender, RenamedEventArgs e) =>

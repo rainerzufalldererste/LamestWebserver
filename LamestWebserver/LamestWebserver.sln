@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26403.7
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LamestWebserver", "LamestWebserver\LamestWebserver.csproj", "{2E0E1F99-3DE7-4636-9E18-93E5CB837965}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lwshostsvc", "lwshostsvc\lwshostsvc.csproj", "{D431200B-492F-437F-952C-5E09360E5CB7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lwshostcore", "lwshostcore\lwshostcore.csproj", "{9172F3B2-58AF-4A5A-8678-E902A2A19FF7}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "lwsinstaller", "lwsinstaller\lwsinstaller.vdproj", "{4AE0C62A-B0D0-4DA0-B744-0908CA913788}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,8 @@ Global
 		{9172F3B2-58AF-4A5A-8678-E902A2A19FF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9172F3B2-58AF-4A5A-8678-E902A2A19FF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9172F3B2-58AF-4A5A-8678-E902A2A19FF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4AE0C62A-B0D0-4DA0-B744-0908CA913788}.Debug|Any CPU.ActiveCfg = Debug
+		{4AE0C62A-B0D0-4DA0-B744-0908CA913788}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
