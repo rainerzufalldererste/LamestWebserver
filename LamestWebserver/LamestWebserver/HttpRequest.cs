@@ -457,10 +457,14 @@ namespace LamestWebserver
                 {
                     packet.IsWebsocketUpgradeRequest = true;
                 }
-                else if(packet.Range == null && linput[i].Contains("Range: bytes="))
+                else if(packet.Range == null && linput[i].StartsWith("Range: bytes="))
                 {
                    string[] beginEndPair = linput[i].Substring(("Range: bytes=").Length).Split('-');
-                   packet.Range = new Tuple<int, int>(int.Parse(beginEndPair[0]), int.Parse(beginEndPair[1])); 
+                   int val1, val2;
+                   if(int.TryParse(beginEndPair[0],out val1) && int.TryParse(beginEndPair[1],out val2))
+                   {
+                        packet.Range = new Tuple<int, int>(val1, val2);
+                   }
                 }
             }
             
