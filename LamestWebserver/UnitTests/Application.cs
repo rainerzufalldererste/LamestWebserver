@@ -10,6 +10,12 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new PacketUnitTest().TestCookies();
+            new PacketUnitTest().TestHttpHead();
+            new PacketUnitTest().TestHttpPost();
+            new PacketUnitTest().TestHttpCombined();
+            new PacketUnitTest().TestHttpWebSocketUpgrade();
+            new PacketUnitTest().TestHttpModifiedDate();
             new CompressionTest().TestCompressDecompress();
             new EncryptDecryptTests().TestEncryptDecrypt();
             new CollectionSerializerTests().TestCollectionJsonSerialisazion();
@@ -22,7 +28,6 @@ namespace UnitTests
             new CollectionUnitTests().TestAvlTrees();
             new CollectionUnitTests().TestQueuedAvlTreesError();
             new CollectionUnitTests().TestQueuedAvlTrees();
-            new PacketUnitTest().TestCookies();
             new PasswordTest().TestPassword();
             new PasswordTest().TestSerializePassword();
         }
