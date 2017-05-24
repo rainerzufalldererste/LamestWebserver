@@ -70,9 +70,9 @@ namespace LamestWebserver
         public HttpResponse(HttpRequest req)
         {
             Date = DateTime.Now.ToString(HtmlDateFormat);
-            Range = req.Range;
-            if (Range != null)
-                Status = "206 Partial Content";
+            if(req != null)
+                Range = req.Range;
+            
         }
 
         /// <summary>
@@ -82,6 +82,9 @@ namespace LamestWebserver
         public byte[] GetPackage()
         {
             StringBuilder sb = new StringBuilder();
+
+            if (Range != null)
+                Status = "206 Partial Content";
 
             sb.Append(Version + " " + Status + "\r\n");
             sb.Append("Date: " + Date + "\r\n");

@@ -576,7 +576,7 @@ namespace LamestWebserver.RequestHandlers
 
                 if (notModified)
                 {
-                    return new HttpResponse(requestPacket) {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf};
+                    return new HttpResponse(null) {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf};
                 }
                 else
                 {
@@ -585,7 +585,7 @@ namespace LamestWebserver.RequestHandlers
             }
             catch (Exception e)
             {
-                return new HttpResponse(requestPacket)
+                return new HttpResponse(null)
                 {
                     Status = "500 Internal Server Error",
                     BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
@@ -774,7 +774,7 @@ namespace LamestWebserver.RequestHandlers
                 return null;
 
             if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value <= file.LastModified)
-                return new HttpResponse(requestPacket) {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
+                return new HttpResponse(null) {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
 
             return new HttpResponse(requestPacket) {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
         }
@@ -855,7 +855,7 @@ namespace LamestWebserver.RequestHandlers
         {
             if (requestPacket.RequestUrl.EndsWith("/"))
             {
-                return new HttpResponse(requestPacket)
+                return new HttpResponse(null)
                 {
                     Status = "403 Forbidden",
                     BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
@@ -866,7 +866,7 @@ namespace LamestWebserver.RequestHandlers
             }
             else
             {
-                return new HttpResponse(requestPacket)
+                return new HttpResponse(null)
                 {
                     Status = "404 File Not Found",
                     BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
