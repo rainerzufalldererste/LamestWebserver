@@ -71,7 +71,12 @@ namespace LamestWebserver
         {
             Date = DateTime.Now.ToString(HtmlDateFormat);
             if(req != null)
+            {
                 Range = req.Range;
+                if(Range != null)
+                Status = "206 Partial Content";
+            }
+                
             
         }
 
@@ -82,9 +87,6 @@ namespace LamestWebserver
         public byte[] GetPackage()
         {
             StringBuilder sb = new StringBuilder();
-
-            if (Range != null)
-                Status = "206 Partial Content";
 
             sb.Append(Version + " " + Status + "\r\n");
             sb.Append("Date: " + Date + "\r\n");
@@ -117,6 +119,7 @@ namespace LamestWebserver
 
             if(Range != null)
             {
+                //TODO: Lars  ATM it throws a exception if the range is illegal, but it should make a  "416 Requested Range Not Satisfiable" response 
                 sb.Append("Content-Range: bytes " + Range.Item1 + "-" + Range.Item2 + "/" + _contentLength + "\r\n");
          
                 int rangeSize = Range.Item2 - Range.Item1 + 1;
