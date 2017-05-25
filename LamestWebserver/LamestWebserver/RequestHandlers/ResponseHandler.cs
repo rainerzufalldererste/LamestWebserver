@@ -239,7 +239,7 @@ namespace LamestWebserver.RequestHandlers
                 return null;
             }
 
-            return new HttpResponse() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
+            return new HttpResponse(requestPacket) {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
         }
 
         /// <summary>
@@ -576,16 +576,16 @@ namespace LamestWebserver.RequestHandlers
 
                 if (notModified)
                 {
-                    return new HttpResponse() {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf};
+                    return new HttpResponse(null) {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf};
                 }
                 else
                 {
-                    return new HttpResponse() {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
+                    return new HttpResponse(requestPacket) {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
                 }
             }
             catch (Exception e)
             {
-                return new HttpResponse()
+                return new HttpResponse(null)
                 {
                     Status = "500 Internal Server Error",
                     BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
@@ -599,6 +599,12 @@ namespace LamestWebserver.RequestHandlers
 
         internal void SetupFileSystemWatcher()
         {
+            if (!Directory.Exists(Folder))
+            {
+                ServerHandler.LogMessage($"The given Directory '{Folder}' to deliver responses from does not exist. Server Environment Path: '{Environment.CurrentDirectory}'.");
+                return;
+            }
+
             FileSystemWatcher = new FileSystemWatcher(Folder);
 
             FileSystemWatcher.Renamed += (object sender, RenamedEventArgs e) =>
@@ -774,9 +780,9 @@ namespace LamestWebserver.RequestHandlers
                 return null;
 
             if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value <= file.LastModified)
-                return new HttpResponse() {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
+                return new HttpResponse(null) {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
 
-            return new HttpResponse() {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
+            return new HttpResponse(requestPacket) {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
         }
     }
 
@@ -855,7 +861,7 @@ namespace LamestWebserver.RequestHandlers
         {
             if (requestPacket.RequestUrl.EndsWith("/"))
             {
-                return new HttpResponse()
+                return new HttpResponse(null)
                 {
                     Status = "403 Forbidden",
                     BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
@@ -866,7 +872,7 @@ namespace LamestWebserver.RequestHandlers
             }
             else
             {
-                return new HttpResponse()
+                return new HttpResponse(null)
                 {
                     Status = "404 File Not Found",
                     BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
@@ -968,7 +974,7 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override HttpResponse GetRetriableResponse(Master.GetContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpResponse()
+            return new HttpResponse(requestPacket)
             {
                 BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
                 Cookies = sessionData.SetCookies
@@ -1030,7 +1036,7 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override HttpResponse GetRetriableResponse(Master.GetContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpResponse()
+            return new HttpResponse(requestPacket)
             {
                 BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
                 Cookies = sessionData.SetCookies
@@ -1167,7 +1173,7 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override HttpResponse GetRetriableResponse(Master.GetDirectoryContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpResponse()
+            return new HttpResponse(requestPacket)
             {
                 BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData, _subUrl)),
                 Cookies = sessionData.SetCookies

@@ -34,6 +34,14 @@ namespace LamestWebserver
         private int _contentLength = 0;
 
         /// <summary>
+        /// describes the range of bytes this package sends
+        /// item1 = begin
+        /// item2 = end
+        /// is null when all bytes are requested
+        /// </summary>
+        public Tuple<int, int> Range = null;
+
+        /// <summary>
         /// The content-type of the response
         /// </summary>
         public string ContentType = "text/html";
@@ -59,9 +67,18 @@ namespace LamestWebserver
         /// <summary>
         /// Creates a new HttpResponse
         /// </summary>
-        public HttpResponse()
+        public HttpResponse(HttpRequest req)
         {
             Date = DateTime.Now.ToString(HtmlDateFormat);
+            if(req != null)
+            {
+                Range = req.Range;
+                
+                if(Range != null)
+                    Status = "206 Partial Content";
+            }
+                
+            
         }
 
         /// <summary>
@@ -100,6 +117,27 @@ namespace LamestWebserver
 
             if (ContentType != null)
                 sb.Append("Content-Type: " + ContentType + "; charset=UTF-8\r\n");
+
+            if(Range != null)
+            {
+                if(Range.Item2 >= _contentLength) 
+                {
+                    return new HttpResponse(null) {
+                        Status = "416 Requested Range Not Satisfiable",
+                        BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                        "416 Requested Range Not Satisfiable",
+                        "<p>The Requested byte range cannot be delivered due to illegal range Parameters.</p>" +
+                        "</div></p>"))
+                    }.GetPackage();
+                }
+                
+                sb.Append("Content-Range: bytes " + Range.Item1 + "-" + Range.Item2 + "/" + _contentLength + "\r\n");
+                
+                int rangeSize = Range.Item2 - Range.Item1 + 1;
+                byte[] byteRange = new Byte[rangeSize];
+                Array.Copy(BinaryData, Range.Item1, byteRange, 0, rangeSize);
+                BinaryData = byteRange;
+            }
 
             sb.Append("Content-Length: " + _contentLength + "\r\n\r\n");
 

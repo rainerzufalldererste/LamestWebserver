@@ -66,9 +66,10 @@ namespace lwshostsvc
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine("Installation Failed.\n" + e);
+                            Console.WriteLine("Installation Failed.\n" + e.Message);
                         }
                         return;
+
 
                     case "-u":
                     case "--uninstall":
@@ -100,15 +101,94 @@ namespace lwshostsvc
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine("Operation Failed.\n" + e);
+                            Console.WriteLine("Operation Failed.\n" + e.Message);
                         }
                         return;
+
+
+                    case "-s":
+                    case "--start":
+
+                        try
+                        {
+                            LamestWebserver.Security.ElevateRightsWindows.ElevateRights();
+
+                            ServiceController controller = new ServiceController(HostServiceInstaller.Name);
+
+                            switch (controller.Status)
+                            {
+                                case ServiceControllerStatus.Running:
+
+                                    Console.WriteLine("The service is already running.");
+                                    break;
+
+
+                                case ServiceControllerStatus.Stopped:
+                                case ServiceControllerStatus.Paused:
+
+                                    controller.Start();
+                                    Console.WriteLine("The service has been started successfully.");
+                                    break;
+
+
+                                default:
+
+                                    Console.WriteLine($"The action could not be executed. The service state is '{controller.Status}'.");
+                                    break;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Operation Failed.\n" + e.Message);
+                        }
+                        return;
+
+
+                    case "-x":
+                    case "--stop":
+
+                        try
+                        {
+                            LamestWebserver.Security.ElevateRightsWindows.ElevateRights();
+
+                            ServiceController controller = new ServiceController(HostServiceInstaller.Name);
+
+                            switch (controller.Status)
+                            {
+                                case ServiceControllerStatus.Stopped:
+
+                                    Console.WriteLine("The service is currently not running.");
+                                    break;
+
+
+                                case ServiceControllerStatus.Running:
+                                case ServiceControllerStatus.Paused:
+
+                                    controller.Stop();
+                                    Console.WriteLine("The service has been stopped successfully.");
+                                    break;
+
+
+                                default:
+
+                                    Console.WriteLine($"The action could not be executed. The service state is '{controller.Status}'.");
+                                    break;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Operation Failed.\n" + e.Message);
+                        }
+                        return;
+
 
                     case "-?":
                     default:
                         Console.WriteLine("\n===========================================\n|||                                     |||\n|||     LamestWebserver Host Service    |||\n|||                                     |||\n===========================================\n");
                         Console.WriteLine("-i   (--install)      Install the Service");
                         Console.WriteLine("-u   (--uninstall)    Uninstall the Service");
+                        Console.WriteLine("-s   (--start)        Start the Service");
+                        Console.WriteLine("-x   (--stop)         Stop the Service");
                         return;
                 }
             }

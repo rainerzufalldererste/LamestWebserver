@@ -419,7 +419,7 @@ namespace LamestWebserver
                         {
                             lastmsg = null;
 
-                            HttpResponse htp_ = new HttpResponse()
+                            HttpResponse htp_ = new HttpResponse(null)
                             {
                                 Status = "501 Not Implemented",
                                 BinaryData = enc.GetBytes(Master.GetErrorMsg(
@@ -466,7 +466,7 @@ namespace LamestWebserver
                             }
                             catch (Exception e)
                             {
-                                HttpResponse htp_ = new HttpResponse()
+                                HttpResponse htp_ = new HttpResponse(null)
                                 {
                                     Status = "500 Internal Server Error",
                                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
@@ -489,7 +489,7 @@ namespace LamestWebserver
 
                             if (htp.RequestUrl.EndsWith("/"))
                             {
-                                buffer = new HttpResponse()
+                                buffer = new HttpResponse(null)
                                 {
                                     Status = "403 Forbidden",
                                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
@@ -504,7 +504,7 @@ namespace LamestWebserver
                             }
                             else
                             {
-                                buffer = new HttpResponse()
+                                buffer = new HttpResponse(null)
                                 {
                                     Status = "404 File Not Found",
                                     BinaryData = enc.GetBytes(Master.GetErrorMsg(
