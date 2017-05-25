@@ -73,8 +73,9 @@ namespace LamestWebserver
             if(req != null)
             {
                 Range = req.Range;
+                
                 if(Range != null)
-                Status = "206 Partial Content";
+                    Status = "206 Partial Content";
             }
                 
             
