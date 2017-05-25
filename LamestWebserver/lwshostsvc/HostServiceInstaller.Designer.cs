@@ -9,6 +9,11 @@ namespace lwshostsvc
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
+        /// <summary>
+        /// The name of the installed service.
+        /// </summary>
+        public readonly static string Name = "LamestWebserver Host Service";
+
         /// <summary> 
         /// Verwendete Ressourcen bereinigen.
         /// </summary>
@@ -30,32 +35,32 @@ namespace lwshostsvc
         /// </summary>
         private void InitializeComponent()
         {
-            this.serviceProcessInstaller1 = new System.ServiceProcess.ServiceProcessInstaller();
-            this.serviceInstaller1 = new System.ServiceProcess.ServiceInstaller();
+            this.serviceProcessInstaller = new System.ServiceProcess.ServiceProcessInstaller();
+            this.serviceInstaller = new System.ServiceProcess.ServiceInstaller();
             // 
-            // serviceProcessInstaller1
+            // serviceProcessInstaller
             // 
-            this.serviceProcessInstaller1.Password = null;
-            this.serviceProcessInstaller1.Username = null;
+            this.serviceProcessInstaller.Password = null;
+            this.serviceProcessInstaller.Username = null;
             // 
-            // serviceInstaller1
+            // serviceInstaller
             // 
-            this.serviceInstaller1.DisplayName = "LamestWebserver Host Service";
-            this.serviceInstaller1.ServiceName = "LamestWebserver Host Service";
-            this.serviceInstaller1.Description = "A Service for easier integration, deployment and development using LamestWebserver";
-            this.serviceProcessInstaller1.Account = ServiceAccount.LocalSystem;
+            this.serviceInstaller.DisplayName = Name;
+            this.serviceInstaller.ServiceName = Name;
+            this.serviceInstaller.Description = "A Service for easier integration, deployment and development using LamestWebserver";
+            this.serviceProcessInstaller.Account = ServiceAccount.LocalSystem;
             // 
             // ProjectInstaller
             // 
             this.Installers.AddRange(new System.Configuration.Install.Installer[] {
-            this.serviceProcessInstaller1,
-            this.serviceInstaller1});
+            this.serviceProcessInstaller,
+            this.serviceInstaller});
 
         }
 
         #endregion
 
-        private System.ServiceProcess.ServiceProcessInstaller serviceProcessInstaller1;
-        private System.ServiceProcess.ServiceInstaller serviceInstaller1;
+        private System.ServiceProcess.ServiceProcessInstaller serviceProcessInstaller;
+        private System.ServiceProcess.ServiceInstaller serviceInstaller;
     }
 }

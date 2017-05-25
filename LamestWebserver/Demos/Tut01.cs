@@ -28,11 +28,13 @@ namespace Demos
             // To get the HTML-string of an HElement, call GetContent with the current session data.
             return page.GetContent(sessionData);
 
+#pragma warning disable CS0162
             // You might as well just use .ToString();
             return page.ToString();
 
-            // Or for all you fishy dudes out there there's also this alternative
-            return page*sessionData;
+            // Or for all you fishy dudes out there: there's also this alternative
+            return page * sessionData;
+#pragma warning restore CS0162
         }
 
         /// <summary>
