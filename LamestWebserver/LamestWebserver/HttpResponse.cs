@@ -119,9 +119,19 @@ namespace LamestWebserver
 
             if(Range != null)
             {
-                //TODO: Lars  ATM it throws a exception if the range is illegal, but it should make a  "416 Requested Range Not Satisfiable" response 
+                if(Range.Item2 >= _contentLength) 
+                {
+                    return new HttpResponse(null) {
+                        Status = "416 Requested Range Not Satisfiable",
+                        BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                        "416 Requested Range Not Satisfiable",
+                        "<p>The Requested byte range cannot be delivered due to illegal range Parameters.</p>" +
+                        "</div></p>"))
+                    }.GetPackage();
+                }
+                
                 sb.Append("Content-Range: bytes " + Range.Item1 + "-" + Range.Item2 + "/" + _contentLength + "\r\n");
-         
+                
                 int rangeSize = Range.Item2 - Range.Item1 + 1;
                 byte[] byteRange = new Byte[rangeSize];
                 Array.Copy(BinaryData, Range.Item1, byteRange, 0, rangeSize);
