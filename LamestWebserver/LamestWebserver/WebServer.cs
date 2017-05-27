@@ -244,7 +244,11 @@ namespace LamestWebserver
 
             foreach (KeyValuePair<int, Stream> stream in streams)
             {
-                stream.Value.Close();
+                try
+                {
+                    stream.Value.Close();
+                }
+                catch { }
             }
 
             networkStreamsMutex.ReleaseMutex();
