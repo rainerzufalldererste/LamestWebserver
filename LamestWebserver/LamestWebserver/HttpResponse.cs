@@ -70,6 +70,7 @@ namespace LamestWebserver
         public HttpResponse(HttpRequest req)
         {
             Date = DateTime.Now.ToString(HtmlDateFormat);
+
             if(req != null)
             {
                 Range = req.Range;
@@ -77,8 +78,6 @@ namespace LamestWebserver
                 if(Range != null)
                     Status = "206 Partial Content";
             }
-                
-            
         }
 
         /// <summary>

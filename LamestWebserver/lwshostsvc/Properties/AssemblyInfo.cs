@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // Attribute gesteuert. Ändern Sie diese Attributwerte, um die Informationen zu ändern,
 // die einer Assembly zugeordnet sind.
 [assembly: AssemblyTitle("lwshostsvc")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Host Service for LamestWebserver Applications")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Christoph Stiller")]
 [assembly: AssemblyProduct("lwshostsvc")]

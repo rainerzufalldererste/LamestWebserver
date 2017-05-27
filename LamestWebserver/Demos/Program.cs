@@ -17,7 +17,7 @@ namespace Demos
                 // Create a new Webserver at port 8080 with the data location "./web" - the web folder of this Project
                 // Make sure all contents of your data location folder are copied into the build directory on compile so the webserver can find them at runtime.
                 //
-                // You'll probably be using port 80 later, because that's the default http port - but for now let's just use port 8080.
+                // You'll probably be using port 80 / 443 later, because that's the default http / https port - but for now let's just use port 8080.
                 using (var webserver = new WebServer(8080, "./web"))
                 {
                     // Automatically Discovers the Pages in this assembly and registers them at the webserver

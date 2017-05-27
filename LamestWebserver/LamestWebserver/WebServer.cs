@@ -38,7 +38,7 @@ namespace LamestWebserver
         private readonly TcpListener _tcpListener;
         private readonly List<Thread> _threads = new List<Thread>();
         private readonly Thread _mThread;
-        
+
         /// <summary>
         /// The Port, the server is listening at.
         /// </summary>
@@ -48,7 +48,7 @@ namespace LamestWebserver
         {
             get
             {
-                _runningLock.EnterReadLock(); 
+                _runningLock.EnterReadLock();
                 var ret = _running;
                 _runningLock.ExitReadLock();
                 return ret;
@@ -85,7 +85,7 @@ namespace LamestWebserver
         /// The maximum amount of items in the One Time Page Response Queue (QueuedAVLTree).
         /// </summary>
         public static int OneTimePageResponsesStorageQueueSize = 4096;
-        
+
         /// <summary>
         /// The size of the Websocket Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
         /// </summary>
@@ -102,16 +102,43 @@ namespace LamestWebserver
         public static int RequestMaxPacketSize = 4096;
 
         private Mutex networkStreamsMutex = new Mutex();
-        private AVLTree<int, NetworkStream> networkStreams = new AVLTree<int, NetworkStream>();
+        private AVLTree<int, Stream> streams = new AVLTree<int, Stream>();
+        private Mutex cleanMutex = new Mutex();
 
-        Mutex cleanMutex = new Mutex();
-        
         private Task<TcpClient> tcpRcvTask;
-        
+
         /// <summary>
         /// SSL Certificate. server will use ssl if certificate not null.
+        /// <para /> If the webserver does not respond after including your certificate, it might not be loaded or set up correctly.
+        /// Consider the LamestWebserver log output `ServerHandler.StartHandler();`.
         /// </summary>
-        public X509Certificate2 Certificate { get; set; }
+        public X509Certificate2 Certificate
+        {
+            get
+            {
+                return _certificate;
+            }
+            set
+            {
+                if (value == null)
+                    return;
+
+                if (!value.Verify())
+                    ServerHandler.LogMessage("The certificate could not be verified.");
+
+                // TODO: check & throw exception if sslStream.AuthenticateAsServer with this certificate will fail.
+
+                _certificate = value;
+            }
+        }
+
+        private X509Certificate2 _certificate = null;
+
+        /// <summary>
+        /// Shall the server answer in plain HTTP if no certificate is provided or if the authentication fails?
+        /// <para /> If this is set to true and your Certificate is not set up correctly, the webserver will not respond at all to the clients.
+        /// </summary>
+        public bool BlockInsecureConnections = false;
 
         /// <summary>
         /// Enabled SSL Protocols supported by the server.
@@ -123,8 +150,15 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="port">the port to listen to</param>
         /// <param name="folder">one folder to view at (can be null)</param>
-        public WebServer(int port, string folder = null) : this(port)
+        /// <param name="certificate">the ssl certificate for https (if null: connection will be http; if set will only be https)
+        /// <para /> If the webserver does not respond after including your certificate, it might not be loaded or set up correctly.
+        /// Consider the LamestWebserver log output `ServerHandler.StartHandler();`.</param>
+        /// <param name="enabledSslProtocols">the available ssl protocols if the connection is https</param>
+        public WebServer(int port, string folder = null, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12) : this(port)
         {
+            EnabledSslProtocols = enabledSslProtocols;
+            Certificate = certificate;
+
             ResponseHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
             ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
@@ -208,9 +242,9 @@ namespace LamestWebserver
 
             networkStreamsMutex.WaitOne();
 
-            foreach (KeyValuePair<int, NetworkStream> networkStream in networkStreams)
+            foreach (KeyValuePair<int, Stream> stream in streams)
             {
-                networkStream.Value.Close();
+                stream.Value.Close();
             }
 
             networkStreamsMutex.ReleaseMutex();
@@ -286,7 +320,7 @@ namespace LamestWebserver
 
                     networkStreamsMutex.WaitOne();
 
-                    var networkStream = networkStreams[_threads[i].ManagedThreadId];
+                    var networkStream = streams[_threads[i].ManagedThreadId];
 
                     if (networkStream != null)
                     {
@@ -298,7 +332,7 @@ namespace LamestWebserver
                         {
                         }
 
-                        networkStreams.Remove(_threads[i].ManagedThreadId);
+                        streams.Remove(_threads[i].ManagedThreadId);
                     }
 
                     networkStreamsMutex.ReleaseMutex();
@@ -339,7 +373,7 @@ namespace LamestWebserver
                     t.Start((object) tcpClient);
                     ServerHandler.LogMessage("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
-                    if (_threads.Count%25 == 0)
+                    if (_threads.Count % 25 == 0)
                     {
                         _threads.Add(new Thread(new ThreadStart(CleanThreads)));
                         _threads[_threads.Count - 1].Start();
@@ -362,15 +396,91 @@ namespace LamestWebserver
             client.NoDelay = true;
 
             NetworkStream nws = client.GetStream();
+            
+            Stream stream = nws; 
+
             UTF8Encoding enc = new UTF8Encoding();
             string lastmsg = null;
             WebServer.CurrentClientRemoteEndpoint = client.Client.RemoteEndPoint.ToString();
 
+            if (Certificate != null)
+            {
+                try
+                {
+                    System.Net.Security.SslStream sslStream = new System.Net.Security.SslStream(nws, false);
+                    sslStream.AuthenticateAsServer(Certificate, false, EnabledSslProtocols, true);
+                    stream = sslStream;
+                }
+                catch (ThreadAbortException)
+                {
+                    try
+                    {
+                        stream.Close();
+                    }
+                    catch { }
+
+                    return;
+                }
+                catch (Exception e)
+                {
+                    ServerHandler.LogMessage($"Failed to authenticate. ({e.Message} / Inner Exception: {e.InnerException?.Message})");
+
+                    // With misconfigured Certificates every request might fail here.
+
+                    if (BlockInsecureConnections)
+                    {
+                        try
+                        {
+                            stream.Close();
+                        }
+                        catch { }
+
+                        return;
+                    }
+
+                    try
+                    {
+                        byte[] response = new HttpResponse(null)
+                        {
+                            Status = "500 Internal Server Error",
+                            BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                                        "Error 500: Internal Server Error",
+                                        "<p>An Exception occured while trying to authenticate the connection.</p><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
+                                        + GetErrorMsg(e, null, null).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
+                                        + "</div></p>"))
+                        }.GetPackage();
+
+                        nws.Write(response, 0, response.Length);
+                        
+                        ServerHandler.LogMessage($"Replied authentication error to client.");
+                    }
+                    catch (Exception ex)
+                    {
+                        ServerHandler.LogMessage($"Failed to reply securely to unauthenticated ssl Connection. ({ex.Message})");
+                    }
+
+                    try
+                    {
+                        stream.Close();
+                    }
+                    catch { }
+
+                    return;
+                }
+            }
+            else if (BlockInsecureConnections)
+            {
+                ServerHandler.LogMessage($"Failed to authenticate. (No Certificate given.)");
+
+                stream.Close();
+                return;
+            }
+
             byte[] msg;
             int bytes = 0;
-            
+
             networkStreamsMutex.WaitOne();
-            networkStreams.Add(Thread.CurrentThread.ManagedThreadId, nws);
+            streams.Add(Thread.CurrentThread.ManagedThreadId, stream);
             networkStreamsMutex.ReleaseMutex();
 
             Stopwatch stopwatch = new Stopwatch();
@@ -384,7 +494,7 @@ namespace LamestWebserver
                     if(stopwatch.IsRunning)
                         stopwatch.Reset();
 
-                    bytes = nws.Read(msg, 0, RequestMaxPacketSize);
+                    bytes = stream.Read(msg, 0, RequestMaxPacketSize);
                     stopwatch.Start();
                 }
                 catch (ThreadAbortException)
@@ -405,7 +515,7 @@ namespace LamestWebserver
                 try
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
-                    HttpRequest htp = HttpRequest.Constructor(ref msg_, lastmsg, nws);
+                    HttpRequest htp = HttpRequest.Constructor(ref msg_, lastmsg, stream);
 
                     byte[] buffer;
 
@@ -433,7 +543,7 @@ namespace LamestWebserver
                             };
 
                             buffer = htp_.GetPackage();
-                            nws.Write(buffer, 0, buffer.Length);
+                            stream.Write(buffer, 0, buffer.Length);
 
                             ServerHandler.LogMessage("Client requested an empty URL. We sent Error 501.", stopwatch);
                         }
@@ -450,7 +560,7 @@ namespace LamestWebserver
                                     goto InvalidResponse;
 
                                 buffer = response.GetPackage();
-                                nws.Write(buffer, 0, buffer.Length);
+                                stream.Write(buffer, 0, buffer.Length);
 
                                 ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(ResponseHandler)}.", stopwatch);
 
@@ -458,6 +568,12 @@ namespace LamestWebserver
                             }
                             catch (ThreadAbortException)
                             {
+                                try
+                                {
+                                    stream.Close();
+                                }
+                                catch { }
+
                                 return;
                             }
                             catch (WebSocketManagementOvertakeFlagException)
@@ -477,7 +593,7 @@ namespace LamestWebserver
                                 };
 
                                 buffer = htp_.GetPackage();
-                                nws.Write(buffer, 0, buffer.Length);
+                                stream.Write(buffer, 0, buffer.Length);
 
                                 ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e, stopwatch);
 
@@ -518,7 +634,7 @@ namespace LamestWebserver
                                 }.GetPackage();
                             }
 
-                            nws.Write(buffer, 0, buffer.Length);
+                            stream.Write(buffer, 0, buffer.Length);
 
                             ServerHandler.LogMessage(
                                 "Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 403/404.", stopwatch);
@@ -531,6 +647,12 @@ namespace LamestWebserver
                 }
                 catch (ThreadAbortException)
                 {
+                    try
+                    {
+                        stream.Close();
+                    }
+                    catch { }
+
                     return;
                 }
                 catch (Exception e)
