@@ -120,6 +120,8 @@ namespace LamestWebserver
             }
             set
             {
+                _certificate = value;
+
                 if (value == null)
                     return;
 
@@ -127,8 +129,6 @@ namespace LamestWebserver
                     ServerHandler.LogMessage("The certificate could not be verified.");
 
                 // TODO: check & throw exception if sslStream.AuthenticateAsServer with this certificate will fail.
-
-                _certificate = value;
             }
         }
 
