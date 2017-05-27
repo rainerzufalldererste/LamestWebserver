@@ -220,25 +220,19 @@ namespace LamestWebserver
             {
                 _tcpListener.Stop();
             }
-            catch
-            {
-            }
+            catch { }
 
             try
             {
                 Master.ForceQuitThread(_mThread);
             }
-            catch
-            {
-            }
+            catch { }
 
             try
             {
                 tcpRcvTask.Dispose();
             }
-            catch
-            {
-            }
+            catch { }
 
             networkStreamsMutex.WaitOne();
 
@@ -261,9 +255,7 @@ namespace LamestWebserver
                 {
                     Master.ForceQuitThread(_threads[0]);
                 }
-                catch
-                {
-                }
+                catch { }
 
                 _threads.RemoveAt(0);
             }
@@ -316,11 +308,9 @@ namespace LamestWebserver
                 {
                     try
                     {
-                        _threads[i].Abort();
+                        Master.ForceQuitThread(_threads[i]);
                     }
-                    catch (Exception)
-                    {
-                    }
+                    catch { }
 
                     networkStreamsMutex.WaitOne();
 
@@ -332,9 +322,7 @@ namespace LamestWebserver
                         {
                             networkStream.Close();
                         }
-                        catch
-                        {
-                        }
+                        catch { }
 
                         streams.Remove(_threads[i].ManagedThreadId);
                     }
