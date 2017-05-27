@@ -472,7 +472,12 @@ namespace LamestWebserver
             {
                 ServerHandler.LogMessage($"Failed to authenticate. (No Certificate given.)");
 
-                stream.Close();
+                try
+                {
+                    stream.Close();
+                }
+                catch { }
+
                 return;
             }
 
