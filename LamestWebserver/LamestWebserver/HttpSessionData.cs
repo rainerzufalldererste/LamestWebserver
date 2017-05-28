@@ -27,7 +27,7 @@ namespace LamestWebserver
         internal HttpSessionData(HttpRequest httpPacket)
         {
             base.HttpHeadVariables = httpPacket.VariablesHttpHead;
-            base.HttpHeadVariables = httpPacket.VariablesHttpPost;
+            base.HttpPostVariables = httpPacket.VariablesHttpPost;
             base.RequestedFile = httpPacket.RequestUrl;
 
             this.Cookies = new AVLTree<string, string>();

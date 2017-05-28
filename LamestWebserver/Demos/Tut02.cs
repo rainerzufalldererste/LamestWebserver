@@ -24,10 +24,12 @@ namespace Demos
         private HLinkSearchBox hLinkSearchBox = new HLinkSearchBox((identificator, s) =>
         {
             List<Tuple<string, string>> list = new List<Tuple<string, string>>();
+
             for (int i = 0; i < s.Length; i++)
             {
                 list.Add(Tuple.Create(s.Substring(0, i + 1), "/#" + s[i].ToString()));
             }
+
             return list;
         });
 
