@@ -32,7 +32,7 @@ namespace LamestWebserver.UI
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData)
         {
-            var input = new JSInput(HInput.EInputType.text, Name, Value) {Class = Class, Style = Style, Title = Title};
+            var input = new JSInput(HInput.EInputType.text, Name, Value) { Class = Class, Style = Style, Title = Title };
 
             if (!string.IsNullOrWhiteSpace(Placeholder))
                 input.DescriptionTags = "placeholder='" + Placeholder + "' ";
@@ -42,7 +42,7 @@ namespace LamestWebserver.UI
             else
                 input.ID = SessionContainer.GenerateHash();
 
-            var container = new HContainer() {ID = ContainerID, Style = "display:none;"};
+            var container = new HContainer() { ID = ContainerID, Style = "display:none;" };
             input.onclick = JSFunctionCall.DisplayElementByID(container.ID);
             input.onfocus = input.onclick;
             input.oninput = input.SetInnerHTMLWithNameValueAsync(JSElement.GetByID(container.ID), _pageUrl, JSFunctionCall.DisplayElementByID(container.ID));
@@ -51,13 +51,18 @@ namespace LamestWebserver.UI
             return input + container;
         }
 
+        /// <summary>
+        /// Retrieves the response-functions answer to the browser in a usable format.
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the responded message</returns>
         protected string GetResponse(SessionData sessionData)
         {
             string param = "";
 
             if (sessionData is HttpSessionData)
             {
-                param = ((HttpSessionData) sessionData).GetHttpHeadValue("value");
+                param = sessionData.GetHttpHeadValue("value");
             }
 
             if (param == null)
