@@ -177,18 +177,21 @@ namespace LamestWebserver.Caching
 
                 // Remove by count and last accesstime regardless of percentiles.
                 j = 0;
-
-                // Remove by count and last access time if not in upper tenth percentile.
+                
                 while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Instance.Any())
                 {
                     var response = StringResponses.Instance[DateSorted[j].Key];
-                    RemoveStringResponseEntry(DateSorted[j].Key, response);
+
+                    if (response)
+                        RemoveStringResponseEntry(DateSorted[j].Key, response);
 
                     if (!(CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Instance.Any()))
                         return;
 
                     response = StringResponses.Instance[CountSorted[j].Key];
-                    RemoveStringResponseEntry(CountSorted[j].Key, response);
+
+                    if (response)
+                        RemoveStringResponseEntry(CountSorted[j].Key, response);
 
                     j++;
                 }
