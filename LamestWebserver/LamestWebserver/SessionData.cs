@@ -68,11 +68,6 @@ namespace LamestWebserver
         // ===============================================================================================================================================
         // ===============================================================================================================================================
 
-        private T2 GetObjectFromDictionary<T, T2>(T key, IDictionary<T, T2> IDictionary)
-        {
-            return IDictionary.ContainsKey(key) ? IDictionary[key] : default(T2);
-        }
-
         private void SetValueToDictionary<T, T2>(T key, T2 value, IDictionary<T, T2> IDictionary)
         {
             if (value == null)
@@ -187,7 +182,7 @@ namespace LamestWebserver
         /// <returns>the value of the variable (or null if not existent)</returns>
         public object GetGlobalVariable(string name)
         {
-            return GetObjectFromDictionary(name, SessionContainer.GlobalVariables);
+            return SessionContainer.GlobalVariables[name];
         }
 
         /// <summary>
@@ -233,7 +228,7 @@ namespace LamestWebserver
             if (!KnownUser)
                 return null;
 
-            return GetObjectFromDictionary(name, _userInfo.PerFileVariables[RequestedFile]);
+            return _userInfo.PerFileVariables[RequestedFile][name];
         }
 
         /// <summary>
@@ -279,7 +274,7 @@ namespace LamestWebserver
             if (!KnownUser)
                 return null;
 
-            return GetObjectFromDictionary(name, _userInfo.UserGlobalVariables);
+            return _userInfo.UserGlobalVariables[name];
         }
 
         /// <summary>
@@ -319,7 +314,7 @@ namespace LamestWebserver
         /// <returns>the value of the variable (or null if not existent)</returns>
         public object GetFileVariable(string name)
         {
-            return GetObjectFromDictionary(name, PerFileVariables);
+            return PerFileVariables[name];
         }
 
         /// <summary>
