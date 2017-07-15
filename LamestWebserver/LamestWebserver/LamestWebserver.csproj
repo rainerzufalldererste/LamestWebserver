@@ -73,6 +73,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Caching\ResponseCache.cs" />
+    <Compile Include="Core\NullCheckable.cs" />
+    <Compile Include="Core\Singleton.cs" />
     <Compile Include="Collections\AVLHashMap.cs" />
     <Compile Include="Collections\AVLTree.cs" />
     <Compile Include="Collections\QueuedAVLTree.cs" />
