@@ -16,7 +16,7 @@ namespace LamestWebserver.Caching
         public ulong CurrentStringResponseCacheSize { get; protected set; } = 0;
         public ulong? StringResponseCacheMaxSize = 1024 * 1024 * 256; // 512 MBytes because of two byte characters bt default. 
 
-        private readonly Singleton<AVLHashMap<string, ResponseCacheEntry<string>>> StringResponses = new Singleton<AVLHashMap<string, ResponseCacheEntry<string>>>(() => new AVLHashMap<string, ResponseCacheEntry<string>>(StringResponseCacheHashmapSize));
+        private readonly AVLHashMap<string, ResponseCacheEntry<string>> StringResponses = new AVLHashMap<string, ResponseCacheEntry<string>>(StringResponseCacheHashmapSize);
         private UsableWriteLock StringResponseLock = new UsableWriteLock();
 
         public bool GetCachedStringResponse(string key, out string response)
@@ -27,7 +27,7 @@ namespace LamestWebserver.Caching
             ResponseCacheEntry<string> result;
 
             using (StringResponseLock.LockRead())
-                result = StringResponses.Instance[key];
+                result = StringResponses[key];
 
             if (!result)
             {
@@ -46,7 +46,7 @@ namespace LamestWebserver.Caching
                 using (StringResponseLock.LockWrite())
                 {
                     CurrentStringResponseCacheSize -= (ulong)result.Response.Length;
-                    StringResponses.Instance.Remove(key);
+                    StringResponses.Remove(key);
                 }
 
                 response = null;
@@ -73,7 +73,7 @@ namespace LamestWebserver.Caching
             {
                 CurrentStringResponseCacheSize += (ulong)entry.Response.Length;
 
-                StringResponses.Instance[key] = entry;
+                StringResponses[key] = entry;
             }
         }
 
@@ -100,15 +100,75 @@ namespace LamestWebserver.Caching
 
         public ulong CacheMakeRoom_AdditionalFreeSpace = 1024 * 1024 * 16; // 32 MByte due to two byte characters.
 
+        public double CacheMakeRoom_UpperPercentile_Date
+        {
+            get
+            {
+                return _cacheMakeRoom_UpperPercentile_Date; 
+            }
+
+            set
+            {
+                _cacheMakeRoom_UpperPercentile_Date = value.Clamp(0.0, 1.0);
+            }
+        }
+
+        private double _cacheMakeRoom_UpperPercentile_Date = 0.1;
+
+        public double CacheMakeRoom_UpperPercentile_Count
+        {
+            get
+            {
+                return _cacheMakeRoom_UpperPercentile_Count;
+            }
+
+            set
+            {
+                _cacheMakeRoom_UpperPercentile_Count = value.Clamp(0.0, 1.0);
+            }
+        }
+
+        private double _cacheMakeRoom_UpperPercentile_Count = 0.1;
+
+        public double CacheMakeRoom_RemoveBySizePercentage
+        {
+            get
+            {
+                return _cacheMakeRoom_RemoveBySizePercentage;
+            }
+
+            set
+            {
+                _cacheMakeRoom_RemoveBySizePercentage = value.Clamp(0.0, 1.0);
+            }
+        }
+
+        private double _cacheMakeRoom_RemoveBySizePercentage = 0.25;
+
+        public double CacheMakeRoom_RemoveByTimePercentage
+        {
+            get
+            {
+                return _cacheMakeRoom_RemoveByTimePercentage;
+            }
+
+            set
+            {
+                _cacheMakeRoom_RemoveByTimePercentage = value.Clamp(0.0, 1.0);
+            }
+        }
+
+        private double _cacheMakeRoom_RemoveByTimePercentage = 0.25;
+
         public virtual void MakeRoom(ulong requestedSpace)
         {
-            if (!StringResponses.Instance.Any())
+            if (!StringResponses.Any())
                 return;
 
             KeyValuePair<string, ResponseCacheEntry<string>>[] responses;
 
             using (StringResponseLock.LockRead())
-                responses = StringResponses.Instance.ToArray();
+                responses = StringResponses.ToArray();
 
             // Remove outdated.
             foreach (var kvpair in responses)
@@ -117,28 +177,27 @@ namespace LamestWebserver.Caching
 
             DateTime upperTenthPercentileDate;
             ulong upperTenthPercentileCount;
-            int upperTenthPercentileLength;
 
-            KeyValuePair<string, ResponseCacheEntry<string>>[] DateSorted, CountSorted, SizeSorted;
+            KeyValuePair<string, ResponseCacheEntry<string>>[] DateSorted = null, CountSorted = null, SizeSorted = null;
 
             using (StringResponseLock.LockWrite())
             {
-                DateSorted = StringResponses.Instance.OrderBy((kvpair) => { return kvpair.Value.LastRequestedDateTime; }).ToArray();
-                upperTenthPercentileDate = DateSorted.ToArray()[(int)(DateSorted.Length * 0.9)].Value.LastRequestedDateTime;
+                var worker0 = ThreadedWorker.CurrentWorker.Instance.EnqueueJob((Action)(() => DateSorted = StringResponses.OrderBy((kvpair) => kvpair.Value.LastRequestedDateTime).ToArray()));
+                var worker1 = ThreadedWorker.CurrentWorker.Instance.EnqueueJob((Action)(() => CountSorted = StringResponses.OrderBy((kvpair) => kvpair.Value.Count).ToArray()));
+                var worker2 = ThreadedWorker.CurrentWorker.Instance.EnqueueJob((Action)(() => SizeSorted = StringResponses.OrderBy((kvpair) => kvpair.Value.Response.Length).ToArray()));
 
-                CountSorted = StringResponses.Instance.OrderBy((kvpair) => { return kvpair.Value.Count; }).ToArray();
-                upperTenthPercentileCount = CountSorted.ToArray()[(int)(CountSorted.Length * 0.9)].Value.Count;
+                ThreadedWorker.JoinTasks(worker0, worker1, worker2);
 
-                SizeSorted = StringResponses.Instance.OrderBy((kvpair) => { return kvpair.Value.Response.Length; }).ToArray();
-                upperTenthPercentileLength = CountSorted.ToArray()[(int)(SizeSorted.Length * 0.9)].Value.Response.Length;
+                upperTenthPercentileDate = DateSorted[(int)(DateSorted.Length * (1.0 - CacheMakeRoom_UpperPercentile_Date))].Value.LastRequestedDateTime;
+                upperTenthPercentileCount = CountSorted[(int)(CountSorted.Length * (1.0 - CacheMakeRoom_UpperPercentile_Count))].Value.Count;
                 
                 // Remove by size if not in upper tenth percentile.
-                for (int i = (int)(SizeSorted.Length * 0.25); i >= 0; i--)
+                for (int i = (int)(SizeSorted.Length * CacheMakeRoom_RemoveBySizePercentage); i >= 0; i--)
                 {
-                    if (CurrentStringResponseCacheSize + requestedSpace <= StringResponseCacheMaxSize)
+                    if (CurrentStringResponseCacheSize + requestedSpace <= StringResponseCacheMaxSize) // First run without additional size
                         return;
 
-                    var response = StringResponses.Instance[SizeSorted[i].Key];
+                    var response = StringResponses[SizeSorted[i].Key];
 
                     if (response.Count <= upperTenthPercentileCount && response.LastRequestedDateTime <= upperTenthPercentileDate)
                         RemoveStringResponseEntry(SizeSorted[i].Key, response);
@@ -147,14 +206,14 @@ namespace LamestWebserver.Caching
                 int j = 0;
 
                 // Remove by count and last access time if not in upper tenth percentile.
-                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Instance.Any())
+                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Any())
                 {
-                    var response = StringResponses.Instance[DateSorted[j].Key];
+                    var response = StringResponses[DateSorted[j].Key];
 
                     if (response && response.Count <= upperTenthPercentileCount)
                         RemoveStringResponseEntry(DateSorted[j].Key, response);
 
-                    response = StringResponses.Instance[CountSorted[j].Key];
+                    response = StringResponses[CountSorted[j].Key];
 
                     if (response && response.LastRequestedDateTime <= upperTenthPercentileDate)
                         RemoveStringResponseEntry(CountSorted[j].Key, response);
@@ -163,14 +222,14 @@ namespace LamestWebserver.Caching
                 }
 
                 // Remove by time left till refresh till percentage.
-                var SortedTimeLeftTillRefresh = (from p in StringResponses.Instance where p.Value.RefreshTime.HasValue select new { kvpair = p, timeLeft = DateTime.UtcNow - p.Value.LastUpdatedDateTime + p.Value.RefreshTime }).OrderBy((k) => k.timeLeft).ToArray();
+                var SortedTimeLeftTillRefresh = (from p in StringResponses where p.Value.RefreshTime.HasValue select new { kvpair = p, timeLeft = DateTime.UtcNow - p.Value.LastUpdatedDateTime + p.Value.RefreshTime }).OrderBy((k) => k.timeLeft).ToArray();
 
-                for (int i = 0; i < SortedTimeLeftTillRefresh.Length * 0.25; i++)
+                for (int i = 0; i < SortedTimeLeftTillRefresh.Length * CacheMakeRoom_RemoveByTimePercentage; i++)
                 {
                     if (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace <= StringResponseCacheMaxSize)
                         return;
 
-                    var response = StringResponses.Instance[SortedTimeLeftTillRefresh[j].kvpair.Key];
+                    var response = StringResponses[SortedTimeLeftTillRefresh[j].kvpair.Key];
 
                     RemoveStringResponseEntry(SortedTimeLeftTillRefresh[j].kvpair.Key, response);
                 }
@@ -178,17 +237,17 @@ namespace LamestWebserver.Caching
                 // Remove by count and last accesstime regardless of percentiles.
                 j = 0;
                 
-                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Instance.Any())
+                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Any())
                 {
-                    var response = StringResponses.Instance[DateSorted[j].Key];
+                    var response = StringResponses[DateSorted[j].Key];
 
                     if (response)
                         RemoveStringResponseEntry(DateSorted[j].Key, response);
 
-                    if (!(CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Instance.Any()))
+                    if (!(CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Any()))
                         return;
 
-                    response = StringResponses.Instance[CountSorted[j].Key];
+                    response = StringResponses[CountSorted[j].Key];
 
                     if (response)
                         RemoveStringResponseEntry(CountSorted[j].Key, response);
@@ -204,7 +263,7 @@ namespace LamestWebserver.Caching
                 throw new ArgumentNullException(nameof(key));
 
             if (!value)
-                value = StringResponses.Instance[key];
+                value = StringResponses[key];
 
             if (!value)
                 return;
@@ -212,7 +271,7 @@ namespace LamestWebserver.Caching
             using (StringResponseLock.LockWrite())
             {
                 CurrentStringResponseCacheSize -= (ulong)value.Response.Length;
-                StringResponses.Instance.Remove(key);
+                StringResponses.Remove(key);
             }
         }
 
@@ -227,7 +286,7 @@ namespace LamestWebserver.Caching
             using (StringResponseLock.LockWrite())
             {
                 CurrentStringResponseCacheSize -= (ulong)value.Response.Length;
-                StringResponses.Instance.Remove(key);
+                StringResponses.Remove(key);
             }
         }
 

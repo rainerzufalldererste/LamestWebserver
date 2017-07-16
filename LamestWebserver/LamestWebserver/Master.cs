@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Web;
 using LamestWebserver.NotificationService;
 using LamestWebserver.UI;
-using System.Web;
+using LamestWebserver.Core;
 
 namespace LamestWebserver
 {
@@ -296,7 +297,7 @@ namespace LamestWebserver
             }
 
             NotificationHandler.StopAllNotificationHandlers();
-            ThreadedWorker.CurrentWorker.Stop();
+            ThreadedWorker.CurrentWorker.Instance.Stop();
         }
 
         /// <summary>

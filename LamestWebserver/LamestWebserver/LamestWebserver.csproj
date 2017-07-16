@@ -74,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Caching\ResponseCache.cs" />
+    <Compile Include="Core\Math.cs" />
     <Compile Include="Core\NullCheckable.cs" />
     <Compile Include="Core\Singleton.cs" />
     <Compile Include="Collections\AVLHashMap.cs" />
@@ -94,7 +95,7 @@
     <Compile Include="Master.cs" />
     <Compile Include="RequestHandlers\ResponseHandler.cs" />
     <Compile Include="Security\Encryption.cs" />
-    <Compile Include="ThreadedWorker.cs" />
+    <Compile Include="Core\ThreadedWorker.cs" />
     <Compile Include="UI\ComplexElements.cs" />
     <Compile Include="UI\PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />
