@@ -98,6 +98,15 @@ namespace LamestWebserver.Caching
             }
         }
 
+        public virtual void Clear()
+        {
+            using (StringResponseLock.LockWrite())
+            {
+                StringResponses.Clear();
+                CurrentStringResponseCacheSize = 0;
+            }
+        }
+
         public ulong CacheMakeRoom_AdditionalFreeSpace = 1024 * 1024 * 16; // 32 MByte due to two byte characters.
 
         public double CacheMakeRoom_UpperPercentile_Date

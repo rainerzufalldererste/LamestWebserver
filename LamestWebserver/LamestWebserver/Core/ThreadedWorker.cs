@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using LamestWebserver.Synchronization;
 
+using static LamestWebserver.Core.WorkerTask;
+
 namespace LamestWebserver.Core
 {
     /// <summary>
@@ -11,8 +13,6 @@ namespace LamestWebserver.Core
     /// </summary>
     public class ThreadedWorker : NullCheckable
     {
-        private static ThreadedWorker _currentWorker;
-
         /// <summary>
         /// The ThreadedWorker used in the Server.
         /// </summary>
@@ -223,13 +223,26 @@ namespace LamestWebserver.Core
             }
         }
 
+        /// <summary>
+        /// Waits until multiple Workers have finished running.
+        /// <para/>
+        /// This Join will throw an Exception if raised inside the workers.
+        /// </summary>
+        /// <param name="workers">The workers to wait for.</param>
         public static void JoinTasks(params WorkerTask[] workers)
         {
             foreach (WorkerTask worker in workers)
                 worker.Join();
         }
 
-        public static bool JoinTasks(TimeSpan maximumTotalWaitTime, params WorkerTask[] workers)
+        /// <summary>
+        /// Waits until multiple Workers have finished running.
+        /// <para/>
+        /// This Join will throw an Exception if raised inside the workers.
+        /// </summary>
+        /// <param name="maximumTotalWaitTime">The maximum total time to wait for the tasks to finish.</param>
+        /// <param name="workers">The workers to wait for.</param>
+        public static void JoinTasks(TimeSpan maximumTotalWaitTime, params WorkerTask[] workers)
         {
             DateTime start = DateTime.UtcNow;
 
@@ -239,18 +252,25 @@ namespace LamestWebserver.Core
 
                 if (ts > TimeSpan.Zero)
                 {
-                    if (!worker.JoinSafe(ts))
-                        return false;
+                    worker.Join(ts);
                 }
                 else
                 {
-                    return !(from w in workers where w.State != ETaskState.Done select 0).Any();
+                    if ((from w in workers where w.State != ETaskState.Done select 0).Any())
+                        throw new UnfinishedTaskException();
                 }
             }
 
-            return true;
+            return;
         }
 
+        /// <summary>
+        /// Waits until multiple workers have finished running.
+        /// <para/>
+        /// This Join will not throw Exceptions.
+        /// </summary>
+        /// <param name="workers">The workers to wait for.</param>
+        /// <returns>Returns true if successfully joined all workers.</returns>
         public static bool JoinTasksSafe(params WorkerTask[] workers)
         {
             foreach (WorkerTask worker in workers)
@@ -260,6 +280,15 @@ namespace LamestWebserver.Core
             return true;
         }
 
+
+        /// <summary>
+        /// Waits until multiple Workers have finished running.
+        /// <para/>
+        /// This Join will not throw Exceptions.
+        /// </summary>
+        /// <param name="maximumTotalWaitTime">The maximum total time to wait for the tasks to finish.</param>
+        /// <param name="workers">The workers to wait for.</param>
+        /// <returns>Returns true if successfully joined all workers.</returns>
         public static bool JoinTasksSafe(TimeSpan maximumTotalWaitTime, params WorkerTask[] workers)
         {
             DateTime start = DateTime.UtcNow;
@@ -283,14 +312,6 @@ namespace LamestWebserver.Core
         }
     }
 
-    public enum ETaskState : byte
-    {
-        Waiting,
-        Executing,
-        Done,
-        ExceptionThrown
-    }
-
     /// <summary>
     /// A WorkerTasks to be executed by ThreadedWorker's WorkerThreads.
     /// </summary>
@@ -311,7 +332,7 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <param name="task">the delegate to start</param>
         /// <param name="parameters">the parameters to execute on the delegate</param>
-        public WorkerTask(Delegate task, params object[] parameters)
+        internal WorkerTask(Delegate task, params object[] parameters)
         {
             if (task == null)
                 throw new ArgumentNullException(nameof(task));
@@ -320,18 +341,55 @@ namespace LamestWebserver.Core
             Parameters = parameters;
         }
 
+        /// <summary>
+        /// The current Execution State of this task.
+        /// </summary>
         public ETaskState State { get; internal set; } = ETaskState.Waiting;
 
+        /// <summary>
+        /// The returned value from the executed task - if any.
+        /// </summary>
         public object ReturnedValue { get; internal set; } = null;
 
+        /// <summary>
+        /// The thrown exception from the executed task - if any.
+        /// </summary>
         public Exception ExceptionThrown { get; internal set; } = null;
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <para/>
+        /// This Join will not throw Exceptions.
+        /// </summary>
+        /// <returns>Returns true if task was executed successfully.</returns>
         public bool JoinSafe() => JoinSafe(out object obj, null);
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <para/>
+        /// This Join will not throw Exceptions.
+        /// </summary>
+        /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
+        /// <returns>Returns true if task was executed successfully.</returns>
         public bool JoinSafe(TimeSpan? maximumWaitTime) => JoinSafe(out object obj, maximumWaitTime);
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <para/>
+        /// This Join will not throw Exceptions.
+        /// </summary>
+        /// <param name="milliseconds">The maximum amount of time to wait for the task to be executed in milliseconds.</param>
+        /// <returns>Returns true if task was executed successfully.</returns>
         public bool JoinSafe(int milliseconds) => JoinSafe(out object obj, TimeSpan.FromMilliseconds(milliseconds));
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <para/>
+        /// This Join will not throw Exceptions.
+        /// </summary>
+        /// <param name="returnedValue">The returned value - if any.</param>
+        /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
+        /// <returns>Returns true if task was executed successfully.</returns>
         public bool JoinSafe(out object returnedValue, TimeSpan? maximumWaitTime = null)
         {
             DateTime startTime = DateTime.UtcNow;
@@ -359,6 +417,15 @@ namespace LamestWebserver.Core
             return false;
         }
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <para/>
+        /// This Join will not throw Exceptions.
+        /// </summary>
+        /// <typeparam name="T">The Type of the returned value to be casted into.</typeparam>
+        /// <param name="returnedValue">The returned value casted to T.</param>
+        /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
+        /// <returns>Returns true if task was executed successfully.</returns>
         public bool JoinSafe<T>(out T returnedValue, TimeSpan? maximumWaitTime = null)
         {
             bool ret = JoinSafe(out object returnedValueObject, maximumWaitTime);
@@ -381,6 +448,14 @@ namespace LamestWebserver.Core
             return false;
         }
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <para/>
+        /// This Join will not throw Exceptions.
+        /// </summary>
+        /// <typeparam name="T">The Type of the returned value to be casted into.</typeparam>
+        /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
+        /// <returns>The returned value casted to T if successfull or null if it failed.</returns>
         public T JoinSafeOrNull<T>(TimeSpan? maximumWaitTime = null) where T : class
         {
             if (JoinSafe(out T ret, maximumWaitTime))
@@ -389,12 +464,36 @@ namespace LamestWebserver.Core
             return null;
         }
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <param/>
+        /// This Join will throw an Exception if raised during execution.
+        /// </summary>
         public void Join() => Join(out object obj, null);
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <param/>
+        /// This Join will throw an Exception if raised during execution.
+        /// </summary>
+        /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
         public void Join(TimeSpan? maximumWaitTime) => Join(out object obj, maximumWaitTime);
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <param/>
+        /// This Join will throw an Exception if raised during execution.
+        /// </summary>
+        /// <param name="milliseconds">The maximum amount of time to wait for the task to be executed in milliseconds.</param>
         public void Join(int milliseconds) => Join(out object obj, TimeSpan.FromMilliseconds(milliseconds));
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <param/>
+        /// This Join will throw an Exception if raised during execution.
+        /// </summary>
+        /// <param name="returnedValue">The returned value - if any.</param>
+        /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
         public void Join(out object returnedValue, TimeSpan? maximumWaitTime = null)
         {
             DateTime startTime = DateTime.UtcNow;
@@ -420,6 +519,14 @@ namespace LamestWebserver.Core
             throw new UnfinishedTaskException();
         }
 
+        /// <summary>
+        /// Waits until the task has been executed.
+        /// <param/>
+        /// This Join will throw an Exception if raised during execution.
+        /// </summary>
+        /// <typeparam name="T">The Type of the returned value to be casted into.</typeparam>
+        /// <param name="returnedValue">The returned value casted to T.</param>
+        /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
         public void Join<T>(out T returnedValue, TimeSpan? maximumWaitTime = null)
         {
             bool ret = JoinSafe(out object returnedValueObject, maximumWaitTime);
@@ -442,21 +549,54 @@ namespace LamestWebserver.Core
 
             throw new UnfinishedTaskException();
         }
+        
+
+        /// <summary>
+        /// An enum containing the possible State Types of a WorkerTask.
+        /// </summary>
+        public enum ETaskState : byte
+        {
+            /// <summary>
+            /// The Task has not been worked on yet.
+            /// </summary>
+            Waiting,
+
+            /// <summary>
+            /// The task is currently being executed.
+            /// </summary>
+            Executing,
+
+            /// <summary>
+            /// The task finished successfully.
+            /// </summary>
+            Done,
+
+            /// <summary>
+            /// The task execution raised an Exception.
+            /// </summary>
+            ExceptionThrown
+        }
     }
 
+    /// <summary>
+    /// An exception to represent that the given task(s) could not be executed in the given timespan. 
+    /// </summary>
     [Serializable]
     public class UnfinishedTaskException : Exception
     {
-        public UnfinishedTaskException() : base("The given task could not be executed in time.")
+        /// <inheritdoc />
+        public UnfinishedTaskException() : base("The given task could not be executed in the given timespan.")
         {
 
         }
-        
+
+        /// <inheritdoc />
         public UnfinishedTaskException(string message) : base(message)
         {
 
         }
 
+        /// <inheritdoc />
         public UnfinishedTaskException(string message, Exception innerException) : base(message, innerException)
         {
 
