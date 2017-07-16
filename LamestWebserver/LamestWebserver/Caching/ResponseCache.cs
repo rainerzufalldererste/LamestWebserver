@@ -14,7 +14,7 @@ namespace LamestWebserver.Caching
         public static int StringResponseCacheHashmapSize = 4096;
 
         public ulong CurrentStringResponseCacheSize { get; protected set; } = 0;
-        public ulong? StringResponseCacheMaxSize = 1024 * 1024 * 256; // 512 MBytes because of two byte characters bt default. 
+        public ulong? StringResponseCacheMaxSize = 1024 * 1024 * 256; // 512 MBytes because of two byte characters.
 
         private readonly AVLHashMap<string, ResponseCacheEntry<string>> StringResponses = new AVLHashMap<string, ResponseCacheEntry<string>>(StringResponseCacheHashmapSize);
         private UsableWriteLock StringResponseLock = new UsableWriteLock();
@@ -61,6 +61,12 @@ namespace LamestWebserver.Caching
 
             if (response == null)
                 throw new ArgumentNullException(nameof(response));
+
+            if (StringResponseCacheMaxSize.HasValue && (ulong)response.Length > StringResponseCacheMaxSize.Value)
+                Logger.LogDebugExcept("The given response is to big to be cached.");
+
+            if (StringResponseCacheMaxSize.HasValue && CurrentStringResponseCacheSize + (ulong)response.Length > StringResponseCacheMaxSize.Value)
+                MakeRoom((ulong)response.Length);
 
             ResponseCacheEntry<string> entry = new ResponseCacheEntry<string>()
             {
@@ -169,7 +175,7 @@ namespace LamestWebserver.Caching
 
         private double _cacheMakeRoom_RemoveByTimePercentage = 0.25;
 
-        public virtual void MakeRoom(ulong requestedSpace)
+        protected virtual void MakeRoom(ulong requestedSpace)
         {
             if (!StringResponses.Any())
                 return;

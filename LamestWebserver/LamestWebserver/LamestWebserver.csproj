@@ -74,7 +74,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Caching\ResponseCache.cs" />
+    <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
+    <Compile Include="Core\MiniDumpWindows.cs" />
     <Compile Include="Core\NullCheckable.cs" />
     <Compile Include="Core\Singleton.cs" />
     <Compile Include="Collections\AVLHashMap.cs" />
@@ -101,7 +103,7 @@
     <Compile Include="PageFiller.cs" />
     <Compile Include="PageResponse.cs" />
     <Compile Include="UI\ScriptCollection.cs" />
-    <Compile Include="Security\ElevateRightsWindows.cs" />
+    <Compile Include="Core\ElevateRightsWindows.cs" />
     <Compile Include="Security\Password.cs" />
     <Compile Include="Serialization\Serializer.cs" />
     <Compile Include="SessionContainer.cs" />

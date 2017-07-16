@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32.SafeHandles;
 
-namespace LamestWebserver.Security
+namespace LamestWebserver.Core
 {
     /// <summary>
     /// Tools for executing the current Application with elevated rights
     /// 
-    /// Source https://code.msdn.microsoft.com/windowsapps/CSUACSelfElevation-644673d3
+    /// Source: https://code.msdn.microsoft.com/windowsapps/CSUACSelfElevation-644673d3
     /// </summary>
     public static class ElevateRightsWindows
     {
