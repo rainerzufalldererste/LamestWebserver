@@ -1,24 +1,48 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using LamestWebserver.Core;
 using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
 
 namespace LamestWebserver.Caching
 {
+    /// <summary>
+    /// A general purpose key-value string cache.
+    /// </summary>
     public class ResponseCache : NullCheckable
     {
-        public readonly static Singleton<ResponseCache> SingletonCacheInstance = new Singleton<ResponseCache>();
+        /// <summary>
+        /// The main ResponseCache instance for LamestWebserver.
+        /// </summary>
+        public readonly static Singleton<ResponseCache> CurrentCacheInstance = new Singleton<ResponseCache>();
+
+        /// <summary>
+        /// The size of the underlying hashmap for the cached items.
+        /// </summary>
         public static int StringResponseCacheHashmapSize = 4096;
 
+        /// <summary>
+        /// The current size of the cache.
+        /// </summary>
         public ulong CurrentStringResponseCacheSize { get; protected set; } = 0;
-        public ulong? StringResponseCacheMaxSize = 1024 * 1024 * 256; // 512 MBytes because of two byte characters.
+
+        /// <summary>
+        /// The Maximum Response cache size. if null: unlimited.
+        /// <para/>
+        /// Defaults to 1024 * 1024 * 256 = 512 MBytes (because of two byte characters).
+        /// </summary>
+        public ulong? MaximumStringResponseCacheSize = 1024 * 1024 * 256;
 
         private readonly AVLHashMap<string, ResponseCacheEntry<string>> StringResponses = new AVLHashMap<string, ResponseCacheEntry<string>>(StringResponseCacheHashmapSize);
         private UsableWriteLock StringResponseLock = new UsableWriteLock();
 
+        /// <summary>
+        /// Retrieves a cached string response if it is cached.
+        /// </summary>
+        /// <param name="key">The key of the cached response</param>
+        /// <param name="response">The cached response.</param>
+        /// <returns>Returns true if the response could be retrieved.</returns>
         public bool GetCachedStringResponse(string key, out string response)
         {
             if (key == null)
@@ -54,6 +78,12 @@ namespace LamestWebserver.Caching
             }
         }
 
+        /// <summary>
+        /// Sets a response to the cache.
+        /// </summary>
+        /// <param name="key">The key of the response.</param>
+        /// <param name="response">The response.</param>
+        /// <param name="refreshTime">The lifetime of this entry. If null this entry doesn't have to be refreshed.</param>
         public void SetCachedStringResponse(string key, string response, TimeSpan? refreshTime = null)
         {
             if (key == null)
@@ -62,10 +92,13 @@ namespace LamestWebserver.Caching
             if (response == null)
                 throw new ArgumentNullException(nameof(response));
 
-            if (StringResponseCacheMaxSize.HasValue && (ulong)response.Length > StringResponseCacheMaxSize.Value)
-                Logger.LogDebugExcept("The given response is to big to be cached.");
+            if (MaximumStringResponseCacheSize.HasValue && (ulong)response.Length > MaximumStringResponseCacheSize.Value)
+            {
+                Logger.LogDebugExcept($"The given response for '{key}' is to big to be cached.");
+                return;
+            }
 
-            if (StringResponseCacheMaxSize.HasValue && CurrentStringResponseCacheSize + (ulong)response.Length > StringResponseCacheMaxSize.Value)
+            if (MaximumStringResponseCacheSize.HasValue && CurrentStringResponseCacheSize + (ulong)response.Length > MaximumStringResponseCacheSize.Value)
                 MakeRoom((ulong)response.Length);
 
             ResponseCacheEntry<string> entry = new ResponseCacheEntry<string>()
@@ -83,6 +116,13 @@ namespace LamestWebserver.Caching
             }
         }
 
+        /// <summary>
+        /// Retrueves a cached string or caches it using the source function.
+        /// </summary>
+        /// <param name="key">The key of the response.</param>
+        /// <param name="sourceIfNotCached">A function that retrieves the source if it's not cached yet.</param>
+        /// <param name="refreshTime">The lifetime of this entry. If null this entry doesn't have to be refreshed. This lifetime will not override the original lifetime of this entry.</param>
+        /// <returns>The cached response.</returns>
         public virtual string GetCachedString(string key, Func<string> sourceIfNotCached, TimeSpan? refreshTime = null)
         {
             if (key == null)
@@ -104,6 +144,21 @@ namespace LamestWebserver.Caching
             }
         }
 
+        /// <summary>
+        /// Removes a cached string from the cache.
+        /// </summary>
+        /// <param name="key">the key of the cached entry.</param>
+        public void RemoveCachedString(string key)
+        {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
+            RemoveStringResponseEntry(key, null);
+        }
+
+        /// <summary>
+        /// Clears the cache entirely.
+        /// </summary>
         public virtual void Clear()
         {
             using (StringResponseLock.LockWrite())
@@ -113,8 +168,14 @@ namespace LamestWebserver.Caching
             }
         }
 
+        /// <summary>
+        /// The additional free space to make, when the cache is overflowing.
+        /// </summary>
         public ulong CacheMakeRoom_AdditionalFreeSpace = 1024 * 1024 * 16; // 32 MByte due to two byte characters.
 
+        /// <summary>
+        /// The upper percentile for the date based cache cleaning. (between 0 and 1)
+        /// </summary>
         public double CacheMakeRoom_UpperPercentile_Date
         {
             get
@@ -130,6 +191,9 @@ namespace LamestWebserver.Caching
 
         private double _cacheMakeRoom_UpperPercentile_Date = 0.1;
 
+        /// <summary>
+        /// The upper percentile for the access count based cache cleaning. (between 0 and 1)
+        /// </summary>
         public double CacheMakeRoom_UpperPercentile_Count
         {
             get
@@ -145,6 +209,9 @@ namespace LamestWebserver.Caching
 
         private double _cacheMakeRoom_UpperPercentile_Count = 0.1;
 
+        /// <summary>
+        /// The maximum percentage of entries to remove by size. (between 0 and 1)
+        /// </summary>
         public double CacheMakeRoom_RemoveBySizePercentage
         {
             get
@@ -160,6 +227,9 @@ namespace LamestWebserver.Caching
 
         private double _cacheMakeRoom_RemoveBySizePercentage = 0.25;
 
+        /// <summary>
+        /// The maximum percentage of entries to remove by lifetime left. (between 0 and 1)
+        /// </summary>
         public double CacheMakeRoom_RemoveByTimePercentage
         {
             get
@@ -175,9 +245,16 @@ namespace LamestWebserver.Caching
 
         private double _cacheMakeRoom_RemoveByTimePercentage = 0.25;
 
+        /// <summary>
+        /// Makes room when the cache is overflowing.
+        /// </summary>
+        /// <param name="requestedSpace">The requested amount of free space. (Not including CacheMakeRoom_AdditionalFreeSpace)</param>
         protected virtual void MakeRoom(ulong requestedSpace)
         {
             if (!StringResponses.Any())
+                return;
+
+            if (!MaximumStringResponseCacheSize.HasValue)
                 return;
 
             KeyValuePair<string, ResponseCacheEntry<string>>[] responses;
@@ -209,7 +286,7 @@ namespace LamestWebserver.Caching
                 // Remove by size if not in upper tenth percentile.
                 for (int i = (int)(SizeSorted.Length * CacheMakeRoom_RemoveBySizePercentage); i >= 0; i--)
                 {
-                    if (CurrentStringResponseCacheSize + requestedSpace <= StringResponseCacheMaxSize) // First run without additional size
+                    if (CurrentStringResponseCacheSize + requestedSpace <= MaximumStringResponseCacheSize.Value) // First run without additional size
                         return;
 
                     var response = StringResponses[SizeSorted[i].Key];
@@ -221,7 +298,7 @@ namespace LamestWebserver.Caching
                 int j = 0;
 
                 // Remove by count and last access time if not in upper tenth percentile.
-                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Any())
+                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > MaximumStringResponseCacheSize && StringResponses.Any())
                 {
                     var response = StringResponses[DateSorted[j].Key];
 
@@ -241,7 +318,7 @@ namespace LamestWebserver.Caching
 
                 for (int i = 0; i < SortedTimeLeftTillRefresh.Length * CacheMakeRoom_RemoveByTimePercentage; i++)
                 {
-                    if (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace <= StringResponseCacheMaxSize)
+                    if (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace <= MaximumStringResponseCacheSize)
                         return;
 
                     var response = StringResponses[SortedTimeLeftTillRefresh[j].kvpair.Key];
@@ -252,14 +329,14 @@ namespace LamestWebserver.Caching
                 // Remove by count and last accesstime regardless of percentiles.
                 j = 0;
                 
-                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Any())
+                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > MaximumStringResponseCacheSize && StringResponses.Any())
                 {
                     var response = StringResponses[DateSorted[j].Key];
 
                     if (response)
                         RemoveStringResponseEntry(DateSorted[j].Key, response);
 
-                    if (!(CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > StringResponseCacheMaxSize && StringResponses.Any()))
+                    if (!(CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > MaximumStringResponseCacheSize && StringResponses.Any()))
                         return;
 
                     response = StringResponses[CountSorted[j].Key];
@@ -272,6 +349,13 @@ namespace LamestWebserver.Caching
             }
         }
 
+        /// <summary>
+        /// Removes an entry from the cache.
+        /// <para/> 
+        /// This method can handle non-existent items.
+        /// </summary>
+        /// <param name="key">The key of the entry.</param>
+        /// <param name="value">The response if already retrieved. If null, the response will be retrieved automatically.</param>
         protected void RemoveStringResponseEntry(string key, ResponseCacheEntry<string> value)
         {
             if (key == null)
@@ -290,6 +374,13 @@ namespace LamestWebserver.Caching
             }
         }
 
+        /// <summary>
+        /// Adds an Entry to the cache.
+        /// <para/> 
+        /// This method can handle already existent items.
+        /// </summary>
+        /// <param name="key">The key of the response.</param>
+        /// <param name="value">The response.</param>
         protected void AddStringResponseEntry(string key, ResponseCacheEntry<string> value)
         {
             if (key == null)
@@ -301,19 +392,64 @@ namespace LamestWebserver.Caching
             using (StringResponseLock.LockWrite())
             {
                 CurrentStringResponseCacheSize -= (ulong)value.Response.Length;
-                StringResponses.Remove(key);
+                StringResponses[key] = value;
             }
         }
 
+        /// <summary>
+        /// A cached response.
+        /// </summary>
+        /// <typeparam name="T">The type of the cached element.</typeparam>
         protected class ResponseCacheEntry<T> : NullCheckable
         {
-            internal DateTime LastUpdatedDateTime;
-            internal TimeSpan? RefreshTime;
-            internal T Response;
-            internal ulong Count = 0;
-            internal DateTime LastRequestedDateTime = DateTime.UtcNow;
+            /// <summary>
+            /// The time when this entry was created or updated.
+            /// </summary>
+            public DateTime LastUpdatedDateTime;
 
-            internal void Increment()
+            /// <summary>
+            /// The lifetime of this entry. If null it doesn't have to be refreshed.
+            /// </summary>
+            public TimeSpan? RefreshTime;
+
+            /// <summary>
+            /// The Response to retrieve from this entry.
+            /// </summary>
+            public T Response;
+
+            /// <summary>
+            /// The amount of times this entry has been requested.
+            /// </summary>
+            public ulong Count = 0;
+
+            /// <summary>
+            /// The time when this entry was accessed for the last time.
+            /// </summary>
+            public DateTime LastRequestedDateTime = DateTime.UtcNow;
+
+            /// <summary>
+            /// Creates a new ResponseCacheEntry instance.
+            /// </summary>
+            public ResponseCacheEntry()
+            {
+
+            }
+
+            /// <summary>
+            /// Creates a new ResponseCacheEntry instance.
+            /// </summary>
+            /// <param name="respose">The response.</param>
+            /// <param name="refreshTime">The lifetime of the cached entry. If null this entry doesn't have to be refreshed.</param>
+            public ResponseCacheEntry(T respose, TimeSpan? refreshTime = null)
+            {
+                Response = respose;
+                RefreshTime = refreshTime;
+            }
+
+            /// <summary>
+            /// Increments the Count and Updates the LastRequestedDateTime.
+            /// </summary>
+            public void Increment()
             {
                 Count++;
                 LastRequestedDateTime = DateTime.UtcNow;

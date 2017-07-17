@@ -19,6 +19,7 @@ namespace LamestWebserver.Core
         [Flags]
         public enum Option : uint
         {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
             Normal = 0x00000000,
             WithDataSegs = 0x00000001,
             WithFullMemory = 0x00000002,
@@ -39,6 +40,7 @@ namespace LamestWebserver.Core
             WithPrivateWriteCopyMemory = 0x00010000,
             IgnoreInaccessibleMemory = 0x00020000,
             ValidTypeFlags = 0x0003ffff,
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         };
 
 
@@ -47,8 +49,10 @@ namespace LamestWebserver.Core
         /// </summary>
         public enum ExceptionInfo
         {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
             None,
             Present
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         }
 
 
@@ -64,11 +68,13 @@ namespace LamestWebserver.Core
         [StructLayout(LayoutKind.Sequential, Pack = 4)]  // Pack = 4 is important! So it works also for x64!
         public struct MiniDumpExceptionInformation
         {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
             public uint ThreadId;
             public IntPtr ExceptionPointers;
 
             [MarshalAs(UnmanagedType.Bool)]
             public bool ClientPointers;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         }
 
         /// <summary>
