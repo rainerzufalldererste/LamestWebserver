@@ -160,9 +160,22 @@ namespace LamestWebserver.Caching
         }
 
         /// <summary>
-        /// The additional free space to make, when the cache is overflowing.
+        /// The additional free space to make - relative to the maximum cache size, when the cache is overflowing.
         /// </summary>
-        public ulong CacheMakeRoom_AdditionalFreeSpace = 1024 * 1024 * 16; // 32 MByte due to two byte characters.
+        public double CacheMakeRoom_AdditionalFreeSpacePercentage
+        {
+            get
+            {
+                return _cacheMakeRoom_AdditionalFreeSpacePercentage; 
+            }
+
+            set
+            {
+                _cacheMakeRoom_AdditionalFreeSpacePercentage = value.Clamp(0.0, 1.0);
+            }
+        }
+
+        private double _cacheMakeRoom_AdditionalFreeSpacePercentage = 0.0625;
 
         /// <summary>
         /// The upper percentile for the date based cache cleaning. (between 0 and 1)
@@ -291,7 +304,7 @@ namespace LamestWebserver.Caching
                 int j = 0;
 
                 // Remove by count and last access time if not in upper tenth percentile.
-                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > MaximumStringResponseCacheSize && StringResponses.Any())
+                while (CurrentStringResponseCacheSize + requestedSpace + (ulong)(MaximumStringResponseCacheSize * CacheMakeRoom_AdditionalFreeSpacePercentage) > MaximumStringResponseCacheSize && StringResponses.Any())
                 {
                     var response = StringResponses[DateSorted[j].Key];
 
@@ -311,7 +324,7 @@ namespace LamestWebserver.Caching
 
                 for (int i = 0; i < SortedTimeLeftTillRefresh.Length * CacheMakeRoom_RemoveByTimePercentage; i++)
                 {
-                    if (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace <= MaximumStringResponseCacheSize)
+                    if (CurrentStringResponseCacheSize + requestedSpace + (ulong)(MaximumStringResponseCacheSize * CacheMakeRoom_AdditionalFreeSpacePercentage) <= MaximumStringResponseCacheSize)
                         return;
 
                     var response = StringResponses[SortedTimeLeftTillRefresh[j].kvpair.Key];
@@ -322,14 +335,14 @@ namespace LamestWebserver.Caching
                 // Remove by count and last accesstime regardless of percentiles.
                 j = 0;
                 
-                while (CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > MaximumStringResponseCacheSize && StringResponses.Any())
+                while (CurrentStringResponseCacheSize + requestedSpace + (ulong)(MaximumStringResponseCacheSize * CacheMakeRoom_AdditionalFreeSpacePercentage) > MaximumStringResponseCacheSize && StringResponses.Any())
                 {
                     var response = StringResponses[DateSorted[j].Key];
 
                     if (response)
                         RemoveStringResponseEntry(DateSorted[j].Key, response);
 
-                    if (!(CurrentStringResponseCacheSize + requestedSpace + CacheMakeRoom_AdditionalFreeSpace > MaximumStringResponseCacheSize && StringResponses.Any()))
+                    if (!(CurrentStringResponseCacheSize + requestedSpace + (ulong)(MaximumStringResponseCacheSize * CacheMakeRoom_AdditionalFreeSpacePercentage) > MaximumStringResponseCacheSize && StringResponses.Any()))
                         return;
 
                     response = StringResponses[CountSorted[j].Key];

@@ -10,6 +10,7 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new ResponseCacheTest().TestResponseCache();
             new PacketUnitTest().TestCookies();
             new PacketUnitTest().TestHttpHead();
             new PacketUnitTest().TestHttpPost();

@@ -498,7 +498,7 @@ namespace LamestWebserver.Core
         {
             DateTime startTime = DateTime.UtcNow;
 
-            while (maximumWaitTime.HasValue || startTime + maximumWaitTime.Value > DateTime.UtcNow)
+            while (!maximumWaitTime.HasValue || startTime + maximumWaitTime.Value > DateTime.UtcNow)
             {
                 switch (State)
                 {
