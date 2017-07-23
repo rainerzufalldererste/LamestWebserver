@@ -67,11 +67,7 @@ namespace LamestWebserver.Caching
             }
             else
             {
-                using (StringResponseLock.LockWrite())
-                {
-                    CurrentStringResponseCacheSize -= (ulong)result.Response.Length;
-                    StringResponses.Remove(key);
-                }
+                RemoveStringResponseEntry(key, result);
 
                 response = null;
                 return false;
@@ -108,12 +104,7 @@ namespace LamestWebserver.Caching
                 Response = response
             };
 
-            using (StringResponseLock.LockWrite())
-            {
-                CurrentStringResponseCacheSize += (ulong)entry.Response.Length;
-
-                StringResponses[key] = entry;
-            }
+            AddStringResponseEntry(key, entry);
         }
 
         /// <summary>
@@ -128,15 +119,15 @@ namespace LamestWebserver.Caching
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
+            if (sourceIfNotCached == null)
+                throw new ArgumentNullException(nameof(sourceIfNotCached));
+            
             if (GetCachedStringResponse(key, out string response))
             {
                 return response;
             }
             else
             {
-                if (sourceIfNotCached == null)
-                    throw new ArgumentNullException(nameof(sourceIfNotCached));
-
                 string toCache = sourceIfNotCached();
                 SetCachedStringResponse(key, toCache, refreshTime);
 
@@ -282,9 +273,11 @@ namespace LamestWebserver.Caching
 
                 upperTenthPercentileDate = DateSorted[(int)(DateSorted.Length * (1.0 - CacheMakeRoom_UpperPercentile_Date))].Value.LastRequestedDateTime;
                 upperTenthPercentileCount = CountSorted[(int)(CountSorted.Length * (1.0 - CacheMakeRoom_UpperPercentile_Count))].Value.Count;
-                
-                // Remove by size if not in upper tenth percentile.
-                for (int i = (int)(SizeSorted.Length * CacheMakeRoom_RemoveBySizePercentage); i >= 0; i--)
+
+                // Remove by size descending if not in upper tenth percentile.
+                int lastRemoveBySizeIndex = (int)(SizeSorted.Length * CacheMakeRoom_RemoveBySizePercentage);
+
+                for (int i = SizeSorted.Length - 1; i >= lastRemoveBySizeIndex; i--)
                 {
                     if (CurrentStringResponseCacheSize + requestedSpace <= MaximumStringResponseCacheSize.Value) // First run without additional size
                         return;
@@ -364,7 +357,7 @@ namespace LamestWebserver.Caching
             if (!value)
                 value = StringResponses[key];
 
-            if (!value)
+            if (!value) // if it couldn't be retrieved.
                 return;
 
             using (StringResponseLock.LockWrite())
@@ -389,9 +382,14 @@ namespace LamestWebserver.Caching
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
+            var old = StringResponses[key];
+
+            if (old)
+                RemoveStringResponseEntry(key, old);
+
             using (StringResponseLock.LockWrite())
             {
-                CurrentStringResponseCacheSize -= (ulong)value.Response.Length;
+                CurrentStringResponseCacheSize += (ulong)value.Response.Length;
                 StringResponses[key] = value;
             }
         }

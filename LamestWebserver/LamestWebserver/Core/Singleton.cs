@@ -10,7 +10,7 @@ namespace LamestWebserver.Core
     /// <typeparam name="T">The type of the singleton.</typeparam>
     public class Singleton<T> : NullCheckable
     {
-        private UsableMutexSlim _singletonLock = new UsableMutexSlim();
+        private UsableMutexSlim _singletonLock;
 
         private bool _initialized = false;
         private T _instance;
@@ -44,8 +44,9 @@ namespace LamestWebserver.Core
         /// Creates a new Singleton.
         /// </summary>
         /// <param name="getInstanceFunction">A function to create an instance of the given type. If null will be set to default constructor of this type.</param>
+        /// <param name="initializeDirectly">Shall the Singleton be directly initialized upfront?</param>
         /// <exception cref="MissingMethodException">Throws a MissingMethodException when no getInstanceFunction is given and the type does not contain a default constructor and is no ValueType.</exception>
-        public Singleton(Func<T> getInstanceFunction = null)
+        public Singleton(Func<T> getInstanceFunction = null, bool initializeDirectly = false)
         {
             _instance = default(T);
             _getInstance = getInstanceFunction;
@@ -58,9 +59,7 @@ namespace LamestWebserver.Core
                 {
                     if (typeof(T).IsValueType)
                     {
-                        // a value type requires the same amount of memory if not initialized, but probably the initialization is very expensive or something...
-
-                        _getInstance = () => default(T);
+                        _initialized = true; // has already been initialized in the first line to default(T).
                         return;
                     }
                     else
@@ -84,6 +83,18 @@ namespace LamestWebserver.Core
 
                     _getInstance = (Func<T>)dynamic.CreateDelegate(typeof(Func<T>));
                 }
+            }
+
+            if(initializeDirectly)
+            {
+                if (!_initialized)
+                    _instance = _getInstance();
+
+                _initialized = true;
+            }
+            else
+            {
+                _singletonLock = new UsableMutexSlim();
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace LamestWebserver.Core
 {
@@ -39,7 +40,7 @@ namespace LamestWebserver.Core
         /// <param name="msg">The message to log.</param>
         public void Trace(string msg)
         {
-            if (MinimumLoggingLevel < ELoggingLevel.Trace)
+            if (MinimumLoggingLevel > ELoggingLevel.Trace)
                 return;
 
             Log(ELoggingLevel.Trace, msg);
@@ -57,7 +58,7 @@ namespace LamestWebserver.Core
         /// <param name="msg">The message to log.</param>
         public void Information(string msg)
         {
-            if (MinimumLoggingLevel < ELoggingLevel.Information)
+            if (MinimumLoggingLevel > ELoggingLevel.Information)
                 return;
 
             Log(ELoggingLevel.Information, msg);
@@ -75,7 +76,7 @@ namespace LamestWebserver.Core
         /// <param name="msg">The message to log.</param>
         public void Warning(string msg)
         {
-            if (MinimumLoggingLevel < ELoggingLevel.Warning)
+            if (MinimumLoggingLevel > ELoggingLevel.Warning)
                 return;
 
             Log(ELoggingLevel.Warning, msg);
@@ -93,7 +94,7 @@ namespace LamestWebserver.Core
         /// <param name="msg">The message to log.</param>
         public void Error(string msg)
         {
-            if (MinimumLoggingLevel < ELoggingLevel.Error)
+            if (MinimumLoggingLevel > ELoggingLevel.Error)
                 return;
 
             Log(ELoggingLevel.Error, msg);
@@ -111,10 +112,33 @@ namespace LamestWebserver.Core
         /// <param name="exception">The exception, of which the message will be logged.</param>
         public void DebugExcept(Exception exception)
         {
-            if (MinimumLoggingLevel < ELoggingLevel.DebugExcept)
+            if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
                 return;
 
             Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + exception.Message);
+
+            if (LoggerDebugMode)
+                throw exception;
+        }
+
+        /// <summary>
+        /// Logging a message on logging level 'DebugExcept'. The Exception will be thrown if Logger.LoggerDebugMode is true.
+        /// </summary>
+        /// <param name="message">The message to log.</param>
+        /// <param name="exception">The exception to throw.</param>
+        public static void LogDebugExcept(string message, Exception exception) => CurrentLogger.Instance.DebugExcept(message, exception);
+
+        /// <summary>
+        /// Logging a message on logging level 'DebugExcept'. The Exception will be thrown if Logger.LoggerDebugMode is true.
+        /// </summary>
+        /// <param name="message">The message to log.</param>
+        /// <param name="exception">The exception to throw.</param>
+        public void DebugExcept(string message, Exception exception)
+        {
+            if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
+                return;
+
+            Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + message);
 
             if (LoggerDebugMode)
                 throw exception;
@@ -132,7 +156,7 @@ namespace LamestWebserver.Core
         /// <param name="msg">The message to log.</param>
         public void DebugExcept(string msg)
         {
-            if (MinimumLoggingLevel < ELoggingLevel.DebugExcept)
+            if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
                 return;
 
             Log(ELoggingLevel.DebugExcept, msg);
@@ -153,10 +177,32 @@ namespace LamestWebserver.Core
         /// <param name="exception">The exception, of which the message will be logged.</param>
         public void Except(Exception exception)
         {
-            if (MinimumLoggingLevel < ELoggingLevel.Except)
+            if (MinimumLoggingLevel > ELoggingLevel.Except)
                 return;
 
             Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + exception.Message);
+
+            throw exception;
+        }
+
+        /// <summary>
+        /// Logging a message on logging level 'Except'. The Exception will be thrown.
+        /// </summary>
+        /// <param name="message">The message to log.</param>
+        /// <param name="exception">The exception to throw.</param>
+        public static void LogExcept(string message, Exception exception) => CurrentLogger.Instance.Except(message, exception);
+
+        /// <summary>
+        /// Logging a message on logging level 'Except'. The Exception will be thrown.
+        /// </summary>
+        /// <param name="message">The message to log.</param>
+        /// <param name="exception">The exception to throw.</param>
+        public void Except(string message, Exception exception)
+        {
+            if (MinimumLoggingLevel > ELoggingLevel.Except)
+                return;
+
+            Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + message);
 
             throw exception;
         }
@@ -173,7 +219,7 @@ namespace LamestWebserver.Core
         /// <param name="msg">The message to log.</param>
         public void Except(string msg)
         {
-            if (MinimumLoggingLevel < ELoggingLevel.Except)
+            if (MinimumLoggingLevel > ELoggingLevel.Except)
                 return;
 
             Log(ELoggingLevel.Except, msg);
@@ -193,7 +239,7 @@ namespace LamestWebserver.Core
         /// <param name="msg">The message to log.</param>
         public void CrashAndBurn(string msg)
         {
-            if (MinimumLoggingLevel < ELoggingLevel.CrashAndBurn)
+            if (MinimumLoggingLevel > ELoggingLevel.CrashAndBurn)
                 return;
 
             Log(ELoggingLevel.CrashAndBurn, msg);
@@ -204,7 +250,12 @@ namespace LamestWebserver.Core
             }
             catch { }
 
-            MiniDump.Write();
+            try
+            {
+                MiniDump.Write();
+            }
+            catch { }
+
             Environment.Exit(-1);
         }
 
@@ -221,7 +272,31 @@ namespace LamestWebserver.Core
         public void Close()
         {
             // TODO: Close and Flush stream!
-            throw new NotImplementedException();
+            DebugExcept(new NotImplementedException());
+        }
+
+        /// <summary>
+        /// Opens and initializes the steam to write to.
+        /// </summary>
+        protected void Open()
+        {
+            DebugExcept(new NotImplementedException());
+        }
+
+        /// <summary>
+        /// Creates a new Logger instance.
+        /// </summary>
+        public Logger()
+        {
+            Open();
+        }
+
+        /// <summary>
+        /// Destructor for the logger closes the stream.
+        /// </summary>
+        ~Logger()
+        {
+            Close();
         }
 
         /// <summary>
@@ -232,17 +307,17 @@ namespace LamestWebserver.Core
             /// <summary>
             /// Quits the Application writing a CrashDump.
             /// </summary>
-            CrashAndBurn = 0,
+            CrashAndBurn = 6,
 
             /// <summary>
             /// Throws an Excption.
             /// </summary>
-            Except = 1,
+            Except = 5,
 
             /// <summary>
             /// Throws an Exception if Logger.LoggerDebugMode is true.
             /// </summary>
-            DebugExcept = 2,
+            DebugExcept = 4,
 
             /// <summary>
             /// A major Error.
@@ -252,17 +327,17 @@ namespace LamestWebserver.Core
             /// <summary>
             /// A warning message.
             /// </summary>
-            Warning = 4,
+            Warning = 2,
 
             /// <summary>
             /// General Information.
             /// </summary>
-            Information = 5,
+            Information = 1,
 
             /// <summary>
             /// Debugging Information.
             /// </summary>
-            Trace = 6
+            Trace = 0
         }
     }
 }
