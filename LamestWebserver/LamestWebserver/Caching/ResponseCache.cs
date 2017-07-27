@@ -261,6 +261,10 @@ namespace LamestWebserver.Caching
             if (!MaximumStringResponseCacheSize.HasValue)
                 return;
 
+            Logger.LogInformation($"Cache space has been overflowed. Making Room... ({CurrentStringResponseCacheSize} + {requestedSpace} ( + {(ulong)(CacheMakeRoom_AdditionalFreeSpacePercentage * MaximumStringResponseCacheSize)} additional ) / {MaximumStringResponseCacheSize.Value} -> {(100.0 * ((CurrentStringResponseCacheSize + requestedSpace) / (double)MaximumStringResponseCacheSize.Value)).ToString("0.00")}% filled)");
+
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
             KeyValuePair<string, ResponseCacheEntry<string>>[] responses;
 
             using (StringResponseLock.LockRead())
@@ -293,7 +297,7 @@ namespace LamestWebserver.Caching
                 for (int i = SizeSorted.Length - 1; i >= lastRemoveBySizeIndex; i--)
                 {
                     if (CurrentStringResponseCacheSize + requestedSpace <= MaximumStringResponseCacheSize.Value) // First run without additional size
-                        return;
+                        break;
 
                     var response = StringResponses[SizeSorted[i].Key];
 
@@ -325,7 +329,7 @@ namespace LamestWebserver.Caching
                 for (int i = 0; i < SortedTimeLeftTillRefresh.Length * CacheMakeRoom_RemoveByTimePercentage; i++)
                 {
                     if (CurrentStringResponseCacheSize + requestedSpace + (ulong)(MaximumStringResponseCacheSize * CacheMakeRoom_AdditionalFreeSpacePercentage) <= MaximumStringResponseCacheSize)
-                        return;
+                        goto epilogue;
 
                     var response = StringResponses[SortedTimeLeftTillRefresh[j].kvpair.Key];
 
@@ -343,7 +347,7 @@ namespace LamestWebserver.Caching
                         RemoveStringResponseEntry(DateSorted[j].Key, response);
 
                     if (!(CurrentStringResponseCacheSize + requestedSpace + (ulong)(MaximumStringResponseCacheSize * CacheMakeRoom_AdditionalFreeSpacePercentage) > MaximumStringResponseCacheSize && StringResponses.Any()))
-                        return;
+                        goto epilogue;
 
                     response = StringResponses[CountSorted[j].Key];
 
@@ -353,6 +357,11 @@ namespace LamestWebserver.Caching
                     j++;
                 }
             }
+
+        epilogue:
+            stopwatch.Stop();
+
+            Logger.LogInformation($"Cache space has been cleared. ({stopwatch.ElapsedMilliseconds} ms) ({(100.0 * ((CurrentStringResponseCacheSize + requestedSpace) / (double)MaximumStringResponseCacheSize.Value)).ToString("0.00")}% filled)");
         }
 
         /// <summary>

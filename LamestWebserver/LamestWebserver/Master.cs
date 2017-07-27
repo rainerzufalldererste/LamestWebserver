@@ -79,8 +79,9 @@ namespace LamestWebserver
                                     constructor.Invoke(new object[0]);
                                 }
                             }
-                            catch
+                            catch (Exception e)
                             {
+                                Logger.LogError(e.ToString());
                             }
                         }
                     }

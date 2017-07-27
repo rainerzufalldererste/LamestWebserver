@@ -189,6 +189,7 @@ namespace LamestWebserver.Core
 
             while (_running)
             {
+                currentTask = null;
                 bool hasTasks = false;
 
                 using (_writeLock.LockRead())
@@ -203,6 +204,10 @@ namespace LamestWebserver.Core
                     Thread.Sleep(1);
                     continue;
                 }
+
+#if DEBUG
+                Logger.LogTrace($"Dequeued Job in WorkerThread: {currentTask.Task.Method.Name} ({_tasks.Count} tasks left.)");
+#endif
 
                 try
                 {
