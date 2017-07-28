@@ -31,6 +31,9 @@ namespace UnitTests
             new CollectionUnitTests().TestQueuedAvlTrees();
             new PasswordTest().TestPassword();
             new PasswordTest().TestSerializePassword();
+
+            LamestWebserver.ServerHandler.StopHandler();
+            LamestWebserver.Master.StopServers();
         }
     }
 }
