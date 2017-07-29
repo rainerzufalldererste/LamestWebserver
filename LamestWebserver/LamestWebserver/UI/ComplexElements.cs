@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using LamestWebserver.JScriptBuilder;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.UI
 {
@@ -40,7 +41,7 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(ID))
                 input.ID = ID;
             else
-                input.ID = SessionContainer.GenerateHash();
+                input.ID = Hash.GetHash();
 
             var container = new HContainer() { ID = ContainerID, Style = "display:none;" };
             input.onclick = JSFunctionCall.DisplayElementByID(container.ID);
@@ -95,14 +96,14 @@ namespace LamestWebserver.UI
         public string DescriptionTags = "";
 
         private List<Tuple<string, IEnumerable<HElement>>> Values;
-        private string hiddenElementID = SessionContainer.GenerateHash();
+        private string hiddenElementID = Hash.GetHash();
 
         private string _pageURL;
 
         public HMultipleValuesButton(string name)
         {
             Name = name;
-            ID = SessionContainer.GenerateHash();
+            ID = Hash.GetHash();
             Values = new List<Tuple<string, IEnumerable<HElement>>>();
         }
 
@@ -125,7 +126,7 @@ namespace LamestWebserver.UI
         public HMultipleValuesButton(string name, params Tuple<string, IEnumerable<HElement>>[] values)
         {
             Name = name;
-            ID = SessionContainer.GenerateHash();
+            ID = Hash.GetHash();
             Values = values.ToList();
         }
 

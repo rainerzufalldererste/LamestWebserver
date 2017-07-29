@@ -4,6 +4,7 @@ using System.Runtime.Serialization;
 using LamestWebserver;
 using LamestWebserver.Collections;
 using LamestWebserver.Serialization;
+using LamestWebserver.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTests
@@ -48,7 +49,7 @@ namespace UnitTests
 
             for (int i = 0; i < 1024; i++)
             {
-                string value = SessionContainer.GenerateHash();
+                string value = Hash.GetHash();
                 var testKey = new TestKey() {testInt = i, testString = value};
 
                 avlTree.Add(new KeyValuePair<TestKey, TestValue>(testKey, new TestValue() {testString = value, key = testKey}));

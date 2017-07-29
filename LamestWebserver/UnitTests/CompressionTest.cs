@@ -2,9 +2,10 @@
 using System.Text;
 using System.Collections.Generic;
 using System.IO.Compression;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LamestWebserver;
 using LamestWebserver.Compression;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using LamestWebserver.Core;
 
 namespace UnitTests
 {
@@ -21,8 +22,8 @@ namespace UnitTests
 
             for (int i = 0; i < 100; i++)
             {
-                string message = SessionContainer.GenerateComplexHash() + SessionContainer.GenerateComplexHash()
-                                 + SessionContainer.GenerateComplexHash() + SessionContainer.GenerateComplexHash();
+                string message = Hash.GetComplexHash() + Hash.GetComplexHash()
+                                 + Hash.GetComplexHash() + Hash.GetComplexHash();
 
                 while (message.Length > 0)
                 {
