@@ -10,6 +10,7 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new ResponseCacheTest().TestResponseCache();
             new PacketUnitTest().TestCookies();
             new PacketUnitTest().TestHttpHead();
             new PacketUnitTest().TestHttpPost();
@@ -30,6 +31,9 @@ namespace UnitTests
             new CollectionUnitTests().TestQueuedAvlTrees();
             new PasswordTest().TestPassword();
             new PasswordTest().TestSerializePassword();
+
+            LamestWebserver.ServerHandler.StopHandler();
+            LamestWebserver.Master.StopServers();
         }
     }
 }
