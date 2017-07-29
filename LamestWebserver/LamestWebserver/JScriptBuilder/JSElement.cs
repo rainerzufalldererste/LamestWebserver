@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using LamestWebserver.UI;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.JScriptBuilder
 {
@@ -21,7 +22,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         protected JSElement()
         {
-            ID = SessionContainer.GenerateHash();
+            ID = Hash.GetHash();
         }
 
         /// <summary>

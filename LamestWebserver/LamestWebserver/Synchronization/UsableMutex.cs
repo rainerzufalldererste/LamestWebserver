@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LamestWebserver.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -31,7 +32,7 @@ namespace LamestWebserver.Synchronization
         public static int MutexSelfRelease = 200;
 
         private ReaderWriterLockSlim innerMutex;
-        private readonly string ID = SessionContainer.GenerateHash();
+        private readonly string ID = Hash.GetHash();
 
         private Mutex helperMutex = new Mutex();
         private DateTime? lastLocked = null;

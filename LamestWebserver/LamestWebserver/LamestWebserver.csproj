@@ -74,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Caching\ResponseCache.cs" />
+    <Compile Include="Core\Hash.cs" />
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
