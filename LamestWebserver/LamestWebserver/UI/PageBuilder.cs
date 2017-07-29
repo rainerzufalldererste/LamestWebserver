@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using LamestWebserver.JScriptBuilder;
+using System.Text;
+using LamestWebserver.Caching;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.UI
 {
@@ -287,12 +290,65 @@ namespace LamestWebserver.UI
         {
             return new HMultipleElements(a,b);
         }
+
+        /// <summary>
+        /// Returns true if the HElement returns a static response.
+        /// <paramref name="key">The key of the cache entry if cacheable.</paramref>
+        /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
+        /// </summary>
+        public virtual bool IsCacheable(string key, StringBuilder response = null)
+        {
+            if(response != null)
+                response.Append(ToString());
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// A HElement inheriting the default IsCacheable response for a static response.
+    /// </summary>
+    public abstract class HCacheableElement : HElement
+    {
+        /// <inheritdoc />
+        public override bool IsCacheable(string key, StringBuilder response = null)
+        {
+            if (response != null)
+                response.Append(ResponseCache.CurrentCacheInstance.Instance.GetCachedString(key, ToString));
+
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// A HElement inheriting a IsCacheable response for a response that could be cachable or not cacheable.
+    /// </summary>
+    public abstract class HSelectivelyCacheableElement : HElement
+    {
+        /// <summary>
+        /// Is thie response cacheable?
+        /// </summary>
+        public bool Cacheable = false;
+
+        /// <inheritdoc />
+        public override bool IsCacheable(string key, StringBuilder response = null)
+        {
+            if (response != null)
+            {
+                if (Cacheable)
+                    response.Append(ResponseCache.CurrentCacheInstance.Instance.GetCachedString(key, ToString));
+                else
+                    response.Append(ToString());
+            }
+
+            return Cacheable;
+        }
     }
 
     /// <summary>
     /// A br element used for line breaks in HTML
     /// </summary>
-    public class HNewLine : HElement
+    public class HNewLine : HCacheableElement
     {
         /// <summary>
         /// This Method parses the current element to string
@@ -308,7 +364,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A hr element used to display a hoizontal line
     /// </summary>
-    public class HLine : HElement
+    public class HLine : HCacheableElement
     {
         /// <summary>
         /// This Method parses the current element to string
@@ -329,7 +385,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// The contents of this element will directly be copied into the final html document.
     /// </summary>
-    public class HPlainText : HElement
+    public class HPlainText : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The text to copy to the HTML document
@@ -377,7 +433,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Combines multiple HElements without using a div to a single HElement object
     /// </summary>
-    public class HMultipleElements : HElement
+    public class HMultipleElements : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The elements to display
@@ -430,7 +486,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Represents an "a" element used for links
     /// </summary>
-    public class HLink : HElement
+    public class HLink : HSelectivelyCacheableElement
     {
         private readonly string _href, _onclick, _text;
 
@@ -461,44 +517,7 @@ namespace LamestWebserver.UI
         {
             string ret = "<a ";
 
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
-            {
-                if (_href.Length > 0)
-                {
-                    if (_href[0] == '#')
-                        ret += "href='" + _href + "' ";
-                    else
-                    {
-                        ret += "href='#' ";
-
-                        string hash = SessionContainer.GenerateUnusedHash();
-                        string add = ";var f_"
-                            + hash + "=document.createElement('form');f_"
-                            + hash + ".setAttribute('method','POST');f_"
-                            + hash + ".setAttribute('action','"
-                                + _href + "');f_"
-                            + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
-                            + hash + "=document.createElement('input');i_"
-                            + hash + ".setAttribute('type','hidden');i_"
-                            + hash + ".setAttribute('name','ssid');i_"
-                            + hash + ".setAttribute('value','"
-                                + sessionData.Ssid + "');f_"
-                            + hash + ".appendChild(i_"
-                            + hash + ");document.body.appendChild(f_"
-                            + hash + ");f_"
-                            + hash + ".submit();document.body.remove(f_"
-                            + hash + ");";
-
-                        ret += " onclick=\"" + _onclick + add + "\" ";
-                    }
-                }
-                else
-                {
-                    if (!string.IsNullOrWhiteSpace(_onclick))
-                        ret += "onclick='" + _onclick + "' ";
-                }
-            }
-            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
             {
                 if (!string.IsNullOrWhiteSpace(_href))
                     ret += "href='" + _href + "' ";
@@ -508,7 +527,7 @@ namespace LamestWebserver.UI
             }
             else
             {
-                System.Diagnostics.Debug.Assert(false, "SessionIdTransmissionType is invalid or not supported in " + this.GetType().ToString() + ".");
+                Logger.LogExcept(new NotImplementedException($"The given SessionIdTransmissionType ({SessionContainer.SessionIdTransmissionType}) could not be handled in {GetType().ToString()}."));
             }
 
             if (!string.IsNullOrWhiteSpace(ID))
@@ -543,7 +562,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A img element representing an image in html
     /// </summary>
-    public class HImage : HElement
+    public class HImage : HSelectivelyCacheableElement
     {
         private readonly string _source;
 
@@ -600,7 +619,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "p" tag, representing a textblock
     /// </summary>
-    public class HText : HElement
+    public class HText : HSelectivelyCacheableElement
     {
         /// <summary>
         /// Additional attributes to add to this HTML-Tag
@@ -729,7 +748,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "b" tag, representing bold text
     /// </summary>
-    public class HBold : HElement
+    public class HBold : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text to display
@@ -774,7 +793,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "i" tag, representing italic text
     /// </summary>
-    public class HItalic : HElement
+    public class HItalic : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text to display
@@ -819,7 +838,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "del" tag, representing crossed out text
     /// </summary>
-    public class HCrossedOut : HElement
+    public class HCrossedOut : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text to display
@@ -864,7 +883,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "u" tag, representing underlined out text
     /// </summary>
-    public class HUnderlined : HElement
+    public class HUnderlined : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text to display
@@ -909,7 +928,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A h(1-6) tag in html (h1 by default) representing a Headline
     /// </summary>
-    public class HHeadline : HElement
+    public class HHeadline : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text displayed in this Headline
@@ -976,7 +995,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A input tag representing all kinds of Input Elements
     /// </summary>
-    public class HInput : HElement
+    public class HInput : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Type of the input element
@@ -1170,7 +1189,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A list of radio-buttons of which only one can be selected at a time.
     /// </summary>
-    public class HSingleSelector : HElement
+    public class HSingleSelector : HSelectivelyCacheableElement
     {
         /// <summary>
         /// Additional attributes to be added to the items
@@ -1423,7 +1442,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A div element representing a container
     /// </summary>
-    public class HContainer : HElement
+    public class HContainer : HSelectivelyCacheableElement
     {
         /// <summary>
         /// Adds all listed objects into the container.
@@ -1741,11 +1760,6 @@ namespace LamestWebserver.UI
 
             ret += "method='POST' >";
 
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
-            {
-                ret += "<input type='hidden' name='ssid' value='" + sessionData.Ssid + "'>";
-            }
-
             if (!string.IsNullOrWhiteSpace(Text))
                 ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
 
@@ -1885,43 +1899,8 @@ namespace LamestWebserver.UI
 
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
-
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
-            {
-                if (_href.Length > 0 && _type != EButtonType.submit)
-                {
-                    if (_href[0] == '#')
-                        ret += "href='" + _href + "' ";
-                    else
-                        ret += "href='#' ";
-
-                    string hash = SessionContainer.GenerateUnusedHash();
-                    string add = ";var f_"
-                        + hash + "=document.createElement('form');f_"
-                        + hash + ".setAttribute('method','POST');f_"
-                        + hash + ".setAttribute('action','"
-                            + _href + "');f_"
-                        + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
-                        + hash + "=document.createElement('input');i_"
-                        + hash + ".setAttribute('type','hidden');i_"
-                        + hash + ".setAttribute('name','ssid');i_"
-                        + hash + ".setAttribute('value','"
-                            + sessionData.Ssid + "');f_"
-                        + hash + ".appendChild(i_"
-                        + hash + ");document.body.appendChild(f_"
-                        + hash + ");f_"
-                        + hash + ".submit();document.body.remove(f_"
-                        + hash + ");";
-
-                    ret += " onclick=\"" + _onclick + add + "\"";
-                }
-                else
-                {
-                    if (!string.IsNullOrWhiteSpace(_onclick))
-                        ret += "onclick='" + _onclick + "' ";
-                }
-            }
-            else if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+            
+            if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
             {
                 if (!string.IsNullOrWhiteSpace(_onclick))
                 {
@@ -1983,7 +1962,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// a select element representing a DropDownMenu
     /// </summary>
-    public class HDropDownMenu : HElement
+    public class HDropDownMenu : HSelectivelyCacheableElement
     {
         /// <summary>
         /// Additional attributes added to the tag
@@ -2244,7 +2223,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A table Element representing a table
     /// </summary>
-    public class HTable : HElement
+    public class HTable : HSelectivelyCacheableElement
     {
         private List<List<HElement>> elements;
         private IEnumerable<object>[] data;
@@ -2426,7 +2405,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A script element representing embedded JavaScript-Code
     /// </summary>
-    public class HScript : HElement
+    public class HScript : HSelectivelyCacheableElement
     {
         private object[] arguments;
         private bool dynamic;
@@ -2466,7 +2445,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Represents a script element pointing to a script-file which has to be loaded as well
     /// </summary>
-    public class HScriptLink : HElement
+    public class HScriptLink : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The URL of the script file
@@ -2496,7 +2475,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A canvas element used for complex rendering
     /// </summary>
-    public class HCanvas : HElement
+    public class HCanvas : HSelectivelyCacheableElement
     {
         /// <summary>
         /// This Method parses the current element to string
@@ -2529,7 +2508,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A textarea element - basically a multiline textbox
     /// </summary>
-    public class HTextArea : HElement
+    public class HTextArea : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The amount columns dispalyed
@@ -2604,7 +2583,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Non-static content, which is computed every request
     /// </summary>
-    public class HRuntimeCode : HElement
+    public class HRuntimeCode : HSelectivelyCacheableElement
     {
         /// <summary>
         /// the code to execute
@@ -2670,7 +2649,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Non-static content, which is computed every request AND SYNCRONIZED
     /// </summary>
-    public class HSyncronizedRuntimeCode : HElement
+    public class HSyncronizedRuntimeCode : HSelectivelyCacheableElement
     {
         /// <summary>
         /// the code to execute

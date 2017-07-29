@@ -44,11 +44,6 @@ namespace LamestWebserver
         public enum ESessionIdTransmissionType
         {
             /// <summary>
-            /// Transmitts the SessionIDs via HTTP POST
-            /// </summary>
-            [Obsolete]
-            HttpPost,
-            /// <summary>
             /// Transmitts the SessionID via Cookie
             /// </summary>
             Cookie
