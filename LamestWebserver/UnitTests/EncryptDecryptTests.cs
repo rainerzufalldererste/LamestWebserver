@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using LamestWebserver;
 using LamestWebserver.Security;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using LamestWebserver.Core;
 
 namespace UnitTests
 {
@@ -23,8 +24,8 @@ namespace UnitTests
                 byte[] key = Encryption.GetKey();
                 byte[] iv = Encryption.GetIV();
 
-                string message = SessionContainer.GenerateComplexHash() + SessionContainer.GenerateComplexHash()
-                                 + SessionContainer.GenerateComplexHash() + SessionContainer.GenerateComplexHash();
+                string message = Hash.GetComplexHash() + Hash.GetComplexHash()
+                                 + Hash.GetComplexHash() + Hash.GetComplexHash();
 
                 while (message.Length > 0)
                 {

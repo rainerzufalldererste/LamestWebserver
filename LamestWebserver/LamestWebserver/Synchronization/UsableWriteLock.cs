@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LamestWebserver.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -11,7 +12,7 @@ namespace LamestWebserver.Synchronization
     public class UsableWriteLock
     {
         private ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        private readonly string ID = SessionContainer.GenerateHash();
+        private readonly string ID = Hash.GetHash();
 
         /// <summary>
         /// Locks the WriteLock for reading

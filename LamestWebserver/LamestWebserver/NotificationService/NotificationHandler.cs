@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using LamestWebserver.Synchronization;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.NotificationService
 {
@@ -386,7 +387,7 @@ namespace LamestWebserver.NotificationService
         /// <summary>
         /// The id of this NotificationHandler (for easier identification in the client)
         /// </summary>
-        public string ID { get; private set; } = SessionContainer.GenerateHash();
+        public string ID { get; private set; } = Hash.GetHash();
         
         /// <summary>
         /// The amount of currently connected clients.
