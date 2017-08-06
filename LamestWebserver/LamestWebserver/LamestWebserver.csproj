@@ -73,6 +73,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Caching\ECachingType.cs" />
     <Compile Include="Caching\ResponseCache.cs" />
     <Compile Include="Core\Hash.cs" />
     <Compile Include="Core\Logger.cs" />

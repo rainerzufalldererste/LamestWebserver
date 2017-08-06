@@ -6,6 +6,7 @@ using System.Threading;
 using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
 using LamestWebserver.Core;
+using LamestWebserver.Caching;
 
 namespace LamestWebserver
 {
@@ -14,6 +15,27 @@ namespace LamestWebserver
     /// </summary>
     public static class SessionContainer
     {
+        private static ECachingType _globalDefaultCachingType = ECachingType.NotCacheable;
+
+        /// <summary>
+        /// The default CachingType for Pages and Elements without a specific CachingType.
+        /// </summary>
+        public static ECachingType GlobalDefaultCachingType
+        {
+            get
+            {
+                return _globalDefaultCachingType;
+            }
+
+            set
+            {
+                if (value == ECachingType.Default)
+                    Logger.LogExcept("The global default CachingType cannot be 'Default.'");
+                else
+                    _globalDefaultCachingType = value;
+            }
+        }
+
         /// <summary>
         /// The mode for SessionID recreation.
         /// </summary>

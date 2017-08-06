@@ -296,7 +296,7 @@ namespace LamestWebserver.UI
         /// <paramref name="key">The key of the cache entry if cacheable.</paramref>
         /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
         /// </summary>
-        public virtual bool IsCacheable(string key, StringBuilder response = null)
+        public virtual bool IsCacheable(string key, ECachingType defaultCachingType, StringBuilder response = null)
         {
             if(response != null)
                 response.Append(ToString());
@@ -311,7 +311,7 @@ namespace LamestWebserver.UI
     public abstract class HCacheableElement : HElement
     {
         /// <inheritdoc />
-        public override bool IsCacheable(string key, StringBuilder response = null)
+        public override bool IsCacheable(string key, ECachingType defaultCachingType, StringBuilder response = null)
         {
             if (response != null)
                 response.Append(ResponseCache.CurrentCacheInstance.Instance.GetCachedString(key, ToString));
@@ -328,20 +328,25 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Is thie response cacheable?
         /// </summary>
-        public bool Cacheable = false;
+        public ECachingType CachingType = ECachingType.Default;
 
         /// <inheritdoc />
-        public override bool IsCacheable(string key, StringBuilder response = null)
+        public override bool IsCacheable(string key, ECachingType defaultCachingType, StringBuilder response = null)
         {
+            ECachingType ret = CachingType;
+
+            if (ret == ECachingType.Default)
+                ret = defaultCachingType;
+
             if (response != null)
             {
-                if (Cacheable)
+                if (ret == ECachingType.Cacheable)
                     response.Append(ResponseCache.CurrentCacheInstance.Instance.GetCachedString(key, ToString));
                 else
                     response.Append(ToString());
             }
 
-            return Cacheable;
+            return ret == ECachingType.Cacheable;
         }
     }
 
