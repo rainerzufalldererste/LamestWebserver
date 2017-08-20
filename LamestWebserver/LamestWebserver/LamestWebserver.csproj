@@ -79,12 +79,15 @@
     <Compile Include="Core\Math.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
     <Compile Include="Core\NullCheckable.cs" />
+    <Compile Include="Core\Parsing\ParsingStringExtentions.cs" />
     <Compile Include="Core\Singleton.cs" />
     <Compile Include="Collections\AVLHashMap.cs" />
     <Compile Include="Collections\AVLTree.cs" />
     <Compile Include="Collections\QueuedAVLTree.cs" />
     <Compile Include="Collections\SerializableKeyValuePair.cs" />
     <Compile Include="Attributes\HostAttributes.cs" />
+    <Compile Include="Core\Web\WebCrawler.cs" />
+    <Compile Include="Core\Web\WebRequestFactory.cs" />
     <Compile Include="HttpResponse.cs" />
     <Compile Include="SessionData.cs" />
     <Compile Include="Compression\GZipCompression.cs" />
