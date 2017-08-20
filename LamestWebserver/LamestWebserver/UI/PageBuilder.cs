@@ -294,6 +294,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Returns true if the HElement returns a static response.
         /// <paramref name="key">The key of the cache entry if cacheable.</paramref>
+        /// <paramref name="defaultCachingType">The default CachingType to refer to.</paramref>
         /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
         /// </summary>
         public virtual bool IsCacheable(string key, ECachingType defaultCachingType, StringBuilder response = null)
@@ -1546,6 +1547,117 @@ namespace LamestWebserver.UI
             {
                 AddElement(list[i]);
             }
+        }
+
+        /// <summary>
+        /// Retrieves cached contents for nested elements.
+        /// </summary>
+        /// <paramref name="key">The cache key of the container.</paramref>
+        /// <paramref name="defaultCachingType">The default CachingType to refer to.</paramref>
+        /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
+        protected void GetCachedContents(string key, ECachingType defaultCachingType, StringBuilder response)
+        {
+            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/pre", out string preResponseString))
+            {
+                response.Append(preResponseString);
+            }
+            else
+            {
+#################### TODO: Other Container Types & maintainable(!) way to get them
+                string pre = "<div ";
+
+                if (!string.IsNullOrWhiteSpace(ID))
+                    pre += "id='" + ID + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Name))
+                    pre += "name='" + Name + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Class))
+                    pre += "class='" + Class + "' ";
+
+                if (!string.IsNullOrWhiteSpace(Style))
+                    pre += "style=\"" + Style + "\" ";
+
+                if (!string.IsNullOrWhiteSpace(Title))
+                    pre += "title=\"" + Title + "\" ";
+
+                if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                    pre += DescriptionTags;
+
+                pre += ">";
+
+                if (!string.IsNullOrWhiteSpace(Text))
+                    pre += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+
+                ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/pre", pre);
+                response.Append(pre);
+            }
+
+            int firstSuccessfull = 0;
+
+            for (int i = 0; i < Elements.Count; i++)
+            {
+                if (!Elements[i].IsCacheable(key + "/" + i, defaultCachingType) || i == Elements.Count - 1)
+                {
+                    if (i == Elements.Count - 1)
+                        i++;
+
+                    if(firstSuccessfull < i)
+                    {
+                        if(firstSuccessfull == i - 1)
+                        {
+                            Elements[i].IsCacheable(key + "/" + i, defaultCachingType, response);
+                        }
+                        else if(ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), out string responseString))
+                        {
+                            response.Append(responseString);
+                        }
+                        else
+                        {
+                            StringBuilder sb = new StringBuilder();
+
+                            for (int j = firstSuccessfull; j < i; j++)
+                            {
+                                sb.Append(Elements[i].ToString());
+                            }
+
+                            string s = sb.ToString();
+
+                            ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), s);
+                            response.Append(s);
+                        }
+                    }
+
+                    firstSuccessfull = i + 1;
+                    
+                    response.Append(Elements[i].ToString()); // <- The actual non-cacheable response.
+                }
+            }
+
+            response.Append("</div>");
+        }
+
+        /// <inheritdoc />
+        public override bool IsCacheable(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            ECachingType ret = CachingType;
+
+            if (ret == ECachingType.Default)
+                ret = defaultCachingType;
+
+            if (response != null)
+            {
+                if (ret == ECachingType.Cacheable)
+                {
+                    GetCachedContents(key, defaultCachingType, response);
+                }
+                else
+                {
+                    response.Append(ToString());
+                }
+            }
+
+            return ret == ECachingType.Cacheable;
         }
     }
 
