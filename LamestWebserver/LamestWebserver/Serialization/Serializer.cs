@@ -28,6 +28,9 @@ namespace LamestWebserver.Serialization
         /// <returns>The deserialized object</returns>
         public static T ReadXmlData<T>(string filename)
         {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+            
             return ReadXmlDataInMemory<T>(File.ReadAllText(filename));
         }
 
@@ -39,6 +42,9 @@ namespace LamestWebserver.Serialization
         /// <returns>The deserialized object</returns>
         public static T ReadXmlDataInMemory<T>(string xml)
         {
+            if (xml == null)
+                throw new ArgumentNullException(nameof(xml));
+
             using (MemoryStream memStream = new MemoryStream(Encoding.Unicode.GetBytes(xml)))
             {
                 XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(typeof(T));
@@ -54,7 +60,10 @@ namespace LamestWebserver.Serialization
         /// <param name="filename">The name of the file to write</param>
         public static void WriteXmlData<T>(T data, string filename)
         {
-            if(!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+
+            if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(filename));
             }
@@ -88,6 +97,9 @@ namespace LamestWebserver.Serialization
         /// <returns>The deserialized object</returns>
         public static T ReadJsonData<T>(string filename) where T : new()
         {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+
             return ReadJsonDataInMemory<T>(File.ReadAllText(filename));
         }
 
@@ -99,6 +111,9 @@ namespace LamestWebserver.Serialization
         /// <returns>The deserialized object</returns>
         public static T ReadJsonDataInMemory<T>(string json) where T : new()
         {
+            if (json == null)
+                throw new ArgumentNullException(nameof(json));
+
             return (T)JsonConvert.DeserializeObject(json, typeof(T));
         }
 
@@ -111,10 +126,11 @@ namespace LamestWebserver.Serialization
         /// <param name="humanReadable">Shall the file contain linefeeds</param>
         public static void WriteJsonData<T>(T data, string filename, bool humanReadable)
         {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+
             if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
-            {
                 Directory.CreateDirectory(Path.GetDirectoryName(filename));
-            }
 
             File.WriteAllText(filename, WriteJsonDataInMemory(data, humanReadable));
         }
@@ -138,6 +154,9 @@ namespace LamestWebserver.Serialization
         /// <param name="filename">The name of the file to write</param>
         public static void WriteJsonData<T>(T data, string filename)
         {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+
             WriteJsonData(data, filename, false);
         }
 
@@ -159,6 +178,9 @@ namespace LamestWebserver.Serialization
         /// <returns>The deserialized object</returns>
         public static T ReadBinaryData<T>(string filename)
         {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+
             return ReadBinaryDataInMemory<T>(File.ReadAllBytes(filename));
         }
 
@@ -170,6 +192,9 @@ namespace LamestWebserver.Serialization
         /// <returns>The deserialized object</returns>
         public static T ReadBinaryDataInMemory<T>(byte[] data)
         {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
             using (MemoryStream memStream = new MemoryStream(data))
             {
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -186,10 +211,11 @@ namespace LamestWebserver.Serialization
         /// <param name="filename">The name of the file to write</param>
         public static void WriteBinaryData<T>(T data, string filename)
         {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+
             if (!File.Exists(filename) && !string.IsNullOrWhiteSpace(Path.GetDirectoryName(filename)))
-            {
                 Directory.CreateDirectory(Path.GetDirectoryName(filename));
-            }
 
             File.WriteAllBytes(filename, WriteBinaryDataInMemory(data));
         }
@@ -228,6 +254,9 @@ namespace LamestWebserver.Serialization
         /// <returns>An XML-Serializer created with the given type argument</returns>
         public static XmlSerializer GetXmlSerializer(Type type)
         {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
             var key = type;
 
             var serializer = _cachedXmlSerialiazers[key] as XmlSerializer;
@@ -246,9 +275,15 @@ namespace LamestWebserver.Serialization
         /// </summary>
         /// <param name="reader">the XMLReader</param>
         /// <param name="elementName">the name of the Element</param>
-        /// <returns></returns>
+        /// <returns>All matching elements</returns>
         public static IEnumerable<XElement> GetElementsNamed(this XmlReader reader, string elementName)
         {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            if (elementName == null)
+                throw new ArgumentNullException(nameof(elementName));
+
             reader.MoveToContent(); // will not advance reader if already on a content node; if successful, ReadState is Interactive
             reader.Read();          // this is needed, even with MoveToContent and ReadState.Interactive
             while (!reader.EOF && reader.ReadState == ReadState.Interactive)
@@ -271,9 +306,15 @@ namespace LamestWebserver.Serialization
         /// </summary>
         /// <param name="reader">the XMLReader</param>
         /// <param name="elementName">the name of the Element</param>
-        /// <returns></returns>
+        /// <returns>The first matching element</returns>
         public static XElement GetElementNamed(this XmlReader reader, string elementName)
         {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            if (elementName == null)
+                throw new ArgumentNullException(nameof(elementName));
+
             reader.MoveToContent(); // will not advance reader if already on a content node; if successful, ReadState is Interactive
             reader.Read();          // this is needed, even with MoveToContent and ReadState.Interactive
             while (!reader.EOF && reader.ReadState == ReadState.Interactive)
@@ -302,6 +343,12 @@ namespace LamestWebserver.Serialization
         /// <param name="value">the value of the object</param>
         public static void WriteElement<T>(this XmlWriter writer, string name, T value)
         {
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
             var serializer = new XmlSerializer(typeof(T), new XmlRootAttribute(name));
             serializer.Serialize(writer, value);
         }
@@ -314,6 +361,9 @@ namespace LamestWebserver.Serialization
         /// <param name="name">the name of the object</param>
         public static T ReadElement<T>(this XmlReader reader, string name = null)
         {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+            
             while (name != null && reader.Name != name)
             {
                 if (!reader.Read())
@@ -335,6 +385,9 @@ namespace LamestWebserver.Serialization
         /// <param name="reader">the current reader</param>
         public static T ReadLowerElement<T>(this XmlReader reader)
         {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
             if (reader.NodeType == XmlNodeType.Element)
             {
                 XmlSerializer serializer;
@@ -364,6 +417,9 @@ namespace LamestWebserver.Serialization
         /// <param name="endElement">the name of the EndElement tag</param>
         public static void ReadToEndElement(this XmlReader reader, string endElement)
         {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
             if (reader.Name != null && reader.NodeType == XmlNodeType.EndElement && reader.Name == endElement)
             {
                 reader.ReadEndElement();

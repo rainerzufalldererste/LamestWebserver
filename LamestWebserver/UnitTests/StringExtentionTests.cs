@@ -28,12 +28,13 @@ namespace UnitTests
         public void TestParsingStringExtentions_TestSubStringIndex()
         {
             string a = "0123456789";
-            Assert.IsTrue(a.FindString("5", out int a_index));
+            int a_index, b_index;
+            Assert.IsTrue(a.FindString("5", out a_index));
             Assert.AreEqual(5, a_index);
             Assert.IsFalse(a.FindString("a", out a_index));
 
             string b = "abcdefgABCabcDEFG";
-            Assert.IsFalse(b.FindString("ABCD", out int b_index));
+            Assert.IsFalse(b.FindString("ABCD", out b_index));
             Assert.IsTrue(b.FindString("ABC", out b_index));
             Assert.AreEqual(7, b_index);
         }

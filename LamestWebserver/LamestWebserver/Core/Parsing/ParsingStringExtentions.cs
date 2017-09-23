@@ -10,8 +10,10 @@ namespace LamestWebserver.Core.Parsing
     {
         public static string FindBetween(this string s, string before, string after)
         {
-            if (s.FindString(before, out int beforeIndex))
-                if (s.Substring(beforeIndex + before.Length).FindString(after, out int afterIndex))
+            int beforeIndex, afterIndex;
+
+            if (s.FindString(before, out beforeIndex))
+                if (s.Substring(beforeIndex + before.Length).FindString(after, out afterIndex))
                     return s.Substring(beforeIndex + before.Length, afterIndex);
 
             return null;
