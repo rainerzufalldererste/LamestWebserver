@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
+using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using LamestWebserver.Serialization;
 
-namespace LamestWebserver.Collections
+namespace LamestWebserver.Serialization
 {
     /// <summary>
-    /// A serializable Alternative to a KeyValuePair
+    /// A serializable alternative to KeyValuePair.
     /// </summary>
     /// <typeparam name="TKey">the Type of the Key</typeparam>
     /// <typeparam name="TValue">the Type of the Value</typeparam>
@@ -19,40 +21,41 @@ namespace LamestWebserver.Collections
         /// <summary>
         /// The Key
         /// </summary>
-        public TKey Key;
+        public TKey Key { get; set; }
 
         /// <summary>
         /// The Value
         /// </summary>
-        public TValue Value;
+        public TValue Value { get; set; }
 
         /// <summary>
-        /// Constructs a new Serializable Key Value Pair
+        /// Constructs a new SerializableKeyValuePair
         /// </summary>
-        /// <param name="Key">the Key</param>
-        /// <param name="Value">the Value</param>
-        public SerializableKeyValuePair(TKey Key, TValue Value) : this()
+        /// <param name="key">the Key</param>
+        /// <param name="value">the Value</param>
+        public SerializableKeyValuePair(TKey key, TValue value)
         {
-            this.Key = Key;
-            this.Value = Value;
+            Key = key;
+            Value = value;
+        }
+        
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
+        public SerializableKeyValuePair(SerializationInfo info, StreamingContext context)
+        {
+            Key = (TKey)info.GetValue(nameof(Key), typeof(TKey));
+            Value = (TValue)info.GetValue(nameof(Value), typeof(TValue));
         }
 
         /// <summary>
         /// Casts a KeyValuePair to a SerializableKeyValuePair
         /// </summary>
         /// <param name="input">the KeyValuePair</param>
-        public static explicit operator SerializableKeyValuePair<TKey, TValue>(KeyValuePair<TKey, TValue> input)
+        /// <returns>the Entry</returns>
+        public static implicit operator SerializableKeyValuePair<TKey, TValue> (KeyValuePair<TKey, TValue> input)
         {
             return new SerializableKeyValuePair<TKey, TValue>(input.Key, input.Value);
-        }
-
-        /// <summary>
-        /// Casts a SerializableKeyValuePair to a KeyValuePair
-        /// </summary>
-        /// <param name="input">the SerializableKeyValuePair</param>
-        public static implicit operator KeyValuePair<TKey, TValue>(SerializableKeyValuePair<TKey, TValue> input)
-        {
-            return new KeyValuePair<TKey, TValue>(input.Key, input.Value);
         }
 
         /// <inheritdoc />

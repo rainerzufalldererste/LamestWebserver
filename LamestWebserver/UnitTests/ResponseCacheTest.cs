@@ -43,7 +43,9 @@ namespace UnitTests
             cache.SetCachedStringResponse(num.ToString(), s);
             comparer.Add(new KeyValuePair<string, string>(num.ToString(), s));
 
-            Assert.IsFalse(cache.GetCachedStringResponse(comparer[0].Key, out string response));
+            string response;
+
+            Assert.IsFalse(cache.GetCachedStringResponse(comparer[0].Key, out response));
 
             comparer.RemoveAt(0);
 

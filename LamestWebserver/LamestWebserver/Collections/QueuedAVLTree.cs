@@ -16,7 +16,7 @@ namespace LamestWebserver.Collections
     /// </summary>
     /// <typeparam name="TKey">The Type of the Keys (implement IComparable, IEquatable&lt;TKey&gt;)</typeparam>
     /// <typeparam name="TValue">The Type of the Values</typeparam>
-    public class QueuedAVLTree<TKey, TValue> : IDictionary<TKey, TValue> where TKey : IEquatable<TKey>, IComparable
+    public class QueuedAVLTree<TKey, TValue> : Core.NullCheckable, IDictionary<TKey, TValue> where TKey : IEquatable<TKey>, IComparable
     {
         internal AVLNode head;
         private int count = 0;

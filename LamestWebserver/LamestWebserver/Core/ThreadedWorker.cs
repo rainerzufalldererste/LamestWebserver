@@ -367,7 +367,12 @@ namespace LamestWebserver.Core
         /// This Join will not throw Exceptions.
         /// </summary>
         /// <returns>Returns true if task was executed successfully.</returns>
-        public bool JoinSafe() => JoinSafe(out object obj, null);
+        public bool JoinSafe()
+        {
+            object obj;
+
+            return JoinSafe(out obj, null);
+        }
 
         /// <summary>
         /// Waits until the task has been executed.
@@ -376,7 +381,12 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
         /// <returns>Returns true if task was executed successfully.</returns>
-        public bool JoinSafe(TimeSpan? maximumWaitTime) => JoinSafe(out object obj, maximumWaitTime);
+        public bool JoinSafe(TimeSpan? maximumWaitTime)
+        {
+            object obj;
+
+            return JoinSafe(out obj, maximumWaitTime);
+        }
 
         /// <summary>
         /// Waits until the task has been executed.
@@ -385,7 +395,12 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <param name="milliseconds">The maximum amount of time to wait for the task to be executed in milliseconds.</param>
         /// <returns>Returns true if task was executed successfully.</returns>
-        public bool JoinSafe(int milliseconds) => JoinSafe(out object obj, TimeSpan.FromMilliseconds(milliseconds));
+        public bool JoinSafe(int milliseconds)
+        {
+            object obj;
+
+            return JoinSafe(out obj, TimeSpan.FromMilliseconds(milliseconds));
+        }
 
         /// <summary>
         /// Waits until the task has been executed.
@@ -433,7 +448,9 @@ namespace LamestWebserver.Core
         /// <returns>Returns true if task was executed successfully.</returns>
         public bool JoinSafe<T>(out T returnedValue, TimeSpan? maximumWaitTime = null)
         {
-            bool ret = JoinSafe(out object returnedValueObject, maximumWaitTime);
+            object returnedValueObject;
+
+            bool ret = JoinSafe(out returnedValueObject, maximumWaitTime);
 
             if (ret)
             {
@@ -463,7 +480,9 @@ namespace LamestWebserver.Core
         /// <returns>The returned value casted to T if successfull or null if it failed.</returns>
         public T JoinSafeOrNull<T>(TimeSpan? maximumWaitTime = null) where T : class
         {
-            if (JoinSafe(out T ret, maximumWaitTime))
+            T ret;
+
+            if (JoinSafe(out ret, maximumWaitTime))
                 return ret;
 
             return null;
@@ -474,7 +493,12 @@ namespace LamestWebserver.Core
         /// <param/>
         /// This Join will throw an Exception if raised during execution.
         /// </summary>
-        public void Join() => Join(out object obj, null);
+        public void Join()
+        {
+            object obj;
+
+            Join(out obj, null);
+        }
 
         /// <summary>
         /// Waits until the task has been executed.
@@ -482,7 +506,12 @@ namespace LamestWebserver.Core
         /// This Join will throw an Exception if raised during execution.
         /// </summary>
         /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
-        public void Join(TimeSpan? maximumWaitTime) => Join(out object obj, maximumWaitTime);
+        public void Join(TimeSpan? maximumWaitTime)
+        {
+            object obj;
+
+            Join(out obj, maximumWaitTime);
+        }
 
         /// <summary>
         /// Waits until the task has been executed.
@@ -490,7 +519,12 @@ namespace LamestWebserver.Core
         /// This Join will throw an Exception if raised during execution.
         /// </summary>
         /// <param name="milliseconds">The maximum amount of time to wait for the task to be executed in milliseconds.</param>
-        public void Join(int milliseconds) => Join(out object obj, TimeSpan.FromMilliseconds(milliseconds));
+        public void Join(int milliseconds)
+        {
+            object obj;
+
+            Join(out obj, TimeSpan.FromMilliseconds(milliseconds));
+        }
 
         /// <summary>
         /// Waits until the task has been executed.
@@ -534,7 +568,9 @@ namespace LamestWebserver.Core
         /// <param name="maximumWaitTime">The maximum amount of time to wait for the task to be executed.</param>
         public void Join<T>(out T returnedValue, TimeSpan? maximumWaitTime = null)
         {
-            bool ret = JoinSafe(out object returnedValueObject, maximumWaitTime);
+            object returnedValueObject;
+
+            bool ret = JoinSafe(out returnedValueObject, maximumWaitTime);
 
             if (ret)
             {

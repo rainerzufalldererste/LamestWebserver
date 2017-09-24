@@ -124,8 +124,10 @@ namespace LamestWebserver.Caching
 
             if (sourceIfNotCached == null)
                 throw new ArgumentNullException(nameof(sourceIfNotCached));
-            
-            if (GetCachedStringResponse(key, out string response))
+
+            string response;
+
+            if (GetCachedStringResponse(key, out response))
             {
                 return response;
             }
