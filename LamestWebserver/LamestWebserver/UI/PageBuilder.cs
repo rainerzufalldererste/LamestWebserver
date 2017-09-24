@@ -68,7 +68,7 @@ namespace LamestWebserver.UI
         /// </summary>
         /// <param name="pagetitle">The window title</param>
         /// <param name="URL">the URL at which to register this page</param>
-        public PageBuilder(string pagetitle, string URL)
+        public PageBuilder(string pagetitle, string URL) : base("body></html")
         {
             this.PageTitle = pagetitle;
             this.URL = URL;
@@ -95,22 +95,15 @@ namespace LamestWebserver.UI
         /// Creates a new PageBuilder, but does _NOT_ register it at the server for a specified url
         /// </summary>
         /// <param name="title"></param>
-        public PageBuilder(string title)
+        public PageBuilder(string title) : base("body></html")
         {
             this.PageTitle = title;
             getContentMethod = BuildContent;
         }
 
-        /// <summary>
-        /// The method which is called to parse this element to string
-        /// </summary>
-        /// <param name="sessionData">the current sessionData</param>
-        /// <returns>the contents as string</returns>
-        protected string BuildContent(SessionData sessionData)
+        /// <inheritdoc />
+        protected override string GetTagHead(string additionalParams = null)
         {
-            if (condition && !conditionalCode(sessionData))
-                return InstantPageResponse.GenerateRedirectCode(referealURL, sessionData);
-
             string ret = "<html> <head> <title>" + PageTitle + "</title>";
 
             if (!string.IsNullOrWhiteSpace(Favicon))
@@ -152,12 +145,27 @@ namespace LamestWebserver.UI
                 ret += "style='" + Style + "' ";
 
             if (!string.IsNullOrWhiteSpace(base.Title))
-                ret += "title=\"" + base.Title + "\" ";
+                ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
                 ret += DescriptionTags;
 
             ret += ">";
+
+            return ret;
+        }
+
+        /// <summary>
+        /// The method which is called to parse this element to string
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the contents as string</returns>
+        protected string BuildContent(SessionData sessionData)
+        {
+            if (condition && !conditionalCode(sessionData))
+                return InstantPageResponse.GenerateRedirectCode(referealURL, sessionData);
+
+            string ret = GetTagHead();
 
             if (!string.IsNullOrWhiteSpace(Text))
                 ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
@@ -166,8 +174,8 @@ namespace LamestWebserver.UI
             {
                 ret += base.Elements[i].GetContent(sessionData);
             }
-
-            ret += "</body> </html>";
+            
+            ret += $"</{Tag}>";
 
             return ret;
         }
@@ -688,7 +696,7 @@ namespace LamestWebserver.UI
         /// Constructs a TextBlock
         /// </summary>
         /// <param name="text">the Text displayed</param>
-        public HTextBlock(string text = "")
+        public HTextBlock(string text = "") : base("p")
         {
             this.Text = text;
         }
@@ -697,7 +705,7 @@ namespace LamestWebserver.UI
         /// Constructs a new TextBlock
         /// </summary>
         /// <param name="texts">will be a HText if string, will be itself if HElement, else will be HText of .ToString() text</param>
-        public HTextBlock(params object[] texts)
+        public HTextBlock(params object[] texts) : base("p")
         {
             foreach (object text in texts)
             {
@@ -710,44 +718,6 @@ namespace LamestWebserver.UI
                 else
                     Elements.Add(new HText(text.ToString()));
             }
-        }
-
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
-        {
-            string ret = "<p ";
-
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">" + (System.Web.HttpUtility.HtmlEncode(Text)?.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") ?? "");
-
-            Elements.ForEach(e =>
-            {
-                if (e is HText) ret += ((HText)e).Text.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-                else ret += e.GetContent(sessionData);
-            });
-
-            return ret + "</p>";
         }
     }
 
@@ -1451,11 +1421,32 @@ namespace LamestWebserver.UI
     public class HContainer : HSelectivelyCacheableElement
     {
         /// <summary>
+        /// Sets the HTML Tag.
+        /// </summary>
+        /// <param name="tag">the HTML Tag of this element.</param>
+        protected HContainer(string tag)
+        {
+            Tag = tag;
+        }
+
+        /// <summary>
         /// Adds all listed objects into the container.
         /// </summary>
         /// <param name="elements">the elements to add</param>
         public HContainer(params HElement[] elements)
         {
+            Tag = "div";
+            Elements = elements.ToList();
+        }
+
+        /// <summary>
+        /// Adds all listed objects into the container.
+        /// </summary>
+        /// <param name="tag">the html tag of this element.</param>
+        /// <param name="elements">the elements to add</param>
+        protected HContainer(string tag, params HElement[] elements) : this(tag)
+        {
+            Tag = tag;
             Elements = elements.ToList();
         }
 
@@ -1475,6 +1466,12 @@ namespace LamestWebserver.UI
         public string DescriptionTags;
 
         /// <summary>
+        /// The HTML Tag of this Element.
+        /// </summary>
+        protected string Tag { get; }
+
+
+        /// <summary>
         /// Adds an element to the element list
         /// </summary>
         /// <param name="element">the element</param>
@@ -1484,13 +1481,13 @@ namespace LamestWebserver.UI
         }
 
         /// <summary>
-        /// This Method parses the current element to string
+        /// Retrieves the Tag Head for the corresponding HTML element.
         /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
+        /// <param name="additionalParams">additional things to add to the head.</param>
+        /// <returns>Returns the Tag Head as string.</returns>
+        protected virtual string GetTagHead(string additionalParams = null)
         {
-            string ret = "<div ";
+            string ret = $"<{Tag} ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -1508,9 +1505,25 @@ namespace LamestWebserver.UI
                 ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
+                ret += DescriptionTags + " ";
+
+            if (!string.IsNullOrWhiteSpace(additionalParams))
+                ret += additionalParams;
 
             ret += ">";
+
+            return ret;
+        }
+
+
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current ISessionIdentificator</param>
+        /// <returns>the element as string</returns>
+        public override string GetContent(SessionData sessionData)
+        {
+            string ret = GetTagHead();
 
             if (!string.IsNullOrWhiteSpace(Text))
                 ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
@@ -1520,7 +1533,7 @@ namespace LamestWebserver.UI
                 ret += Elements[i].GetContent(sessionData);
             }
 
-            ret += "</div>";
+            ret += $"</{Tag}>";
 
             return ret;
         }
@@ -1531,7 +1544,7 @@ namespace LamestWebserver.UI
         /// <param name="list">a list of elements</param>
         public void AddElements(IEnumerable<HElement> list)
         {
-            foreach(var element in list)
+            foreach (var element in list)
             {
                 AddElement(element);
             }
@@ -1565,28 +1578,7 @@ namespace LamestWebserver.UI
             }
             else
             {
-#################### TODO: Other Container Types & maintainable(!) way to get them
-                string pre = "<div ";
-
-                if (!string.IsNullOrWhiteSpace(ID))
-                    pre += "id='" + ID + "' ";
-
-                if (!string.IsNullOrWhiteSpace(Name))
-                    pre += "name='" + Name + "' ";
-
-                if (!string.IsNullOrWhiteSpace(Class))
-                    pre += "class='" + Class + "' ";
-
-                if (!string.IsNullOrWhiteSpace(Style))
-                    pre += "style=\"" + Style + "\" ";
-
-                if (!string.IsNullOrWhiteSpace(Title))
-                    pre += "title=\"" + Title + "\" ";
-
-                if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                    pre += DescriptionTags;
-
-                pre += ">";
+                string pre = GetTagHead();
 
                 if (!string.IsNullOrWhiteSpace(Text))
                     pre += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
@@ -1638,7 +1630,7 @@ namespace LamestWebserver.UI
                 }
             }
 
-            response.Append("</div>");
+            response.Append($"</{Tag}>");
         }
 
         /// <inheritdoc />
@@ -1674,47 +1666,9 @@ namespace LamestWebserver.UI
         /// Constructs a new inline container containing the given elements.
         /// </summary>
         /// <param name="elements">the contained elements</param>
-        public HInlineContainer(params HElement[] elements) : base(elements)
+        public HInlineContainer(params HElement[] elements) : base("span", elements)
         {
             
-        }
-
-        /// <inheritdoc />
-        public override string GetContent(SessionData sessionData)
-        {
-            string ret = "<span ";
-
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</span>";
-
-            return ret;
         }
     }
 
@@ -1734,51 +1688,24 @@ namespace LamestWebserver.UI
         /// <param name="text">the quoted text</param>
         /// <param name="source">the source of the quote</param>
         /// <param name="elements">the contained elements</param>
-        public HQuote(string text, string source = null, params HElement[] elements) : base(elements)
+        public HQuote(string text, string source = null, params HElement[] elements) : base("blockquote", elements)
         {
             Text = text;
             Source = source;
         }
 
         /// <inheritdoc />
-        public override string GetContent(SessionData sessionData)
+        protected override string GetTagHead(string additionalParams = null)
         {
-            string ret = "<blockquote ";
+            if (additionalParams == null)
+                additionalParams = "";
+            else
+                additionalParams += " ";
 
             if (!string.IsNullOrWhiteSpace(Source))
-                ret += "cite='" + Source + "' ";
+                additionalParams += "cite='" + Source + "' ";
 
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</blockquote>";
-
-            return ret;
+            return base.GetTagHead(additionalParams);
         }
     }
 
@@ -1801,7 +1728,7 @@ namespace LamestWebserver.UI
         /// Constructs a new Form pointing to the given action when submitted
         /// </summary>
         /// <param name="action">the URL to load when submitted</param>
-        public HForm(string action)
+        public HForm(string action) : base("form")
         {
             this.Action = action;
             _fixedAction = true;
@@ -1842,56 +1769,27 @@ namespace LamestWebserver.UI
                 Elements.Add(new HButton(buttontext, HButton.EButtonType.submit));
         }
 
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
+        /// <inheritdoc />
+        protected override string GetTagHead(string additionalParams = null)
         {
-            string ret = "<form ";
+            if (additionalParams == null)
+                additionalParams = "";
+            else
+                additionalParams += " ";
 
             if (_fixedAction)
             {
                 if (!string.IsNullOrWhiteSpace(Action))
-                    ret += "action='" + Action + "' ";
+                    additionalParams += "action='" + Action + "' ";
             }
             else
             {
-                ret += "action='" + InstantPageResponse.AddOneTimeConditionalRedirect(_redirectTrue, _redirectFalse, true, _conditionalCode) + "' ";
+                additionalParams += "action='" + InstantPageResponse.AddOneTimeConditionalRedirect(_redirectTrue, _redirectFalse, true, _conditionalCode) + "' ";
             }
 
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
+            additionalParams += "method='POST' ";
 
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags + " ";
-
-            ret += "method='POST' >";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</form>";
-
-            return ret;
+            return base.GetTagHead(additionalParams);
         }
     }
 
@@ -1912,48 +1810,18 @@ namespace LamestWebserver.UI
         /// <param name="legend">the displayed name of the panel</param>
         /// <param name="elements">the contained elements</param>
         /// </summary>
-        public HPanel(string legend = null, params HElement[] elements) : base(elements)
+        public HPanel(string legend = null, params HElement[] elements) : base("fieldset", elements)
         {
             Legend = legend;
         }
 
         /// <inheritdoc />
-        public override string GetContent(SessionData sessionData)
+        protected override string GetTagHead(string additionalParams = null)
         {
-            string ret = "<fieldset ";
-
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">";
+            string ret = base.GetTagHead(additionalParams);
 
             if (!string.IsNullOrWhiteSpace(Legend))
                 ret += "<legend>" + Legend + "</legend>";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</fieldset>";
 
             return ret;
         }
@@ -1975,7 +1843,7 @@ namespace LamestWebserver.UI
         /// <param name="type"></param>
         /// <param name="href">SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
         /// <param name="onclick"></param>
-        public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "")
+        public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "") : base("button")
         {
             this.Text = text;
             this._href = href;
@@ -1989,7 +1857,7 @@ namespace LamestWebserver.UI
         /// <param name="text"></param>
         /// <param name="href">SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
         /// <param name="onclick"></param>
-        public HButton(string text, string href = "", string onclick = "")
+        public HButton(string text, string href = "", string onclick = "") : base("button")
         {
             this.Text = text;
             this._href = href;
@@ -1997,14 +1865,10 @@ namespace LamestWebserver.UI
             this._type = EButtonType.button;
         }
 
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
+        /// <inheritdoc />
+        protected override string GetTagHead(string additionalParams = null)
         {
-            string ret = "<button type='" + _type + "' ";
+            string ret = $"<{Tag} type='" + _type + "' ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -2020,8 +1884,8 @@ namespace LamestWebserver.UI
 
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
-            
-            if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
             {
                 if (!string.IsNullOrWhiteSpace(_onclick))
                 {
@@ -2039,23 +1903,13 @@ namespace LamestWebserver.UI
             }
             else
             {
-                System.Diagnostics.Debug.Assert(false, "SessionIdTransmissionType is invalid or not supported in " + this.GetType().ToString() + ".");
+                Logger.LogExcept("SessionIdTransmissionType is invalid or not supported in " + this.GetType().ToString() + ".");
             }
 
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
                 ret += DescriptionTags + " ";
 
             ret += ">";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</button>";
 
             return ret;
         }
@@ -2245,13 +2099,13 @@ namespace LamestWebserver.UI
     /// </summary>
     public class HList : HContainer
     {
-        private EListType listType;
+        private readonly EListType listType;
 
         /// <summary>
         /// Constructs a new List Element
         /// </summary>
         /// <param name="listType">the type of the list</param>
-        public HList(EListType listType)
+        public HList(EListType listType) : base(listType == EListType.OrderedList ? "ol" : "ul")
         {
             this.listType = listType;
         }
@@ -2281,48 +2135,6 @@ namespace LamestWebserver.UI
         public HList(EListType listType, params HElement[] elements) : this(listType)
         {
             this.Elements = elements.ToList();
-        }
-
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
-        {
-            string ret = "<" + (listType == EListType.OrderedList ? "ol" : "ul") + " ";
-
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += "<li>" + Elements[i].GetContent(sessionData) + "</li>";
-            }
-
-            ret += "</" + (listType == EListType.OrderedList ? "ol" : "ul") + ">";
-
-            return ret;
         }
 
         /// <summary>
@@ -2439,7 +2251,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Represents a custom tag
     /// </summary>
-    public class HTag : HContainer
+    public class HTag : HSelectivelyCacheableElement
     {
         /// <summary>
         /// if false, the element won't have a start and end tag but will only consist of a single tag (like img)
@@ -2450,6 +2262,32 @@ namespace LamestWebserver.UI
         /// the name of the tag
         /// </summary>
         public string TagName;
+
+
+        /// <summary>
+        /// A list of all contained elements
+        /// </summary>
+        public List<HElement> Elements = new List<HElement>();
+
+        /// <summary>
+        /// The text contained in this element
+        /// </summary>
+        public string Text;
+
+        /// <summary>
+        /// Additional attributes added to the tag
+        /// </summary>
+        public string DescriptionTags;
+        
+
+        /// <summary>
+        /// Adds an element to the element list
+        /// </summary>
+        /// <param name="element">the element</param>
+        public void AddElement(HElement element)
+        {
+            Elements.Add(element);
+        }
 
         /// <summary>
         /// Constructs a new custom tag
@@ -2516,7 +2354,7 @@ namespace LamestWebserver.UI
                     ret += Elements[i].GetContent(sessionData);
                 }
 
-                ret += "</" + TagName  + ">";
+                ret += "</" + TagName + ">";
             }
 
             return ret;
