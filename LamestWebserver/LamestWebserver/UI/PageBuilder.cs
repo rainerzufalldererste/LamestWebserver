@@ -1557,7 +1557,9 @@ namespace LamestWebserver.UI
         /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
         protected void GetCachedContents(string key, ECachingType defaultCachingType, StringBuilder response)
         {
-            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/pre", out string preResponseString))
+            string preResponseString;
+
+            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/pre", out preResponseString))
             {
                 response.Append(preResponseString);
             }
@@ -1604,11 +1606,13 @@ namespace LamestWebserver.UI
 
                     if(firstSuccessfull < i)
                     {
-                        if(firstSuccessfull == i - 1)
+                        string responseString;
+
+                        if (firstSuccessfull == i - 1)
                         {
                             Elements[i].IsCacheable(key + "/" + i, defaultCachingType, response);
                         }
-                        else if(ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), out string responseString))
+                        else if(ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), out responseString))
                         {
                             response.Append(responseString);
                         }
