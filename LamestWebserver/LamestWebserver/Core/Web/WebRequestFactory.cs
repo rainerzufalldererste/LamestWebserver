@@ -19,12 +19,12 @@ namespace LamestWebserver.Core.Web
         /// <summary>
         /// The cached Responses of recent Requests.
         /// </summary>
-        protected SynchronizedDictionary<string ,string> Responses;
+        protected SynchronizedDictionary<string, string, AVLHashMap<string, string>> Responses;
 
         /// <summary>
         /// The cached Redirects of recent Redirects.
         /// </summary>
-        protected SynchronizedDictionary<string, string> Redirects;
+        protected SynchronizedDictionary<string, string, AVLHashMap<string, string>> Redirects;
 
         /// <summary>
         /// The specified Cookies for the WebRequests.
@@ -50,8 +50,8 @@ namespace LamestWebserver.Core.Web
         {
             if(cacheResponses)
             {
-                Responses = new SynchronizedDictionary<string, string>(new AVLHashMap<string, string>());
-                Redirects = new SynchronizedDictionary<string, string>(new AVLHashMap<string, string>());
+                Responses = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>(new AVLHashMap<string, string>());
+                Redirects = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>(new AVLHashMap<string, string>());
             }
         }
 

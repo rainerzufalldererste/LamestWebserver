@@ -6,8 +6,18 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.Core.Parsing
 {
+    /// <summary>
+    /// Provides Extention Methods for string operations.
+    /// </summary>
     public static class ParsingStringExtentions
     {
+        /// <summary>
+        /// Returns the string between two substrings of this string.
+        /// </summary>
+        /// <param name="s">this string.</param>
+        /// <param name="before">the string before the requested string.</param>
+        /// <param name="after">the string after the requested string.</param>
+        /// <returns>the string inbetween or null.</returns>
         public static string FindBetween(this string s, string before, string after)
         {
             int beforeIndex, afterIndex;
@@ -19,6 +29,13 @@ namespace LamestWebserver.Core.Parsing
             return null;
         }
 
+        /// <summary>
+        /// Searches for a Substring and returns it's start index.
+        /// </summary>
+        /// <param name="s">this string.</param>
+        /// <param name="find">the substring to find.</param>
+        /// <param name="index">the index where the substring begins.</param>
+        /// <returns>returns true if the string could be found. otherwise false.</returns>
         public static bool FindString(this string s, string find, out int index)
         {
             int[] findIndexes = find.GetKMP();
@@ -53,6 +70,11 @@ namespace LamestWebserver.Core.Parsing
             return false;
         }
 
+        /// <summary>
+        /// Returns the indexes of the Knuth–Morris–Pratt algorithm of a given string.
+        /// </summary>
+        /// <param name="s">this string.</param>
+        /// <returns>the Knuth–Morris–Pratt algorithm indexes.</returns>
         public static int[] GetKMP(this string s)
         {
             int[] ret = new int[s.Length];
@@ -74,8 +96,21 @@ namespace LamestWebserver.Core.Parsing
             return ret;
         }
 
+        /// <summary>
+        /// Parses a string like Split(...) but keeps the splitting strings as separate entries.
+        /// </summary>
+        /// <param name="s">this string.</param>
+        /// <param name="delimiters">the delimiters to split at.</param>
+        /// <returns>A list of the splitted string parts without empty entries.</returns>
         public static List<string> Parse(this string s, params string[] delimiters) => Parse(s, true, delimiters);
 
+        /// <summary>
+        /// Parses a string like Split(...) but keeps the splitting strings as separate entries.
+        /// </summary>
+        /// <param name="s">this string.</param>
+        /// <param name="removeEmptyEntries">shall empty strings be removed from the returned list?</param>
+        /// <param name="delimiters">the delimiters to split at.</param>
+        /// <returns>A list of the splitted string parts.</returns>
         public static List<string> Parse(this string s, bool removeEmptyEntries, params string[] delimiters)
         {
             List<string> ret = new List<string>();

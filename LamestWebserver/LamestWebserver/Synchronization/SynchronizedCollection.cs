@@ -8,17 +8,43 @@ using System.Collections;
 
 namespace LamestWebserver.Synchronization
 {
-    public class SynchronizedCollection<T> : NullCheckable, ICollection<T>
+    /// <summary>
+    /// Provides synchronized access to an ICollection&lt;T&gt;.
+    /// </summary>
+    /// <typeparam name="T">The type of the Collection.</typeparam>
+    /// <typeparam name="TCollectionType">The internal implementation of the Collection used.</typeparam>
+    [Serializable]
+    public class SynchronizedCollection<T, TCollectionType> : NullCheckable, ICollection<T> where TCollectionType : ICollection<T>, new()
     {
-        public ICollection<T> InnerCollection;
+        /// <summary>
+        /// The internal Collection for unsynchronized access.
+        /// </summary>
+        public TCollectionType InnerCollection { get; protected set; }
+
         private UsableWriteLock writeLock = new UsableWriteLock();
 
-        public SynchronizedCollection(ICollection<T> collection)
+        /// <summary>
+        /// Constructs a new SynchronizedCollection object and initializes the InnerCollection with it's default constructor.
+        /// </summary>
+        public SynchronizedCollection()
+        {
+            InnerCollection = new TCollectionType();
+        }
+
+        /// <summary>
+        /// Constructs a new SynchronizedCollection.
+        /// </summary>
+        /// <param name="collection">the collection to use</param>
+        public SynchronizedCollection(TCollectionType collection)
         {
             InnerCollection = collection;
         }
 
-        public static implicit operator bool(SynchronizedCollection<T> obj) => obj == null || obj.InnerCollection == null;
+        /// <summary>
+        /// Provides functionality like NullCheckable.
+        /// </summary>
+        /// <param name="obj">The current object.</param>
+        public static implicit operator bool(SynchronizedCollection<T, TCollectionType> obj) => obj == null || obj.InnerCollection == null;
 
 
         /// <inheritdoc />

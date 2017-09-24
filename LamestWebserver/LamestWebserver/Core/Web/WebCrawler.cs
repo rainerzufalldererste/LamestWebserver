@@ -84,7 +84,7 @@ namespace LamestWebserver.Core.Web
 
             using (WebCrawlerStateMutex.Lock())
             {
-                this.CurrentState = new WebCrawlerState(webRequestFactory);
+                CurrentState = new WebCrawlerState(webRequestFactory);
                 CurrentState.ToGo.Add(StartURL);
             }
 
@@ -214,20 +214,35 @@ namespace LamestWebserver.Core.Web
         [Serializable]
         public class WebCrawlerState : NullCheckable
         {
+            /// <summary>
+            /// The visited pages so far.
+            /// </summary>
             public AVLHashMap<string, bool> VisitedPages; // just because it's fast to look through it - this is not the best possible implementation.
+
+            /// <summary>
+            /// The discovered Pages that haven't been visited.
+            /// </summary>
             public List<string> ToGo;
+
+            /// <summary>
+            /// The internal WebRequestFactory.
+            /// </summary>
             public WebRequestFactory WebrequestFactory;
 
+            /// <summary>
+            /// Deserialization Constructor.
+            /// </summary>
             public WebCrawlerState()
             {
-                VisitedPages = new AVLHashMap<string, bool>();
-                ToGo = new List<string>();
             }
 
-            public WebCrawlerState(WebRequestFactory webRequestFactory) : this()
+            internal WebCrawlerState(WebRequestFactory webRequestFactory)
             {
                 if (webRequestFactory == null)
                     throw new ArgumentNullException(nameof(webRequestFactory));
+
+                VisitedPages = new AVLHashMap<string, bool>();
+                ToGo = new List<string>();
 
                 WebrequestFactory = webRequestFactory;
             }
