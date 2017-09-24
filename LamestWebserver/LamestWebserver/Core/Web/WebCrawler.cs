@@ -47,6 +47,11 @@ namespace LamestWebserver.Core.Web
         private Thread[] crawlerThreads;
         private Regex linkParser = new Regex(@"href=[""'](?<url>(http|https)://[^/]*?\.[^/]*?\)(/.*)?[""']", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private UsableMutexSlim WebCrawlerStateMutex = new UsableMutexSlim();
+        
+        /// <summary>
+        /// The internal WebRequestFactory.
+        /// </summary>
+        public WebRequestFactory WebRequestFactory { get; private set; }
 
         /// <summary>
         /// Constructs a new WebCrawler instance. Doesn't start it yet.
@@ -81,10 +86,11 @@ namespace LamestWebserver.Core.Web
             StartURL = startURL;
             Prefixes = prefixes;
             OnNewPage = onNewPage;
+            WebRequestFactory = webRequestFactory;
 
             using (WebCrawlerStateMutex.Lock())
             {
-                CurrentState = new WebCrawlerState(webRequestFactory);
+                CurrentState = new WebCrawlerState();
                 CurrentState.ToGo.Add(StartURL);
             }
 
@@ -92,7 +98,7 @@ namespace LamestWebserver.Core.Web
         }
 
         /// <summary>
-        /// Loads a previous state of the crawler.
+        /// Loads a previous state of the crawler. (does not load the webRequestFactory caches)
         /// </summary>
         /// <param name="fileName">The filename of the saved state.</param>
         public void LoadState(string fileName)
@@ -105,7 +111,7 @@ namespace LamestWebserver.Core.Web
         }
 
         /// <summary>
-        /// Saves the current state of the crawler.
+        /// Saves the current state of the crawler. (does not save the webRequestFactory caches)
         /// </summary>
         /// <param name="fileName">The filename for the saved state.</param>
         public void SaveState(string fileName)
@@ -165,7 +171,7 @@ namespace LamestWebserver.Core.Web
                     currentSite = CurrentState.ToGo[0];
                 }
 
-                response = CurrentState.WebrequestFactory.GetResponse(currentSite);
+                response = WebRequestFactory.GetResponse(currentSite);
 
                 var matches = linkParser.Matches(response);
 
@@ -181,16 +187,20 @@ namespace LamestWebserver.Core.Web
 
                     if (!alreadyVisited && (from start in Prefixes where domainBasedUrl.StartsWith(start) select true).Any())
                     {
+                        if (!Running)
+                            return;
+
                         using (WebCrawlerStateMutex.Lock())
                         {
                             CurrentState.ToGo.Add(url);
                             CurrentState.VisitedPages.Add(currentSite, true);
                         }
-
+                        
                         if (Running && !OnNewPage(url, this))
-                        {
                             Running.Value = false;
-                            
+
+                        if (!Running)
+                        {
                             if(!KeepLastEntry)
                                 using (WebCrawlerStateMutex.Lock())
                                     CurrentState.VisitedPages.Remove(currentSite);
@@ -225,26 +235,12 @@ namespace LamestWebserver.Core.Web
             public List<string> ToGo;
 
             /// <summary>
-            /// The internal WebRequestFactory.
-            /// </summary>
-            public WebRequestFactory WebrequestFactory;
-
-            /// <summary>
-            /// Deserialization Constructor.
+            /// Constructs a new WebCrawlerState object and initializes the internal collecions.
             /// </summary>
             public WebCrawlerState()
             {
-            }
-
-            internal WebCrawlerState(WebRequestFactory webRequestFactory)
-            {
-                if (webRequestFactory == null)
-                    throw new ArgumentNullException(nameof(webRequestFactory));
-
                 VisitedPages = new AVLHashMap<string, bool>();
                 ToGo = new List<string>();
-
-                WebrequestFactory = webRequestFactory;
             }
         }
     }
