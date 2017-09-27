@@ -66,6 +66,7 @@
     <Compile Include="CollectionSerializerTests.cs" />
     <Compile Include="ResponseCacheTest.cs" />
     <Compile Include="StringExtentionTests.cs" />
+    <Compile Include="WebCrawlerTest.cs" />
     <Compile Include="UsableMutexTest.cs" />
     <Compile Include="WriteLockTest.cs" />
   </ItemGroup>

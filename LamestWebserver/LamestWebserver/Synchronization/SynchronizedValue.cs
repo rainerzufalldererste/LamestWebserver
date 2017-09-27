@@ -9,10 +9,11 @@ namespace LamestWebserver.Synchronization
 {
     /// <summary>
     /// Provides synchonized access to a variable.
+    /// NOT NullCheckable, because SynchronizedValue&lt;bool&gt; would result in unexpected results when casting to bool.
     /// </summary>
     /// <typeparam name="T">The Type of the variable.</typeparam>
     [Serializable]
-    public class SynchronizedValue<T> : NullCheckable
+    public class SynchronizedValue<T>
     {
         private T _value;
         private UsableWriteLock writeLock = new UsableWriteLock();
