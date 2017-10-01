@@ -78,6 +78,10 @@ namespace LamestWebserver.Core.Web
                 throw new ArgumentOutOfRangeException(nameof(prefixes));
 
             for (int i = 0; i < prefixes.Length; i++)
+                if (prefixes[i] == null)
+                    prefixes[i] = "";
+
+            for (int i = 0; i < prefixes.Length; i++)
                 prefixes[i] = prefixes[i].Replace("http://", "").Replace("https://", "").Replace("www.", "");
 
             if (onNewPage == null)
@@ -193,8 +197,7 @@ namespace LamestWebserver.Core.Web
                     if (CurrentState.ToGo.Count == 0)
                     {
                         Running.Value = false;
-                        IsDone.Value = true;
-                        return;
+                        break;
                     }
                 
                     currentSite = CurrentState.ToGo[0];
@@ -261,7 +264,6 @@ namespace LamestWebserver.Core.Web
 
                             return;
                         }
-
                     }
                 }
             }

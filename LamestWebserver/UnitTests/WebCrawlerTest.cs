@@ -61,20 +61,29 @@ namespace UnitTests
                 {
                     urls.Add(foundUrl);
                     return true;
-                }, 
-                e => 
+                },
+                e =>
                 {
                     Assert.Fail(e.Message); return false;
                 },
                 new TestWebRequestFactory()).Start();
 
             while (!wc.IsDone)
-                Thread.Sleep(250);
+                Thread.Sleep(25);
 
             Assert.AreEqual(3, urls.Count);
             Assert.AreEqual("http://www.bla.com/blob", urls[0]);
             Assert.AreEqual("http://www.bla.com/xyz", urls[1]);
             Assert.AreEqual("http://www.bla.com/secure/", urls[2]);
+
+            int fails = 0;
+
+            WebCrawler wc0 = new WebCrawler("http://blob.com/", (string)null, (e,f) => { Assert.Fail(); return false; }, e => { fails++; return true; }, new TestWebRequestFactory(), 8).Start();
+
+            while (!wc0.IsDone)
+                Thread.Sleep(25);
+
+            Assert.AreEqual(1, fails);
         }
     }
 }
