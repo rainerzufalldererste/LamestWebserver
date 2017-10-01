@@ -37,9 +37,16 @@ namespace LamestWebserver.Core.Web
         public readonly Func<Exception, bool> OnError;
 
         /// <summary>
+        /// Specifies whether the OnNewPage and OnError functions shall be called synchronously or in parallel.
+        /// </summary>
+        public readonly SynchronizedValue<bool> CallSynchrously = new SynchronizedValue<bool>(false);
+
+        private Singleton<UsableWriteLock> FunctionCallWriteLock = new Singleton<UsableWriteLock>();
+
+        /// <summary>
         /// Has the WebCrawler processed every possible page?
         /// </summary>
-        public SynchronizedValue<bool> IsDone { get; private set; } = new SynchronizedValue<bool>(false);
+        public readonly SynchronizedValue<bool> IsDone = new SynchronizedValue<bool>(false);
 
         /// <summary>
         /// If false: the last visited page before OnNewPage returns false is removed from VisitedPages. 
@@ -78,11 +85,12 @@ namespace LamestWebserver.Core.Web
                 throw new ArgumentOutOfRangeException(nameof(prefixes));
 
             for (int i = 0; i < prefixes.Length; i++)
+            {
                 if (prefixes[i] == null)
                     prefixes[i] = "";
-
-            for (int i = 0; i < prefixes.Length; i++)
-                prefixes[i] = prefixes[i].Replace("http://", "").Replace("https://", "").Replace("www.", "");
+                else
+                    prefixes[i] = prefixes[i].Replace("http://", "").Replace("https://", "").Replace("www.", "");
+            }
 
             if (onNewPage == null)
                 throw new ArgumentNullException(nameof(onNewPage));
@@ -199,7 +207,7 @@ namespace LamestWebserver.Core.Web
                         Running.Value = false;
                         break;
                     }
-                
+
                     currentSite = CurrentState.ToGo[0];
                     CurrentState.ToGo.RemoveAt(0);
                 }
@@ -208,19 +216,41 @@ namespace LamestWebserver.Core.Web
 
                 if (response == null)
                 {
-                    if (!OnError(new NullReferenceException($"Invalid Response: WebRequestFactory.GetResponse(\"{currentSite}\") returned null.")))
+                    bool synch = CallSynchrously; // if changed while halfway through processing.
+                    IDisposable usableWriteLock = null;
+
+                    try
                     {
-                        Running.Value = false;
+                        if (synch)
+                            usableWriteLock = FunctionCallWriteLock.Instance.LockWrite();
 
-                        if (!KeepLastEntry)
-                            using (WebCrawlerStateMutex.Lock())
-                                CurrentState.ToGo.Insert(0, currentSite);
+                        if (!OnError(new NullReferenceException($"Invalid Response: WebRequestFactory.GetResponse(\"{currentSite}\") returned null.")))
+                        {
+                            Running.Value = false;
+                            
+                            if (synch && usableWriteLock != null)
+                                usableWriteLock.Dispose();
 
-                        break;
+                            if (!KeepLastEntry)
+                                using (WebCrawlerStateMutex.Lock())
+                                    CurrentState.ToGo.Insert(0, currentSite);
+
+                            break;
+                        }
+                        else
+                        {
+                            if (synch && usableWriteLock != null)
+                                usableWriteLock.Dispose();
+
+                            continue;
+                        }
                     }
-                    else
+                    catch
                     {
-                        continue;
+                        if (synch && usableWriteLock != null)
+                            usableWriteLock.Dispose();
+
+                        throw;
                     }
                 }
 
@@ -246,10 +276,18 @@ namespace LamestWebserver.Core.Web
                             CurrentState.ToGo.Add(url);
                             CurrentState.VisitedPages.Add(url, true);
                         }
-                        
-                        if (Running && !OnNewPage(url, this))
-                            Running.Value = false;
 
+                        if (!CallSynchrously)
+                        {
+                            if (Running && !OnNewPage(url, this))
+                                Running.Value = false;
+                        }
+                        else
+                        {
+                            using (FunctionCallWriteLock.Instance.LockWrite())
+                                if (Running && !OnNewPage(url, this))
+                                    Running.Value = false;
+                        }
 
                         NotRunning:
 
