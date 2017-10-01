@@ -78,6 +78,7 @@
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
+    <Compile Include="Core\MultiStream.cs" />
     <Compile Include="Core\NullCheckable.cs" />
     <Compile Include="Core\Singleton.cs" />
     <Compile Include="Collections\AVLHashMap.cs" />

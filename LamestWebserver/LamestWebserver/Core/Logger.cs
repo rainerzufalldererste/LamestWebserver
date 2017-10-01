@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 
 namespace LamestWebserver.Core
@@ -14,6 +14,41 @@ namespace LamestWebserver.Core
         public readonly static Singleton<Logger> CurrentLogger = new Singleton<Logger>();
 
         /// <summary>
+        /// Set the Flags for the Output Sources
+        /// </summary>
+        public static EOutputSource OutputSourceFlags
+        {
+            get
+            {
+                return CurrentLogger.Instance.currentOutputSource;
+            }
+            set
+            {
+                CurrentLogger.Instance.currentOutputSource = value;
+                CurrentLogger.Instance.Close();
+                CurrentLogger.Instance.Open();
+            }
+        }
+
+
+        /// <summary>
+        /// Path for the Logging File
+        /// </summary>
+        public static string FilePath
+        {
+            get
+            {
+                return CurrentLogger.Instance.currentFilePath;
+            }
+            set
+            {
+                CurrentLogger.Instance.currentFilePath = value;
+                CurrentLogger.Instance.Close();
+                CurrentLogger.Instance.Open();
+            }
+        }
+
+        /// <summary>
         /// Is LamestWebserverRunning in Debug Mode.
         /// </summary>
         public static bool LoggerDebugMode = false;
@@ -27,6 +62,14 @@ namespace LamestWebserver.Core
         /// The minimum logging level for this logger.
         /// </summary>
         public ELoggingLevel MinimumLoggingLevel = DefaultMinimumLoggingLevel;
+
+        internal EOutputSource currentOutputSource = EOutputSource.File | EOutputSource.Console;
+
+        internal MultiStream multiStream = new MultiStream();
+
+        internal StreamWriter streamWriter;
+
+        internal string currentFilePath = ("LWS.log");
 
         /// <summary>
         /// Logging a message on logging level 'Trace'.
@@ -261,9 +304,7 @@ namespace LamestWebserver.Core
 
         internal void Log(ELoggingLevel loggingLevel, string msg)
         {
-            // TODO: Implement propper logging!
-
-            ServerHandler.LogMessage($"[{loggingLevel.ToString()} \\\\\\\\ {msg}]");
+            streamWriter.WriteLine($"[{loggingLevel.ToString()} \\\\\\\\ {msg}]");
         }
 
         /// <summary>
@@ -271,8 +312,8 @@ namespace LamestWebserver.Core
         /// </summary>
         public void Close()
         {
-            // TODO: Close and Flush stream!
-            DebugExcept(new NotImplementedException());
+            streamWriter.Flush();
+            streamWriter.Close();
         }
 
         /// <summary>
@@ -280,7 +321,40 @@ namespace LamestWebserver.Core
         /// </summary>
         protected void Open()
         {
-            DebugExcept(new NotImplementedException());
+            ConfigureMultiStream();
+            streamWriter = new StreamWriter(multiStream);
+        }
+
+        internal void ConfigureMultiStream()
+        {
+            multiStream.Streams.Clear();
+            switch (currentOutputSource)
+            {
+                case EOutputSource.None:
+                    break;
+                case EOutputSource.Console:
+                    addConsoleStream();
+                    break;
+                case EOutputSource.File:
+                    addFileStream();
+                    break;
+                case EOutputSource.File | EOutputSource.Console:
+                    addFileStream();
+                    addConsoleStream();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        internal void addFileStream()
+        {
+            multiStream.Streams.Add(File.Create(currentFilePath));
+        }
+
+        internal void addConsoleStream()
+        {
+            multiStream.Streams.Add(Console.OpenStandardOutput());
         }
 
         /// <summary>
@@ -338,6 +412,28 @@ namespace LamestWebserver.Core
             /// Debugging Information.
             /// </summary>
             Trace = 0
+        }
+
+        /// <summary>
+        /// Flags for output Sources
+        /// </summary>
+        [FlagsAttribute]
+        public enum EOutputSource : byte
+        {
+            /// <summary>
+            /// No Logging output at all
+            /// </summary>
+            None = 0,
+
+            /// <summary>
+            /// Write To Console
+            /// </summary>
+            Console = 1,
+
+            /// <summary>
+            /// Write into File
+            /// </summary>
+            File = 2
         }
     }
 }
