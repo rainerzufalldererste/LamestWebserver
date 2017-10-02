@@ -1,4 +1,5 @@
 ﻿using LamestWebserver.Collections;
+using LamestWebserver.Serialization;
 using LamestWebserver.Synchronization;
 using System;
 using System.Collections.Generic;
@@ -48,10 +49,10 @@ namespace LamestWebserver.Core.Web
         /// <param name="cacheResponses">Shall responses and redirects be cached?</param>
         public WebRequestFactory(bool cacheResponses = false)
         {
-            if(cacheResponses)
+            if (cacheResponses)
             {
-                Responses = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>(new AVLHashMap<string, string>());
-                Redirects = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>(new AVLHashMap<string, string>());
+                Responses = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>();
+                Redirects = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>();
             }
         }
 
@@ -60,11 +61,37 @@ namespace LamestWebserver.Core.Web
         /// </summary>
         public virtual void FlushCache()
         {
-            if(Responses)
+            if (Responses)
                 Responses.Clear();
 
             if (Redirects)
                 Redirects.Clear();
+        }
+
+        /// <summary>
+        /// Loads the cached responses and redirects from files.
+        /// </summary>
+        /// <param name="fileName">the filename. (will be suffixed with .Responses or .Redirects)</param>
+        public void LoadCacheState(string fileName)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            Responses = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
+            Redirects = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Redirects));
+        }
+
+        /// <summary>
+        /// Saves the cached responses and redirects to files.
+        /// </summary>
+        /// <param name="fileName">the filename. (will be suffixed with .Responses or .Redirects)</param>
+        public void SaveCacheState(string fileName)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            Serializer.WriteJsonData(Responses, fileName + "." + nameof(Responses));
+            Serializer.WriteJsonData(Redirects, fileName + "." + nameof(Redirects));
         }
 
         /// <summary>

@@ -32,9 +32,21 @@ namespace LamestWebserver.Core.Web
         public readonly Func<string, WebCrawler, bool> OnNewPage;
 
         /// <summary>
+        /// The delegate to execute whenever a response is invalid.
+        /// </summary>
+        public readonly Func<Exception, bool> OnError;
+
+        /// <summary>
+        /// Specifies whether the OnNewPage and OnError functions shall be called synchronously or in parallel.
+        /// </summary>
+        public readonly SynchronizedValue<bool> CallSynchrously = new SynchronizedValue<bool>(false);
+
+        private Singleton<UsableWriteLock> FunctionCallWriteLock = new Singleton<UsableWriteLock>();
+
+        /// <summary>
         /// Has the WebCrawler processed every possible page?
         /// </summary>
-        public SynchronizedValue<bool> IsDone { get; private set; } = new SynchronizedValue<bool>(false);
+        public readonly SynchronizedValue<bool> IsDone = new SynchronizedValue<bool>(false);
 
         /// <summary>
         /// If false: the last visited page before OnNewPage returns false is removed from VisitedPages. 
@@ -45,18 +57,24 @@ namespace LamestWebserver.Core.Web
         private WebCrawlerState CurrentState;
         private SynchronizedValue<bool> Running = new SynchronizedValue<bool>(false);
         private Thread[] crawlerThreads;
-        private Regex linkParser = new Regex(@"href=[""'](?<url>(http|https)://[^/]*?\.[^/]*?\)(/.*)?[""']", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private Regex linkParser = new Regex("href=([\"'])(.*?)\\1", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private UsableMutexSlim WebCrawlerStateMutex = new UsableMutexSlim();
+        
+        /// <summary>
+        /// The internal WebRequestFactory.
+        /// </summary>
+        public WebRequestFactory WebRequestFactory { get; private set; }
 
         /// <summary>
         /// Constructs a new WebCrawler instance. Doesn't start it yet.
         /// </summary>
         /// <param name="startURL">The URL to begin crawling at.</param>
-        /// <param name="prefixes">The valid prefixes of an URL to load. (usually the page domain that you want to crawl through). ALL pages are valid if null.</param>
+        /// <param name="prefixes">The valid prefixes of an URL to load (usually the page domain that you want to crawl through). ALL pages are valid if null.</param>
         /// <param name="onNewPage">The function to execute whenever a valid page is found.</param>
+        /// <param name="onError">The function to execute whenever the response is invalid.</param>
         /// <param name="webRequestFactory">A WebRequestFactory to construct the Requests with.</param>
         /// <param name="threadCount">The number of worker-threads to use.</param>
-        public WebCrawler(string startURL, string[] prefixes, Func<string, WebCrawler, bool> onNewPage, WebRequestFactory webRequestFactory, int threadCount = 1)
+        public WebCrawler(string startURL, string[] prefixes, Func<string, WebCrawler, bool> onNewPage, Func<Exception, bool> onError, WebRequestFactory webRequestFactory, int threadCount = 1)
         {
             if (startURL == null)
                 throw new ArgumentNullException(nameof(startURL));
@@ -67,7 +85,12 @@ namespace LamestWebserver.Core.Web
                 throw new ArgumentOutOfRangeException(nameof(prefixes));
 
             for (int i = 0; i < prefixes.Length; i++)
-                prefixes[i] = prefixes[i].Replace("http://", "").Replace("https://", "").Replace("www.", "");
+            {
+                if (prefixes[i] == null)
+                    prefixes[i] = "";
+                else
+                    prefixes[i] = prefixes[i].Replace("http://", "").Replace("https://", "").Replace("www.", "");
+            }
 
             if (onNewPage == null)
                 throw new ArgumentNullException(nameof(onNewPage));
@@ -82,17 +105,40 @@ namespace LamestWebserver.Core.Web
             Prefixes = prefixes;
             OnNewPage = onNewPage;
 
+            if (onError == null)
+                OnError = (e) => true;
+            else
+                OnError = onError;
+
+            WebRequestFactory = webRequestFactory;
+
             using (WebCrawlerStateMutex.Lock())
             {
-                CurrentState = new WebCrawlerState(webRequestFactory);
+                CurrentState = new WebCrawlerState();
                 CurrentState.ToGo.Add(StartURL);
+                CurrentState.VisitedPages.Add(StartURL, true);
             }
 
             crawlerThreads = new Thread[threadCount];
         }
 
         /// <summary>
-        /// Loads a previous state of the crawler.
+        /// Constructs a new WebCrawler instance. Doesn't start it yet.
+        /// </summary>
+        /// <param name="startURL">The URL to begin crawling at.</param>
+        /// <param name="prefix">The valid prefix of an URL to load (usually the page domain that you want to crawl through).</param>
+        /// <param name="onNewPage">The function to execute whenever a valid page is found.</param>
+        /// <param name="onError">The function to execute whenever the response is invalid.</param>
+        /// <param name="webRequestFactory">A WebRequestFactory to construct the Requests with.</param>
+        /// <param name="threadCount">The number of worker-threads to use.</param>
+        public WebCrawler(string startURL, string prefix, Func<string, WebCrawler, bool> onNewPage, Func<Exception, bool> onError, WebRequestFactory webRequestFactory, int threadCount = 1)
+            : this(startURL, new string[] { prefix }, onNewPage, onError, webRequestFactory, threadCount)
+        {
+
+        }
+
+        /// <summary>
+        /// Loads a previous state of the crawler. (does not load the webRequestFactory caches)
         /// </summary>
         /// <param name="fileName">The filename of the saved state.</param>
         public void LoadState(string fileName)
@@ -105,7 +151,7 @@ namespace LamestWebserver.Core.Web
         }
 
         /// <summary>
-        /// Saves the current state of the crawler.
+        /// Saves the current state of the crawler. (does not save the webRequestFactory caches)
         /// </summary>
         /// <param name="fileName">The filename for the saved state.</param>
         public void SaveState(string fileName)
@@ -159,13 +205,54 @@ namespace LamestWebserver.Core.Web
                     if (CurrentState.ToGo.Count == 0)
                     {
                         Running.Value = false;
-                        return;
+                        break;
                     }
-                
+
                     currentSite = CurrentState.ToGo[0];
+                    CurrentState.ToGo.RemoveAt(0);
                 }
 
-                response = CurrentState.WebrequestFactory.GetResponse(currentSite);
+                response = WebRequestFactory.GetResponse(currentSite);
+
+                if (response == null)
+                {
+                    bool synch = CallSynchrously; // if changed while halfway through processing.
+                    IDisposable usableWriteLock = null;
+
+                    try
+                    {
+                        if (synch)
+                            usableWriteLock = FunctionCallWriteLock.Instance.LockWrite();
+
+                        if (!OnError(new NullReferenceException($"Invalid Response: WebRequestFactory.GetResponse(\"{currentSite}\") returned null.")))
+                        {
+                            Running.Value = false;
+                            
+                            if (synch && usableWriteLock != null)
+                                usableWriteLock.Dispose();
+
+                            if (!KeepLastEntry)
+                                using (WebCrawlerStateMutex.Lock())
+                                    CurrentState.ToGo.Insert(0, currentSite);
+
+                            break;
+                        }
+                        else
+                        {
+                            if (synch && usableWriteLock != null)
+                                usableWriteLock.Dispose();
+
+                            continue;
+                        }
+                    }
+                    catch
+                    {
+                        if (synch && usableWriteLock != null)
+                            usableWriteLock.Dispose();
+
+                        throw;
+                    }
+                }
 
                 var matches = linkParser.Matches(response);
 
@@ -181,27 +268,42 @@ namespace LamestWebserver.Core.Web
 
                     if (!alreadyVisited && (from start in Prefixes where domainBasedUrl.StartsWith(start) select true).Any())
                     {
+                        if (!Running)
+                            goto NotRunning;
+
                         using (WebCrawlerStateMutex.Lock())
                         {
                             CurrentState.ToGo.Add(url);
-                            CurrentState.VisitedPages.Add(currentSite, true);
+                            CurrentState.VisitedPages.Add(url, true);
                         }
 
-                        if (Running && !OnNewPage(url, this))
+                        if (!CallSynchrously)
                         {
-                            Running.Value = false;
-                            
-                            if(!KeepLastEntry)
+                            if (Running && !OnNewPage(url, this))
+                                Running.Value = false;
+                        }
+                        else
+                        {
+                            using (FunctionCallWriteLock.Instance.LockWrite())
+                                if (Running && !OnNewPage(url, this))
+                                    Running.Value = false;
+                        }
+
+                        NotRunning:
+
+                        if (!Running)
+                        {
+                            if (!KeepLastEntry)
                                 using (WebCrawlerStateMutex.Lock())
-                                    CurrentState.VisitedPages.Remove(currentSite);
+                                {
+                                    CurrentState.VisitedPages.Remove(url);
+                                    CurrentState.ToGo.Insert(0, currentSite);
+                                }
 
                             return;
                         }
-
                     }
                 }
-
-                CurrentState.ToGo.RemoveAt(0);
             }
 
             if (CurrentState.ToGo.Count == 0)
@@ -225,26 +327,12 @@ namespace LamestWebserver.Core.Web
             public List<string> ToGo;
 
             /// <summary>
-            /// The internal WebRequestFactory.
-            /// </summary>
-            public WebRequestFactory WebrequestFactory;
-
-            /// <summary>
-            /// Deserialization Constructor.
+            /// Constructs a new WebCrawlerState object and initializes the internal collecions.
             /// </summary>
             public WebCrawlerState()
             {
-            }
-
-            internal WebCrawlerState(WebRequestFactory webRequestFactory)
-            {
-                if (webRequestFactory == null)
-                    throw new ArgumentNullException(nameof(webRequestFactory));
-
                 VisitedPages = new AVLHashMap<string, bool>();
                 ToGo = new List<string>();
-
-                WebrequestFactory = webRequestFactory;
             }
         }
     }
