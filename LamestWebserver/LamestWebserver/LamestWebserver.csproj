@@ -106,6 +106,7 @@
     <Compile Include="Synchronization\SynchronizedCollection.cs" />
     <Compile Include="Synchronization\SynchronizedDictionary.cs" />
     <Compile Include="Synchronization\SynchronizedValue.cs" />
+    <Compile Include="UI\CachedByDefault\CachedByDefaultElements.cs" />
     <Compile Include="UI\ComplexElements.cs" />
     <Compile Include="UI\PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />

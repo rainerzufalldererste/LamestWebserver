@@ -242,8 +242,8 @@ namespace LamestWebserver
         {
             return "<head><title>" + title
                    +
-                   "</title><style type=\"text/css\">hr{border:solid;border-width:3;color:#efefef;} p {overflow:overlay;}</style></head><body style='background-color: #f1f1f1;margin: 0;'><div style='font-family: \"Segoe UI\" ,sans-serif;width: 70%;max-width: 1200px;margin: 0em auto;font-size: 16pt;background-color: #fdfdfd;padding: 4em 8em;color: #4e4e4e;'><h1 style='font-weight: lighter;font-size: 50pt;'>"
-                   + title + "</h1><hr>" + message.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "<img style='position: fixed;bottom: 1em;right: 1em;' src=\"" + lwsLogoBase64 + "\"/></p></body>";
+                   "</title><style type=\"text/css\">hr{border:solid;border-width:3;color:#efefef;} p {overflow:overlay;}</style></head><body style='background-color: #f1f1f1;margin: 0;'><div style='font-family: \"Segoe UI\" ,sans-serif;width: 70%;max-width: 1200px;margin: 0em auto;font-size: 16pt;background-color: #fdfdfd;padding: 4em 8em;color: #4e4e4e;word-wrap: break-word;'><h1 style='font-weight: lighter;font-size: 50pt;'>"
+                   + title + "</h1><hr>" + message.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "<img style='position: fixed;bottom: 1em;right: 1em;cursor: pointer;' src=\"" + lwsLogoBase64 + "\" onclick=\"window.location='https://github.com/rainerzufalldererste/LamestWebserver'\"/></p></body>";
         }
 
         /// <summary>

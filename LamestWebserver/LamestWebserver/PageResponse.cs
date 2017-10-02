@@ -280,12 +280,27 @@ namespace LamestWebserver
 
             HElement contents = GetContents(sessionData);
 
-            if (contents != null)
+            if (contents == null)
                 throw new ArgumentNullException(nameof(GetContents));
 
-            if (!contents.IsCacheable(CacheID, Caching.ECachingType.Cacheable, stringBuilder) && stringBuilder.Length == 0)
+            if (contents.IsStaticResponse(URL, ECachingType.Default, null))
             {
-                return contents;
+                string responseString;
+
+                if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(URL, out responseString))
+                {
+                    stringBuilder.Append(responseString);
+                }
+                else
+                {
+                    contents.IsStaticResponse(URL, ECachingType.Default, stringBuilder);
+
+                    ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(URL, stringBuilder.ToString());
+                }
+            }
+            else
+            {
+                contents.IsStaticResponse(URL, ECachingType.Default, stringBuilder);
             }
 
             if (stringBuilder.Length > MaxStringBuilderSize)
@@ -329,7 +344,7 @@ namespace LamestWebserver
 
             internal HStringBuilderContainerElement(StringBuilder stringBuilder)
             {
-                if (StringBuilder == null)
+                if (stringBuilder == null)
                     throw new ArgumentNullException(nameof(stringBuilder));
 
                 StringBuilder = stringBuilder;
