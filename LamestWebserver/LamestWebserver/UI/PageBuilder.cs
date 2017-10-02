@@ -2686,4 +2686,49 @@ namespace LamestWebserver.UI
             });
         }
     }
+
+    /// <summary>
+    /// Provides functionality to dynamically cache HElements
+    /// (if CachingType in HSelectivelyCacheableElement is set to ECachingType.Cacheable for all elements or subelements that should be cached).
+    /// </summary>
+    public class HCachePool : HSelectivelyCacheableElement
+    {
+        private HElement ContainedElement;
+        private IURLIdentifyable CurrentResponse;
+        private int CachePoolIndex;
+
+        /// <summary>
+        /// Constructs a new HCachePool which provides functionality to cache contained HElements easily
+        /// (if CachingType in HSelectivelyCacheableElement is set to ECachingType.Cacheable for all elements or subelements that should be cached).
+        /// </summary>
+        /// <param name="containedElement">The contained Element to dynamically cache.</param>
+        /// <param name="currentResponse">The current Page.</param>
+        /// <param name="cachePoolIndex">The index of this HCachePool on this page (if you have multiple HCachePools on the same page).</param>
+        public HCachePool(HElement containedElement, IURLIdentifyable currentResponse, int cachePoolIndex = 0)
+        {
+            if (containedElement == null)
+                throw new NullReferenceException(nameof(containedElement));
+
+            if (currentResponse == null)
+                throw new NullReferenceException(nameof(currentResponse));
+
+            ContainedElement = containedElement;
+            CurrentResponse = currentResponse;
+            CachePoolIndex = cachePoolIndex;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(SessionData sessionData)
+        {
+            if (ContainedElement == null)
+                throw new NullReferenceException(nameof(ContainedElement));
+
+            StringBuilder stringBuilder = new StringBuilder();
+
+            if(!ContainedElement.IsCacheable(CurrentResponse.URL + "#" + CachePoolIndex + "#", ECachingType.Default, stringBuilder) && stringBuilder.Length == 0)
+                return ContainedElement.GetContent(sessionData);
+
+            return stringBuilder.ToString();
+        }
+    }
 }

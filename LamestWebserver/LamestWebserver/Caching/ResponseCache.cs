@@ -368,6 +368,29 @@ namespace LamestWebserver.Caching
         }
 
         /// <summary>
+        /// Removes all Cached Entries that begin with a specific string prefix.
+        /// </summary>
+        /// <param name="prefix">The prefix.</param>
+        public void RemoveCachedPrefixes(string prefix)
+        {
+            if (prefix == null)
+                throw new NullReferenceException(prefix);
+
+            ICollection<string> AllEntries = null;
+            List<string> EntriesToRemove = new List<string>();
+
+            using (StringResponseLock.LockRead())
+                AllEntries = StringResponses.Keys;
+
+            foreach (string s in AllEntries)
+                if (s.StartsWith(prefix))
+                    EntriesToRemove.Add(s);
+
+            AllEntries = null;
+            RemoveStringResponseEntries(EntriesToRemove);
+        }
+
+        /// <summary>
         /// Removes an entry from the cache.
         /// <para/> 
         /// This method can handle non-existent items.
@@ -389,6 +412,32 @@ namespace LamestWebserver.Caching
             {
                 CurrentStringResponseCacheSize -= (ulong)value.Response.Length;
                 StringResponses.Remove(key);
+            }
+        }
+
+        /// <summary>
+        /// Removes a collection of entries from the cache.
+        /// <para/> 
+        /// This method can handle non-existent items.
+        /// </summary>
+        /// <param name="keys">The keys of the entries.</param>
+        protected void RemoveStringResponseEntries(ICollection<string> keys)
+        {
+            if (keys == null)
+                throw new ArgumentNullException(nameof(keys));
+            
+            using (StringResponseLock.LockWrite())
+            {
+                foreach (string key in keys)
+                {
+                    ResponseCacheEntry<string> value = StringResponses[key];
+
+                    if (!value) // if the value couldn't be retrieved.
+                        continue;
+
+                    CurrentStringResponseCacheSize -= (ulong)value.Response.Length;
+                    StringResponses.Remove(key);
+                }
             }
         }
 
