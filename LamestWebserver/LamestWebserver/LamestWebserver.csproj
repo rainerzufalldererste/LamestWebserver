@@ -79,13 +79,16 @@
     <Compile Include="Core\Math.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
     <Compile Include="Core\NullCheckable.cs" />
+    <Compile Include="Core\Parsing\ParsingStringExtentions.cs" />
     <Compile Include="Core\Singleton.cs" />
     <Compile Include="Collections\AVLHashMap.cs" />
     <Compile Include="Collections\AVLTree.cs" />
     <Compile Include="Collections\QueuedAVLTree.cs" />
-    <Compile Include="Collections\SerializableKeyValuePair.cs" />
     <Compile Include="Attributes\HostAttributes.cs" />
+    <Compile Include="Core\Web\WebCrawler.cs" />
+    <Compile Include="Core\Web\WebRequestFactory.cs" />
     <Compile Include="HttpResponse.cs" />
+    <Compile Include="Serialization\SerializableKeyValuePair.cs" />
     <Compile Include="SessionData.cs" />
     <Compile Include="Compression\GZipCompression.cs" />
     <Compile Include="JScriptBuilder\JSElement.cs" />
@@ -99,6 +102,9 @@
     <Compile Include="RequestHandlers\ResponseHandler.cs" />
     <Compile Include="Security\Encryption.cs" />
     <Compile Include="Core\ThreadedWorker.cs" />
+    <Compile Include="Synchronization\SynchronizedCollection.cs" />
+    <Compile Include="Synchronization\SynchronizedDictionary.cs" />
+    <Compile Include="Synchronization\SynchronizedValue.cs" />
     <Compile Include="UI\ComplexElements.cs" />
     <Compile Include="UI\PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />
