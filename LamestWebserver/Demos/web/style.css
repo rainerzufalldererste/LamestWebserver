@@ -113,14 +113,22 @@ p.smallcode {
     color: #8c8c8c;
     font-family: Consolas, "Courier New", monospace;
     border: 3px solid #ececec;
-} 
+}
 
-comment {
-    color:#ccc;
-} 
+comment, .comment {
+    color: #d2b7b0;
+}
 
-marked {
-    color:#ee6959;
+.symbol {
+    color: #bfbfbf;
+}
+
+marked, .highlight {
+    color: #ee6959;
+}
+
+.string {
+    color: #ff9c44;
 }
 
 h3 {
@@ -153,4 +161,12 @@ td {
 
 td p, td b, td i {
     margin: 0;
+}
+
+ul {
+    list-style-type: square;
+    list-style-position: outside;
+    margin-right: 3%;
+    list-style: url(bullet.png);
+    padding-left: 10%;
 }

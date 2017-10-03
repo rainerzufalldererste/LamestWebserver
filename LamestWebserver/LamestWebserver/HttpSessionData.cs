@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using LamestWebserver.Collections;
+using LamestWebserver.Core;
 
 namespace LamestWebserver
 {
@@ -42,14 +43,10 @@ namespace LamestWebserver
 
             this.RawHttpPacket = httpPacket.RawRequest;
 
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
-            {
-                base.Ssid = GetHttpPostValue("ssid");
-            }
-            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
-            {
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
                 base.Ssid = this.Cookies["ssid"];
-            }
+            else
+                Logger.LogExcept(new NotImplementedException($"The given SessionIdTransmissionType ({SessionContainer.SessionIdTransmissionType}) could not be handled in {GetType().ToString()}."));
 
             base.PerFileVariables = SessionContainer.GetFileDictionary(httpPacket.RequestUrl);
             this._userInfo = SessionContainer.GetUserInfoFromSsid(Ssid);

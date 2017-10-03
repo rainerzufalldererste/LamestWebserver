@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using LamestWebserver.JScriptBuilder;
+using System.Text;
+using LamestWebserver.Caching;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.UI
 {
@@ -63,9 +66,9 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Creates a new PageBuilder and registers it at the server for a specified url
         /// </summary>
-        /// <param name="pagetitle">The window title</param>
+        /// <param name="pagetitle">The window title.</param>
         /// <param name="URL">the URL at which to register this page</param>
-        public PageBuilder(string pagetitle, string URL)
+        public PageBuilder(string pagetitle, string URL) : base("body></html")
         {
             this.PageTitle = pagetitle;
             this.URL = URL;
@@ -77,7 +80,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Creates a page builder and registers it as the server for a specified URL. If the conditionalCode returns false the page will not be parsed and the user will be refered to the referalURL
         /// </summary>
-        /// <param name="title">The window title</param>
+        /// <param name="title">The window title.</param>
         /// <param name="URL">the URL at which to register this page</param>
         /// <param name="referalURL">the URL at which to refer if the conditionalCode returns false</param>
         /// <param name="conditionalCode">the conditionalCode</param>
@@ -91,23 +94,16 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Creates a new PageBuilder, but does _NOT_ register it at the server for a specified url
         /// </summary>
-        /// <param name="title"></param>
-        public PageBuilder(string title)
+        /// <param name="title">The title of this window.</param>
+        public PageBuilder(string title) : base("body></html")
         {
             this.PageTitle = title;
             getContentMethod = BuildContent;
         }
 
-        /// <summary>
-        /// The method which is called to parse this element to string
-        /// </summary>
-        /// <param name="sessionData">the current sessionData</param>
-        /// <returns>the contents as string</returns>
-        protected string BuildContent(SessionData sessionData)
+        /// <inheritdoc />
+        protected override string GetTagHead(string additionalParams = null)
         {
-            if (condition && !conditionalCode(sessionData))
-                return InstantPageResponse.GenerateRedirectCode(referealURL, sessionData);
-
             string ret = "<html> <head> <title>" + PageTitle + "</title>";
 
             if (!string.IsNullOrWhiteSpace(Favicon))
@@ -149,12 +145,27 @@ namespace LamestWebserver.UI
                 ret += "style='" + Style + "' ";
 
             if (!string.IsNullOrWhiteSpace(base.Title))
-                ret += "title=\"" + base.Title + "\" ";
+                ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
                 ret += DescriptionTags;
 
             ret += ">";
+
+            return ret;
+        }
+
+        /// <summary>
+        /// The method which is called to parse this element to string
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the contents as string</returns>
+        protected string BuildContent(SessionData sessionData)
+        {
+            if (condition && !conditionalCode(sessionData))
+                return InstantPageResponse.GenerateRedirectCode(referealURL, sessionData);
+
+            string ret = GetTagHead();
 
             if (!string.IsNullOrWhiteSpace(Text))
                 ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
@@ -163,8 +174,8 @@ namespace LamestWebserver.UI
             {
                 ret += base.Elements[i].GetContent(sessionData);
             }
-
-            ret += "</body> </html>";
+            
+            ret += $"</{Tag}>";
 
             return ret;
         }
@@ -287,12 +298,82 @@ namespace LamestWebserver.UI
         {
             return new HMultipleElements(a,b);
         }
+
+        /// <summary>
+        /// Returns true if the HElement returns a static response.
+        /// <paramref name="key">The key of the cache entry if cacheable.</paramref>
+        /// <paramref name="defaultCachingType">The default CachingType to refer to.</paramref>
+        /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
+        /// </summary>
+        public virtual bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            if(response != null)
+                response.Append(ToString());
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// A HElement inheriting the default IsCacheable response for a static response.
+    /// </summary>
+    public abstract class HCacheableElement : HElement
+    {
+        /// <inheritdoc />
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            if (response != null)
+                response.Append(ResponseCache.CurrentCacheInstance.Instance.GetCachedString(key, ToString));
+
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// A HElement inheriting a IsCacheable response for a response that could be cachable or not cacheable.
+    /// </summary>
+    public abstract class HSelectivelyCacheableElement : HElement
+    {
+        /// <summary>
+        /// Is thie response cacheable?
+        /// </summary>
+        public ECachingType CachingType = ECachingType.Default;
+
+        /// <inheritdoc />
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            ECachingType ret = CachingType;
+
+            if (ret == ECachingType.Default)
+                ret = defaultCachingType;
+
+            if (response != null)
+            {
+                if (ret == ECachingType.Cacheable)
+                    response.Append(ResponseCache.CurrentCacheInstance.Instance.GetCachedString(key, ToString));
+                else
+                    response.Append(ToString());
+            }
+
+            return ret == ECachingType.Cacheable;
+        }
+
+        /// <summary>
+        /// Sets the current HSelectivelyCacheableElement cacheable.
+        /// </summary>
+        /// <param name="cachingType">The CachingType to set. (ECachingType.Cacheable by default)</param>
+        /// <returns>Returns the current HSelectivelyCacheableElement.</returns>
+        public virtual HSelectivelyCacheableElement SetCacheable(ECachingType cachingType = ECachingType.Cacheable)
+        {
+            CachingType = cachingType;
+            return this;
+        }
     }
 
     /// <summary>
     /// A br element used for line breaks in HTML
     /// </summary>
-    public class HNewLine : HElement
+    public class HNewLine : HCacheableElement
     {
         /// <summary>
         /// This Method parses the current element to string
@@ -308,7 +389,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A hr element used to display a hoizontal line
     /// </summary>
-    public class HLine : HElement
+    public class HLine : HSelectivelyCacheableElement
     {
         /// <summary>
         /// This Method parses the current element to string
@@ -329,7 +410,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// The contents of this element will directly be copied into the final html document.
     /// </summary>
-    public class HPlainText : HElement
+    public class HPlainText : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The text to copy to the HTML document
@@ -377,7 +458,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Combines multiple HElements without using a div to a single HElement object
     /// </summary>
-    public class HMultipleElements : HElement
+    public class HMultipleElements : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The elements to display
@@ -425,12 +506,116 @@ namespace LamestWebserver.UI
         /// <param name="multipleElements">the elements to cast</param>
         /// <returns>the elements as string</returns>
         public static implicit operator string(HMultipleElements multipleElements) => multipleElements.ToString();
+        
+        /// <summary>
+        /// Retrieves cached contents for nested elements.
+        /// </summary>
+        /// <paramref name="key">The cache key of the container.</paramref>
+        /// <paramref name="defaultCachingType">The default CachingType to refer to.</paramref>
+        /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
+        protected void GetCachedContents(string key, ECachingType defaultCachingType, StringBuilder response)
+        {
+            int firstSuccessfull = 0;
+
+            for (int i = 0; i < Elements.Count; i++)
+            {
+                if (!Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType))
+                {
+                    if (firstSuccessfull < i)
+                    {
+                        string responseString;
+
+                        if (firstSuccessfull == i - 1)
+                        {
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + (i - 1), out responseString))
+                                response.Append(responseString);
+                            else
+                                Elements[i - 1].IsStaticResponse(key + "/" + (i - 1), defaultCachingType, response);
+                        }
+                        else
+                        {
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), out responseString))
+                            {
+                                response.Append(responseString);
+                            }
+                            else
+                            {
+                                StringBuilder sb = new StringBuilder();
+
+                                for (int j = firstSuccessfull; j < i; j++)
+                                {
+                                    sb.Append(Elements[j].ToString());
+                                }
+
+                                string s = sb.ToString();
+
+                                ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), s);
+                                response.Append(s);
+                            }
+                        }
+                    }
+
+                    Elements[i].IsStaticResponse(key + "/" + i, ECachingType.Default, response); // <- Append the actual non-cacheable response.
+
+                    firstSuccessfull = i + 1;
+                }
+                else if (i + 1 == Elements.Count)
+                {
+                    if (firstSuccessfull == i)
+                    {
+                        string responseString;
+
+                        if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + i, out responseString))
+                            response.Append(responseString);
+                        else
+                            Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType, response);
+                    }
+                    else
+                    {
+                        StringBuilder sb = new StringBuilder();
+
+                        for (int j = firstSuccessfull; j < Elements.Count; j++)
+                        {
+                            sb.Append(Elements[j].ToString());
+                        }
+
+                        string s = sb.ToString();
+
+                        ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + i, s);
+                        response.Append(s);
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            ECachingType ret = CachingType;
+
+            if (ret == ECachingType.Default)
+                ret = defaultCachingType;
+
+            if (response != null)
+            {
+                if (ret == ECachingType.Cacheable)
+                {
+                    GetCachedContents(key, defaultCachingType, response);
+                }
+                else
+                {
+                    response.Append(ToString());
+                }
+            }
+
+            return ret == ECachingType.Cacheable && !(from e in Elements where !e.IsStaticResponse(null, ECachingType.Default, null) select false).Any();
+        }
     }
 
     /// <summary>
     /// Represents an "a" element used for links
     /// </summary>
-    public class HLink : HElement
+    public class HLink : HSelectivelyCacheableElement
     {
         private readonly string _href, _onclick, _text;
 
@@ -461,44 +646,7 @@ namespace LamestWebserver.UI
         {
             string ret = "<a ";
 
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
-            {
-                if (_href.Length > 0)
-                {
-                    if (_href[0] == '#')
-                        ret += "href='" + _href + "' ";
-                    else
-                    {
-                        ret += "href='#' ";
-
-                        string hash = SessionContainer.GenerateUnusedHash();
-                        string add = ";var f_"
-                            + hash + "=document.createElement('form');f_"
-                            + hash + ".setAttribute('method','POST');f_"
-                            + hash + ".setAttribute('action','"
-                                + _href + "');f_"
-                            + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
-                            + hash + "=document.createElement('input');i_"
-                            + hash + ".setAttribute('type','hidden');i_"
-                            + hash + ".setAttribute('name','ssid');i_"
-                            + hash + ".setAttribute('value','"
-                                + sessionData.Ssid + "');f_"
-                            + hash + ".appendChild(i_"
-                            + hash + ");document.body.appendChild(f_"
-                            + hash + ");f_"
-                            + hash + ".submit();document.body.remove(f_"
-                            + hash + ");";
-
-                        ret += " onclick=\"" + _onclick + add + "\" ";
-                    }
-                }
-                else
-                {
-                    if (!string.IsNullOrWhiteSpace(_onclick))
-                        ret += "onclick='" + _onclick + "' ";
-                }
-            }
-            else if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
             {
                 if (!string.IsNullOrWhiteSpace(_href))
                     ret += "href='" + _href + "' ";
@@ -508,7 +656,7 @@ namespace LamestWebserver.UI
             }
             else
             {
-                System.Diagnostics.Debug.Assert(false, "SessionIdTransmissionType is invalid or not supported in " + this.GetType().ToString() + ".");
+                Logger.LogExcept(new NotImplementedException($"The given SessionIdTransmissionType ({SessionContainer.SessionIdTransmissionType}) could not be handled in {GetType().ToString()}."));
             }
 
             if (!string.IsNullOrWhiteSpace(ID))
@@ -543,7 +691,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A img element representing an image in html
     /// </summary>
-    public class HImage : HElement
+    public class HImage : HSelectivelyCacheableElement
     {
         private readonly string _source;
 
@@ -600,7 +748,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "p" tag, representing a textblock
     /// </summary>
-    public class HText : HElement
+    public class HText : HSelectivelyCacheableElement
     {
         /// <summary>
         /// Additional attributes to add to this HTML-Tag
@@ -663,7 +811,7 @@ namespace LamestWebserver.UI
         /// Constructs a TextBlock
         /// </summary>
         /// <param name="text">the Text displayed</param>
-        public HTextBlock(string text = "")
+        public HTextBlock(string text = "") : base("p")
         {
             this.Text = text;
         }
@@ -672,7 +820,7 @@ namespace LamestWebserver.UI
         /// Constructs a new TextBlock
         /// </summary>
         /// <param name="texts">will be a HText if string, will be itself if HElement, else will be HText of .ToString() text</param>
-        public HTextBlock(params object[] texts)
+        public HTextBlock(params object[] texts) : base("p")
         {
             foreach (object text in texts)
             {
@@ -686,50 +834,12 @@ namespace LamestWebserver.UI
                     Elements.Add(new HText(text.ToString()));
             }
         }
-
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
-        {
-            string ret = "<p ";
-
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">" + (System.Web.HttpUtility.HtmlEncode(Text)?.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") ?? "");
-
-            Elements.ForEach(e =>
-            {
-                if (e is HText) ret += ((HText)e).Text.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-                else ret += e.GetContent(sessionData);
-            });
-
-            return ret + "</p>";
-        }
     }
 
     /// <summary>
     /// A "b" tag, representing bold text
     /// </summary>
-    public class HBold : HElement
+    public class HBold : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text to display
@@ -774,7 +884,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "i" tag, representing italic text
     /// </summary>
-    public class HItalic : HElement
+    public class HItalic : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text to display
@@ -819,7 +929,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "del" tag, representing crossed out text
     /// </summary>
-    public class HCrossedOut : HElement
+    public class HCrossedOut : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text to display
@@ -864,7 +974,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A "u" tag, representing underlined out text
     /// </summary>
-    public class HUnderlined : HElement
+    public class HUnderlined : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text to display
@@ -909,7 +1019,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A h(1-6) tag in html (h1 by default) representing a Headline
     /// </summary>
-    public class HHeadline : HElement
+    public class HHeadline : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Text displayed in this Headline
@@ -933,11 +1043,11 @@ namespace LamestWebserver.UI
         /// <param name="level">the level of this headline</param>
         public HHeadline(string text = "", int level = 1)
         {
+            if (level > 6 || level < 1)
+                throw new ArgumentOutOfRangeException("The level has to be between 1 and 6.");
+
             this.Text = text;
             this._level = level;
-
-            if (level > 6 || level < 1)
-                throw new Exception("the level has to be between 1 and 6!");
         }
 
         /// <summary>
@@ -976,7 +1086,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A input tag representing all kinds of Input Elements
     /// </summary>
-    public class HInput : HElement
+    public class HInput : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The Type of the input element
@@ -1170,7 +1280,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A list of radio-buttons of which only one can be selected at a time.
     /// </summary>
-    public class HSingleSelector : HElement
+    public class HSingleSelector : HSelectivelyCacheableElement
     {
         /// <summary>
         /// Additional attributes to be added to the items
@@ -1423,14 +1533,35 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A div element representing a container
     /// </summary>
-    public class HContainer : HElement
+    public class HContainer : HSelectivelyCacheableElement
     {
+        /// <summary>
+        /// Sets the HTML Tag.
+        /// </summary>
+        /// <param name="tag">the HTML Tag of this element.</param>
+        protected HContainer(string tag)
+        {
+            Tag = tag;
+        }
+
         /// <summary>
         /// Adds all listed objects into the container.
         /// </summary>
         /// <param name="elements">the elements to add</param>
         public HContainer(params HElement[] elements)
         {
+            Tag = "div";
+            Elements = elements.ToList();
+        }
+
+        /// <summary>
+        /// Adds all listed objects into the container.
+        /// </summary>
+        /// <param name="tag">the html tag of this element.</param>
+        /// <param name="elements">the elements to add</param>
+        protected HContainer(string tag, params HElement[] elements) : this(tag)
+        {
+            Tag = tag;
             Elements = elements.ToList();
         }
 
@@ -1450,6 +1581,12 @@ namespace LamestWebserver.UI
         public string DescriptionTags;
 
         /// <summary>
+        /// The HTML Tag of this Element.
+        /// </summary>
+        protected string Tag { get; }
+
+
+        /// <summary>
         /// Adds an element to the element list
         /// </summary>
         /// <param name="element">the element</param>
@@ -1459,13 +1596,13 @@ namespace LamestWebserver.UI
         }
 
         /// <summary>
-        /// This Method parses the current element to string
+        /// Retrieves the Tag Head for the corresponding HTML element.
         /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
+        /// <param name="additionalParams">additional things to add to the head.</param>
+        /// <returns>Returns the Tag Head as string.</returns>
+        protected virtual string GetTagHead(string additionalParams = null)
         {
-            string ret = "<div ";
+            string ret = $"<{Tag} ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -1483,9 +1620,25 @@ namespace LamestWebserver.UI
                 ret += "title=\"" + Title + "\" ";
 
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
+                ret += DescriptionTags + " ";
+
+            if (!string.IsNullOrWhiteSpace(additionalParams))
+                ret += additionalParams;
 
             ret += ">";
+
+            return ret;
+        }
+
+
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current ISessionIdentificator</param>
+        /// <returns>the element as string</returns>
+        public override string GetContent(SessionData sessionData)
+        {
+            string ret = GetTagHead();
 
             if (!string.IsNullOrWhiteSpace(Text))
                 ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
@@ -1495,7 +1648,7 @@ namespace LamestWebserver.UI
                 ret += Elements[i].GetContent(sessionData);
             }
 
-            ret += "</div>";
+            ret += $"</{Tag}>";
 
             return ret;
         }
@@ -1506,7 +1659,7 @@ namespace LamestWebserver.UI
         /// <param name="list">a list of elements</param>
         public void AddElements(IEnumerable<HElement> list)
         {
-            foreach(var element in list)
+            foreach (var element in list)
             {
                 AddElement(element);
             }
@@ -1523,6 +1676,129 @@ namespace LamestWebserver.UI
                 AddElement(list[i]);
             }
         }
+
+        /// <summary>
+        /// Retrieves cached contents for nested elements.
+        /// </summary>
+        /// <paramref name="key">The cache key of the container.</paramref>
+        /// <paramref name="defaultCachingType">The default CachingType to refer to.</paramref>
+        /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
+        protected void GetCachedContents(string key, ECachingType defaultCachingType, StringBuilder response)
+        {
+            string preResponseString;
+
+            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/pre", out preResponseString))
+            {
+                response.Append(preResponseString);
+            }
+            else
+            {
+                string pre = GetTagHead();
+
+                if (!string.IsNullOrWhiteSpace(Text))
+                    pre += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+
+                ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/pre", pre);
+                response.Append(pre);
+            }
+
+            int firstSuccessfull = 0;
+
+            for (int i = 0; i < Elements.Count; i++)
+            {
+                if (!Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType))
+                {
+                    if(firstSuccessfull < i)
+                    {
+                        string responseString;
+
+                        if (firstSuccessfull == i - 1)
+                        {
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + (i - 1), out responseString))
+                                response.Append(responseString);
+                            else
+                                Elements[i - 1].IsStaticResponse(key + "/" + (i - 1), defaultCachingType, response);
+                        }
+                        else
+                        {
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), out responseString))
+                            {
+                                response.Append(responseString);
+                            }
+                            else
+                            {
+                                StringBuilder sb = new StringBuilder();
+
+                                for (int j = firstSuccessfull; j < i; j++)
+                                {
+                                    sb.Append(Elements[j].ToString());
+                                }
+
+                                string s = sb.ToString();
+
+                                ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), s);
+                                response.Append(s);
+                            }
+                        }
+                    }
+
+                    Elements[i].IsStaticResponse(key + "/" + i, ECachingType.Default, response); // <- Append the actual non-cacheable response.
+                    
+                    firstSuccessfull = i + 1;
+                }
+                else if(i + 1 == Elements.Count)
+                {
+                    if (firstSuccessfull == i)
+                    {
+                        string responseString;
+
+                        if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + i, out responseString))
+                            response.Append(responseString);
+                        else
+                            Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType, response);
+                    }
+                    else
+                    {
+                        StringBuilder sb = new StringBuilder();
+
+                        for (int j = firstSuccessfull; j < Elements.Count; j++)
+                        {
+                            sb.Append(Elements[j].ToString());
+                        }
+
+                        string s = sb.ToString();
+
+                        ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + i, s);
+                        response.Append(s);
+                    }
+                }
+            }
+
+            response.Append($"</{Tag}>");
+        }
+
+        /// <inheritdoc />
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            ECachingType ret = CachingType;
+
+            if (ret == ECachingType.Default)
+                ret = defaultCachingType;
+
+            if (response != null)
+            {
+                if (ret == ECachingType.Cacheable)
+                {
+                    GetCachedContents(key, defaultCachingType, response);
+                }
+                else
+                {
+                    response.Append(ToString());
+                }
+            }
+
+            return ret == ECachingType.Cacheable && !(from e in Elements where !e.IsStaticResponse(null, ECachingType.Default, null) select false).Any();
+        }
     }
 
     /// <summary>
@@ -1534,47 +1810,9 @@ namespace LamestWebserver.UI
         /// Constructs a new inline container containing the given elements.
         /// </summary>
         /// <param name="elements">the contained elements</param>
-        public HInlineContainer(params HElement[] elements) : base(elements)
+        public HInlineContainer(params HElement[] elements) : base("span", elements)
         {
             
-        }
-
-        /// <inheritdoc />
-        public override string GetContent(SessionData sessionData)
-        {
-            string ret = "<span ";
-
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</span>";
-
-            return ret;
         }
     }
 
@@ -1594,51 +1832,24 @@ namespace LamestWebserver.UI
         /// <param name="text">the quoted text</param>
         /// <param name="source">the source of the quote</param>
         /// <param name="elements">the contained elements</param>
-        public HQuote(string text, string source = null, params HElement[] elements) : base(elements)
+        public HQuote(string text, string source = null, params HElement[] elements) : base("blockquote", elements)
         {
             Text = text;
             Source = source;
         }
 
         /// <inheritdoc />
-        public override string GetContent(SessionData sessionData)
+        protected override string GetTagHead(string additionalParams = null)
         {
-            string ret = "<blockquote ";
+            if (additionalParams == null)
+                additionalParams = "";
+            else
+                additionalParams += " ";
 
             if (!string.IsNullOrWhiteSpace(Source))
-                ret += "cite='" + Source + "' ";
+                additionalParams += "cite='" + Source + "' ";
 
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</blockquote>";
-
-            return ret;
+            return base.GetTagHead(additionalParams);
         }
     }
 
@@ -1661,7 +1872,7 @@ namespace LamestWebserver.UI
         /// Constructs a new Form pointing to the given action when submitted
         /// </summary>
         /// <param name="action">the URL to load when submitted</param>
-        public HForm(string action)
+        public HForm(string action) : base("form")
         {
             this.Action = action;
             _fixedAction = true;
@@ -1673,7 +1884,7 @@ namespace LamestWebserver.UI
         /// <param name="redirectURLifTRUE">the url to redirect to if the conditionalCode returns true</param>
         /// <param name="redirectURLifFALSE">the url to redirect to if the conditionalCode returns false</param>
         /// <param name="conditionalCode">the conditional code</param>
-        public HForm(string redirectURLifTRUE, string redirectURLifFALSE, Func<SessionData, bool> conditionalCode)
+        public HForm(string redirectURLifTRUE, string redirectURLifFALSE, Func<SessionData, bool> conditionalCode) : base("form")
         {
             _fixedAction = false;
             _redirectTrue = redirectURLifTRUE;
@@ -1688,7 +1899,7 @@ namespace LamestWebserver.UI
         /// <param name="addSubmitButton">shall there be a submit button?</param>
         /// <param name="buttontext">if yes: what should the text on the submit button say?</param>
         /// <param name="values">additional values to set in the form as invisible parameters</param>
-        public HForm(string action, bool addSubmitButton, string buttontext = "", params Tuple<string, string>[] values)
+        public HForm(string action, bool addSubmitButton, string buttontext = "", params Tuple<string, string>[] values) : this(action)
         {
             _fixedAction = true;
             this.Action = action;
@@ -1702,61 +1913,27 @@ namespace LamestWebserver.UI
                 Elements.Add(new HButton(buttontext, HButton.EButtonType.submit));
         }
 
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
+        /// <inheritdoc />
+        protected override string GetTagHead(string additionalParams = null)
         {
-            string ret = "<form ";
+            if (additionalParams == null)
+                additionalParams = "";
+            else
+                additionalParams += " ";
 
             if (_fixedAction)
             {
                 if (!string.IsNullOrWhiteSpace(Action))
-                    ret += "action='" + Action + "' ";
+                    additionalParams += "action='" + Action + "' ";
             }
             else
             {
-                ret += "action='" + InstantPageResponse.AddOneTimeConditionalRedirect(_redirectTrue, _redirectFalse, true, _conditionalCode) + "' ";
+                additionalParams += "action='" + InstantPageResponse.AddOneTimeConditionalRedirect(_redirectTrue, _redirectFalse, true, _conditionalCode) + "' ";
             }
 
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
+            additionalParams += "method='POST' ";
 
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags + " ";
-
-            ret += "method='POST' >";
-
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
-            {
-                ret += "<input type='hidden' name='ssid' value='" + sessionData.Ssid + "'>";
-            }
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</form>";
-
-            return ret;
+            return base.GetTagHead(additionalParams);
         }
     }
 
@@ -1777,48 +1954,18 @@ namespace LamestWebserver.UI
         /// <param name="legend">the displayed name of the panel</param>
         /// <param name="elements">the contained elements</param>
         /// </summary>
-        public HPanel(string legend = null, params HElement[] elements) : base(elements)
+        public HPanel(string legend = null, params HElement[] elements) : base("fieldset", elements)
         {
             Legend = legend;
         }
 
         /// <inheritdoc />
-        public override string GetContent(SessionData sessionData)
+        protected override string GetTagHead(string additionalParams = null)
         {
-            string ret = "<fieldset ";
-
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">";
+            string ret = base.GetTagHead(additionalParams);
 
             if (!string.IsNullOrWhiteSpace(Legend))
                 ret += "<legend>" + Legend + "</legend>";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</fieldset>";
 
             return ret;
         }
@@ -1836,25 +1983,22 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Creates a button. SUBMIT BUTTONS SHOULDN'T HAVE A HREF!
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="type"></param>
-        /// <param name="href">SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
+        /// <param name="text">the text of the button.</param>
+        /// <param name="type">the button type according to http standards.</param>
+        /// <param name="href">the destination of this button. SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
         /// <param name="onclick"></param>
-        public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "")
+        public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "") : this(text, href, onclick)
         {
-            this.Text = text;
-            this._href = href;
-            this._onclick = onclick;
             this._type = type;
         }
 
         /// <summary>
         /// Creates a button.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="href">SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
-        /// <param name="onclick"></param>
-        public HButton(string text, string href = "", string onclick = "")
+        /// <param name="text">the text of the button.</param>
+        /// <param name="href">the destination of this button. SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
+        /// <param name="onclick">the executed javascript-code on clicking the button.</param>
+        public HButton(string text, string href = "", string onclick = "") : base("button")
         {
             this.Text = text;
             this._href = href;
@@ -1862,14 +2006,10 @@ namespace LamestWebserver.UI
             this._type = EButtonType.button;
         }
 
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
+        /// <inheritdoc />
+        protected override string GetTagHead(string additionalParams = null)
         {
-            string ret = "<button type='" + _type + "' ";
+            string ret = $"<{Tag} type='" + _type + "' ";
 
             if (!string.IsNullOrWhiteSpace(ID))
                 ret += "id='" + ID + "' ";
@@ -1886,42 +2026,7 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(Title))
                 ret += "title=\"" + Title + "\" ";
 
-            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.HttpPost)
-            {
-                if (_href.Length > 0 && _type != EButtonType.submit)
-                {
-                    if (_href[0] == '#')
-                        ret += "href='" + _href + "' ";
-                    else
-                        ret += "href='#' ";
-
-                    string hash = SessionContainer.GenerateUnusedHash();
-                    string add = ";var f_"
-                        + hash + "=document.createElement('form');f_"
-                        + hash + ".setAttribute('method','POST');f_"
-                        + hash + ".setAttribute('action','"
-                            + _href + "');f_"
-                        + hash + ".setAttribute('enctype','application/x-www-form-urlencoded');var i_"
-                        + hash + "=document.createElement('input');i_"
-                        + hash + ".setAttribute('type','hidden');i_"
-                        + hash + ".setAttribute('name','ssid');i_"
-                        + hash + ".setAttribute('value','"
-                            + sessionData.Ssid + "');f_"
-                        + hash + ".appendChild(i_"
-                        + hash + ");document.body.appendChild(f_"
-                        + hash + ");f_"
-                        + hash + ".submit();document.body.remove(f_"
-                        + hash + ");";
-
-                    ret += " onclick=\"" + _onclick + add + "\"";
-                }
-                else
-                {
-                    if (!string.IsNullOrWhiteSpace(_onclick))
-                        ret += "onclick='" + _onclick + "' ";
-                }
-            }
-            else if(SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
+            if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
             {
                 if (!string.IsNullOrWhiteSpace(_onclick))
                 {
@@ -1939,23 +2044,13 @@ namespace LamestWebserver.UI
             }
             else
             {
-                System.Diagnostics.Debug.Assert(false, "SessionIdTransmissionType is invalid or not supported in " + this.GetType().ToString() + ".");
+                Logger.LogExcept("SessionIdTransmissionType is invalid or not supported in " + this.GetType().ToString() + ".");
             }
 
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
                 ret += DescriptionTags + " ";
 
             ret += ">";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += Elements[i].GetContent(sessionData);
-            }
-
-            ret += "</button>";
 
             return ret;
         }
@@ -1983,7 +2078,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// a select element representing a DropDownMenu
     /// </summary>
-    public class HDropDownMenu : HElement
+    public class HDropDownMenu : HSelectivelyCacheableElement
     {
         /// <summary>
         /// Additional attributes added to the tag
@@ -2018,24 +2113,24 @@ namespace LamestWebserver.UI
         /// <param name="name">the name of the element (for forms)</param>
         /// <param name="size">The amount of entries displayed if not expanded</param>
         /// <param name="multipleSelectable">does the dropdownmenu allow multiple selections?</param>
-        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
-        public HDropDownMenu(string name, int size, bool multipleSelectable, params Tuple<string, string>[] TextValuePairsToDisplay)
+        /// <param name="textValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
+        public HDropDownMenu(string name, int size, bool multipleSelectable, params Tuple<string, string>[] textValuePairsToDisplay)
         {
             this.Name = name;
             this.Size = size;
             this.MultipleSelectable = multipleSelectable;
-            this.options = TextValuePairsToDisplay;
+            this.options = textValuePairsToDisplay;
         }
 
         /// <summary>
         /// Constructs a new DropDownMenu element
         /// </summary>
         /// <param name="name">the name of the element (for forms)</param>
-        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
-        public HDropDownMenu(string name, params Tuple<string, string>[] TextValuePairsToDisplay)
+        /// <param name="textValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
+        public HDropDownMenu(string name, params Tuple<string, string>[] textValuePairsToDisplay)
         {
             this.Name = name;
-            this.options = TextValuePairsToDisplay;
+            this.options = textValuePairsToDisplay;
         }
 
         /// <summary>
@@ -2145,13 +2240,18 @@ namespace LamestWebserver.UI
     /// </summary>
     public class HList : HContainer
     {
-        private EListType listType;
+        private readonly EListType listType;
+
+        /// <summary>
+        /// If true adds "display: list-item;" at the start of every subitem Style property.
+        /// </summary>
+        public bool SetListStyleToElements = true;
 
         /// <summary>
         /// Constructs a new List Element
         /// </summary>
         /// <param name="listType">the type of the list</param>
-        public HList(EListType listType)
+        public HList(EListType listType) : base(listType == EListType.OrderedList ? "ol" : "ul")
         {
             this.listType = listType;
         }
@@ -2173,6 +2273,17 @@ namespace LamestWebserver.UI
             this.Elements = data;
         }
 
+        /// <inheritdoc />
+        protected override string GetTagHead(string additionalParams = null)
+        {
+            if (SetListStyleToElements)
+                foreach (HElement element in Elements)
+                    if (!element.Style.StartsWith("display: list-item;"))
+                        element.Style = "display: list-item;" + element.Style;
+
+            return base.GetTagHead(additionalParams);
+        }
+
         /// <summary>
         /// Constructs a new List Element
         /// </summary>
@@ -2181,48 +2292,6 @@ namespace LamestWebserver.UI
         public HList(EListType listType, params HElement[] elements) : this(listType)
         {
             this.Elements = elements.ToList();
-        }
-
-        /// <summary>
-        /// This Method parses the current element to string
-        /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
-        {
-            string ret = "<" + (listType == EListType.OrderedList ? "ol" : "ul") + " ";
-
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">";
-
-            if (!string.IsNullOrWhiteSpace(Text))
-                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                ret += "<li>" + Elements[i].GetContent(sessionData) + "</li>";
-            }
-
-            ret += "</" + (listType == EListType.OrderedList ? "ol" : "ul") + ">";
-
-            return ret;
         }
 
         /// <summary>
@@ -2244,7 +2313,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A table Element representing a table
     /// </summary>
-    public class HTable : HElement
+    public class HTable : HSelectivelyCacheableElement
     {
         private List<List<HElement>> elements;
         private IEnumerable<object>[] data;
@@ -2339,7 +2408,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Represents a custom tag
     /// </summary>
-    public class HTag : HContainer
+    public class HTag : HSelectivelyCacheableElement
     {
         /// <summary>
         /// if false, the element won't have a start and end tag but will only consist of a single tag (like img)
@@ -2350,6 +2419,32 @@ namespace LamestWebserver.UI
         /// the name of the tag
         /// </summary>
         public string TagName;
+
+
+        /// <summary>
+        /// A list of all contained elements
+        /// </summary>
+        public List<HElement> Elements = new List<HElement>();
+
+        /// <summary>
+        /// The text contained in this element
+        /// </summary>
+        public string Text;
+
+        /// <summary>
+        /// Additional attributes added to the tag
+        /// </summary>
+        public string DescriptionTags;
+        
+
+        /// <summary>
+        /// Adds an element to the element list
+        /// </summary>
+        /// <param name="element">the element</param>
+        public void AddElement(HElement element)
+        {
+            Elements.Add(element);
+        }
 
         /// <summary>
         /// Constructs a new custom tag
@@ -2416,7 +2511,7 @@ namespace LamestWebserver.UI
                     ret += Elements[i].GetContent(sessionData);
                 }
 
-                ret += "</" + TagName  + ">";
+                ret += "</" + TagName + ">";
             }
 
             return ret;
@@ -2426,7 +2521,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A script element representing embedded JavaScript-Code
     /// </summary>
-    public class HScript : HElement
+    public class HScript : HSelectivelyCacheableElement
     {
         private object[] arguments;
         private bool dynamic;
@@ -2466,7 +2561,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Represents a script element pointing to a script-file which has to be loaded as well
     /// </summary>
-    public class HScriptLink : HElement
+    public class HScriptLink : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The URL of the script file
@@ -2496,7 +2591,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A canvas element used for complex rendering
     /// </summary>
-    public class HCanvas : HElement
+    public class HCanvas : HSelectivelyCacheableElement
     {
         /// <summary>
         /// This Method parses the current element to string
@@ -2529,7 +2624,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A textarea element - basically a multiline textbox
     /// </summary>
-    public class HTextArea : HElement
+    public class HTextArea : HSelectivelyCacheableElement
     {
         /// <summary>
         /// The amount columns dispalyed
@@ -2604,7 +2699,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Non-static content, which is computed every request
     /// </summary>
-    public class HRuntimeCode : HElement
+    public class HRuntimeCode : HSelectivelyCacheableElement
     {
         /// <summary>
         /// the code to execute
@@ -2670,7 +2765,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Non-static content, which is computed every request AND SYNCRONIZED
     /// </summary>
-    public class HSyncronizedRuntimeCode : HElement
+    public class HSyncronizedRuntimeCode : HSelectivelyCacheableElement
     {
         /// <summary>
         /// the code to execute
@@ -2746,6 +2841,88 @@ namespace LamestWebserver.UI
 
                 return elementIfFALSE == null ? "" : elementIfFALSE.GetContent(sessionData);
             });
+        }
+    }
+
+    /// <summary>
+    /// Provides functionality to dynamically cache HElements
+    /// (if CachingType in HSelectivelyCacheableElement is set to ECachingType.Cacheable for all elements or subelements that should be cached).
+    /// </summary>
+    public class HCachePool : HSelectivelyCacheableElement
+    {
+        private HElement ContainedElement;
+        private IURLIdentifyable CurrentResponse;
+        private int CachePoolIndex;
+
+        /// <summary>
+        /// Constructs a new HCachePool which provides functionality to cache contained HElements easily
+        /// (if CachingType in HSelectivelyCacheableElement is set to ECachingType.Cacheable for all elements or subelements that should be cached).
+        /// </summary>
+        /// <param name="containedElement">The contained Element to dynamically cache.</param>
+        /// <param name="currentResponse">The current Page.</param>
+        /// <param name="cachePoolIndex">The index of this HCachePool on this page (if you have multiple HCachePools on the same page).</param>
+        public HCachePool(HElement containedElement, IURLIdentifyable currentResponse, int cachePoolIndex = 0)
+        {
+            if (containedElement == null)
+                throw new NullReferenceException(nameof(containedElement));
+
+            if (currentResponse == null)
+                throw new NullReferenceException(nameof(currentResponse));
+
+            ContainedElement = containedElement;
+            CurrentResponse = currentResponse;
+            CachePoolIndex = cachePoolIndex;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(SessionData sessionData)
+        {
+            if (ContainedElement == null)
+                throw new NullReferenceException(nameof(ContainedElement));
+
+            if (ContainedElement.IsStaticResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", ECachingType.Default, null))
+            {
+                string responseString;
+
+                if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", out responseString))
+                {
+                    return responseString;
+                }
+                else
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+
+                    ContainedElement.IsStaticResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", ECachingType.Default, stringBuilder);
+
+                    string ret = stringBuilder.ToString();
+
+                    ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", ret);
+
+                    return ret;
+                }
+            }
+            else
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+
+                ContainedElement.IsStaticResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", ECachingType.Default, stringBuilder);
+
+                return stringBuilder.ToString();
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            ECachingType ret = CachingType;
+
+            if (ret == ECachingType.Default)
+                ret = defaultCachingType;
+
+            if (response != null)
+                response.Append(ToString());
+
+            return ret == ECachingType.Cacheable && !ContainedElement.IsStaticResponse(key, ECachingType.Default, null);
         }
     }
 }
