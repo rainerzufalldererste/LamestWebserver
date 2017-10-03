@@ -357,6 +357,17 @@ namespace LamestWebserver.UI
 
             return ret == ECachingType.Cacheable;
         }
+
+        /// <summary>
+        /// Sets the current HSelectivelyCacheableElement cacheable.
+        /// </summary>
+        /// <param name="cachingType">The CachingType to set. (ECachingType.Cacheable by default)</param>
+        /// <returns>Returns the current HSelectivelyCacheableElement.</returns>
+        public virtual HSelectivelyCacheableElement SetCacheable(ECachingType cachingType = ECachingType.Cacheable)
+        {
+            CachingType = cachingType;
+            return this;
+        }
     }
 
     /// <summary>
@@ -495,6 +506,110 @@ namespace LamestWebserver.UI
         /// <param name="multipleElements">the elements to cast</param>
         /// <returns>the elements as string</returns>
         public static implicit operator string(HMultipleElements multipleElements) => multipleElements.ToString();
+        
+        /// <summary>
+        /// Retrieves cached contents for nested elements.
+        /// </summary>
+        /// <paramref name="key">The cache key of the container.</paramref>
+        /// <paramref name="defaultCachingType">The default CachingType to refer to.</paramref>
+        /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
+        protected void GetCachedContents(string key, ECachingType defaultCachingType, StringBuilder response)
+        {
+            int firstSuccessfull = 0;
+
+            for (int i = 0; i < Elements.Count; i++)
+            {
+                if (!Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType))
+                {
+                    if (firstSuccessfull < i)
+                    {
+                        string responseString;
+
+                        if (firstSuccessfull == i - 1)
+                        {
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + (i - 1), out responseString))
+                                response.Append(responseString);
+                            else
+                                Elements[i - 1].IsStaticResponse(key + "/" + (i - 1), defaultCachingType, response);
+                        }
+                        else
+                        {
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), out responseString))
+                            {
+                                response.Append(responseString);
+                            }
+                            else
+                            {
+                                StringBuilder sb = new StringBuilder();
+
+                                for (int j = firstSuccessfull; j < i; j++)
+                                {
+                                    sb.Append(Elements[j].ToString());
+                                }
+
+                                string s = sb.ToString();
+
+                                ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), s);
+                                response.Append(s);
+                            }
+                        }
+                    }
+
+                    Elements[i].IsStaticResponse(key + "/" + i, ECachingType.Default, response); // <- Append the actual non-cacheable response.
+
+                    firstSuccessfull = i + 1;
+                }
+                else if (i + 1 == Elements.Count)
+                {
+                    if (firstSuccessfull == i)
+                    {
+                        string responseString;
+
+                        if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + i, out responseString))
+                            response.Append(responseString);
+                        else
+                            Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType, response);
+                    }
+                    else
+                    {
+                        StringBuilder sb = new StringBuilder();
+
+                        for (int j = firstSuccessfull; j < Elements.Count; j++)
+                        {
+                            sb.Append(Elements[j].ToString());
+                        }
+
+                        string s = sb.ToString();
+
+                        ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + i, s);
+                        response.Append(s);
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            ECachingType ret = CachingType;
+
+            if (ret == ECachingType.Default)
+                ret = defaultCachingType;
+
+            if (response != null)
+            {
+                if (ret == ECachingType.Cacheable)
+                {
+                    GetCachedContents(key, defaultCachingType, response);
+                }
+                else
+                {
+                    response.Append(ToString());
+                }
+            }
+
+            return ret == ECachingType.Cacheable && !(from e in Elements where !e.IsStaticResponse(null, ECachingType.Default, null) select false).Any();
+        }
     }
 
     /// <summary>

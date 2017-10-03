@@ -15,9 +15,9 @@ namespace Demos.HelperClasses
         {
             "\n", "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "single", "float",
             "double", "decimal", "char", "string", "var", "class", "struct", "delegate", "private",
-            "public", "protected", "virtual", "override", "internal", "static", "const", "new", "//",
+            "public", "protected", "virtual", "override", "internal", "static", "const", "new ", "//",
             "for", "if", "else", "do", "while", "checked", "using", "lock", "(", ")", "{", "}", ":", "?",
-            "[", "]", ",", "\\\'", "\'", "\\\"", "\"", "from", "in", "where", "select", "params", "/*",
+            "[", "]", ",", "\\\'", "\'", "\\\"", "\"", "from ", " in ", " where ", " select ", "params", "/*",
             "*/", "base", "this", "foreach", "switch", "case", "enum", "bool", "true", "false", "null"
         };
 
@@ -26,8 +26,8 @@ namespace Demos.HelperClasses
             "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "single", "float",
             "double", "decimal", "char", "string", "var", "class", "struct", "delegate", "private",
             "for", "if", "else", "do", "while", "checked", "using", "lock", "public", "protected",
-            "virtual", "override", "internal", "static", "const", "new", "from", "in", "where",
-            "select", "params","base", "this", "foreach", "switch", "case", "enum", "bool", "true",
+            "virtual", "override", "internal", "static", "const", "new ", "from ", " in ", " where ",
+            " select ", "params", "base", "this", "foreach", "switch", "case", "enum", "bool", "true",
             "false", "null"
         };
 
@@ -88,7 +88,18 @@ namespace Demos.HelperClasses
                                 break;
                         }
 
-                        Elements.Add(new CItalic(s) { Class = "string" });
+
+                        switch (stringState)
+                        {
+                            case EStringState.InComment:
+                            case EStringState.InMultilineComment:
+                                Elements.Add(new CItalic(s) { Class = "comment" });
+                                break;
+
+                            default:
+                                Elements.Add(new CItalic(s) { Class = "string" });
+                                break;
+                        }
                         break;
 
 
@@ -103,7 +114,17 @@ namespace Demos.HelperClasses
                                 break;
                         }
 
-                        Elements.Add(new CItalic(s) { Class = "string" });
+                        switch (stringState)
+                        {
+                            case EStringState.InComment:
+                            case EStringState.InMultilineComment:
+                                Elements.Add(new CItalic(s) { Class = "comment" });
+                                break;
+
+                            default:
+                                Elements.Add(new CItalic(s) { Class = "string" });
+                                break;
+                        }
                         break;
 
 

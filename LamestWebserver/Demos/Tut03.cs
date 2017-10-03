@@ -31,8 +31,8 @@ namespace Demos
             yield return new HText("LamestWebserver provides some functionality for Caching UI components and responses. This page will provide an overview of the functionality and explain the basics.") { CachingType = ECachingType.Cacheable };
 
             yield return new HHeadline("Caching UI Elements", 2) { CachingType = ECachingType.Cacheable };
-            yield return new HText($"To actually use cached UI elements they need to be inside a {nameof(HCachePool)} or a ") { Class = "warning" };
-            yield return new HText("Fist of all, UI elements inherit from one of two classes which determine the caching behaviour of these elements:") { CachingType = ECachingType.Cacheable };
+            yield return new HText($"To actually use cached UI elements they need to be inside a {nameof(HCachePool)} or a ") { Class = "warning" }.SetCacheable();
+            yield return new HText("Fist of all, UI elements inherit from one of two classes which determine the caching behaviour of these elements:").SetCacheable();
 
             yield return new HList(HList.EListType.UnorderedList, 
                 new CContainer(
@@ -51,11 +51,11 @@ namespace Demos
                         "", 
                         $"// The faster way of setting an element cacheable if there's an equivalent in {nameof(LamestWebserver)}.{nameof(LamestWebserver.UI)}.{nameof(LamestWebserver.UI.CachedByDefault)}:",
                         $"new {nameof(CText)}(\"Cache Me!\");"
-                        ) { CachingType = ECachingType.Cacheable })
-                ) { CachingType = ECachingType.Cacheable };
+                        ).SetCacheable())
+                ).SetCacheable();
 
             yield return new CText($"UI elements not inheriting from one of them are usually not cacheable at all.");
-            yield return new CText($"If you want to have some elements inside a Container not-cached and other's cached, LamestWebserver will automatically figure that out if they are inside a cachable response or a {nameof(HCachePool)}.");
+            yield return new CText($"If you want to have some elements inside a Container or {nameof(HMultipleElements)} not-cached and other's cached, LamestWebserver will automatically figure that out if they are inside a cachable response or a {nameof(HCachePool)} and their Container or {nameof(HMultipleElements)} is set to {nameof(ECachingType)}.{nameof(ECachingType.Cacheable)} or your Container is a {nameof(CContainer)} which is set to be {nameof(ECachingType)}.{nameof(ECachingType.Cacheable)} by default.");
 
             yield return new CContainer(
                 new CHeadline("Example", 3),

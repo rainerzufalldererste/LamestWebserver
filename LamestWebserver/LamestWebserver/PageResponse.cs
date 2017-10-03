@@ -283,24 +283,24 @@ namespace LamestWebserver
             if (contents == null)
                 throw new ArgumentNullException(nameof(GetContents));
 
-            if (contents.IsStaticResponse(URL, ECachingType.Default, null))
+            if (contents.IsStaticResponse(URL + "##", ECachingType.Default, null))
             {
                 string responseString;
 
-                if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(URL, out responseString))
+                if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(URL + "##", out responseString))
                 {
                     stringBuilder.Append(responseString);
                 }
                 else
                 {
-                    contents.IsStaticResponse(URL, ECachingType.Default, stringBuilder);
+                    contents.IsStaticResponse(URL + "##", ECachingType.Default, stringBuilder);
 
-                    ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(URL, stringBuilder.ToString());
+                    ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(URL + "##", stringBuilder.ToString());
                 }
             }
             else
             {
-                contents.IsStaticResponse(URL, ECachingType.Default, stringBuilder);
+                contents.IsStaticResponse(URL + "##", ECachingType.Default, stringBuilder);
             }
 
             if (stringBuilder.Length > MaxStringBuilderSize)
