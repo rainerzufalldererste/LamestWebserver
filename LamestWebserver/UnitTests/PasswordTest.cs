@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LamestWebserver.Security;
 using LamestWebserver;
 using LamestWebserver.Serialization;
+using LamestWebserver.Core;
 
 namespace UnitTests
 {
@@ -19,7 +20,7 @@ namespace UnitTests
                 if (i % 16 == 0)
                     Console.Write(".");
 
-                string passw = SessionContainer.GenerateHash();
+                string passw = Hash.GetHash();
 
                 Password password = new Password(passw);
                 
@@ -27,7 +28,7 @@ namespace UnitTests
 
                 for (int j = 0; j < 2048; j++)
                 {
-                    Assert.IsFalse(password.IsValid(SessionContainer.GenerateHash()));
+                    Assert.IsFalse(password.IsValid(Hash.GetHash()));
                 }
             }
 
@@ -44,7 +45,7 @@ namespace UnitTests
                 if (i % 8 == 0)
                     Console.Write(".");
 
-                string passw = SessionContainer.GenerateComplexHash();
+                string passw = Hash.GetComplexHash();
 
                 Password password = new Password(passw);
 
@@ -52,7 +53,7 @@ namespace UnitTests
 
                 for (int j = 0; j < 128; j++)
                 {
-                    Assert.IsFalse(password.IsValid(SessionContainer.GenerateComplexHash()));
+                    Assert.IsFalse(password.IsValid(Hash.GetComplexHash()));
                 }
 
                 Serializer.WriteXmlData(new Password[] { password, password, new Password(" ") }, "pw");
@@ -72,9 +73,9 @@ namespace UnitTests
 
                 for (int j = 0; j < 256; j++)
                 {
-                    Assert.IsFalse(pws[0].IsValid(SessionContainer.GenerateComplexHash()));
-                    Assert.IsFalse(pws[1].IsValid(SessionContainer.GenerateComplexHash()));
-                    Assert.IsFalse(pws[2].IsValid(SessionContainer.GenerateComplexHash()));
+                    Assert.IsFalse(pws[0].IsValid(Hash.GetComplexHash()));
+                    Assert.IsFalse(pws[1].IsValid(Hash.GetComplexHash()));
+                    Assert.IsFalse(pws[2].IsValid(Hash.GetComplexHash()));
                 }
             }
 

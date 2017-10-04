@@ -9,13 +9,14 @@ using System.Threading.Tasks;
 using LamestWebserver;
 using LamestWebserver.Attributes;
 using LamestWebserver.Collections;
+using LamestWebserver.Core;
 
 namespace lwshostcore
 {
     public class Host
     {
         private FileSystemWatcher fileSystemWatcher;
-        private string ID = SessionContainer.GenerateHash();
+        private string ID = Hash.GetHash();
         private string directoryPath;
 
         public AVLHashMap<string, IEnumerable<Type>> TypesPerFile = new AVLHashMap<string, IEnumerable<Type>>();
@@ -52,7 +53,7 @@ namespace lwshostcore
         {
             fileSystemWatcher.Changed += (sender, args) =>
             {
-                ID = SessionContainer.GenerateHash();
+                ID = Hash.GetHash();
                 ProcessFile(args.FullPath);
 
                 if (args.FullPath.EndsWith(".exe") || args.FullPath.EndsWith(".dll"))

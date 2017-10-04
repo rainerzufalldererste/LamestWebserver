@@ -5,6 +5,7 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 using LamestWebserver.Serialization;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.Security
 {
@@ -46,7 +47,7 @@ namespace LamestWebserver.Security
             if (string.IsNullOrEmpty(password))
                 throw new InvalidOperationException("You have to set a password.");
 
-            salt = SessionContainer.GetComplexHash(new UTF8Encoding().GetBytes(SessionContainer.GenerateHash() + SessionContainer.GenerateHash() + SessionContainer.GenerateHash() + SessionContainer.GenerateHash()));
+            salt = Hash.GetComplexHash(new UTF8Encoding().GetBytes(Hash.GetHash() + Hash.GetHash() + Hash.GetHash() + Hash.GetHash()));
 
             hash = GenerateSaltedHash(password, salt);
         }
@@ -76,7 +77,7 @@ namespace LamestWebserver.Security
         private byte[] GenerateSaltedHash(string password, byte[] salt)
         {
             byte[] bytes = new UTF8Encoding().GetBytes(password);
-            byte[] hash = SessionContainer.GetComplexHash(bytes);
+            byte[] hash = Hash.GetComplexHash(bytes);
 
             System.Diagnostics.Debug.Assert(hash.Length == salt.Length, "Hash and Salt are of different lengths.");
 
@@ -85,7 +86,7 @@ namespace LamestWebserver.Security
                 hash[i] ^= salt[i];
             }
 
-            hash = SessionContainer.GetComplexHash(hash);
+            hash = Hash.GetComplexHash(hash);
 
             return hash;
         }

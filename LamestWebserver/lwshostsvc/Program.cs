@@ -41,7 +41,7 @@ namespace lwshostsvc
 
                         try
                         {
-                            LamestWebserver.Security.ElevateRightsWindows.ElevateRights();
+                            LamestWebserver.Core.ElevateRightsWindows.ElevateRights();
 
                             var result = HostServiceInstaller.Install();
 
@@ -76,7 +76,7 @@ namespace lwshostsvc
 
                         try
                         {
-                            LamestWebserver.Security.ElevateRightsWindows.ElevateRights();
+                            LamestWebserver.Core.ElevateRightsWindows.ElevateRights();
 
                             var result = HostServiceInstaller.Install(true);
 
@@ -111,7 +111,7 @@ namespace lwshostsvc
 
                         try
                         {
-                            LamestWebserver.Security.ElevateRightsWindows.ElevateRights();
+                            LamestWebserver.Core.ElevateRightsWindows.ElevateRights();
 
                             ServiceController controller = new ServiceController(HostServiceInstaller.Name);
 
@@ -149,7 +149,7 @@ namespace lwshostsvc
 
                         try
                         {
-                            LamestWebserver.Security.ElevateRightsWindows.ElevateRights();
+                            LamestWebserver.Core.ElevateRightsWindows.ElevateRights();
 
                             ServiceController controller = new ServiceController(HostServiceInstaller.Name);
 

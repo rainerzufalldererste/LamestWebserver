@@ -1,6 +1,8 @@
 ﻿using System;
 using LamestWebserver.Synchronization;
 using LamestWebserver.UI;
+using System.Text;
+using LamestWebserver.Caching;
 
 namespace LamestWebserver
 {
@@ -114,7 +116,7 @@ namespace LamestWebserver
         /// <summary>
         /// This method is used to remove the current page from the server (as URL identifyable object)
         /// </summary>
-        protected void RemoveFromServer()
+        protected virtual void RemoveFromServer()
         {
             Master.RemoveFunctionFromServer(URL);
         }
@@ -239,6 +241,119 @@ namespace LamestWebserver
         protected void RemoveFromServer()
         {
             Master.RemoveDirectoryPageFromServer(URL);
+        }
+    }
+
+    /// <summary>
+    /// An automatically caching derivate of ElementResponse.
+    /// </summary>
+    public abstract class CachedResponse : ElementResponse
+    {
+        /// <summary>
+        /// The default size of a response.
+        /// </summary>
+        public static int StartingStringBuilderSize = 1024;
+
+        private int MaxStringBuilderSize = StartingStringBuilderSize;
+        private int ConsecutiveResultsBelow80PercentSize = 0;
+        private string CacheID;
+
+        /// <summary>
+        /// Constructs a new CachedResponse.
+        /// </summary>
+        /// <param name="URL">The URL to register at.</param>
+        /// <param name="register">Shall this page already be registered?</param>
+        public CachedResponse(string URL, bool register = true) : base(URL, register)
+        {
+            CacheID = Core.Hash.GetHash();
+        }
+
+        /// <summary>
+        /// Retrieves the auto-cached Element and it's subelements 
+        /// (if CachingType in HSelectivelyCacheableElement is set to ECachingType.Cacheable for all elements or subelements that should be cached).
+        /// </summary>
+        /// <param name="sessionData">The current SessionData.</param>
+        /// <returns></returns>
+        protected override HElement GetElement(SessionData sessionData)
+        {
+            StringBuilder stringBuilder = new StringBuilder(MaxStringBuilderSize);
+
+            HElement contents = GetContents(sessionData);
+
+            if (contents == null)
+                throw new ArgumentNullException(nameof(GetContents));
+
+            if (contents.IsStaticResponse(URL + "##", ECachingType.Default, null))
+            {
+                string responseString;
+
+                if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(URL + "##", out responseString))
+                {
+                    stringBuilder.Append(responseString);
+                }
+                else
+                {
+                    contents.IsStaticResponse(URL + "##", ECachingType.Default, stringBuilder);
+
+                    ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(URL + "##", stringBuilder.ToString());
+                }
+            }
+            else
+            {
+                contents.IsStaticResponse(URL + "##", ECachingType.Default, stringBuilder);
+            }
+
+            if (stringBuilder.Length > MaxStringBuilderSize)
+            {
+                MaxStringBuilderSize = stringBuilder.Length;
+                ConsecutiveResultsBelow80PercentSize = 0;
+            }
+            else if(stringBuilder.Length < MaxStringBuilderSize * 0.8)
+            {
+                ConsecutiveResultsBelow80PercentSize++;
+
+                if(ConsecutiveResultsBelow80PercentSize > 5)
+                    MaxStringBuilderSize = (int)Math.Round(MaxStringBuilderSize * 0.95);
+            }
+            else
+            {
+                ConsecutiveResultsBelow80PercentSize = 0;
+            }
+
+            return new HStringBuilderContainerElement(stringBuilder);
+        }
+
+        /// <summary>
+        /// Returns a HElement that contains the contents of the requested page.
+        /// </summary>
+        /// <param name="sessionData">The current SessionData.</param>
+        /// <returns>Returns a HElement that contains the contents of the requested page.</returns>
+        protected abstract HElement GetContents(SessionData sessionData);
+
+        /// <inheritdoc />
+        protected override void RemoveFromServer()
+        {
+            base.RemoveFromServer();
+
+            ResponseCache.CurrentCacheInstance.Instance.RemoveCachedPrefixes(CacheID);
+        }
+
+        private class HStringBuilderContainerElement : HElement
+        {
+            StringBuilder StringBuilder;
+
+            internal HStringBuilderContainerElement(StringBuilder stringBuilder)
+            {
+                if (stringBuilder == null)
+                    throw new ArgumentNullException(nameof(stringBuilder));
+
+                StringBuilder = stringBuilder;
+            }
+
+            public override string GetContent(SessionData sessionData)
+            {
+                return StringBuilder.ToString();
+            }
         }
     }
 

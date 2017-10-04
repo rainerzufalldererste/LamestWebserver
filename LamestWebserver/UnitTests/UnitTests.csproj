@@ -43,8 +43,6 @@
     <StartupObject>UnitTests.Application</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.VisualStudio.QualityTools.Common, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Microsoft.VisualStudio.QualityTools.ExecutionCommon, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Xml" />
@@ -66,6 +64,9 @@
     <Compile Include="PacketUnitTest.cs" />
     <Compile Include="PasswordTest.cs" />
     <Compile Include="CollectionSerializerTests.cs" />
+    <Compile Include="ResponseCacheTest.cs" />
+    <Compile Include="StringExtentionTests.cs" />
+    <Compile Include="WebCrawlerTest.cs" />
     <Compile Include="UsableMutexTest.cs" />
     <Compile Include="WriteLockTest.cs" />
   </ItemGroup>

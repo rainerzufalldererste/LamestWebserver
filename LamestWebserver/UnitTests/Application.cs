@@ -10,6 +10,12 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new WebCrawlerTest().TestWebCrawler();
+            new StringExtentionTests().TestParsingStringExtentions_TestSplitIncludingDelimiters();
+            new StringExtentionTests().TestParsingStringExtentions_TestStringBetween();
+            new StringExtentionTests().TestParsingStringExtentions_TestSubStringIndex();
+            new StringExtentionTests().TestParsingStringExtentions_TestKMP();
+            new ResponseCacheTest().TestResponseCache();
             new PacketUnitTest().TestCookies();
             new PacketUnitTest().TestHttpHead();
             new PacketUnitTest().TestHttpPost();
@@ -30,6 +36,9 @@ namespace UnitTests
             new CollectionUnitTests().TestQueuedAvlTrees();
             new PasswordTest().TestPassword();
             new PasswordTest().TestSerializePassword();
+
+            LamestWebserver.ServerHandler.StopHandler();
+            LamestWebserver.Master.StopServers();
         }
     }
 }

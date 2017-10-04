@@ -30,14 +30,11 @@ namespace LamestWebserver.UI
             string ret =
                 "setTimeout(function(){var f=document.createElement('form');f.setAttribute('method','POST');f.setAttribute('action',window.location);f.setAttribute('enctype','application/x-www-form-urlencoded');var i;";
 
-            if (sessionData is HttpSessionData)
+            foreach (var variable in sessionData.HttpPostVariables)
             {
-                foreach (var variable in sessionData.HttpPostVariables)
-                {
-                    ret += "i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','"
-                           + variable.Key.Replace("\n", "\\n") + "');i.setAttribute('value','"
-                           + variable.Value.Replace("\n", "\\n") + "');f.appendChild(i);";
-                }
+                ret += "i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','"
+                       + variable.Key.Replace("\n", "\\n") + "');i.setAttribute('value','"
+                       + variable.Value.Replace("\n", "\\n") + "');f.appendChild(i);";
             }
 
             ret += "document.body.appendChild(f);f.submit();document.body.remove(f);}, " + int.Parse(millisecondsAsInt[0].ToString()) + ");";
@@ -129,14 +126,11 @@ namespace LamestWebserver.UI
                          + arguments[0]
                          + "');f.setAttribute('enctype','application/x-www-form-urlencoded');var i;";
 
-            if (sessionData is HttpSessionData)
+            foreach (var variable in sessionData.HttpPostVariables)
             {
-                foreach (var variable in sessionData.HttpPostVariables)
-                {
-                    ret += "i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','"
-                           + variable.Key.Replace("\n", "\\n") + "');i.setAttribute('value','"
-                           + variable.Value.Replace("\n", "\\n") + "');f.appendChild(i);";
-                }
+                ret += "i=document.createElement('input');i.setAttribute('type','hidden');i.setAttribute('name','"
+                       + variable.Key.Replace("\n", "\\n") + "');i.setAttribute('value','"
+                       + variable.Value.Replace("\n", "\\n") + "');f.appendChild(i);";
             }
 
             ret += "document.body.appendChild(f);f.submit();document.body.remove(f);}, " + int.Parse(arguments[1].ToString()) + ");";
