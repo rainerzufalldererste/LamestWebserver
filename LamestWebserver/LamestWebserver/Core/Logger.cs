@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace LamestWebserver.Core
@@ -30,6 +31,14 @@ namespace LamestWebserver.Core
             }
         }
 
+        /// <summary>
+        /// Action List for CustomeStreams
+        /// </summary>
+        public readonly static ActionList<Stream> customStreams = new ActionList<Stream>(
+            () => {
+            CurrentLogger.Instance.Close();
+            CurrentLogger.Instance.Open();
+        });
 
         /// <summary>
         /// Path for the Logging File
@@ -65,11 +74,12 @@ namespace LamestWebserver.Core
 
         internal EOutputSource currentOutputSource = EOutputSource.File | EOutputSource.Console;
 
+        internal string currentFilePath = "LWS" + DateTime.Now.ToFileTime().ToString() + ".log";
+
         internal MultiStream multiStream = new MultiStream();
 
         internal StreamWriter streamWriter;
 
-        internal string currentFilePath = ("LWS.log");
 
         /// <summary>
         /// Logging a message on logging level 'Trace'.
@@ -312,8 +322,7 @@ namespace LamestWebserver.Core
         /// </summary>
         public void Close()
         {
-            streamWriter.Flush();
-            streamWriter.Close();
+            streamWriter.Dispose();
         }
 
         /// <summary>
@@ -333,26 +342,47 @@ namespace LamestWebserver.Core
                 case EOutputSource.None:
                     break;
                 case EOutputSource.Console:
-                    addConsoleStream();
+                    applyConsoleStream();
                     break;
                 case EOutputSource.File:
-                    addFileStream();
+                    applyFileStream();
                     break;
                 case EOutputSource.File | EOutputSource.Console:
-                    addFileStream();
-                    addConsoleStream();
+                    applyFileStream();
+                    applyConsoleStream();
+                    break;
+                case EOutputSource.Custom:
+                    applyCustomStreams();
+                        break;
+                case EOutputSource.Console | EOutputSource.Custom:
+                    applyConsoleStream();
+                    applyCustomStreams();
+                    break;
+                case EOutputSource.File | EOutputSource.Custom:
+                    applyFileStream();
+                    applyCustomStreams();
+                    break;
+                case EOutputSource.Console | EOutputSource.File | EOutputSource.Custom:
+                    applyConsoleStream();
+                    applyFileStream();
+                    applyCustomStreams();
                     break;
                 default:
                     break;
             }
         }
 
-        internal void addFileStream()
+        internal void applyCustomStreams()
         {
-            multiStream.Streams.Add(File.Create(currentFilePath));
+            multiStream.Streams.AddRange(customStreams);
         }
 
-        internal void addConsoleStream()
+        internal void applyFileStream()
+        {
+            multiStream.Streams.Add(File.OpenWrite(currentFilePath));
+        }
+
+        internal void applyConsoleStream()
         {
             multiStream.Streams.Add(Console.OpenStandardOutput());
         }
@@ -362,6 +392,7 @@ namespace LamestWebserver.Core
         /// </summary>
         public Logger()
         {
+            
             Open();
         }
 
@@ -433,7 +464,12 @@ namespace LamestWebserver.Core
             /// <summary>
             /// Write into File
             /// </summary>
-            File = 2
+            File = 2,
+
+            /// <summary>
+            /// Write into Costume definde Streams
+            /// </summary>
+            Custom = 4
         }
     }
 }
