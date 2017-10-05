@@ -15,23 +15,35 @@ namespace LamestWebserver.Core
     {
         private static byte[] _lastHash = null;
         private static ICryptoTransform _cryptoTransform = null;
+
         private static Mutex _hashMutex = new Mutex();
         private static SHA3Managed _sha3;
         private static readonly Mutex Sha3HashMutex = new Mutex();
 
         /// <summary>
-        /// generates a 128 bit AES hash
+        /// Generates and retrieves a 128 bit AES hash as Hex-String.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The hash.</returns>
         public static string GetHash()
+        {
+            byte[] bytehash = GetByteHash();
+
+            string hash = _lastHash.ToHexString();
+
+            return hash;
+        }
+        
+        /// <summary>
+        /// Generates and retrieves a 128 bit AES hash.
+        /// </summary>
+        /// <returns>The hash.</returns>
+        public static byte[] GetByteHash()
         {
             if (_hashMutex == null)
                 _hashMutex = new Mutex();
 
             _hashMutex.WaitOne();
-
-            // Chris: generate hash
-
+            
             if (_cryptoTransform == null)
             {
                 Aes aes = new AesManaged() { Mode = CipherMode.ECB };
@@ -45,21 +57,19 @@ namespace LamestWebserver.Core
 
             _cryptoTransform.TransformBlock(_lastHash, 0, 16, _lastHash, 0);
 
-            string hash = _lastHash.ToHexString();
-
             _hashMutex.ReleaseMutex();
 
-            return hash;
+            return _lastHash;
         }
 
         /// <summary>
         /// Generates a SHA3 512 bit Hash of the given input as Hex-String
         /// </summary>
         /// <param name="input">the text to hash</param>
-        /// <returns>the hash as hex string</returns>
+        /// <returns>the hash as base64 string</returns>
         public static string GetComplexHash(string input)
         {
-            return GetComplexHash(Encoding.Unicode.GetBytes(input)).ToHexString();
+            return Convert.ToBase64String(GetComplexHash(Encoding.Unicode.GetBytes(input)));
         }
 
         /// <summary>
@@ -69,7 +79,6 @@ namespace LamestWebserver.Core
         /// <returns>the hash as byte[]</returns>
         public static byte[] GetComplexHash(byte[] input)
         {
-            // Chris: Preparation if sha3 hasn't been initialized
             if (_sha3 == null)
             {
                 _sha3 = new SHA3Managed(512);
@@ -87,12 +96,25 @@ namespace LamestWebserver.Core
         private static string _lastSha3Hash = GetHash() + GetHash() + GetHash() + GetHash();
 
         /// <summary>
-        /// Generates a SHA3 512bit hash of a random piece of code
+        /// Generates a SHA3 512bit hash of random data.
         /// </summary>
-        /// <returns>the hash as hex string</returns>
+        /// <returns>the hash as base64 string</returns>
         public static string GetComplexHash()
         {
             return _lastSha3Hash = GetComplexHash(_lastSha3Hash + GetHash());
+        }
+
+        /// <summary>
+        /// Generates a SHA3 512bit hash of random data.
+        /// </summary>
+        /// <returns>the hash as byte[]</returns>
+        public static byte[] GetComplexHashBytes()
+        {
+            byte[] ret = GetComplexHash(Encoding.Unicode.GetBytes(_lastSha3Hash + GetHash()));
+
+            _lastSha3Hash = Convert.ToBase64String(ret);
+
+            return ret;
         }
     }
 }

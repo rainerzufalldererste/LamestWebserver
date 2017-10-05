@@ -10,6 +10,8 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new IDTests().TestID();
+            new IDTests().TestLongID();
             new WebCrawlerTest().TestWebCrawler();
             new StringExtentionTests().TestParsingStringExtentions_TestSplitIncludingDelimiters();
             new StringExtentionTests().TestParsingStringExtentions_TestStringBetween();

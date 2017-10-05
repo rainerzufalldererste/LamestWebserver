@@ -59,6 +59,7 @@
     <Compile Include="CollectionUnitTests.cs" />
     <Compile Include="Application.cs" />
     <Compile Include="CompressionTest.cs" />
+    <Compile Include="IDTests.cs" />
     <Compile Include="EncryptDecryptTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PacketUnitTest.cs" />
