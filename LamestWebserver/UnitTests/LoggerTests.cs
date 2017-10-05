@@ -13,11 +13,12 @@ namespace UnitTests
     public class LoggerTests
     {
         private const string PATH_TO_NEW_FILE = "newFile.log";
+        private const string Pat_TO_PARALLEL_FILE = "parallelLog.log";
 
         [TestMethod]
         public void LoggerTestFileSwitch()
         {
-            
+            string autoLogFile = Logger.FilePath;
             for (int i = 0; i < 1000; i++)
             {
                 Logger.LogInformation(i + "stuff");
@@ -36,12 +37,28 @@ namespace UnitTests
             Assert.IsTrue(File.Exists(PATH_TO_NEW_FILE));
             Assert.IsTrue(new FileInfo(PATH_TO_NEW_FILE).Length > 0);
 
-            Logger.customStreams.Add(File.OpenWrite("parallelLog.log"));
+            Logger.customStreams.Add(File.Open(Pat_TO_PARALLEL_FILE, FileMode.Append,FileAccess.Write));
 
             for (int i = 0; i < 1000; i++)
             {
                 Logger.LogInformation(i + " stuff3");
             }
+
+          
+            Logger.OutputSourceFlags = Logger.EOutputSource.None;
+            long FI = new FileInfo(PATH_TO_NEW_FILE).Length;
+
+            for (int i = 0; i < 1000; i++)
+            {
+                Logger.LogInformation(i + " stuff4");
+            }
+            Assert.IsTrue(new FileInfo(PATH_TO_NEW_FILE).Length == FI);
+
+
+            File.Delete(autoLogFile);
+            File.Delete(PATH_TO_NEW_FILE);
+            File.Delete(Pat_TO_PARALLEL_FILE);            
+
         }
 
         [TestMethod]

@@ -35,10 +35,11 @@ namespace LamestWebserver.Core
         /// Action List for CustomeStreams
         /// </summary>
         public readonly static ActionList<Stream> customStreams = new ActionList<Stream>(
-            () => {
-            CurrentLogger.Instance.Close();
-            CurrentLogger.Instance.Open();
-        });
+            () =>
+            {
+                CurrentLogger.Instance.Close();
+                CurrentLogger.Instance.Open();
+            });
 
         /// <summary>
         /// Path for the Logging File
@@ -72,7 +73,7 @@ namespace LamestWebserver.Core
         /// </summary>
         public ELoggingLevel MinimumLoggingLevel = DefaultMinimumLoggingLevel;
 
-        internal EOutputSource currentOutputSource = EOutputSource.File | EOutputSource.Console;
+        internal EOutputSource currentOutputSource = EOutputSource.File | EOutputSource.Console | EOutputSource.Custom;
 
         internal string currentFilePath = "LWS" + DateTime.Now.ToFileTime().ToString() + ".log";
 
@@ -314,7 +315,10 @@ namespace LamestWebserver.Core
 
         internal void Log(ELoggingLevel loggingLevel, string msg)
         {
-            streamWriter.WriteLine($"[{loggingLevel.ToString()} \\\\\\\\ {msg}]");
+            if (currentOutputSource != EOutputSource.None)
+            {
+                streamWriter.WriteLine($"[{loggingLevel.ToString()} \\\\\\\\ {msg}]");
+            }
         }
 
         /// <summary>
@@ -322,7 +326,8 @@ namespace LamestWebserver.Core
         /// </summary>
         public void Close()
         {
-            streamWriter.Dispose();
+                streamWriter.Flush();
+                streamWriter.Close();
         }
 
         /// <summary>
@@ -330,12 +335,17 @@ namespace LamestWebserver.Core
         /// </summary>
         protected void Open()
         {
+
             ConfigureMultiStream();
-            streamWriter = new StreamWriter(multiStream);
+
+            if (currentOutputSource != EOutputSource.None)
+                streamWriter = new StreamWriter(multiStream);
+
         }
 
         internal void ConfigureMultiStream()
         {
+
             multiStream.Streams.Clear();
             switch (currentOutputSource)
             {
@@ -353,7 +363,7 @@ namespace LamestWebserver.Core
                     break;
                 case EOutputSource.Custom:
                     applyCustomStreams();
-                        break;
+                    break;
                 case EOutputSource.Console | EOutputSource.Custom:
                     applyConsoleStream();
                     applyCustomStreams();
@@ -379,7 +389,12 @@ namespace LamestWebserver.Core
 
         internal void applyFileStream()
         {
-            multiStream.Streams.Add(File.OpenWrite(currentFilePath));
+            FileStream fs = null;
+
+            fs = File.Open(currentFilePath, FileMode.Append, FileAccess.Write);
+            multiStream.Streams.Add(fs);
+
+
         }
 
         internal void applyConsoleStream()
@@ -392,7 +407,6 @@ namespace LamestWebserver.Core
         /// </summary>
         public Logger()
         {
-            
             Open();
         }
 

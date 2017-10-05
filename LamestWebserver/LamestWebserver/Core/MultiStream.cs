@@ -79,7 +79,13 @@ namespace LamestWebserver.Core
         {
             get
             {
-                return Streams[0].Length;
+                long ret = 0;
+                foreach(Stream stream in Streams)
+                {
+                    if (Length > ret)
+                        ret = Length;
+                }
+                return ret;
             }
         }
 
@@ -90,7 +96,13 @@ namespace LamestWebserver.Core
         {
             get
             {
-                return Streams[0].Position;
+                long ret = 0;
+                foreach (Stream stream in Streams)
+                {
+                    if (Length > ret)
+                        ret = Length;
+                }
+                return ret;
             }
             set
             {
@@ -170,6 +182,14 @@ namespace LamestWebserver.Core
             foreach (Stream stream in Streams)
             {
                 stream.Write(buffer, offset, count);
+            }
+        }
+
+        public override void Close()
+        {
+            foreach (Stream stream in Streams)
+            {
+                stream.Close();
             }
         }
     }
