@@ -55,7 +55,7 @@ namespace UnitTests
             Assert.IsTrue(ArraysAreEqual(id0.GetByteArray(), id1.GetByteArray()));
             Assert.IsTrue(ArraysAreEqual(id0.GetUlongArray(), id1.GetUlongArray()));
 
-            id1 = new ID();
+            id1.RegenerateHash();
 
             if (id0.CompareTo(id1) > 0)
                 Assert.IsTrue(id1.CompareTo(id0) < 0);
