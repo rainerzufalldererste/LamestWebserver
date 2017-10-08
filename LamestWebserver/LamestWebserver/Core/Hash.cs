@@ -26,7 +26,7 @@ namespace LamestWebserver.Core
         /// <returns>The hash.</returns>
         public static string GetHash()
         {
-            byte[] bytehash = GetByteHash();
+            byte[] bytehash = GetHashBytes();
 
             string hash = _lastHash.ToHexString();
 
@@ -37,7 +37,7 @@ namespace LamestWebserver.Core
         /// Generates and retrieves a 128 bit AES hash.
         /// </summary>
         /// <returns>The hash.</returns>
-        public static byte[] GetByteHash()
+        public static byte[] GetHashBytes()
         {
             if (_hashMutex == null)
                 _hashMutex = new Mutex();

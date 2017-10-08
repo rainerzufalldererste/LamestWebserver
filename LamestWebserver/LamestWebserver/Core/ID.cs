@@ -29,7 +29,7 @@ namespace LamestWebserver.Core
         /// </summary>
         public ID()
         {
-            _id = ConvertFromByteArray(Hash.GetByteHash());
+            _id = ConvertFromByteArray(Hash.GetHashBytes());
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace LamestWebserver.Core
         /// </summary>
         public virtual void RegenerateHash()
         {
-            _id = ConvertFromByteArray(Hash.GetByteHash());
+            _id = ConvertFromByteArray(Hash.GetHashBytes());
             _string_id = null;
         }
 
@@ -191,6 +191,9 @@ namespace LamestWebserver.Core
         /// <returns>the ID as string.</returns>
         protected virtual string ConvertFromUlongArray(ulong[] id)
         {
+            if (id == null)
+                throw new NullReferenceException(nameof(id));
+
             char[] s = new char[id.Length * CharsInUlong];
 
             for (int i = 0; i < id.Length; i++)
@@ -198,6 +201,27 @@ namespace LamestWebserver.Core
                 for (int j = 0; j < CharsInUlong; j++)
                 {
                     s[i * CharsInUlong + j] = Master.HexToCharLookupTable[(int)((ulong)(id[i] & (0xFul << (4 * j))) >> (4 * j))];
+                }
+            }
+
+            return new string(s);
+        }
+
+        /// <summary>
+        /// Returns the inner Value as Hexadecimal String.
+        /// <para />
+        /// .ToString() might return Base64 strings - this method will always return in hexadecimal format because it is not virtual.
+        /// </summary>
+        /// <returns>The inner Value as Hexadecimal String.</returns>
+        public string ToHexString()
+        {
+            char[] s = new char[_id.Length * CharsInUlong];
+
+            for (int i = 0; i < _id.Length; i++)
+            {
+                for (int j = 0; j < CharsInUlong; j++)
+                {
+                    s[i * CharsInUlong + j] = Master.HexToCharLookupTable[(int)((ulong)(_id[i] & (0xFul << (4 * j))) >> (4 * j))];
                 }
             }
 
@@ -227,7 +251,7 @@ namespace LamestWebserver.Core
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
-            if (obj == null)
+            if (ReferenceEquals(obj, null))
                 return false;
 
             if (!(obj is ID))
@@ -285,10 +309,10 @@ namespace LamestWebserver.Core
         /// <returns>true if the comparison retrieves true.</returns>
         public static bool operator ==(ID a, ID b)
         {
-            if (a == null ^ b == null)
+            if (ReferenceEquals(a, null) ^ ReferenceEquals(b, null))
                 return false;
 
-            if (a == null)
+            if (ReferenceEquals(a, null))
                 return true;
 
             return a.Equals(b);

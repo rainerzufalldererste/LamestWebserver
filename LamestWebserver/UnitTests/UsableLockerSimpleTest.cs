@@ -9,12 +9,12 @@ using LamestWebserver.Synchronization;
 namespace UnitTests
 {
     [TestClass]
-    public class UsableMutexTest
+    public class UsableLockerSimpleTest
     {
         [TestMethod]
-        public void TestUsableMutexes()
+        public void TestUsableLockerSimple()
         {
-            UsableMutex mutex = new UsableMutex();
+            UsableLockSimple mutex = new UsableLockSimple();
             bool someValue = false;
 
             Thread t0 = new Thread(() =>

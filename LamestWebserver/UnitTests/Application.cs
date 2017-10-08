@@ -27,7 +27,7 @@ namespace UnitTests
             new CompressionTest().TestCompressDecompress();
             new EncryptDecryptTests().TestEncryptDecrypt();
             new CollectionSerializerTests().TestCollectionJsonSerialisazion();
-            new UsableMutexTest().TestUsableMutexes();
+            new UsableLockerSimpleTest().TestUsableLockerSimple();
             new WriteLockTest().TestWriteLock();
             new CollectionUnitTests().TestSerializeMultiple();
             new CollectionUnitTests().TestSerializeClassAvlTree();

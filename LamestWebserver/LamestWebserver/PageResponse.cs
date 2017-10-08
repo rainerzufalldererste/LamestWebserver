@@ -3,6 +3,7 @@ using LamestWebserver.Synchronization;
 using LamestWebserver.UI;
 using System.Text;
 using LamestWebserver.Caching;
+using LamestWebserver.Core;
 
 namespace LamestWebserver
 {
@@ -61,7 +62,7 @@ namespace LamestWebserver
     /// </summary>
     public abstract class SyncronizedPageResponse : PageResponse
     {
-        private UsableMutex mutex = new UsableMutex();
+        private UsableLockSimple mutex = new UsableLockSimple();
 
         /// <summary>
         /// Constructs a new SyncronizedPageResponse and registers it if specified at the given URL
@@ -139,7 +140,7 @@ namespace LamestWebserver
     /// </summary>
     public abstract class SyncronizedElementResponse : ElementResponse
     {
-        private UsableMutex mutex = new UsableMutex();
+        private UsableLockSimple mutex = new UsableLockSimple();
 
         /// <summary>
         /// Constructs a new SyncronizedElementResponse and registers it if specified at the given URL
@@ -256,7 +257,7 @@ namespace LamestWebserver
 
         private int MaxStringBuilderSize = StartingStringBuilderSize;
         private int ConsecutiveResultsBelow80PercentSize = 0;
-        private string CacheID;
+        private ID CacheID;
 
         /// <summary>
         /// Constructs a new CachedResponse.
@@ -265,7 +266,7 @@ namespace LamestWebserver
         /// <param name="register">Shall this page already be registered?</param>
         public CachedResponse(string URL, bool register = true) : base(URL, register)
         {
-            CacheID = Core.Hash.GetHash();
+            CacheID = new ID();
         }
 
         /// <summary>
@@ -313,7 +314,7 @@ namespace LamestWebserver
                 ConsecutiveResultsBelow80PercentSize++;
 
                 if(ConsecutiveResultsBelow80PercentSize > 5)
-                    MaxStringBuilderSize = (int)Math.Round(MaxStringBuilderSize * 0.95);
+                    MaxStringBuilderSize = (int)System.Math.Round(MaxStringBuilderSize * 0.95);
             }
             else
             {
@@ -335,7 +336,7 @@ namespace LamestWebserver
         {
             base.RemoveFromServer();
 
-            ResponseCache.CurrentCacheInstance.Instance.RemoveCachedPrefixes(CacheID);
+            ResponseCache.CurrentCacheInstance.Instance.RemoveCachedPrefixes(CacheID.ToHexString());
         }
 
         private class HStringBuilderContainerElement : HElement
@@ -605,7 +606,7 @@ namespace LamestWebserver
             {
                 if (sessionData == null)
                 {
-                    return "<head><meta http-equiv=\"refresh\" content=\"" + Math.Round((float)milliseconds / 1000f) + "; url = "
+                    return "<head><meta http-equiv=\"refresh\" content=\"" + System.Math.Round(milliseconds / 1000f) + "; url = "
                                    + destinationURL + "\"><script type=\"text/javascript\">setTimeout(function() { window.location.href = \""
                                    + destinationURL + "\";}, "
                                    + milliseconds + ");</script><title>Page Redirection</title><style type=\"text/css\">hr{border:solid;border-width:3;color:#efefef;} p {overflow:overlay;}</style></head><body style='background-color: #f1f1f1;margin: 0;'><div style='font-family: \"Segoe UI\" ,sans-serif;width: 70%;max-width: 1200px;margin: 0em auto;font-size: 16pt;background-color: #fdfdfd;padding: 4em 8em;color: #4e4e4e;'><h2 style='font-weight: lighter;font-size: 40pt;'>"
@@ -630,7 +631,7 @@ namespace LamestWebserver
             {
                 if (sessionData == null)
                 {
-                    return "<head><meta http-equiv=\"refresh\" content=\"" + Math.Round((float)milliseconds / 1000f) + "; url = "
+                    return "<head><meta http-equiv=\"refresh\" content=\"" + System.Math.Round(milliseconds / 1000f) + "; url = "
                                    + destinationURL + "\"><script type=\"text/javascript\">setTimeout(function() { window.location.href = \""
                                    + destinationURL + "\";}, "
                                    + milliseconds + ");</script><title>Page Redirection</title><style type=\"text/css\">hr{border:solid;border-width:3;color:#efefef;} p {overflow:overlay;}</style></head><body style='background-color: #f1f1f1;margin: 0;'><div style='font-family: \"Segoe UI\" ,sans-serif;width: 70%;max-width: 1200px;margin: 0em auto;font-size: 16pt;background-color: #fdfdfd;padding: 4em 8em;color: #4e4e4e;'><h2 style='font-weight: lighter;font-size: 40pt;'>"

@@ -22,6 +22,11 @@ namespace UnitTests
             else if (id0.CompareTo(id1) < 0)
                 Assert.IsTrue(id1.CompareTo(id0) > 0);
 
+            if (id0 > id1)
+                Assert.IsTrue(id1 < id0);
+            else if (id1 < id0)
+                Assert.IsTrue(id0 > id1);
+
             Assert.IsTrue(id0.CompareTo(id1) != 0 && id1.CompareTo(id0) != 0);
             Assert.AreNotEqual(id0.Value, id1.Value);
             Assert.IsTrue(!ArraysAreEqual(id0.GetByteArray(), id1.GetByteArray()));
@@ -36,8 +41,11 @@ namespace UnitTests
 
             id1 = new ID(id0.Value);
 
+            Assert.IsTrue(id0.Equals(id1) && id1.Equals(id0));
+            Assert.IsTrue(id0 == id1);
             Assert.IsTrue(id0.CompareTo(id1) == 0 && id1.CompareTo(id0) == 0);
             Assert.AreEqual(id0.Value, id1.Value);
+            Assert.AreEqual(id0.ToHexString(), id1.ToHexString());
             Assert.IsTrue(ArraysAreEqual(id0.GetByteArray(), id1.GetByteArray()));
             Assert.IsTrue(ArraysAreEqual(id0.GetUlongArray(), id1.GetUlongArray()));
 
