@@ -9,12 +9,21 @@ namespace LamestWebserver.Synchronization
     public sealed class UsableMutexSlim
     {
         private readonly Mutex _innerMutex = new Mutex();
+        private UsableSlimMutexLocker _locker;
 
         /// <summary>
         /// Locks the mutex; IDisposable.
         /// </summary>
         /// <returns>an IDisposable object that releases the mutex on Dispose()</returns>
-        public UsableSlimMutexLocker Lock() => new UsableSlimMutexLocker(this);
+        public UsableSlimMutexLocker Lock()
+        {
+            if (_locker == null)
+                _locker = new UsableSlimMutexLocker(this);
+            else
+                _locker.ReLock();
+
+            return _locker;
+        }
 
         /// <summary>
         /// Just a simple IDisposable Mutex lock/release.
@@ -27,6 +36,14 @@ namespace LamestWebserver.Synchronization
             {
                 this._innerMutex = innerMutex;
                 innerMutex._innerMutex.WaitOne();
+            }
+
+            /// <summary>
+            /// Locks the internal Mutex again.
+            /// </summary>
+            internal void ReLock()
+            {
+                _innerMutex._innerMutex.WaitOne();
             }
 
             /// <inheritdoc />
