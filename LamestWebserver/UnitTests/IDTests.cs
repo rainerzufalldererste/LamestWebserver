@@ -187,18 +187,18 @@ namespace UnitTests
             }
             catch (FormatException) { }
 
-            id0 = new ID("FFFFFFFFFFFFFFFF");
+            id0 = new ID("ffffffffffffffff");
 
-            Assert.AreEqual("FFFFFFFFFFFFFFFF", id0.ToString());
+            Assert.AreEqual("ffffffffffffffff", id0.ToHexString());
             Assert.AreEqual(id0.Value, id0.ToString());
             Assert.AreEqual(1, id0.GetUlongArray().Length);
             Assert.AreEqual(ulong.MaxValue, id0.GetUlongArray()[0]);
 
-            id1 = new ID("0123456789ABCDEF");
+            id1 = new ID("0123456789abcdef");
 
-            Assert.AreEqual("0123456789ABCDEF", id1.ToString());
+            Assert.AreEqual("0123456789abcdef", id1.ToString());
             Assert.AreEqual(1, id1.GetUlongArray().Length);
-            Assert.AreEqual(0xFEDCBA9876543210ul, id1.GetUlongArray()[0]);
+            Assert.AreEqual(0xfedcba9876543210ul, id1.GetUlongArray()[0]);
         }
 
         [TestMethod]

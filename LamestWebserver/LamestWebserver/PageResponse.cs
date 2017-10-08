@@ -284,24 +284,24 @@ namespace LamestWebserver
             if (contents == null)
                 throw new ArgumentNullException(nameof(GetContents));
 
-            if (contents.IsStaticResponse(URL + "##", ECachingType.Default, null))
+            if (contents.IsStaticResponse(CacheID.Value + "/", ECachingType.Default, null))
             {
                 string responseString;
 
-                if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(URL + "##", out responseString))
+                if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(CacheID.Value + "/", out responseString))
                 {
                     stringBuilder.Append(responseString);
                 }
                 else
                 {
-                    contents.IsStaticResponse(URL + "##", ECachingType.Default, stringBuilder);
+                    contents.IsStaticResponse(CacheID.Value + "/", ECachingType.Default, stringBuilder);
 
-                    ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(URL + "##", stringBuilder.ToString());
+                    ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(CacheID.Value + "/", stringBuilder.ToString());
                 }
             }
             else
             {
-                contents.IsStaticResponse(URL + "##", ECachingType.Default, stringBuilder);
+                contents.IsStaticResponse(CacheID.Value + "/", ECachingType.Default, stringBuilder);
             }
 
             if (stringBuilder.Length > MaxStringBuilderSize)
@@ -336,7 +336,7 @@ namespace LamestWebserver
         {
             base.RemoveFromServer();
 
-            ResponseCache.CurrentCacheInstance.Instance.RemoveCachedPrefixes(CacheID.ToHexString());
+            ResponseCache.CurrentCacheInstance.Instance.RemoveCachedPrefixes(CacheID.Value);
         }
 
         private class HStringBuilderContainerElement : HElement
