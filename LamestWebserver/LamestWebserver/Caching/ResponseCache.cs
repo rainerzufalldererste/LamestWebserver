@@ -165,94 +165,29 @@ namespace LamestWebserver.Caching
         }
 
         /// <summary>
-        /// The additional free space to make - relative to the maximum cache size, when the cache is overflowing.
+        /// The additional free space to make - relative to the maximum cache size, when the cache is overflowing. (between 0 and 1)
         /// </summary>
-        public double CacheMakeRoom_AdditionalFreeSpacePercentage
-        {
-            get
-            {
-                return _cacheMakeRoom_AdditionalFreeSpacePercentage; 
-            }
-
-            set
-            {
-                _cacheMakeRoom_AdditionalFreeSpacePercentage = value.Clamp(0.0, 1.0);
-            }
-        }
-
-        private double _cacheMakeRoom_AdditionalFreeSpacePercentage = 0.0625;
+        public readonly ClampedValue<double> CacheMakeRoom_AdditionalFreeSpacePercentage = new ClampedValue<double>(0.0625, 0, 1);
 
         /// <summary>
         /// The upper percentile for the date based cache cleaning. (between 0 and 1)
         /// </summary>
-        public double CacheMakeRoom_UpperPercentile_Date
-        {
-            get
-            {
-                return _cacheMakeRoom_UpperPercentile_Date; 
-            }
-
-            set
-            {
-                _cacheMakeRoom_UpperPercentile_Date = value.Clamp(0.0, 1.0);
-            }
-        }
-
-        private double _cacheMakeRoom_UpperPercentile_Date = 0.1;
+        public readonly ClampedValue<double> CacheMakeRoom_UpperPercentile_Date = new ClampedValue<double>(0.1, 0, 1);
 
         /// <summary>
         /// The upper percentile for the access count based cache cleaning. (between 0 and 1)
         /// </summary>
-        public double CacheMakeRoom_UpperPercentile_Count
-        {
-            get
-            {
-                return _cacheMakeRoom_UpperPercentile_Count;
-            }
-
-            set
-            {
-                _cacheMakeRoom_UpperPercentile_Count = value.Clamp(0.0, 1.0);
-            }
-        }
-
-        private double _cacheMakeRoom_UpperPercentile_Count = 0.1;
+        public readonly ClampedValue<double> CacheMakeRoom_UpperPercentile_Count = new ClampedValue<double>(0.1, 0, 1);
 
         /// <summary>
         /// The maximum percentage of entries to remove by size. (between 0 and 1)
         /// </summary>
-        public double CacheMakeRoom_RemoveBySizePercentage
-        {
-            get
-            {
-                return _cacheMakeRoom_RemoveBySizePercentage;
-            }
-
-            set
-            {
-                _cacheMakeRoom_RemoveBySizePercentage = value.Clamp(0.0, 1.0);
-            }
-        }
-
-        private double _cacheMakeRoom_RemoveBySizePercentage = 0.25;
+        public readonly ClampedValue<double> CacheMakeRoom_RemoveBySizePercentage = new ClampedValue<double>(0.25, 0, 1);
 
         /// <summary>
         /// The maximum percentage of entries to remove by lifetime left. (between 0 and 1)
         /// </summary>
-        public double CacheMakeRoom_RemoveByTimePercentage
-        {
-            get
-            {
-                return _cacheMakeRoom_RemoveByTimePercentage;
-            }
-
-            set
-            {
-                _cacheMakeRoom_RemoveByTimePercentage = value.Clamp(0.0, 1.0);
-            }
-        }
-
-        private double _cacheMakeRoom_RemoveByTimePercentage = 0.25;
+        public readonly ClampedValue<double> CacheMakeRoom_RemoveByTimePercentage = new ClampedValue<double>(0.25, 0, 1);
 
         /// <summary>
         /// Makes room when the cache is overflowing.

@@ -10,6 +10,7 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new ClampedValueTest().TestClampedValue();
             new WebCrawlerTest().TestWebCrawler();
             new StringExtentionTests().TestParsingStringExtentions_TestSplitIncludingDelimiters();
             new StringExtentionTests().TestParsingStringExtentions_TestStringBetween();
