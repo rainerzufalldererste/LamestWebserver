@@ -12,6 +12,7 @@ namespace UnitTests
         {
             new IDTests().TestID();
             new IDTests().TestLongID();
+            new ClampedValueTest().TestClampedValue();
             new WebCrawlerTest().TestWebCrawler();
             new StringExtentionTests().TestParsingStringExtentions_TestSplitIncludingDelimiters();
             new StringExtentionTests().TestParsingStringExtentions_TestStringBetween();
