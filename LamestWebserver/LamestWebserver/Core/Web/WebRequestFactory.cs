@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LamestWebserver.Core.Web
@@ -41,6 +42,19 @@ namespace LamestWebserver.Core.Web
         /// The default Timeout for every request.
         /// </summary>
         public int Timeout = 2500;
+
+        /// <summary>
+        /// The maximum number of Retries per Request on Timeout.
+        /// </summary>
+        public int MaximumRetries = 2;
+
+        /// <summary>
+        /// The time to randomly wait after a completed request. (Item1 is MinimumTime, Item2 is MaximumTime)
+        /// </summary>
+        public Tuple<int, int> RandomWaitTimeMs = null;
+
+        private DateTime _lastRequestTime = new DateTime(0);
+        private Random _random = new Random();
 
 
         /// <summary>
@@ -119,49 +133,80 @@ namespace LamestWebserver.Core.Web
             if (URL == null)
                 throw new ArgumentNullException(nameof(URL));
 
+            if(RandomWaitTimeMs != null)
+            {
+                int randomWaitTime = _random.Next(RandomWaitTimeMs.Item1, RandomWaitTimeMs.Item2);
+                DateTime _minRequestTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(randomWaitTime);
+
+                if (_minRequestTime > _lastRequestTime)
+                    Thread.Sleep(_minRequestTime - _lastRequestTime);
+            }
+
             int redirects = 0;
+            int retries = 0;
 
             RESTART:
 
-            if (redirects > maxRedirects)
+            try
             {
-                statusCode = HttpStatusCode.BadGateway;
-                return null;
+
+                if (redirects > maxRedirects)
+                {
+                    statusCode = HttpStatusCode.BadGateway;
+                    return null;
+                }
+
+                if (Redirects && Redirects.ContainsKey(URL))
+                {
+                    URL = Redirects[URL];
+                    redirects++;
+                    goto RESTART;
+                }
+
+                if (Responses && Responses.ContainsKey(URL))
+                {
+                    statusCode = HttpStatusCode.NotModified;
+                    return Responses[URL];
+                }
+
+                WebRequest request = WebRequest.Create(URL);
+                (request as HttpWebRequest).UserAgent = UserAgentString;
+                (request as HttpWebRequest).Timeout = Timeout;
+                (request as HttpWebRequest).AllowAutoRedirect = false;
+                (request as HttpWebRequest).CookieContainer = Cookies;
+                var response = request.GetResponse();
+                string location = ((HttpWebResponse)response).GetResponseHeader("location");
+
+                if (!string.IsNullOrEmpty(location) && location != URL)
+                {
+                    if (Redirects)
+                        Redirects.Add(URL, location);
+
+                    URL = location;
+                    redirects++;
+                    goto RESTART;
+                }
+
+                statusCode = ((HttpWebResponse)response).StatusCode;
+                return new StreamReader(response.GetResponseStream()).ReadToEnd();
+            }
+            catch(WebException e)
+            {
+                if(e.Status == WebExceptionStatus.Timeout)
+                {
+                    retries++;
+
+                    if (retries > MaximumRetries)
+                        throw e;
+
+                    goto RESTART;
+                }
             }
 
-            if (Redirects && Redirects.ContainsKey(URL))
-            {
-                URL = Redirects[URL];
-                redirects++;
-                goto RESTART;
-            }
+            Logger.LogExcept(new InvalidOperationException("This is Dead Code. You are not supposed to get here. Please report this bug."));
 
-            if (Responses && Responses.ContainsKey(URL))
-            {
-                statusCode = HttpStatusCode.NotModified;
-                return Responses[URL];
-            }
-
-            WebRequest request = WebRequest.Create(URL);
-            (request as HttpWebRequest).UserAgent = UserAgentString;
-            (request as HttpWebRequest).Timeout = Timeout;
-            (request as HttpWebRequest).AllowAutoRedirect = false;
-            (request as HttpWebRequest).CookieContainer = Cookies;
-            var response = request.GetResponse();
-            string location = ((HttpWebResponse)response).GetResponseHeader("location");
-
-            if (!string.IsNullOrEmpty(location) && location != URL)
-            {
-                if (Redirects)
-                    Redirects.Add(URL, location);
-
-                URL = location;
-                redirects++;
-                goto RESTART;
-            }
-
-            statusCode = ((HttpWebResponse)response).StatusCode;
-            return new StreamReader(response.GetResponseStream()).ReadToEnd();
+            statusCode = HttpStatusCode.ExpectationFailed;
+            return null;
         }
 
         /// <summary>
