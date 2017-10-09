@@ -11,7 +11,7 @@ namespace LamestWebserver.Core
     /// List with the ability to do a action everytime you manipulate it
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ActionList<T> : IList<T>
+    public class ActionList<T> : IEnumerable<T>
     {
         /// <summary>
         /// Action that get executed after each manipulation
@@ -20,26 +20,20 @@ namespace LamestWebserver.Core
 
         internal List<T> internalList;
 
-        /// <summary>
-        /// Initilize a new ActionList
-        /// </summary>
+        /// <inheritdoc />
         public ActionList()
         {
             internalList = new List<T>();
         }
 
-        /// <summary>
-        /// Initilize a new ActionList with a Action
-        /// </summary>
+        /// <inheritdoc />
         public ActionList(Action action)
         {
             internalList = new List<T>();
             this.action = action;
         }
 
-        /// <summary>
-        /// Initilize a new ActionList 
-        /// </summary>
+        /// <inheritdoc />
         public ActionList(IEnumerable<T> collection)
         {
             internalList = new List<T>(collection);
@@ -53,110 +47,72 @@ namespace LamestWebserver.Core
         {
             internalList = new List<T>(capacity);
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
+
+        /// <inheritdoc />
         public T this[int index] { get => internalList[index]; set => internalList[index] = value; }
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <inheritdoc />
         public int Count => internalList.Count;
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <inheritdoc />
         public bool IsReadOnly => false;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="item"></param>
+        /// <inheritdoc />
         public void Add(T item)
         {
             internalList.Add(item);
             action();
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <inheritdoc />
         public void Clear()
         {
             internalList.Clear();
             action();
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool Contains(T item)
-        {
-            return internalList.Contains(item);
-        }
+        /// <inheritdoc />
+        public bool Contains(T item) => internalList.Contains(item);
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="array"></param>
-        /// <param name="arrayIndex"></param>
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            internalList.CopyTo(array, arrayIndex);
-        }
+        /// <inheritdoc />
+        public void CopyTo(T[] array, int arrayIndex) => internalList.CopyTo(array, arrayIndex);
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerator<T> GetEnumerator()
-        {
-            return internalList.GetEnumerator();
-        }
+        /// <inheritdoc />
+        public IEnumerator<T> GetEnumerator() => internalList.GetEnumerator();
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public int IndexOf(T item)
-        {
-            return internalList.IndexOf(item);
-        }
+        /// <inheritdoc />
+        public int IndexOf(T item) => internalList.IndexOf(item);
 
+        /// <inheritdoc />
         public void Insert(int index, T item)
         {
             internalList.Insert(index, item);
             action();
         }
 
+        /// <inheritdoc />
         public bool Remove(T item)
         {
-
             bool ret = internalList.Remove(item);
             action();
             return ret;
         }
 
+        /// <inheritdoc />
         public void RemoveAt(int index)
         {
             internalList.RemoveAt(index);
             action();
         }
 
+        /// <inheritdoc />
         public void RemoveAll(Predicate<T> match)
         {
             internalList.RemoveAll(match);
             action();
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return internalList.GetEnumerator();
-        }
+        /// <inheritdoc />
+        IEnumerator IEnumerable.GetEnumerator() => internalList.GetEnumerator();
     }
 }

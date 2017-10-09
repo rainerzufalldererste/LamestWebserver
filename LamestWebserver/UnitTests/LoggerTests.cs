@@ -16,9 +16,10 @@ namespace UnitTests
         private const string Pat_TO_PARALLEL_FILE = "parallelLog.log";
 
         [TestMethod]
-        public void LoggerTestFileSwitch()
+        public void TestLoggerFileSwitch()
         {
             string autoLogFile = Logger.FilePath;
+
             for (int i = 0; i < 1000; i++)
             {
                 Logger.LogInformation(i + "stuff");
@@ -37,15 +38,14 @@ namespace UnitTests
             Assert.IsTrue(File.Exists(PATH_TO_NEW_FILE));
             Assert.IsTrue(new FileInfo(PATH_TO_NEW_FILE).Length > 0);
 
-            Logger.customStreams.Add(File.Open(Pat_TO_PARALLEL_FILE, FileMode.Append,FileAccess.Write));
+            Logger.AddCustomStream(File.Open(Pat_TO_PARALLEL_FILE, FileMode.Append,FileAccess.Write));
 
             for (int i = 0; i < 1000; i++)
             {
                 Logger.LogInformation(i + " stuff3");
             }
 
-          
-            Logger.OutputSourceFlags = Logger.EOutputSource.None;
+            Logger.CurrentLogger.Instance.OutputSourceFlags = Logger.EOutputSource.None;
             long FI = new FileInfo(PATH_TO_NEW_FILE).Length;
 
             for (int i = 0; i < 1000; i++)
@@ -54,15 +54,14 @@ namespace UnitTests
             }
             Assert.IsTrue(new FileInfo(PATH_TO_NEW_FILE).Length == FI);
 
-
+            //Clean up
             File.Delete(autoLogFile);
             File.Delete(PATH_TO_NEW_FILE);
-            File.Delete(Pat_TO_PARALLEL_FILE);            
-
+            File.Delete(Pat_TO_PARALLEL_FILE);
         }
 
         [TestMethod]
-        public void LoggerTestActionListTest()
+        public void TestLoggerActionList()
         {
             int operationCount = 0;
             ActionList<int> actionList = new ActionList<int>(
