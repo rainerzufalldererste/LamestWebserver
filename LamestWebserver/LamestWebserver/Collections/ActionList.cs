@@ -18,25 +18,25 @@ namespace LamestWebserver.Core
         /// </summary>
         public Action action;
 
-        internal List<T> internalList;
+        private List<T> _internalList;
 
         /// <inheritdoc />
         public ActionList()
         {
-            internalList = new List<T>();
+            _internalList = new List<T>();
         }
 
         /// <inheritdoc />
         public ActionList(Action action)
         {
-            internalList = new List<T>();
+            _internalList = new List<T>();
             this.action = action;
         }
 
         /// <inheritdoc />
         public ActionList(IEnumerable<T> collection)
         {
-            internalList = new List<T>(collection);
+            _internalList = new List<T>(collection);
         }
 
         /// <summary>
@@ -45,14 +45,14 @@ namespace LamestWebserver.Core
         /// <param name="capacity"></param>
         public ActionList(int capacity)
         {
-            internalList = new List<T>(capacity);
+            _internalList = new List<T>(capacity);
         }
 
         /// <inheritdoc />
-        public T this[int index] { get => internalList[index]; set => internalList[index] = value; }
+        public T this[int index] { get => _internalList[index]; set => _internalList[index] = value; }
 
         /// <inheritdoc />
-        public int Count => internalList.Count;
+        public int Count => _internalList.Count;
 
         /// <inheritdoc />
         public bool IsReadOnly => false;
@@ -60,40 +60,40 @@ namespace LamestWebserver.Core
         /// <inheritdoc />
         public void Add(T item)
         {
-            internalList.Add(item);
+            _internalList.Add(item);
             action();
         }
 
         /// <inheritdoc />
         public void Clear()
         {
-            internalList.Clear();
+            _internalList.Clear();
             action();
         }
 
         /// <inheritdoc />
-        public bool Contains(T item) => internalList.Contains(item);
+        public bool Contains(T item) => _internalList.Contains(item);
 
         /// <inheritdoc />
-        public void CopyTo(T[] array, int arrayIndex) => internalList.CopyTo(array, arrayIndex);
+        public void CopyTo(T[] array, int arrayIndex) => _internalList.CopyTo(array, arrayIndex);
 
         /// <inheritdoc />
-        public IEnumerator<T> GetEnumerator() => internalList.GetEnumerator();
+        public IEnumerator<T> GetEnumerator() => _internalList.GetEnumerator();
 
         /// <inheritdoc />
-        public int IndexOf(T item) => internalList.IndexOf(item);
+        public int IndexOf(T item) => _internalList.IndexOf(item);
 
         /// <inheritdoc />
         public void Insert(int index, T item)
         {
-            internalList.Insert(index, item);
+            _internalList.Insert(index, item);
             action();
         }
 
         /// <inheritdoc />
         public bool Remove(T item)
         {
-            bool ret = internalList.Remove(item);
+            bool ret = _internalList.Remove(item);
             action();
             return ret;
         }
@@ -101,18 +101,18 @@ namespace LamestWebserver.Core
         /// <inheritdoc />
         public void RemoveAt(int index)
         {
-            internalList.RemoveAt(index);
+            _internalList.RemoveAt(index);
             action();
         }
 
         /// <inheritdoc />
         public void RemoveAll(Predicate<T> match)
         {
-            internalList.RemoveAll(match);
+            _internalList.RemoveAll(match);
             action();
         }
 
         /// <inheritdoc />
-        IEnumerator IEnumerable.GetEnumerator() => internalList.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _internalList.GetEnumerator();
     }
 }
