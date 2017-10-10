@@ -224,6 +224,12 @@ namespace LamestWebserver.UI.CachedByDefault
         {
             CachingType = ECachingType.Cacheable;
         }
+
+        /// <inheritdoc />
+        public CContainer(IEnumerable<HElement> elements) : base(elements)
+        {
+            CachingType = ECachingType.Cacheable;
+        }
     }
 
     /// <inheritdoc />

@@ -1557,6 +1557,20 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Adds all listed objects into the container.
         /// </summary>
+        /// <param name="elements">the elements to add</param>
+        public HContainer(IEnumerable<HElement> elements)
+        {
+            Tag = "div";
+
+            if (elements is List<HElement>)
+                Elements = (List<HElement>)elements;
+            else
+                Elements = elements.ToList();
+        }
+
+        /// <summary>
+        /// Adds all listed objects into the container.
+        /// </summary>
         /// <param name="tag">the html tag of this element.</param>
         /// <param name="elements">the elements to add</param>
         protected HContainer(string tag, params HElement[] elements) : this(tag)
