@@ -366,24 +366,23 @@ namespace LamestWebserver.Core
             using (_loggerMutex.Lock())
             {
                 if (_currentOutputSource != EOutputSource.None)
-                    _multiStreamWriter = _createMultiStreamWR();
+                    _createMultiStreamWR();
             }
         }
 
-        private MultiStreamWriter _createMultiStreamWR()
+        private void _createMultiStreamWR()
         {
             List<Stream> streamsToApply = new List<Stream>();
+            File.Open(_currentFilePath, FileMode.Append, FileAccess.Write);
 
             if ((_currentOutputSource & EOutputSource.Console) == EOutputSource.Console)
                 streamsToApply.Add(Console.OpenStandardOutput());
 
             if ((_currentOutputSource & EOutputSource.File) == EOutputSource.File)
-                streamsToApply.Add(File.Open(_currentFilePath, FileMode.Append, FileAccess.Write));
-
-            if ((_currentOutputSource & EOutputSource.Custom) == EOutputSource.Custom)
                 streamsToApply.AddRange(_streams);
 
-            return new MultiStreamWriter(streamsToApply);
+
+            _multiStreamWriter = new MultiStreamWriter(streamsToApply);
             
         }
 
@@ -464,11 +463,6 @@ namespace LamestWebserver.Core
             /// Write into File
             /// </summary>
             File = 2,
-
-            /// <summary>
-            /// Write into Costume definde Streams
-            /// </summary>
-            Custom = 4
         }
     }
 }
