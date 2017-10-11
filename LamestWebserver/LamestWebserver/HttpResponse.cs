@@ -67,13 +67,13 @@ namespace LamestWebserver
         /// <summary>
         /// Creates a new HttpResponse
         /// </summary>
-        public HttpResponse(HttpRequest req)
+        public HttpResponse(HttpRequest requestPacket)
         {
             Date = DateTime.Now.ToString(HtmlDateFormat);
 
-            if(req != null)
+            if(requestPacket != null)
             {
-                Range = req.Range;
+                Range = requestPacket.Range;
                 
                 if(Range != null)
                     Status = "206 Partial Content";

@@ -474,6 +474,18 @@ namespace LamestWebserver.UI
             Elements = elements.ToList();
         }
 
+        /// <summary>
+        /// Constructs a new HMultipleElements containing the given elements
+        /// </summary>
+        /// <param name="elements">the elements to add</param>
+        public HMultipleElements(IEnumerable<HElement> elements)
+        {
+            if (elements is List<HElement>)
+                Elements = (List<HElement>)elements;
+            else
+                Elements = elements.ToList();
+        }
+
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData)
         {

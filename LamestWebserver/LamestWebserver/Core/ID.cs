@@ -10,7 +10,7 @@ namespace LamestWebserver.Core
     /// <summary>
     /// Provides functionailty for identifying objects.
     /// </summary>
-    public class ID : IComparable<ID>
+    public class ID : IComparable<ID>, IComparable, IEquatable<ID>
     {
         /// <summary>
         /// The internal ID.
@@ -249,24 +249,30 @@ namespace LamestWebserver.Core
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public bool Equals(ID other)
         {
-            if (ReferenceEquals(obj, null))
-                return false;
-
-            if (!(obj is ID))
-                return false;
-
-            if (_id.Length != ((ID)obj)._id.Length)
+            if (_id.Length != ((ID)other)._id.Length)
                 return false;
 
             for (int i = 0; i < _id.Length; i++)
             {
-                if (_id[i] != ((ID)obj)._id[i])
+                if (_id[i] != ((ID)other)._id[i])
                     return false;
             }
 
             return true;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object other)
+        {
+            if (ReferenceEquals(other, null))
+                return false;
+
+            if (!(other is ID))
+                return false;
+
+            return Equals((ID)other);
         }
 
         /// <inheritdoc />
@@ -284,6 +290,18 @@ namespace LamestWebserver.Core
 
         /// <inheritdoc />
         public override string ToString() => Value;
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            if (ReferenceEquals(obj, null))
+                return -1;
+
+            if (!(obj is ID))
+                return -1;
+
+            return CompareTo((ID)obj);
+        }
 
         /// <summary>
         /// Compares two IDs.
