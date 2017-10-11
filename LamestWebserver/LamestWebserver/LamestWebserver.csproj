@@ -22,7 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>false</Prefer32Bit>
     <DocumentationFile>bin\Debug\lws.XML</DocumentationFile>
   </PropertyGroup>
@@ -34,7 +34,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Release\lws.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
@@ -78,6 +78,7 @@
     <Compile Include="Collections\PositionQueue.cs" />
     <Compile Include="Core\ClampedValue.cs" />
     <Compile Include="Core\Hash.cs" />
+    <Compile Include="Core\ID.cs" />
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
@@ -109,6 +110,7 @@
     <Compile Include="Synchronization\SynchronizedCollection.cs" />
     <Compile Include="Synchronization\SynchronizedDictionary.cs" />
     <Compile Include="Synchronization\SynchronizedValue.cs" />
+    <Compile Include="Synchronization\UsableMutexSlim.cs" />
     <Compile Include="UI\CachedByDefault\CachedByDefaultElements.cs" />
     <Compile Include="UI\ComplexElements.cs" />
     <Compile Include="UI\PageBuilder.cs" />
@@ -121,7 +123,7 @@
     <Compile Include="SessionContainer.cs" />
     <Compile Include="HttpSessionData.cs" />
     <Compile Include="Synchronization\UsableLocker.cs" />
-    <Compile Include="Synchronization\UsableMutex.cs" />
+    <Compile Include="Synchronization\UsableLockSimple.cs" />
     <Compile Include="Synchronization\UsableWriteLock.cs" />
     <Compile Include="WebServer.cs" />
     <Compile Include="ServerHandler.cs" />

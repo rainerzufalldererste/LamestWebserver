@@ -363,7 +363,7 @@ namespace LamestWebserver
             return null;
         }
 
-        internal static char[] hexCharLut = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        internal static char[] HexToCharLookupTable = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
         /// <summary>
         /// Converts a byte[] to a hex string
@@ -372,12 +372,12 @@ namespace LamestWebserver
         /// <returns>the byte[] as hex string</returns>
         public static string ToHexString(this byte[] bytes)
         {
-            char[] s = new char[bytes.Length*2];
+            char[] s = new char[bytes.Length * 2];
 
             for (int i = 0; i < bytes.Length; i++)
             {
-                s[i*2] = hexCharLut[bytes[i] & 0x0F];
-                s[i*2 + 1] = hexCharLut[(bytes[i] & 0xF0) >> 4];
+                s[i * 2] = HexToCharLookupTable[bytes[i] & 0x0F];
+                s[i * 2 + 1] = HexToCharLookupTable[(bytes[i] & 0xF0) >> 4];
             }
 
             return new string(s);

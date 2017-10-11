@@ -474,7 +474,7 @@ namespace LamestWebserver.RequestHandlers
 
         internal AVLHashMap<string, PreloadedFile> Cache = new AVLHashMap<string, PreloadedFile>(CacheHashMapSize);
         internal FileSystemWatcher FileSystemWatcher = null;
-        internal UsableMutex CacheMutex = new UsableMutex();
+        internal UsableLockSimple CacheMutex = new UsableLockSimple();
         internal static readonly byte[] CrLf = Encoding.UTF8.GetBytes("\r\n");
 
         /// <inheritdoc />

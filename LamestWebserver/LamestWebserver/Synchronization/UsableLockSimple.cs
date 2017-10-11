@@ -9,17 +9,20 @@ using System.Threading.Tasks;
 namespace LamestWebserver.Synchronization
 {
     /// <summary>
-    /// Like a regular Mutex, but disposable if Lock() is called, making it available in using statements
-    /// UsableMutex.Lock() is also available for sorted locking to prevent deadlocks.
+    /// Like a regular Mutex, but simplified, deadlock-safe (due to auto-releasing after a certain time) and disposable if Lock() is called, making it available in using statements.
+    /// UsableLockSimple.Lock() is also available for sorted locking to prevent deadlocks.
+    /// Attention: UsableLockSimple might retry actions if deadlocks occur or a certain operation takes to long. Keep that in mind.
+    /// <para />
+    /// Do not use this Synchronizer if you're experienced with multi-threading and expect it to work like a Mutex. This is a simplified Synchronizer to help unexperienced People to write multi-threaded applications.
     /// 
     /// <example>
-    /// using (usableMutex.Lock())
+    /// using (usableLockSimple.Lock())
     /// {
     ///     // Your Code.
     /// }
     /// </example>
     /// </summary>
-    public class UsableMutex
+    public sealed class UsableLockSimple
     {
         /// <summary>
         /// The milliseconds to wait for the mutex to be free.
@@ -32,15 +35,15 @@ namespace LamestWebserver.Synchronization
         public static int MutexSelfRelease = 200;
 
         private ReaderWriterLockSlim innerMutex;
-        private readonly string ID = Hash.GetHash();
+        private ID ID = new ID();
 
         private Mutex helperMutex = new Mutex();
         private DateTime? lastLocked = null;
 
         /// <summary>
-        /// Constructs a new UsableMutex.
+        /// Constructs a new UsableLockSimple.
         /// </summary>
-        public UsableMutex()
+        public UsableLockSimple()
         {
             innerMutex = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         }
@@ -140,11 +143,11 @@ namespace LamestWebserver.Synchronization
         /// <summary>
         /// Is used to lock especially multiple mutexes in sorted order to prevent deadlocks
         /// </summary>
-        /// <param name="mutexes">the usablemutexes to lock</param>
+        /// <param name="mutexes">the UsableLockSimple-s to lock</param>
         /// <returns>a UsableMutliMutexLocker, that already locked the given mutexes</returns>
-        public static UsableMultiUsableMutexLocker Lock(params UsableMutex[] mutexes)
+        public static UsableMultiUsableMutexLocker Lock(params UsableLockSimple[] mutexes)
         {
-            UsableMutex[] mut = new UsableMutex[mutexes.Length];
+            UsableLockSimple[] mut = new UsableLockSimple[mutexes.Length];
 
             for (int i = 0; i < mutexes.Length; i++)
             {
@@ -187,7 +190,7 @@ namespace LamestWebserver.Synchronization
 
             for (int i = 0; i < mutexes.Length; i++)
             {
-                if (!mutexes[i].WaitOne(UsableMutex.MutexWaitMillis))
+                if (!mutexes[i].WaitOne(UsableLockSimple.MutexWaitMillis))
                 {
                     Dispose();
                     throw new MutexRetryException();
@@ -211,18 +214,18 @@ namespace LamestWebserver.Synchronization
     }
 
     /// <summary>
-    /// A MutexLocker for multiple UsableMutexes
+    /// A MutexLocker for multiple UsableLockSimple-s
     /// </summary>
     public class UsableMultiUsableMutexLocker : IDisposable
     {
-        private UsableMutex[] mutexes;
+        private UsableLockSimple[] mutexes;
         private bool[] locked;
 
         /// <summary>
         /// constructs a new UsableMultiUsableMutexLocker and already locks all given mutexes.
         /// </summary>
-        /// <param name="mutexes">the usableMutexes to lock</param>
-        public UsableMultiUsableMutexLocker(params UsableMutex[] mutexes)
+        /// <param name="mutexes">the UsableLockSimple-s to lock</param>
+        public UsableMultiUsableMutexLocker(params UsableLockSimple[] mutexes)
         {
             this.mutexes = mutexes;
             this.locked = new bool[mutexes.Length];
@@ -240,7 +243,7 @@ namespace LamestWebserver.Synchronization
         }
 
         /// <summary>
-        /// Releases all locked UsableMutexes in opposite locking order.
+        /// Releases all locked UsableLockSimple-s in opposite locking order.
         /// </summary>
         public void Dispose()
         {
@@ -257,39 +260,5 @@ namespace LamestWebserver.Synchronization
     /// </summary>
     public class MutexRetryException : Exception
     {
-    }
-
-    /// <summary>
-    /// Just a simple UsableMutex with no handling for deadlocks - Only to use Mutexes with IDisposable.
-    /// </summary>
-    public class UsableMutexSlim
-    {
-        private readonly Mutex _innerMutex = new Mutex();
-
-        /// <summary>
-        /// Locks the mutex; IDisposable.
-        /// </summary>
-        /// <returns>an IDisposable object that releases the mutex on Dispose()</returns>
-        public UsableSlimMutexLocker Lock() => new UsableSlimMutexLocker(this);
-
-        /// <summary>
-        /// Just a simple IDisposable Mutex lock/release.
-        /// </summary>
-        public class UsableSlimMutexLocker : IDisposable
-        {
-            private readonly UsableMutexSlim _innerMutex;
-
-            internal UsableSlimMutexLocker(UsableMutexSlim innerMutex)
-            {
-                this._innerMutex = innerMutex;
-                innerMutex._innerMutex.WaitOne();
-            }
-
-            /// <inheritdoc />
-            public void Dispose()
-            {
-                _innerMutex._innerMutex.ReleaseMutex();
-            }
-        }
     }
 }

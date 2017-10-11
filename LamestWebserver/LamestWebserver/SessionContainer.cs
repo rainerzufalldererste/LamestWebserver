@@ -87,7 +87,7 @@ namespace LamestWebserver
         /// </summary>
         public static int MaxUsers = 256;
 
-        private static UsableMutex mutex = new UsableMutex();
+        private static UsableLockSimple mutex = new UsableLockSimple();
 
         private static AVLTree<string, AVLTree<string, object>> PerFileObjects = new AVLTree<string, AVLTree<string, object>>();
         
