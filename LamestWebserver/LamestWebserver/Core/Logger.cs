@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using LamestWebserver.Synchronization;
+using LamestWebserver.Collections;
 
 namespace LamestWebserver.Core
 {
@@ -36,9 +37,9 @@ namespace LamestWebserver.Core
             }
             set
             {
+                if (CurrentLogger.Instance._currentFilePath == value) return;
                 CurrentLogger.Instance._currentFilePath = value;
-                CurrentLogger.Instance.Close();
-                CurrentLogger.Instance.Open();
+                CurrentLogger.Instance.RestartStream();
             }
         }
 
@@ -58,9 +59,9 @@ namespace LamestWebserver.Core
             }
             set
             {
+                if (_currentOutputSource == value) return;
                 _currentOutputSource = value;
-                CurrentLogger.Instance.Close();
-                CurrentLogger.Instance.Open();
+                CurrentLogger.Instance.RestartStream();
             }
         }
 
@@ -76,16 +77,20 @@ namespace LamestWebserver.Core
 
         private UsableMutex _loggerMutex = new UsableMutex();
 
-        private ActionList<Stream> _streams = new ActionList<Stream>(() => 
+        private ActionList<Stream> _streams = new ActionList<Stream>(() =>
         {
-            CurrentLogger.Instance.Close();
-            CurrentLogger.Instance.Open();
+            CurrentLogger.Instance.RestartStream();
         });
 
         /// <summary>
-        /// Currently used Outputsource
+        /// Currently used output source
         /// </summary>
-        private EOutputSource _currentOutputSource = EOutputSource.File | EOutputSource.Console | EOutputSource.Custom;
+        private EOutputSource _currentOutputSource = EOutputSource.File | EOutputSource.Console;
+
+        /// <summary>
+        /// If manually closed or opened check this value
+        /// </summary>
+        public bool IsOpen { get; private set; }
 
         /// <summary>
         /// Logging a message on logging level 'Trace'.
@@ -293,20 +298,20 @@ namespace LamestWebserver.Core
         public static void LogCrashAndBurn(string msg) => CurrentLogger.Instance.CrashAndBurn(msg);
 
         /// <summary>
-        /// Add some Custom Streams to the Logger
+        /// Add some Custom Streams to the singleton Logger.
         /// </summary>
         /// <param name="stream"></param>
         public static void AddCustomStream(Stream stream) => CurrentLogger.Instance._streams.Add(stream);
 
         /// <summary>
-        /// Remove some Custom Streams to the Logger
+        /// Remove some Custom Streams to the singleton Logger.
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
         public static bool RemoveCustomStream(Stream stream) => CurrentLogger.Instance._streams.Remove(stream);
-        
+
         /// <summary>
-        /// Clear all Custom Streams 
+        /// Clear all Custom Streams in the singleton. 
         /// </summary>
         public static void ClearCustomStreams() => CurrentLogger.Instance._streams.Clear();
 
@@ -348,32 +353,42 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Closes and Flushes the Logger stream.
+        /// Closes and Flushes the Logger stream (NOT Thread save use Restart).
         /// </summary>
         public void Close()
         {
-            using (_loggerMutex.Lock())
+            IsOpen = false;
+            _multiStreamWriter.Dispose();
+        }
+
+        /// <summary>
+        /// Opens and initializes the steam to write to (NOT Thread save use Restart).
+        /// </summary>
+        protected void Open()
+        {
+            if (_currentOutputSource != EOutputSource.None)
             {
-                _multiStreamWriter.Dispose();
+                _createMultiStreamWR();
+                IsOpen = true;
             }
         }
 
         /// <summary>
-        /// Opens and initializes the steam to write to.
+        /// Atomic operation to close and open the Logger save by a mutex.
         /// </summary>
-        protected void Open()
+        public void RestartStream()
         {
             using (_loggerMutex.Lock())
             {
-                if (_currentOutputSource != EOutputSource.None)
-                    _createMultiStreamWR();
+                Close();
+                Open();
             }
         }
 
         private void _createMultiStreamWR()
         {
             List<Stream> streamsToApply = new List<Stream>();
-            File.Open(_currentFilePath, FileMode.Append, FileAccess.Write);
+            streamsToApply.Add(File.Open(_currentFilePath, FileMode.Append, FileAccess.Write));
 
             if ((_currentOutputSource & EOutputSource.Console) == EOutputSource.Console)
                 streamsToApply.Add(Console.OpenStandardOutput());
@@ -383,7 +398,7 @@ namespace LamestWebserver.Core
 
 
             _multiStreamWriter = new MultiStreamWriter(streamsToApply);
-            
+
         }
 
         /// <summary>
@@ -413,7 +428,7 @@ namespace LamestWebserver.Core
             CrashAndBurn = 6,
 
             /// <summary>
-            /// Throws an Excption.
+            /// Throws an Exception.
             /// </summary>
             Except = 5,
 
@@ -450,17 +465,17 @@ namespace LamestWebserver.Core
         public enum EOutputSource : byte
         {
             /// <summary>
-            /// No Logging output at all
+            /// No Logging output at all.
             /// </summary>
             None = 0,
 
             /// <summary>
-            /// Write To Console
+            /// Write To Console.
             /// </summary>
             Console = 1,
 
             /// <summary>
-            /// Write into File
+            /// Write into File.
             /// </summary>
             File = 2,
         }

@@ -8,14 +8,14 @@ using System.IO;
 namespace LamestWebserver.Core
 {
     /// <summary>
-    /// Stream Writer who can writer multiple streams
+    /// Stream Writer who can writer multiple streams.
     /// </summary>
     public class MultiStreamWriter : IDisposable
     {
         private List<StreamWriter> _streamWriters = new List<StreamWriter>();
 
         /// <summary>
-        /// Creates a MultiStreamWriter
+        /// Creates a MultiStreamWriter.
         /// </summary>
         /// <param name="streams"></param>
         public MultiStreamWriter(IEnumerable<Stream> streams)
@@ -27,7 +27,7 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Creates a MultiStreamWriter
+        /// Creates a MultiStreamWriter.
         /// </summary>
         /// <param name="streams"></param>
         public MultiStreamWriter(params Stream[] streams)
@@ -39,7 +39,7 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Write to all streams
+        /// Write to all streams.
         /// </summary>
         /// <param name="value"></param>
         public void Write(String value)
@@ -63,7 +63,7 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Flush all streams
+        /// Flush all streams.
         /// </summary>
         public void Flush()
         {
@@ -74,7 +74,7 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Close all streams
+        /// Close all streams.
         /// </summary>
         public void Close()
         {
@@ -94,7 +94,7 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Deconstructor flush and closes all streams 
+        /// De-constructor flush and closes all streams.
         /// </summary>
         ~MultiStreamWriter()
         {

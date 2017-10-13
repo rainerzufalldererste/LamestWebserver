@@ -5,16 +5,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LamestWebserver.Core
+namespace LamestWebserver.Collections
 {
     /// <summary>
-    /// List with the ability to do a action everytime you manipulate it
+    /// List with the ability to do a action every time you manipulate it.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class ActionList<T> : IEnumerable<T>
     {
         /// <summary>
-        /// Action that get executed after each manipulation
+        /// Action that get executed after each manipulation.
         /// </summary>
         public Action action;
 
@@ -40,7 +40,7 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Initilize a new ActionList with a capacity
+        /// Initialize a new ActionList with a capacity.
         /// </summary>
         /// <param name="capacity"></param>
         public ActionList(int capacity)

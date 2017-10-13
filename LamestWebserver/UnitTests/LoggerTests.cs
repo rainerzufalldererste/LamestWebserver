@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LamestWebserver.Core;
+using LamestWebserver.Collections;
 using System.IO;
 using System;
 using System.Collections.Generic;
@@ -12,8 +13,8 @@ namespace UnitTests
     [TestClass]
     public class LoggerTests
     {
-        private const string PATH_TO_NEW_FILE = "newFile.log";
-        private const string Pat_TO_PARALLEL_FILE = "parallelLog.log";
+        private const string PathToNewFile = "newFile.log";
+        private const string PathToParallelLog = "parallelLog.log";
 
         [TestMethod]
         public void TestLoggerFileSwitch()
@@ -28,17 +29,17 @@ namespace UnitTests
             Assert.IsTrue(File.Exists(Logger.FilePath));
             Assert.IsTrue(new FileInfo(Logger.FilePath).Length > 0);
             
-            Logger.FilePath = PATH_TO_NEW_FILE;
+            Logger.FilePath = PathToNewFile;
 
             for (int i = 0; i < 1000; i++)
             {
                 Logger.LogInformation(i + " stuff2");
             }
 
-            Assert.IsTrue(File.Exists(PATH_TO_NEW_FILE));
-            Assert.IsTrue(new FileInfo(PATH_TO_NEW_FILE).Length > 0);
+            Assert.IsTrue(File.Exists(PathToNewFile));
+            Assert.IsTrue(new FileInfo(PathToNewFile).Length > 0);
 
-            Logger.AddCustomStream(File.Open(Pat_TO_PARALLEL_FILE, FileMode.Append,FileAccess.Write));
+            Logger.AddCustomStream(File.Open(PathToParallelLog, FileMode.Append,FileAccess.Write));
 
             for (int i = 0; i < 1000; i++)
             {
@@ -46,18 +47,18 @@ namespace UnitTests
             }
 
             Logger.CurrentLogger.Instance.OutputSourceFlags = Logger.EOutputSource.None;
-            long FI = new FileInfo(PATH_TO_NEW_FILE).Length;
+            long FI = new FileInfo(PathToNewFile).Length;
 
             for (int i = 0; i < 1000; i++)
             {
                 Logger.LogInformation(i + " stuff4");
             }
-            Assert.IsTrue(new FileInfo(PATH_TO_NEW_FILE).Length == FI);
+            Assert.IsTrue(new FileInfo(PathToNewFile).Length == FI);
 
             //Clean up
             File.Delete(autoLogFile);
-            File.Delete(PATH_TO_NEW_FILE);
-            File.Delete(Pat_TO_PARALLEL_FILE);
+            File.Delete(PathToNewFile);
+            File.Delete(PathToParallelLog);
         }
 
         [TestMethod]
