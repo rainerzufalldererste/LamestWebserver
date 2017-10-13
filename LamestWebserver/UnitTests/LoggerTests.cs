@@ -19,17 +19,17 @@ namespace UnitTests
         [TestMethod]
         public void TestLoggerFileSwitch()
         {
-            string autoLogFile = Logger.FilePath;
+            string autoLogFile = Logger.CurrentLogger.Instance.FilePath;
 
             for (int i = 0; i < 1000; i++)
             {
                 Logger.LogInformation(i + "stuff");
             }
 
-            Assert.IsTrue(File.Exists(Logger.FilePath));
-            Assert.IsTrue(new FileInfo(Logger.FilePath).Length > 0);
-            
-            Logger.FilePath = PathToNewFile;
+            Assert.IsTrue(File.Exists(Logger.CurrentLogger.Instance.FilePath));
+            Assert.IsTrue(new FileInfo(Logger.CurrentLogger.Instance.FilePath).Length > 0);
+
+            Logger.CurrentLogger.Instance.FilePath = PathToNewFile;
 
             for (int i = 0; i < 1000; i++)
             {
