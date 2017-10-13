@@ -12,15 +12,101 @@ namespace LamestWebserver.DebugView
 {
     public class DebugResponse : IRequestHandler
     {
-        private static DebugContainerResponseNode _debugNode = new DebugContainerResponseNode("LamestWebserver Debug View");
+        public static readonly Singleton<DebugResponse> DebugResponseInstance = new Singleton<DebugResponse>(() => new DebugResponse());
 
-        public static string StyleSheet = "";
+        private static DebugContainerResponseNode _debugNode = DebugContainerResponseNode.ConstructRootNode("LamestWebserver Debug View");
+
+        public static string StyleSheet =
+@"body {
+    margin: 0;
+    background: #111215;
+}
+
+p, a, h1, h2, h3, div.container, b, i {
+    max-width: 1100px;
+    margin: 1em auto 0.5em auto;
+}
+
+div.main {
+    width: 75%;
+    background: #151619;
+    margin: 0em auto 0em auto;
+    display: block;
+    padding: 2em 5em 8em 5em;
+    min-height: 60%;
+}
+
+
+div {
+    font-size: 13pt;
+    font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+    color: #fff;
+    line-height: 17pt;
+}
+
+span {
+    background-color: #222327;
+    padding: 0.1em 0.3em 0.25em 0.3em;
+    margin: 0.3em;
+    font-size: smaller;
+    border-radius: 0.3em;
+    color: #575d61;
+}
+
+hr {
+    width: 80%;
+    border-style: solid;
+    border-width: 1px;
+    margin: 1.5em auto;
+    color: #575d61;
+}
+
+h1 {
+    font-family: 'Segoe UI Light', Arial, sans-serif;
+    font-weight: normal;
+    font-size: 40pt;
+    margin-bottom: 40pt;
+    text-shadow: rgba(131, 223, 251, 0.43) 3px 3px 15px;
+    line-height: 90%;
+}
+
+::selection {
+    background: #80cefb;
+    color: #c3f3ff;
+}
+
+div.footer {
+    margin-bottom: 10em;
+    background-color: #222327;
+    width: 75%;
+    margin: 0em auto 10em auto;
+    padding: 2.5em 5em 2.5em 5em;
+}
+
+.footer p {
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 11pt;
+    padding: 0em;
+    margin-left: 0;
+    color: #6c6e75;
+}
+
+a {
+    color: #aaa;
+    text-decoration: none;
+    display: block;
+}
+
+a:hover {
+    color: #92b8ce;
+    text-decoration: underline;
+}";
 
         public HttpResponse GetResponse(HttpRequest requestPacket)
         {
             SessionData sessionData = new HttpSessionData(requestPacket);
             PositionQueue<Tuple<ID, string>> unpackedUrls = UnpackUrlActions(requestPacket);
-            HElement e = _debugNode.GetContents(sessionData, unpackedUrls.Peek().Item2, unpackedUrls);
+            HElement e = _debugNode.GetContents(sessionData, unpackedUrls.Peek()?.Item2, unpackedUrls);
 
             PageBuilder pb = new PageBuilder("LamestWebserver Debug View")
             {
@@ -46,7 +132,7 @@ namespace LamestWebserver.DebugView
                 }
             };
 
-            return new HttpResponse(requestPacket) { };
+            return new HttpResponse(requestPacket, pb.GetContent(sessionData)) { Cookies = ((HttpSessionData)(sessionData)).Cookies.ToList() };
         }
 
         public PositionQueue<Tuple<ID, string>> UnpackUrlActions(HttpRequest request)
@@ -74,18 +160,53 @@ namespace LamestWebserver.DebugView
 
             return ret;
         }
+
+        public static void AddNode(DebugResponseNode node)
+        {
+            _debugNode.AddNode(node);
+        }
+
+        public static void RemoveNode(DebugResponseNode node)
+        {
+            _debugNode.RemoveNode(node);
+        }
+
+        public static void ClearNodes()
+        {
+            _debugNode.ClearNodes();
+        }
     }
 
     public abstract class DebugResponseNode
     {
         public string Name;
 
+        private ID _id;
+
+        public ID ID
+        {
+            get
+            {
+                if (_id == null)
+                    _id = new ID();
+
+                return _id;
+            }
+
+            private set
+            {
+                _id = value;
+            }
+        }
+
         public abstract HElement GetContents(SessionData sessionData, string requestedAction, PositionQueue<Tuple<ID, string>> positionQueue);
 
         public static HLink GetLink(string text, ID subUrl, PositionQueue<Tuple<ID, string>> positionQueue, string requestedAction = null)
         {
             List<Tuple<ID, string>> already = positionQueue.GetPassed();
-            already.Add(positionQueue.Peek());
+
+            if(!positionQueue.AtEnd())
+                already.Add(positionQueue.Peek());
 
             string ret = "./";
 
@@ -133,17 +254,46 @@ namespace LamestWebserver.DebugView
 
         public Func<SessionData, HElement> GetElements;
 
-        public DebugContainerResponseNode(string name, string description = null, Func<SessionData, HElement> getElementFunc = null)
+        private DebugContainerResponseNode() { }
+
+        public DebugContainerResponseNode(string name, string description = null, Func<SessionData, HElement> getElementFunc = null, DebugContainerResponseNode parentNode = null)
         {
             Name = name;
             _description = description;
             SubNodes = new AVLTree<ID, DebugResponseNode>();
             GetElements = getElementFunc ?? (s => new HText($"No {nameof(GetElements)} function was specified."));
+
+            if (parentNode == null)
+                DebugResponse.AddNode(this);
+            else
+                parentNode.AddNode(this);
+        }
+
+        internal static DebugContainerResponseNode ConstructRootNode(string name, string description = null, Func<SessionData, HElement> getElementFunc = null)
+        {
+            DebugContainerResponseNode ret = new DebugContainerResponseNode();
+
+            ret.Name = name;
+            ret._description = description;
+            ret.SubNodes = new AVLTree<ID, DebugResponseNode>();
+            ret.GetElements = getElementFunc ?? (s => new HText($"No {nameof(GetElements)} function was specified."));
+
+            return ret;
         }
 
         public void AddNode(DebugResponseNode node)
         {
-            SubNodes.Add(new ID(), node);
+            SubNodes.Add(node.ID, node);
+        }
+
+        public void RemoveNode(DebugResponseNode node)
+        {
+            SubNodes.Remove(new KeyValuePair<ID, DebugResponseNode>(node.ID, node));
+        }
+
+        public void ClearNodes()
+        {
+            SubNodes.Clear();
         }
 
         public override HElement GetContents(SessionData sessionData, string requestedAction, PositionQueue<Tuple<ID, string>> positionQueue)

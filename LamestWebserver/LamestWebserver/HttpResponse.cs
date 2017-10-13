@@ -67,7 +67,7 @@ namespace LamestWebserver
         /// <summary>
         /// Creates a new HttpResponse
         /// </summary>
-        public HttpResponse(HttpRequest requestPacket)
+        private HttpResponse(HttpRequest requestPacket)
         {
             Date = DateTime.Now.ToString(HtmlDateFormat);
 
@@ -78,6 +78,17 @@ namespace LamestWebserver
                 if(Range != null)
                     Status = "206 Partial Content";
             }
+        }
+
+        public HttpResponse(HttpRequest requestPacket, byte[] binaryData) : this(requestPacket)
+        {
+            BinaryData = binaryData;
+        }
+
+        public HttpResponse(HttpRequest requestPacket, string responseString) : this(requestPacket)
+        {
+            if (responseString != null)
+                BinaryData = Encoding.UTF8.GetBytes(responseString);
         }
 
         /// <summary>
@@ -141,12 +152,20 @@ namespace LamestWebserver
             sb.Append("Content-Length: " + _contentLength + "\r\n\r\n");
 
             byte[] ret0 = Encoding.UTF8.GetBytes(sb.ToString());
-            byte[] ret = new byte[ret0.Length + BinaryData.Length];
 
-            Array.Copy(ret0, ret, ret0.Length);
-            Array.Copy(BinaryData, 0, ret, ret0.Length, BinaryData.Length);
+            if (BinaryData != null)
+            {
+                byte[] ret = new byte[ret0.Length + BinaryData.Length];
 
-            return ret;
+                Array.Copy(ret0, ret, ret0.Length);
+                Array.Copy(BinaryData, 0, ret, ret0.Length, BinaryData.Length);
+
+                return ret;
+            }
+            else
+            {
+                return ret0;
+            }
         }
     }
 }

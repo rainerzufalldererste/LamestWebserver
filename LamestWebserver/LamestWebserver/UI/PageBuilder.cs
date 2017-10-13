@@ -808,7 +808,12 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
                 ret += DescriptionTags;
 
-            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
+            ret += ">";
+
+            if (Text != null)
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+                    
+            ret += "</p>";
 
             return ret;
         }
@@ -2316,6 +2321,16 @@ namespace LamestWebserver.UI
         /// <param name="listType">the type of the list</param>
         /// <param name="elements">the contents of the list</param>
         public HList(EListType listType, params HElement[] elements) : this(listType)
+        {
+            this.Elements = elements.ToList();
+        }
+
+        /// <summary>
+        /// Constructs a new List Element
+        /// </summary>
+        /// <param name="listType">the type of the list</param>
+        /// <param name="elements">the contents of the list</param>
+        public HList(EListType listType, IEnumerable<HElement> elements) : this(listType)
         {
             this.Elements = elements.ToList();
         }

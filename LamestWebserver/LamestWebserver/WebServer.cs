@@ -13,12 +13,13 @@ using LamestWebserver.Collections;
 using System.IO;
 using System.Runtime.Serialization;
 using LamestWebserver.Synchronization;
-using ThreadState = System.Threading.ThreadState;
 using System.Reflection;
 using LamestWebserver.RequestHandlers;
 using Newtonsoft.Json;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
+
+using ThreadState = System.Threading.ThreadState;
 
 namespace LamestWebserver
 {
@@ -432,14 +433,13 @@ namespace LamestWebserver
 
                     try
                     {
-                        byte[] response = new HttpResponse(null)
-                        {
-                            Status = "500 Internal Server Error",
-                            BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                        byte[] response = new HttpResponse(null, Master.GetErrorMsg(
                                         "Error 500: Internal Server Error",
                                         "<p>An Exception occured while trying to authenticate the connection.</p><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                         + GetErrorMsg(e, null, null).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                         + "</div></p>"))
+                        {
+                            Status = "500 Internal Server Error"
                         }.GetPackage();
 
                         nws.Write(response, 0, response.Length);
@@ -526,10 +526,7 @@ namespace LamestWebserver
                         {
                             lastmsg = null;
 
-                            HttpResponse htp_ = new HttpResponse(null)
-                            {
-                                Status = "501 Not Implemented",
-                                BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                            HttpResponse htp_ = new HttpResponse(null, Master.GetErrorMsg(
                                     "Error 501: Not Implemented",
                                     "<p>The Feature that you were trying to use is not yet implemented.</p>" +
 #if DEBUG
@@ -537,6 +534,8 @@ namespace LamestWebserver
                                     msg_.Replace("\r\n", "<br>") +
 #endif
                                     "</div></p>"))
+                            {
+                                Status = "501 Not Implemented"
                             };
 
                             buffer = htp_.GetPackage();
@@ -551,7 +550,7 @@ namespace LamestWebserver
 
                             try
                             {
-                                response = ResponseHandler.CurrentResponseHandler.GetResponse(htp);
+                                response = DebugView.DebugResponse.DebugResponseInstance.Instance.GetResponse(htp);/*ResponseHandler.CurrentResponseHandler.GetResponse(htp);*/ //############################ DO NOT APPROVE THIS PULL REQUEST IF THIS IS STILL CHANGED!!! ###############################
 
                                 if (response == null)
                                     goto InvalidResponse;
@@ -579,14 +578,13 @@ namespace LamestWebserver
                             }
                             catch (Exception e)
                             {
-                                HttpResponse htp_ = new HttpResponse(null)
-                                {
-                                    Status = "500 Internal Server Error",
-                                    BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                                HttpResponse htp_ = new HttpResponse(null, Master.GetErrorMsg(
                                         "Error 500: Internal Server Error",
                                         "<p>An Exception occured while processing the response.</p><br><br><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                                         + GetErrorMsg(e, SessionData.CurrentSession, msg_).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                                         + "</div></p>"))
+                                {
+                                    Status = "500 Internal Server Error"
                                 };
 
                                 buffer = htp_.GetPackage();
@@ -602,10 +600,7 @@ namespace LamestWebserver
 
                             if (htp.RequestUrl.EndsWith("/"))
                             {
-                                buffer = new HttpResponse(null)
-                                {
-                                    Status = "403 Forbidden",
-                                    BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                                buffer = new HttpResponse(null, Master.GetErrorMsg(
                                         "Error 403: Forbidden",
                                         "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
 #if DEBUG
@@ -613,14 +608,13 @@ namespace LamestWebserver
                                         msg_.Replace("\r\n", "<br>") +
 #endif
                                         "</div></p>"))
+                                {
+                                    Status = "403 Forbidden"
                                 }.GetPackage();
                             }
                             else
                             {
-                                buffer = new HttpResponse(null)
-                                {
-                                    Status = "404 File Not Found",
-                                    BinaryData = enc.GetBytes(Master.GetErrorMsg(
+                                buffer = new HttpResponse(null, Master.GetErrorMsg(
                                         "Error 404: Page Not Found",
                                         "<p>The URL you requested did not match any page or file on the server.</p>" +
 #if DEBUG
@@ -628,6 +622,8 @@ namespace LamestWebserver
                                         msg_.Replace("\r\n", "<br>") +
 #endif
                                         "</div></p>"))
+                                {
+                                    Status = "404 File Not Found"
                                 }.GetPackage();
                             }
 

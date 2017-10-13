@@ -8,6 +8,8 @@ using System.Threading;
 using LamestWebserver.Collections;
 using LamestWebserver.Serialization;
 using LamestWebserver.Synchronization;
+using LamestWebserver.DebugView;
+using LamestWebserver.UI;
 
 namespace LamestWebserver.RequestHandlers
 {
@@ -17,9 +19,9 @@ namespace LamestWebserver.RequestHandlers
     public class ResponseHandler
     {
         /// <summary>
-        /// The ResponseHandler used in the Webservers.
+        /// The ResponseHandler used across all default Webserver Instances.
         /// </summary>
-        public static ResponseHandler CurrentResponseHandler { get; } = new ResponseHandler();
+        public static readonly ResponseHandler CurrentResponseHandler = new ResponseHandler();
 
         /// <summary>
         /// The RequestHandlers to look through primarily.
@@ -35,6 +37,43 @@ namespace LamestWebserver.RequestHandlers
         /// A WriteLock to safely add and remove response handlers.
         /// </summary>
         protected UsableWriteLock RequestWriteLock = new UsableWriteLock();
+
+        public readonly DebugContainerResponseNode _debugResponseNode;
+
+        public ResponseHandler()
+        {
+            _debugResponseNode = new DebugContainerResponseNode(GetType().Name, null, DebugViewResponse, null);
+        }
+
+        public void AddDebugResponseNode(DebugResponseNode node)
+        {
+            _debugResponseNode.AddNode(node);
+        }
+
+        public void RemoveDebugResponseNode(DebugResponseNode node)
+        {
+            _debugResponseNode.RemoveNode(node);
+        }
+
+        public void ClearDebugResponseNodes()
+        {
+            _debugResponseNode.ClearNodes();
+        }
+
+        private HElement DebugViewResponse(SessionData sessionData)
+        {
+            return new HContainer
+            {
+                Elements =
+                {
+                    new HHeadline(nameof(RequestHandlers), 2),
+                    new HList(HList.EListType.UnorderedList, (from rh in RequestHandlers select (HElement)new HString(rh.GetType().Name))),
+                    new HNewLine(),
+                    new HHeadline(nameof(SecondaryRequestHandlers), 2),
+                    new HList(HList.EListType.UnorderedList, (from srh in SecondaryRequestHandlers select (HElement)new HString(srh.GetType().Name)))
+                }
+            };
+        }
 
         /// <summary>
         /// Retrieves a response (or null) from a given http packet by looking through all primary and secondary request handlers as long as none has a propper response to it.
@@ -239,7 +278,7 @@ namespace LamestWebserver.RequestHandlers
                 return null;
             }
 
-            return new HttpResponse(requestPacket) {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
+            return new HttpResponse(requestPacket, contents) {ContentType = GetMimeType(extention), ModifiedDate = lastModified};
         }
 
         /// <summary>
@@ -576,23 +615,22 @@ namespace LamestWebserver.RequestHandlers
 
                 if (notModified)
                 {
-                    return new HttpResponse(null) {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf};
+                    return new HttpResponse(null, CrLf) { Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified };
                 }
                 else
                 {
-                    return new HttpResponse(requestPacket) {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
+                    return new HttpResponse(requestPacket, contents) { ContentType = GetMimeType(extention), ModifiedDate = lastModified };
                 }
             }
             catch (Exception e)
             {
-                return new HttpResponse(null)
-                {
-                    Status = "500 Internal Server Error",
-                    BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                return new HttpResponse(null, Master.GetErrorMsg(
                         "Error 500: Internal Server Error",
                         "<p>An Exception occurred while sending the response:<br><br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                         + WebServer.GetErrorMsg(e, null, requestPacket.RawRequest).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                         + "</div>"))
+                {
+                    Status = "500 Internal Server Error"
                 };
             }
         }
@@ -780,9 +818,9 @@ namespace LamestWebserver.RequestHandlers
                 return null;
 
             if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value <= file.LastModified)
-                return new HttpResponse(null) {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
+                return new HttpResponse(null, CachedFileRequestHandler.CrLf) { Status = "304 Not Modified", ContentType = null, ModifiedDate = file.LastModified };
 
-            return new HttpResponse(requestPacket) {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
+            return new HttpResponse(requestPacket, file.Contents) { ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
         }
     }
 
@@ -861,25 +899,23 @@ namespace LamestWebserver.RequestHandlers
         {
             if (requestPacket.RequestUrl.EndsWith("/"))
             {
-                return new HttpResponse(null)
-                {
-                    Status = "403 Forbidden",
-                    BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                return new HttpResponse(null, Master.GetErrorMsg(
                         "Error 403: Forbidden",
                         "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
                         "</div></p>"))
+                {
+                    Status = "403 Forbidden"
                 };
             }
             else
             {
-                return new HttpResponse(null)
-                {
-                    Status = "404 File Not Found",
-                    BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                return new HttpResponse(null, Master.GetErrorMsg(
                         "Error 404: Page Not Found",
                         "<p>The URL you requested did not match any page or file on the server.</p>" +
 
                         "</div></p>"))
+                {
+                    Status = "404 File Not Found"
                 };
             }
         }
@@ -974,9 +1010,8 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override HttpResponse GetRetriableResponse(Master.GetContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpResponse(requestPacket)
+            return new HttpResponse(requestPacket, requestFunction.Invoke(sessionData))
             {
-                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
                 Cookies = sessionData.SetCookies
             };
         }
@@ -1036,9 +1071,8 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override HttpResponse GetRetriableResponse(Master.GetContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpResponse(requestPacket)
+            return new HttpResponse(requestPacket, requestFunction.Invoke(sessionData))
             {
-                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
                 Cookies = sessionData.SetCookies
             };
         }
@@ -1173,9 +1207,8 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override HttpResponse GetRetriableResponse(Master.GetDirectoryContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpResponse(requestPacket)
+            return new HttpResponse(requestPacket, requestFunction.Invoke(sessionData, _subUrl))
             {
-                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData, _subUrl)),
                 Cookies = sessionData.SetCookies
             };
         }
