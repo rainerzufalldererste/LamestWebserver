@@ -39,7 +39,7 @@ namespace UnitTests
             Assert.IsTrue(File.Exists(PathToNewFile));
             Assert.IsTrue(new FileInfo(PathToNewFile).Length > 0);
 
-            Logger.AddCustomStream(File.Open(PathToParallelLog, FileMode.Append,FileAccess.Write));
+            Logger.CurrentLogger.Instance.AddCustomStream(File.Open(PathToParallelLog, FileMode.Append,FileAccess.Write));
 
             for (int i = 0; i < 1000; i++)
             {
