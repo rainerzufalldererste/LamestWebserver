@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LamestWebserver;
 
 namespace UnitTests
 {
@@ -194,11 +195,26 @@ namespace UnitTests
             Assert.AreEqual(1, id0.GetUlongArray().Length);
             Assert.AreEqual(ulong.MaxValue, id0.GetUlongArray()[0]);
 
+            foreach (byte b in id0.GetByteArray())
+                Assert.AreEqual((byte)0xFF, b);
+
+            id1 = new ID(id0.GetByteArray());
+            
+            foreach (byte b in id1.GetByteArray())
+                Assert.AreEqual((byte)0xFF, b);
+
             id1 = new ID("0123456789abcdef");
 
             Assert.AreEqual("0123456789abcdef", id1.ToString());
             Assert.AreEqual(1, id1.GetUlongArray().Length);
             Assert.AreEqual(0xfedcba9876543210ul, id1.GetUlongArray()[0]);
+
+            byte[] bytes = id1.GetByteArray();
+
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                Assert.AreEqual("0123456789abcdef".Substring(i * 2, 2), new byte[] { bytes[i] }.ToHexString());
+            }
         }
 
         [TestMethod]
