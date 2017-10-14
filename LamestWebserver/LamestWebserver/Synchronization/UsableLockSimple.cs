@@ -63,7 +63,7 @@ namespace LamestWebserver.Synchronization
                 }
                 catch (Exception)
                 {
-                    ServerHandler.LogMessage($"Usable Mutex '{ID}' was locked longer than {MutexSelfRelease} millis");
+                    Logger.LogWarning($"Usable Mutex '{ID}' was locked longer than {MutexSelfRelease} millis.");
                 }
 
                 lastLocked = null;
@@ -125,7 +125,7 @@ namespace LamestWebserver.Synchronization
             }
             catch (SynchronizationLockException)
             {
-                ServerHandler.LogMessage($"The time-canceled Mutex '{ID}' has been released");
+                Logger.LogWarning($"The time-canceled Mutex '{ID}' has been released.");
             }
 
             StopTimer();
