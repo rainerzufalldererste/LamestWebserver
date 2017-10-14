@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using LamestWebserver;
+using LamestWebserver.Serialization;
 
 namespace UnitTests
 {
@@ -215,6 +216,39 @@ namespace UnitTests
             {
                 Assert.AreEqual("0123456789abcdef".Substring(i * 2, 2), new byte[] { bytes[i] }.ToHexString());
             }
+
+            string serialized = Serializer.WriteXmlDataInMemory(id1);
+            id0 = Serializer.ReadXmlDataInMemory<ID>(serialized);
+
+            Assert.IsTrue(id0.Equals(id1) && id1.Equals(id0));
+            Assert.IsTrue(id0 == id1);
+            Assert.IsTrue(id0.CompareTo(id1) == 0 && id1.CompareTo(id0) == 0);
+            Assert.AreEqual(id0.Value, id1.Value);
+            Assert.AreEqual(id0.ToHexString(), id1.ToHexString());
+            Assert.IsTrue(ArraysAreEqual(id0.GetByteArray(), id1.GetByteArray()));
+            Assert.IsTrue(ArraysAreEqual(id0.GetUlongArray(), id1.GetUlongArray()));
+
+            serialized = Serializer.WriteJsonDataInMemory(id1);
+            id0 = Serializer.ReadJsonDataInMemory<ID>(serialized);
+
+            Assert.IsTrue(id0.Equals(id1) && id1.Equals(id0));
+            Assert.IsTrue(id0 == id1);
+            Assert.IsTrue(id0.CompareTo(id1) == 0 && id1.CompareTo(id0) == 0);
+            Assert.AreEqual(id0.Value, id1.Value);
+            Assert.AreEqual(id0.ToHexString(), id1.ToHexString());
+            Assert.IsTrue(ArraysAreEqual(id0.GetByteArray(), id1.GetByteArray()));
+            Assert.IsTrue(ArraysAreEqual(id0.GetUlongArray(), id1.GetUlongArray()));
+
+            byte[] serializedData = Serializer.WriteBinaryDataInMemory(id1);
+            id0 = Serializer.ReadBinaryDataInMemory<ID>(serializedData);
+
+            Assert.IsTrue(id0.Equals(id1) && id1.Equals(id0));
+            Assert.IsTrue(id0 == id1);
+            Assert.IsTrue(id0.CompareTo(id1) == 0 && id1.CompareTo(id0) == 0);
+            Assert.AreEqual(id0.Value, id1.Value);
+            Assert.AreEqual(id0.ToHexString(), id1.ToHexString());
+            Assert.IsTrue(ArraysAreEqual(id0.GetByteArray(), id1.GetByteArray()));
+            Assert.IsTrue(ArraysAreEqual(id0.GetUlongArray(), id1.GetUlongArray()));
         }
 
         [TestMethod]
@@ -272,6 +306,39 @@ namespace UnitTests
             Assert.AreNotEqual(LongID0.Value, LongID1.Value);
             Assert.IsTrue(!ArraysAreEqual(LongID0.GetByteArray(), LongID1.GetByteArray()));
             Assert.IsTrue(!ArraysAreEqual(LongID0.GetUlongArray(), LongID1.GetUlongArray()));
+
+            string serialized = Serializer.WriteXmlDataInMemory(LongID0);
+            LongID1 = Serializer.ReadXmlDataInMemory<LongID>(serialized);
+
+            Assert.IsTrue(LongID1.Equals(LongID0) && LongID0.Equals(LongID1));
+            Assert.IsTrue(LongID1 == LongID0);
+            Assert.IsTrue(LongID1.CompareTo(LongID0) == 0 && LongID0.CompareTo(LongID1) == 0);
+            Assert.AreEqual(LongID1.Value, LongID0.Value);
+            Assert.AreEqual(LongID1.ToHexString(), LongID0.ToHexString());
+            Assert.IsTrue(ArraysAreEqual(LongID1.GetByteArray(), LongID0.GetByteArray()));
+            Assert.IsTrue(ArraysAreEqual(LongID1.GetUlongArray(), LongID0.GetUlongArray()));
+
+            serialized = Serializer.WriteJsonDataInMemory(LongID0);
+            LongID1 = Serializer.ReadJsonDataInMemory<LongID>(serialized);
+
+            Assert.IsTrue(LongID1.Equals(LongID0) && LongID0.Equals(LongID1));
+            Assert.IsTrue(LongID1 == LongID0);
+            Assert.IsTrue(LongID1.CompareTo(LongID0) == 0 && LongID0.CompareTo(LongID1) == 0);
+            Assert.AreEqual(LongID1.Value, LongID0.Value);
+            Assert.AreEqual(LongID1.ToHexString(), LongID0.ToHexString());
+            Assert.IsTrue(ArraysAreEqual(LongID1.GetByteArray(), LongID0.GetByteArray()));
+            Assert.IsTrue(ArraysAreEqual(LongID1.GetUlongArray(), LongID0.GetUlongArray()));
+
+            byte[] serializedData = Serializer.WriteBinaryDataInMemory(LongID0);
+            LongID1 = Serializer.ReadBinaryDataInMemory<LongID>(serializedData);
+
+            Assert.IsTrue(LongID1.Equals(LongID0) && LongID0.Equals(LongID1));
+            Assert.IsTrue(LongID1 == LongID0);
+            Assert.IsTrue(LongID1.CompareTo(LongID0) == 0 && LongID0.CompareTo(LongID1) == 0);
+            Assert.AreEqual(LongID1.Value, LongID0.Value);
+            Assert.AreEqual(LongID1.ToHexString(), LongID0.ToHexString());
+            Assert.IsTrue(ArraysAreEqual(LongID1.GetByteArray(), LongID0.GetByteArray()));
+            Assert.IsTrue(ArraysAreEqual(LongID1.GetUlongArray(), LongID0.GetUlongArray()));
         }
 
         private bool ArraysAreEqual<T>(T[] a, T[] b) where T : IComparable<T>
