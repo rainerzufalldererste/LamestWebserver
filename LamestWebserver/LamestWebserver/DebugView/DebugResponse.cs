@@ -124,6 +124,35 @@ a.nav {
     color: inherit;
     margin: inherit;
     display: inherit;
+}
+
+table {
+    width: 80%;
+    margin: 1.5em auto;
+    color: #aaa;
+    font-family: Consolas, 'Courier New', monospace;
+}
+
+tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+table, th, td {
+    border-left: 2px #575d61 solid;
+    border-collapse: collapse;
+}
+
+td {
+    padding: 0.1em 0 0.3em 0.5em;
+}
+
+th {
+    border-left-color: #838996;
+    background: #575d61;
+    color: #fff;
+    font-weight: normal;
+    padding: 0.1em 0 0.2em 0.5em;
+    text-align: left;
 }";
 #endregion
 

@@ -30,6 +30,8 @@ namespace LamestWebserver.Collections
                 _folders = (T[])folders;
             else
                 _folders = folders.ToArray();
+
+            _delimiter = delimiter;
         }
 
         public URL<T> Append(T item)

@@ -38,29 +38,29 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         protected UsableWriteLock RequestWriteLock = new UsableWriteLock();
 
-        public readonly DebugContainerResponseNode _debugResponseNode;
+        public readonly DebugContainerResponseNode DebugResponseNode;
 
         public ResponseHandler()
         {
-            _debugResponseNode = new DebugContainerResponseNode(GetType().Name, null, DebugViewResponse, null);
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, DebugViewResponse, null);
         }
 
         public void AddDebugResponseNode(DebugResponseNode node)
         {
-            _debugResponseNode.AddNode(node);
+            DebugResponseNode.AddNode(node);
         }
 
         public void RemoveDebugResponseNode(DebugResponseNode node)
         {
-            _debugResponseNode.RemoveNode(node);
+            DebugResponseNode.RemoveNode(node);
         }
 
         public void ClearDebugResponseNodes()
         {
-            _debugResponseNode.ClearNodes();
+            DebugResponseNode.ClearNodes();
         }
 
-        public DebugResponseNode GetDebugResponseNode() => _debugResponseNode;
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
 
         private HElement DebugViewResponse(SessionData sessionData)
         {
@@ -68,11 +68,11 @@ namespace LamestWebserver.RequestHandlers
             {
                 Elements =
                 {
-                    new HHeadline(nameof(RequestHandlers), 2),
-                    new HList(HList.EListType.UnorderedList, (from rh in RequestHandlers select (rh is IDebugRespondable ? (HElement)DebugResponseNode.GetLink((IDebugRespondable)rh) : new HItalic(rh.GetType().Name)))),
+                    new HHeadline(nameof(ResponseHandler.RequestHandlers), 2),
+                    new HList(HList.EListType.UnorderedList, (from rh in RequestHandlers select (rh is IDebugRespondable ? (HElement)DebugView.DebugResponseNode.GetLink((IDebugRespondable)rh) : new HItalic(rh.GetType().Name)))),
                     new HNewLine(),
-                    new HHeadline(nameof(SecondaryRequestHandlers), 2),
-                    new HList(HList.EListType.UnorderedList, (from srh in SecondaryRequestHandlers select (srh is IDebugRespondable ? (HElement)DebugResponseNode.GetLink((IDebugRespondable)srh) : new HItalic(srh.GetType().Name))))
+                    new HHeadline(nameof(ResponseHandler.SecondaryRequestHandlers), 2),
+                    new HList(HList.EListType.UnorderedList, (from srh in SecondaryRequestHandlers select (srh is IDebugRespondable ? (HElement)DebugView.DebugResponseNode.GetLink((IDebugRespondable)srh) : new HItalic(srh.GetType().Name))))
                 }
             };
         }
@@ -506,7 +506,7 @@ namespace LamestWebserver.RequestHandlers
     /// <summary>
     /// A RequestHanlder that delivers Files from local storage - which will be cached on use.
     /// </summary>
-    public class CachedFileRequestHandler : FileRequestHandler
+    public class CachedFileRequestHandler : FileRequestHandler, IDebugRespondable
     {
         /// <summary>
         /// The size of the cache hash map. this does not limit the amount of cached items - it's just there to preference size or performance.
@@ -518,9 +518,12 @@ namespace LamestWebserver.RequestHandlers
         internal UsableLockSimple CacheMutex = new UsableLockSimple();
         internal static readonly byte[] CrLf = Encoding.UTF8.GetBytes("\r\n");
 
+        public readonly DebugContainerResponseNode DebugResponseNode;
+
         /// <inheritdoc />
         public CachedFileRequestHandler(string folder) : base(folder)
         {
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, ResponseHandler.CurrentResponseHandler.DebugResponseNode);
             SetupFileSystemWatcher();
         }
 
@@ -731,6 +734,28 @@ namespace LamestWebserver.RequestHandlers
             }
 
             return true;
+        }
+
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        private HElement GetDebugResponse(SessionData sessionData)
+        {
+            using (CacheMutex.Lock())
+            {
+                return new HContainer()
+                {
+                    Elements =
+                    {
+                        new HText($"Cache HashMap Size: {Cache.HashMap.Length}.\nCache HashMap Entry Count: {Cache.Count}.\nOperating Folder: '{Folder}'."),
+                        new HLine(),
+                        new HHeadline("Cached Entries", 3),
+                        new HTable((from e in Cache select new List<HElement> { e.Key, e.Value.Size.ToString() + " bytes", e.Value.LoadCount.ToString(), e.Value.LastModified.ToString() }))
+                        {
+                            TableHeader = new List<HElement> { "File Name", "Size", "Load Count", "Last Modified" }
+                        }
+                    }
+                };
+            }
         }
     }
 

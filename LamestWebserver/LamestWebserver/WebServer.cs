@@ -550,7 +550,9 @@ namespace LamestWebserver
 
                             try
                             {
-                                response = DebugView.DebugResponse.DebugResponseInstance.Instance.GetResponse(htp);/*ResponseHandler.CurrentResponseHandler.GetResponse(htp);*/ //############################ DO NOT APPROVE THIS PULL REQUEST IF THIS IS STILL CHANGED!!! ###############################
+                                response = 
+                                    DebugView.DebugResponse.DebugResponseInstance.Instance.GetResponse(htp);
+                                    //ResponseHandler.CurrentResponseHandler.GetResponse(htp); // ############################ DO NOT APPROVE THIS PULL REQUEST IF THIS IS STILL CHANGED!!! ###############################
 
                                 if (response == null)
                                     goto InvalidResponse;

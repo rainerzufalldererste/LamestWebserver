@@ -2360,6 +2360,11 @@ namespace LamestWebserver.UI
         private IEnumerable<object>[] data;
 
         /// <summary>
+        /// The table header displayed on top of the table rows.
+        /// </summary>
+        public IEnumerable<HElement> TableHeader = null;
+
+        /// <summary>
         /// Additional attributes to be added to this node
         /// </summary>
         public string DescriptionTags;
@@ -2370,7 +2375,22 @@ namespace LamestWebserver.UI
         /// <param name="elements">the contained elements</param>
         public HTable(List<List<HElement>> elements)
         {
+            if (elements == null || elements.Contains(null))
+                throw new ArgumentNullException(nameof(elements));
+
             this.elements = elements;
+        }
+
+        /// <summary>
+        /// Constructs a new Table containing the given elements
+        /// </summary>
+        /// <param name="elements">the contained elements</param>
+        public HTable(IEnumerable<List<HElement>> elements)
+        {
+            if (elements == null || elements.Contains(null))
+                throw new ArgumentNullException(nameof(elements));
+
+            this.elements = elements.ToList();
         }
 
         /// <summary>
@@ -2379,6 +2399,9 @@ namespace LamestWebserver.UI
         /// <param name="data">the contents of this table</param>
         public HTable(params IEnumerable<object>[] data)
         {
+            if (data == null || data.Contains(null))
+                throw new ArgumentNullException(nameof(elements));
+
             this.data = data;
         }
 
@@ -2410,6 +2433,16 @@ namespace LamestWebserver.UI
                 ret += DescriptionTags;
 
             ret += ">";
+
+            if(TableHeader != null)
+            {
+                ret += "<tr>";
+
+                foreach (HElement header in TableHeader)
+                    ret += "<th>" + header.GetContent(sessionData) + "</th>";
+
+                ret += "</tr>";
+            }
 
             if (elements != null)
             {

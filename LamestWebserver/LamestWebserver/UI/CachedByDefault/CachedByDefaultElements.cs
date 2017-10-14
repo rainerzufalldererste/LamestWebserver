@@ -348,6 +348,12 @@ namespace LamestWebserver.UI.CachedByDefault
         }
 
         /// <inheritdoc />
+        public CTable(IEnumerable<List<HElement>> elements) : base(elements)
+        {
+            CachingType = ECachingType.Cacheable;
+        }
+
+        /// <inheritdoc />
         public CTable(params IEnumerable<object>[] data) : base(data)
         {
             CachingType = ECachingType.Cacheable;
