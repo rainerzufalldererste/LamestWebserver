@@ -10,12 +10,18 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.DebugView
 {
+    public interface IDebugRespondable
+    {
+        DebugResponseNode GetDebugResponseNode();
+    }
+
     public class DebugResponse : IRequestHandler
     {
         public static readonly Singleton<DebugResponse> DebugResponseInstance = new Singleton<DebugResponse>(() => new DebugResponse());
 
-        private static DebugContainerResponseNode _debugNode = DebugContainerResponseNode.ConstructRootNode("LamestWebserver Debug View");
+        private static DebugContainerResponseNode _debugNode = DebugContainerResponseNode.ConstructRootNode("LamestWebserver Debug View", "All collected Debug Information can be retrieved using this page.");
 
+#region StyleSheet
         public static string StyleSheet =
 @"body {
     margin: 0;
@@ -70,6 +76,18 @@ h1 {
     line-height: 90%;
 }
 
+h2 {
+    font-family: 'Segoe UI Semibold', Arial, sans-serif;
+    color: #575d61;
+    border-bottom: solid #575d61 1px;
+    padding-bottom: 0.5em;
+}
+
+ul {
+    font-size: 12pt;
+    list-style-type: square;
+}
+
 ::selection {
     background: #80cefb;
     color: #c3f3ff;
@@ -100,7 +118,14 @@ a {
 a:hover {
     color: #92b8ce;
     text-decoration: underline;
+}
+
+a.nav {
+    color: inherit;
+    margin: inherit;
+    display: inherit;
 }";
+#endregion
 
         public HttpResponse GetResponse(HttpRequest requestPacket)
         {
@@ -137,11 +162,14 @@ a:hover {
 
         public PositionQueue<Tuple<ID, string>> UnpackUrlActions(HttpRequest request)
         {
-            string[] links = request.RequestUrl.Split('/');
+            List<string> links = request.RequestUrl.Split('/').ToList();
+            links.Remove("");
 
             PositionQueue<Tuple<ID, string>> ret = new PositionQueue<Tuple<ID, string>>();
 
-            for (int i = 0; i < links.Length; i++)
+            ret.Push(new Tuple<ID, string>(new ID(new ulong[] { 0xFFFFFFFFul }), null));
+
+            for (int i = 0; i < links.Count; i++)
             {
                 if (string.IsNullOrWhiteSpace(links[i]))
                     break;
@@ -199,16 +227,34 @@ a:hover {
             }
         }
 
+        public URL<ID> URL { get; private set; }
+
+        public void SetParent(DebugContainerResponseNode node)
+        {
+            if (URL != null)
+                throw new InvalidOperationException($"The field {nameof(URL)} can only be set once.");
+
+            if (node == null)
+                URL = new URL<ID>(new ID[] { ID });
+            else
+                URL = node.URL.Append(ID);
+        }
+
+        protected void SetRootNode()
+        {
+            URL = new URL<ID>(new ID[0]);
+        }
+
         public abstract HElement GetContents(SessionData sessionData, string requestedAction, PositionQueue<Tuple<ID, string>> positionQueue);
 
         public static HLink GetLink(string text, ID subUrl, PositionQueue<Tuple<ID, string>> positionQueue, string requestedAction = null)
         {
             List<Tuple<ID, string>> already = positionQueue.GetPassed();
 
-            if(!positionQueue.AtEnd())
+            if (!positionQueue.AtEnd())
                 already.Add(positionQueue.Peek());
 
-            string ret = "./";
+            string ret = "/";
 
             foreach (Tuple<ID, string> tuple in already)
                 ret += tuple.Item1 + "/";
@@ -219,8 +265,18 @@ a:hover {
                 if (!string.IsNullOrEmpty(already[i].Item2))
                     ret += $"action_{i}={already[i].Item2}&";
 
-            if(!string.IsNullOrEmpty(requestedAction))
+            if (!string.IsNullOrEmpty(requestedAction))
                 ret += $"action_{already.Count - 1}={Master.FormatToHttpUrl(requestedAction)}";
+
+            return new HLink(text, ret);
+        }
+
+        public static HLink GetLink(string text, URL<ID> url, string requestedAction = null)
+        {
+            string ret = "/" + url.ToString() + "?";
+
+            if (!string.IsNullOrEmpty(requestedAction))
+                ret += $"action_{url.Count - 1}={Master.FormatToHttpUrl(requestedAction)}";
 
             return new HLink(text, ret);
         }
@@ -244,6 +300,16 @@ a:hover {
                 ret += $"action_{nodes.Count - 1}={Master.FormatToHttpUrl(requestedAction)}";
 
             return new HLink(text, ret);
+        }
+
+        public static HLink GetLink(DebugResponseNode node)
+        {
+            return GetLink(node.Name, node.URL);
+        }
+
+        public static HLink GetLink(IDebugRespondable respondable)
+        {
+            return GetLink(respondable.GetDebugResponseNode());
         }
     }
 
@@ -276,13 +342,15 @@ a:hover {
             ret.Name = name;
             ret._description = description;
             ret.SubNodes = new AVLTree<ID, DebugResponseNode>();
-            ret.GetElements = getElementFunc ?? (s => new HText($"No {nameof(GetElements)} function was specified."));
+            ret.GetElements = getElementFunc ?? (s => new HPlainText());
+            ret.SetRootNode();
 
             return ret;
         }
 
         public void AddNode(DebugResponseNode node)
         {
+            node.SetParent(this);
             SubNodes.Add(node.ID, node);
         }
 
@@ -298,16 +366,18 @@ a:hover {
 
         public override HElement GetContents(SessionData sessionData, string requestedAction, PositionQueue<Tuple<ID, string>> positionQueue)
         {
-            HInlineContainer name = new HInlineContainer() { Text = Name };
-
             if(positionQueue.AtEnd())
             {
-                HList list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value.Name, s.Key, positionQueue)).ToArray());
+                HList list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value)).ToArray());
 
-                return name + new HHeadline(Name) + (_description == null ? new HText(_description) : new HText()) + new HContainer(GetElements(sessionData)) + new HLine() + list;
+                return new HHeadline(Name) + (_description == null ? new HText(_description) : new HText()) + new HContainer(GetElements(sessionData)) + new HLine() + list;
             }
             else
             {
+                HLink navlink = GetLink(this);
+                navlink.Class = "nav";
+                HInlineContainer name = new HInlineContainer() { Elements = { navlink } };
+
                 DebugResponseNode node = null;
 
                 positionQueue.Pop();
@@ -321,7 +391,7 @@ a:hover {
                 {
                     HList list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray());
 
-                    return name + new HNewLine() + new HText($"The ID '{positionQueue.Peek().Item1.Value} is not a child of this {nameof(DebugContainerResponseNode)}.'") { Class = "invalid" } + new HLine() + list;
+                    return name + new HNewLine() + new HText($"The ID '{positionQueue.Peek().Item1.Value}' is not a child of this {nameof(DebugContainerResponseNode)}.") { Class = "invalid" } + new HLine() + list;
                 }
                 else
                 {

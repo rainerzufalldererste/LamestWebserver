@@ -16,7 +16,7 @@ namespace LamestWebserver.RequestHandlers
     /// <summary>
     /// A ResponseHandler contains tools to resolve HTTP-Requests to responses.
     /// </summary>
-    public class ResponseHandler
+    public class ResponseHandler : IDebugRespondable
     {
         /// <summary>
         /// The ResponseHandler used across all default Webserver Instances.
@@ -60,6 +60,8 @@ namespace LamestWebserver.RequestHandlers
             _debugResponseNode.ClearNodes();
         }
 
+        public DebugResponseNode GetDebugResponseNode() => _debugResponseNode;
+
         private HElement DebugViewResponse(SessionData sessionData)
         {
             return new HContainer
@@ -67,10 +69,10 @@ namespace LamestWebserver.RequestHandlers
                 Elements =
                 {
                     new HHeadline(nameof(RequestHandlers), 2),
-                    new HList(HList.EListType.UnorderedList, (from rh in RequestHandlers select (HElement)new HString(rh.GetType().Name))),
+                    new HList(HList.EListType.UnorderedList, (from rh in RequestHandlers select (rh is IDebugRespondable ? (HElement)DebugResponseNode.GetLink((IDebugRespondable)rh) : new HItalic(rh.GetType().Name)))),
                     new HNewLine(),
                     new HHeadline(nameof(SecondaryRequestHandlers), 2),
-                    new HList(HList.EListType.UnorderedList, (from srh in SecondaryRequestHandlers select (HElement)new HString(srh.GetType().Name)))
+                    new HList(HList.EListType.UnorderedList, (from srh in SecondaryRequestHandlers select (srh is IDebugRespondable ? (HElement)DebugResponseNode.GetLink((IDebugRespondable)srh) : new HItalic(srh.GetType().Name))))
                 }
             };
         }

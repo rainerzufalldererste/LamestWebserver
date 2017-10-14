@@ -59,6 +59,6 @@ namespace LamestWebserver.Collections
             Position = 0;
         }
 
-        public bool AtEnd() => Position == InternalList.Count;
+        public bool AtEnd() => Position >= InternalList.Count - 1;
     }
 }
