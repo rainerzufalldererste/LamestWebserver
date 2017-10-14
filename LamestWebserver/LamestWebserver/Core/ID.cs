@@ -22,7 +22,7 @@ namespace LamestWebserver.Core
         /// </summary>
         protected string _string_id = null;
 
-        private const int CharsInUlong = 2 * sizeof(ulong);
+        private const int HexCharsInUlong = 2 * sizeof(ulong);
 
         /// <summary>
         /// Constructs a new ID with random value.
@@ -41,8 +41,8 @@ namespace LamestWebserver.Core
             if (id == null)
                 throw new NullReferenceException(nameof(id));
 
-            if (id.Length == 0 || id.Length % CharsInUlong != 0)
-                throw new InvalidOperationException($"Length of {nameof(id)} has to be a multiple of {CharsInUlong}.");
+            if (id.Length == 0 || id.Length % HexCharsInUlong != 0)
+                throw new InvalidOperationException($"Length of {nameof(id)} has to be a multiple of {HexCharsInUlong}.");
             
             _string_id = id;
             _id = ConvertFromString(id);
@@ -85,8 +85,8 @@ namespace LamestWebserver.Core
                 if (value == null)
                     throw new NullReferenceException(nameof(value));
 
-                if (value.Length == 0 || value.Length % CharsInUlong != 0)
-                    throw new InvalidOperationException($"Length of {nameof(value)} has to be a multiple of {CharsInUlong}.");
+                if (value.Length == 0 || value.Length % HexCharsInUlong != 0)
+                    throw new InvalidOperationException($"Length of {nameof(value)} has to be a multiple of {HexCharsInUlong}.");
 
                 _string_id = value;
                 _id = ConvertFromString(value);
@@ -110,7 +110,17 @@ namespace LamestWebserver.Core
         {
             byte[] ret = new byte[_id.Length * sizeof(ulong)];
 
+#if NETFX_CORE
+            for (int i = 0; i < _id.Length; i++)
+			{
+                for (int j = 0; j < sizeof(ulong); j++)
+			    {
+                    ret[i * sizeof(ulong) + j] = (byte)((_id[i] >> (j * sizeof(byte))) & 0xFF);
+			    }
+			}
+#else
             Marshal.Copy(Marshal.UnsafeAddrOfPinnedArrayElement(_id, 0), ret, 0, ret.Length);
+#endif
 
             return ret;
         }
@@ -131,10 +141,10 @@ namespace LamestWebserver.Core
             if (id == null)
                 throw new NullReferenceException(nameof(id));
 
-            if (id.Length == 0 || id.Length % CharsInUlong != 0)
-                throw new InvalidOperationException($"Length of {nameof(id)} has to be a multiple of {CharsInUlong}.");
+            if (id.Length == 0 || id.Length % HexCharsInUlong != 0)
+                throw new InvalidOperationException($"Length of {nameof(id)} has to be a multiple of {HexCharsInUlong}.");
 
-            ulong[] ret = new ulong[id.Length / CharsInUlong];
+            ulong[] ret = new ulong[id.Length / HexCharsInUlong];
 
             int index = 0;
             int subindex = 0;
@@ -154,7 +164,7 @@ namespace LamestWebserver.Core
 
                 ret[index] |= (b << (subindex++ * 4));
 
-                if (subindex == CharsInUlong)
+                if (subindex == HexCharsInUlong)
                 {
                     subindex = 0;
                     index++;
@@ -179,7 +189,17 @@ namespace LamestWebserver.Core
 
             ulong[] ret = new ulong[id.Length / sizeof(ulong)];
 
+#if NETFX_CORE
+            for (int i = 0; i < ret.Length; i++)
+			{
+                for (int j = 0; j < sizeof(ulong); j++)
+			    {
+                    ret[i] |= (ulong)((ulong)id[i * sizeof(ulong) + j] << (j * sizeof(byte)));
+			    }
+			}
+#else
             Marshal.Copy(id, 0, Marshal.UnsafeAddrOfPinnedArrayElement(ret, 0), id.Length);
+#endif
 
             return ret;
         }
@@ -194,17 +214,20 @@ namespace LamestWebserver.Core
             if (id == null)
                 throw new NullReferenceException(nameof(id));
 
-            char[] s = new char[id.Length * CharsInUlong];
-
-            for (int i = 0; i < id.Length; i++)
+            unsafe
             {
-                for (int j = 0; j < CharsInUlong; j++)
-                {
-                    s[i * CharsInUlong + j] = Master.HexToCharLookupTable[(int)((ulong)(id[i] & (0xFul << (4 * j))) >> (4 * j))];
-                }
-            }
+                char* pChars = stackalloc char[id.Length * HexCharsInUlong + 1]; // +1 for null termination
 
-            return new string(s);
+                for (int i = 0; i < id.Length; i++)
+                {
+                    for (int j = 0; j < HexCharsInUlong; j++)
+                    {
+                        pChars[i * HexCharsInUlong + j] = Master.HexToCharLookupTable[(int)((ulong)(id[i] & (0xFul << (4 * j))) >> (4 * j))];
+                    }
+                }
+
+                return new string(pChars);
+            }
         }
 
         /// <summary>
@@ -215,17 +238,20 @@ namespace LamestWebserver.Core
         /// <returns>The inner Value as Hexadecimal String.</returns>
         public string ToHexString()
         {
-            char[] s = new char[_id.Length * CharsInUlong];
-
-            for (int i = 0; i < _id.Length; i++)
+            unsafe
             {
-                for (int j = 0; j < CharsInUlong; j++)
-                {
-                    s[i * CharsInUlong + j] = Master.HexToCharLookupTable[(int)((ulong)(_id[i] & (0xFul << (4 * j))) >> (4 * j))];
-                }
-            }
+                char* pChars = stackalloc char[_id.Length * HexCharsInUlong + 1]; // +1 for null termination
 
-            return new string(s);
+                for (int i = 0; i < _id.Length; i++)
+                {
+                    for (int j = 0; j < HexCharsInUlong; j++)
+                    {
+                        pChars[i * HexCharsInUlong + j] = Master.HexToCharLookupTable[(int)((ulong)(_id[i] & (0xFul << (4 * j))) >> (4 * j))];
+                    }
+                }
+
+                return new string(pChars);
+            }
         }
 
         /// <inheritdoc />
@@ -417,7 +443,17 @@ namespace LamestWebserver.Core
 
             byte[] bytes = new byte[id.Length * sizeof(ulong)];
 
+#if NETFX_CORE
+            for (int i = 0; i < _id.Length; i++)
+			{
+                for (int j = 0; j < sizeof(ulong); j++)
+			    {
+                    bytes[i * sizeof(ulong) + j] = (byte)((_id[i] >> (j * sizeof(byte))) & 0xFF);
+			    }
+			}
+#else
             Marshal.Copy(Marshal.UnsafeAddrOfPinnedArrayElement(id, 0), bytes, 0, bytes.Length);
+#endif
 
             return Convert.ToBase64String(bytes);
         }
