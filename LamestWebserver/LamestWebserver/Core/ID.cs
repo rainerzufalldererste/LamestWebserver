@@ -4,12 +4,14 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace LamestWebserver.Core
 {
     /// <summary>
     /// Provides functionailty for identifying objects.
     /// </summary>
+    [Serializable]
     public class ID : IComparable<ID>
     {
         /// <summary>
@@ -356,6 +358,7 @@ namespace LamestWebserver.Core
     /// <summary>
     /// A derivate of ID using a longer SHA3 hash by default.
     /// </summary>
+    [Serializable]
     public class LongID : ID
     {
         /// <summary>
