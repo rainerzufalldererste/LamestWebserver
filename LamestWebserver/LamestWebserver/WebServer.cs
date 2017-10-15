@@ -39,6 +39,7 @@ namespace LamestWebserver
         private readonly TcpListener _tcpListener;
         private readonly List<Thread> _threads = new List<Thread>();
         private readonly Thread _mThread;
+        private List<WebServer> _dependentWebservers = new List<WebServer>();
 
         /// <summary>
         /// The Port, the server is listening at.
@@ -81,6 +82,15 @@ namespace LamestWebserver
         /// The size of the Page Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
         /// </summary>
         public static int PageResponseStorageHashMapSize = 256;
+
+        /// <summary>
+        /// Add a webserver to be closed (IDisposable.Dispose()) whenever this webserver is closed. 
+        /// </summary>
+        /// <param name="webserver">The webserver to close with this one.</param>
+        public void AddDependentWebsever(WebServer webserver)
+        {
+            _dependentWebservers.Add(webserver);
+        }
 
         /// <summary>
         /// The maximum amount of items in the One Time Page Response Queue (QueuedAVLTree).
@@ -147,40 +157,65 @@ namespace LamestWebserver
         public SslProtocols EnabledSslProtocols { get; set; } = SslProtocols.Tls12;
 
         /// <summary>
-        /// Starts a new Webserver and adds the folder and default components to the CurrentResponseHandler. If you are just adding a server listening on another port as well - just use the other constructor.
+        /// The ResponseHandler used in this Webserver instance.
         /// </summary>
-        /// <param name="port">the port to listen to</param>
-        /// <param name="folder">one folder to view at (can be null)</param>
-        /// <param name="certificate">the ssl certificate for https (if null: connection will be http; if set will only be https)
-        /// <para /> If the webserver does not respond after including your certificate, it might not be loaded or set up correctly.
-        /// Consider the LamestWebserver log output `ServerHandler.StartHandler();`.</param>
-        /// <param name="enabledSslProtocols">the available ssl protocols if the connection is https</param>
-        public WebServer(int port, string folder = null, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12) : this(port)
-        {
-            EnabledSslProtocols = enabledSslProtocols;
-            Certificate = certificate;
+        public readonly ResponseHandler ResponseHandler;
 
-            ResponseHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
+        /// <summary>
+        /// Starts a new Webserver and adds the folder and default components to the CurrentResponseHandler. If you are just adding a server listening on another port as well - just use a different constructor.
+        /// </summary>
+        /// <param name="port">The port to listen to</param>
+        /// <param name="folder">a folder to read from (can be null)</param>
+        /// <param name="certificate">The ssl certificate for https (if null: connection will be http; if set will only be https)
+        /// <para /> If the webserver does not respond after including your certificate, it might not be loaded or set up correctly.
+        /// Consider looking at the LamestWebserver Logger output.</param>
+        /// <param name="enabledSslProtocols">The available ssl protocols if the connection is https.</param>
+        public WebServer(int port, string folder = null, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12) : this(port, certificate, enabledSslProtocols)
+        {
+            ResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
+            ResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
+            ResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
+            ResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
 
             if(folder != null)
-                ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
+                ResponseHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
 
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
+            ResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
+        }
+
+        /// <summary>
+        /// Starts a new Webserver on a specified ResponseHandler.
+        /// </summary>
+        /// <param name="port">The port to listen to.</param>
+        /// <param name="responseHandler">The ResponseHandler to use. If null, ResponseHandler.CurrentResponseHandler will be used.</param>
+        /// <param name="certificate">The ssl certificate for https (if null: connection will be http; if set will only be https)
+        /// <para /> If the webserver does not respond after including your certificate, it might not be loaded or set up correctly.
+        /// Consider looking at the LamestWebserver Logger output.</param>
+        /// <param name="enabledSslProtocols">The available ssl protocols if the connection is https.</param>
+        public WebServer(int port, ResponseHandler responseHandler, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12) : this(port, certificate, enabledSslProtocols)
+        {
+            ResponseHandler = responseHandler;
         }
 
         /// <summary>
         /// Starts a new Webserver listening to all previously added Responses.
         /// </summary>
         /// <param name="port">the port to listen to</param>
-        private WebServer(int port)
+        /// <param name="certificate">The ssl certificate for https (if null: connection will be http; if set will only be https)
+        /// <para /> If the webserver does not respond after including your certificate, it might not be loaded or set up correctly.
+        /// Consider looking at the LamestWebserver Logger output.</param>
+        /// <param name="enabledSslProtocols">The available ssl protocols if the connection is https.</param>
+        private WebServer(int port, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12)
         {
             if (!TcpPortIsUnused(port))
             {
                 throw new InvalidOperationException("The tcp port " + port + " is currently used by another application.");
             }
+
+            EnabledSslProtocols = enabledSslProtocols;
+            Certificate = certificate;
+
+            ResponseHandler = ResponseHandler.CurrentResponseHandler;
 
             this.Port = port;
             this._tcpListener = new TcpListener(IPAddress.Any, port);
@@ -263,9 +298,21 @@ namespace LamestWebserver
 
             using (RunningServerMutex.Lock())
                 RunningServers.Remove(this);
-            
+
             if (RunningServers.Count == 0)
                 Master.StopServers();
+
+            foreach (WebServer webserver in _dependentWebservers)
+            {
+                if (webserver != null)
+                {
+                    try
+                    {
+                        webserver.Stop();
+                    }
+                    catch { }
+                }
+            }
         }
 
         /// <summary>
@@ -550,9 +597,7 @@ namespace LamestWebserver
 
                             try
                             {
-                                response = 
-                                    DebugView.DebugResponse.DebugResponseInstance.Instance.GetResponse(htp);
-                                    //ResponseHandler.CurrentResponseHandler.GetResponse(htp); // ############################ DO NOT APPROVE THIS PULL REQUEST IF THIS IS STILL CHANGED!!! ###############################
+                                response = ResponseHandler.GetResponse(htp);
 
                                 if (response == null)
                                     goto InvalidResponse;

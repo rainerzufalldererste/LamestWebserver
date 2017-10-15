@@ -40,9 +40,9 @@ namespace LamestWebserver.RequestHandlers
 
         public readonly DebugContainerResponseNode DebugResponseNode;
 
-        public ResponseHandler()
+        public ResponseHandler(string debugResponseNodeName = null)
         {
-            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, DebugViewResponse, null);
+            DebugResponseNode = new DebugContainerResponseNode(debugResponseNodeName == null ? GetType().Name : debugResponseNodeName, null, DebugViewResponse, null);
         }
 
         public void AddDebugResponseNode(DebugResponseNode node)
@@ -210,7 +210,7 @@ namespace LamestWebserver.RequestHandlers
     /// <summary>
     /// An Interface for HTTP-Request handlers.
     /// </summary>
-    public interface IRequestHandler
+    public interface IRequestHandler : IEquatable<IRequestHandler>
     {
         /// <summary>
         /// Retrieves a response from a http-request.
@@ -501,6 +501,21 @@ namespace LamestWebserver.RequestHandlers
                     return "application/octet-stream";
             }
         }
+
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            if (((FileRequestHandler)(other)).Folder != Folder)
+                return false;
+
+            return true;
+        }
     }
 
     /// <summary>
@@ -736,6 +751,7 @@ namespace LamestWebserver.RequestHandlers
             return true;
         }
 
+        /// <inheritdoc />
         public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
 
         private HElement GetDebugResponse(SessionData sessionData)
@@ -849,13 +865,32 @@ namespace LamestWebserver.RequestHandlers
 
             return new HttpResponse(requestPacket, file.Contents) { ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
         }
+
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            if (((PackedFileRequestHandler)(other))._cache.Count != _cache.Count)
+                return false;
+
+            foreach(var e in ((PackedFileRequestHandler)(other))._cache)
+                if(!_cache.Contains(e))
+                    return false;
+
+            return true;
+        }
     }
 
     /// <summary>
     /// A Cacheable preloaded file.
     /// </summary>
     [Serializable]
-    public class PreloadedFile : ICloneable
+    public class PreloadedFile : ICloneable, IEquatable<PreloadedFile>
     {
         /// <summary>
         /// The name of the file.
@@ -914,6 +949,26 @@ namespace LamestWebserver.RequestHandlers
         {
             return new PreloadedFile((string) Filename.Clone(), Contents.ToArray(), LastModified, IsBinary);
         }
+
+        /// <inheritdoc />
+        public bool Equals(PreloadedFile other)
+        {
+            if (other.Filename != Filename)
+                return false;
+
+            if (other.Contents != Contents)
+                return false;
+
+            if (other.IsBinary != IsBinary)
+                return false;
+
+            if (other.LastModified != LastModified)
+                return false;
+
+            // LoadCount would not be a good idea and Size should be already checked by Contents.
+
+            return true;
+        }
     }
 
     /// <summary>
@@ -945,6 +1000,18 @@ namespace LamestWebserver.RequestHandlers
                     Status = "404 File Not Found"
                 };
             }
+        }
+
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            return true;
         }
     }
 
@@ -1008,6 +1075,18 @@ namespace LamestWebserver.RequestHandlers
         /// <param name="requestPacket">the http-request</param>
         /// <returns>the method to call.</returns>
         public abstract T GetResponseFunction(HttpRequest requestPacket);
+        
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            return true;
+        }
     }
 
     /// <summary>
@@ -1201,6 +1280,18 @@ namespace LamestWebserver.RequestHandlers
             ReaderWriterLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
+        }
+
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            return true;
         }
     }
 

@@ -19,6 +19,15 @@ namespace LamestWebserver.DebugView
     {
         public static readonly Singleton<DebugResponse> DebugResponseInstance = new Singleton<DebugResponse>(() => new DebugResponse());
 
+        public static readonly Singleton<ResponseHandler> DebugViewResponseHandler = new Singleton<ResponseHandler>(() => 
+        {
+            ResponseHandler ret = new ResponseHandler(nameof(DebugViewResponseHandler));
+
+            ret.AddRequestHandler(DebugResponseInstance.Instance);
+
+            return ret;
+        });
+
         private static DebugContainerResponseNode _debugNode = DebugContainerResponseNode.ConstructRootNode("LamestWebserver Debug View", "All collected Debug Information can be retrieved using this page.");
 
 #region StyleSheet
@@ -153,6 +162,31 @@ th {
     font-weight: normal;
     padding: 0.1em 0 0.2em 0.5em;
     text-align: left;
+}
+
+ul.subnodes {
+    background-color: #111215;
+    width: 75%;
+    margin: 3em auto 1em auto;
+    padding: 0.5em 3em 1em 3em;
+    border: 0.1em solid #222327;
+    font-family: Consolas, 'Courier New', monospace;
+}
+
+p.invalid, p.error {
+    margin: 3em auto 3em auto;
+    border-radius: 0.5em;
+    padding: 1em 2em;
+    background: repeating-linear-gradient( 45deg, #ff5d4d, #ff5d4d 0.5em, #e03d2c 0.5em, #e03d2c 1em );
+    text-shadow: #000 1px 1px 2px;
+}
+
+p.warning {
+    margin: 3em auto 3em auto;
+    border-radius: 0.5em;
+    padding: 1em 2em;
+    background: repeating-linear-gradient( 45deg, #e2c42f, #e2c42f 0.5em, #d8b91e 0.5em, #d8b91e 1em );
+    text-shadow: #000 1px 1px 2px;
 }";
 #endregion
 
@@ -231,6 +265,18 @@ th {
         public static void ClearNodes()
         {
             _debugNode.ClearNodes();
+        }
+
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            return true;
         }
     }
 
@@ -397,9 +443,12 @@ th {
         {
             if(positionQueue.AtEnd())
             {
-                HList list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value)).ToArray());
+                HList list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value)).ToArray())
+                {
+                    Class = "subnodes"
+                };
 
-                return new HHeadline(Name) + (_description == null ? new HText(_description) : new HText()) + new HContainer(GetElements(sessionData)) + new HLine() + list;
+                return new HHeadline(Name) + (_description == null ? new HText(_description) : new HText()) + new HContainer(GetElements(sessionData)) + list;
             }
             else
             {
@@ -418,9 +467,12 @@ th {
 
                 if(ReferenceEquals(node, null))
                 {
-                    HList list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray());
+                    HList list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray())
+                    {
+                        Class = "subnodes"
+                    };
 
-                    return name + new HNewLine() + new HText($"The ID '{positionQueue.Peek().Item1.Value}' is not a child of this {nameof(DebugContainerResponseNode)}.") { Class = "invalid" } + new HLine() + list;
+                    return name + new HNewLine() + new HText($"The ID '{positionQueue.Peek().Item1.Value}' is not a child of this {nameof(DebugContainerResponseNode)}.") { Class = "invalid" } + list;
                 }
                 else
                 {
