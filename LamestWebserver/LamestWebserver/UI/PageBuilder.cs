@@ -2307,13 +2307,15 @@ namespace LamestWebserver.UI
         /// <inheritdoc />
         protected override string GetTagHead(string additionalParams = null)
         {
-            if (SetListStyleToElements)
+            if (SetListStyleToElements && Elements != null)
                 foreach (HElement element in Elements)
                     if (!element.Style.StartsWith("display: list-item;"))
                         element.Style = "display: list-item;" + element.Style;
 
             return base.GetTagHead(additionalParams);
         }
+
+        public bool IsEmpty() => (Elements != null && Elements.Count == 0);
 
         /// <summary>
         /// Constructs a new List Element

@@ -18,7 +18,7 @@ namespace Demos
         /// <summary>
         /// Register this Page to be the default response of the server - located at the "/" URL
         /// You don't need to call this constructor anywhere if you are using Master.DiscoverPages() or the LamestWebserver Host Service.
-        /// If you want to let your constructor be called automatically, please make sure, that it needs no parameters.
+        /// If you want to let your constructor be called automatically, please make sure, that it needs no parameters to be called - like this one.
         /// </summary>
         public MainPage() : base("/")
         {
@@ -68,7 +68,8 @@ namespace Demos
         }
 
         /// <summary>
-        /// Let's just create a prototype of this layout, so we can use it more easily
+        /// Let's just create a prototype of this layout, so we can use it more easily.
+        /// Don't worry too much about the `HSelectivelyCacheableElement`. You'll learn more about that in the Caching tutorial.
         /// </summary>
         /// <param name="elements">the elements displayed on the page</param>
         /// <param name="filename">the filename to display</param>

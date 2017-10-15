@@ -17,14 +17,14 @@ namespace Demos
                 // Create a new Webserver at port 8080 with the data location "./web" - the web folder of this Project
                 // Make sure all contents of your data location folder are copied into the build directory on compile so the webserver can find them at runtime.
                 //
-                // You'll probably be using port 80 / 443 later, because that's the default http / https port - but for now let's just use port 8080.
+                // You'll probably be using port 80 / 443 later, because that's the default http / https port - but for now let's just use port 8080, because on some machines port 80 is already in use.
                 using (var webserver = new WebServer(8080, "./web"))
                 {
                     // Automatically Discovers the Pages in this assembly and registers them at the webserver
                     // Alternatively you might want to call all constructors of the pages manually here.
                     // 
                     // Pages inheriting from IURLIdentifyable (like PageResponse, DirectoryResponse, ElementResponse, etc.) 
-                    //  with an empty constructor (see e.g. MainPage.cs) are automatically added when calling Master.DiscoverPages();
+                    //  with an empty constructor (see i.e. MainPage.cs) are automatically added when calling Master.DiscoverPages();
                     //  if you don't want such a constructor to be called mark the containing class with the LamestWebserver.Attributes.IgnoreDiscovery Attribute.
                     Master.DiscoverPages();
 

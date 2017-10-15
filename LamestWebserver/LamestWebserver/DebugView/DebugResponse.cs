@@ -167,10 +167,23 @@ th {
 ul.subnodes {
     background-color: #111215;
     width: 75%;
-    margin: 3em auto 1em auto;
+    margin: 1em auto 1em auto;
     padding: 0.5em 3em 1em 3em;
     border: 0.1em solid #222327;
     font-family: Consolas, 'Courier New', monospace;
+}
+
+h3.subnodes {
+    font-weight: lighter;
+    color: #aaa;
+    margin-top: 3em;
+}
+
+i.subnodes {
+    display: block;
+    margin-top: 3.5em;
+    color: #575d61;
+    font-size: 11pt;
 }
 
 p.invalid, p.error {
@@ -358,14 +371,14 @@ p.warning {
 
         public static HLink GetLink(string text, ID subUrl, PositionQueue<Tuple<ID, string>> positionQueue, int position, string requestedAction)
         {
-            List<Tuple<ID, string>> nodes = positionQueue.InternalList.GetRange(0, position);
+            List<Tuple<ID, string>> nodes = positionQueue.InternalList.GetRange(1, position);
 
             string ret = "./";
 
             foreach (Tuple<ID, string> tuple in nodes)
                 ret += tuple.Item1 + "/";
 
-            ret += "?";
+            ret += subUrl + "?";
 
             for (int i = 0; i < nodes.Count - 1; i++)
                 if (!string.IsNullOrEmpty(nodes[i].Item2))
@@ -443,10 +456,15 @@ p.warning {
         {
             if(positionQueue.AtEnd())
             {
-                HList list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value)).ToArray())
+                HElement list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray())
                 {
                     Class = "subnodes"
                 };
+
+                if (((HList)list).IsEmpty())
+                    list = new HItalic("This DebugNode includes no Subnodes.") { Class = "subnodes" };
+                else
+                    list = new HHeadline("Subnodes of this DebugNode", 3) { Class = "subnodes" } + list;
 
                 return new HHeadline(Name) + (_description == null ? new HText(_description) : new HText()) + new HContainer(GetElements(sessionData)) + list;
             }
@@ -467,12 +485,17 @@ p.warning {
 
                 if(ReferenceEquals(node, null))
                 {
-                    HList list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray())
+                    HElement list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray())
                     {
                         Class = "subnodes"
                     };
 
-                    return name + new HNewLine() + new HText($"The ID '{positionQueue.Peek().Item1.Value}' is not a child of this {nameof(DebugContainerResponseNode)}.") { Class = "invalid" } + list;
+                    if (((HList)list).IsEmpty())
+                        list = new HItalic("This DebugNode includes no Subnodes.") { Class = "subnodes" };
+                    else
+                        list = new HHeadline("Subnodes of this DebugNode", 3) { Class = "subnodes" } + list;
+
+                    return name + new HHeadline(Name) + new HText($"The ID '{positionQueue.Peek().Item1.Value}' is not a child of this {nameof(DebugContainerResponseNode)}.") { Class = "invalid" } + list;
                 }
                 else
                 {

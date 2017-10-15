@@ -974,11 +974,35 @@ namespace LamestWebserver.RequestHandlers
     /// <summary>
     /// Displays error messages for every request that passed through.
     /// </summary>
-    public class ErrorRequestHandler : IRequestHandler
+    public class ErrorRequestHandler : IRequestHandler, IDebugRespondable
     {
+        public static bool StoreErrorMessages = true;
+
+        public readonly DebugContainerResponseNode DebugResponseNode;
+
+        private AVLHashMap<string, (int, int)> _accumulatedErrors;
+
+        public ErrorRequestHandler()
+        {
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, ResponseHandler.CurrentResponseHandler.DebugResponseNode);
+
+            if (StoreErrorMessages)
+                _accumulatedErrors = new AVLHashMap<string, (int, int)>();
+        }
+
         /// <inheritdoc />
         public HttpResponse GetResponse(HttpRequest requestPacket)
         {
+            if(StoreErrorMessages && _accumulatedErrors != null)
+            {
+                (int count, int error) t = _accumulatedErrors[requestPacket.RequestUrl];
+
+                t.count++;
+                t.error = requestPacket.RequestUrl.EndsWith("/") ? 403 : 404;
+
+                _accumulatedErrors[requestPacket.RequestUrl] = t;
+            }
+
             if (requestPacket.RequestUrl.EndsWith("/"))
             {
                 return new HttpResponse(null, Master.GetErrorMsg(
@@ -1012,6 +1036,30 @@ namespace LamestWebserver.RequestHandlers
                 return false;
 
             return true;
+        }
+
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        private HElement GetDebugResponse(SessionData arg)
+        {
+            if (!StoreErrorMessages || _accumulatedErrors == null)
+                return new HText($"This {GetType().Name} does not store Error-Information. If you want Error-Information to be stored enable the '{StoreErrorMessages}' Flag.") { Class = "warning" };
+
+            return new HTable(
+                (from KeyValuePair<string, (int count, int error)> e in
+                     (from KeyValuePair<string, (int count, int error)> _e in _accumulatedErrors select _e).OrderByDescending(x => x.Value.count)
+                 select new List<HElement>
+                 {
+                     e.Key,
+                     e.Value.count.ToHElement(),
+                     e.Value.error.ToHElement()
+                 }))
+            {
+                TableHeader = new HElement[]
+                {
+                    "Requested URL", "Failed Requests", "Last HTTP-Error"
+                }
+            };
         }
     }
 
@@ -1092,8 +1140,12 @@ namespace LamestWebserver.RequestHandlers
     /// <summary>
     /// A response handler for PageResponses
     /// </summary>
-    public class PageResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetContents>
+    public class PageResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetContents>, IDebugRespondable
     {
+        public static bool StoreDebugInformation = true;
+
+        public readonly DebugContainerResponseNode DebugResponseNode;
+
         /// <summary>
         /// A ReaderWriterLock for accessing pages synchronously.
         /// </summary>
@@ -1111,6 +1163,25 @@ namespace LamestWebserver.RequestHandlers
         {
             Master.AddFunctionEvent += AddFunction;
             Master.RemoveFunctionEvent += RemoveFunction;
+            
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, ResponseHandler.CurrentResponseHandler.DebugResponseNode);
+        }
+
+        private HElement GetDebugResponse(SessionData arg)
+        {
+            if(!StoreDebugInformation)
+                return new HText($"This {GetType().Name} does not store Error-Information. If you want Error-Information to be stored enable the '{StoreDebugInformation}' Flag.") { Class = "warning" };
+
+            ReaderWriterLock.EnterReadLock();
+
+            var ret = new HTable((from e in PageResponses select new List<HElement> { new HLink(e.Key, e.Key), e.Value.Method.ToString(), $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
+            {
+                TableHeader = new HElement[] { "Registered URL", "Associated GetContents Function", "Instance Object" }
+            };
+
+            ReaderWriterLock.ExitReadLock();
+
+            return ret;
         }
 
         /// <inheritdoc />
@@ -1149,6 +1220,8 @@ namespace LamestWebserver.RequestHandlers
 
             ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a Page anymore. (WebserverApi)");
         }
+
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
     }
 
     /// <summary>
