@@ -65,6 +65,7 @@ namespace LamestWebserver.Core
             }
             set
             {
+                if (value == null) throw new ArgumentNullException(nameof(value));
                 if (_currentFilePath == value) return;
                 _currentFilePath = value;
                 RestartStream();
@@ -77,10 +78,7 @@ namespace LamestWebserver.Core
 
         private UsableWriteLock _loggerWriteLock = new UsableWriteLock();
 
-        private ActionList<Stream> _streams = new ActionList<Stream>(() =>
-        {
-            CurrentLogger.Instance.RestartStream();
-        });
+        private List<Stream> _streams = new List<Stream>();
 
         /// <summary>
         /// Currently used output source
@@ -299,19 +297,22 @@ namespace LamestWebserver.Core
 
         /// <summary>
         /// Add some Custom Streams.
+        /// Call RestartStream to let the changes take action.
         /// </summary>
         /// <param name="stream"></param>
         public void AddCustomStream(Stream stream) => _streams.Add(stream);
 
         /// <summary>
         /// Remove some Custom Streams.
+        /// Call RestartStream to let the changes take action.
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
         public bool RemoveCustomStream(Stream stream) => _streams.Remove(stream);
 
         /// <summary>
-        /// Clear all Custom Streams. 
+        /// Clear all Custom Streams.
+        /// Call RestartStream to let the changes take action.
         /// </summary>
         public void ClearCustomStreams() => _streams.Clear();
 
@@ -343,7 +344,7 @@ namespace LamestWebserver.Core
 
         private void Log(ELoggingLevel loggingLevel, string msg)
         {
-            if (_currentOutputSource != EOutputSource.None)
+            if (_currentOutputSource != EOutputSource.None && _multiStreamWriter != null && !_multiStreamWriter.IsDisposed)
             {
                 using (_loggerWriteLock.LockWrite())
                 {
@@ -353,7 +354,8 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Closes and Flushes the Logger stream (NOT Thread save use Restart).
+        /// Closes and Flushes the Logger stream.
+        /// If you want to restart the stream manually use 'Restart'.
         /// </summary>
         public void Close()
         {
@@ -364,7 +366,8 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Opens and initializes the steam to write to (NOT Thread save use Restart).
+        /// Opens and initializes the steam to write to.
+        /// If you want to restart the stream manually use 'Restart'.
         /// </summary>
         protected void Open()
         {

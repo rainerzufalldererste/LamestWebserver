@@ -15,6 +15,11 @@ namespace LamestWebserver.Core
         private List<StreamWriter> _streamWriters = new List<StreamWriter>();
 
         /// <summary>
+        /// Singals if the MultiStreamwriter is already disposed
+        /// </summary>
+        public bool IsDisposed = false;
+
+        /// <summary>
         /// Creates a MultiStreamWriter.
         /// </summary>
         /// <param name="streams"></param>
@@ -91,6 +96,8 @@ namespace LamestWebserver.Core
             {
                 sw.Dispose();
             }
+
+            IsDisposed = true;
         }
 
         /// <summary>

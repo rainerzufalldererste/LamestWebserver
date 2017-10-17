@@ -40,6 +40,7 @@ namespace UnitTests
             Assert.IsTrue(new FileInfo(PathToNewFile).Length > 0);
 
             Logger.CurrentLogger.Instance.AddCustomStream(File.Open(PathToParallelLog, FileMode.Append,FileAccess.Write));
+            Logger.CurrentLogger.Instance.RestartStream();
 
             for (int i = 0; i < 1000; i++)
             {
