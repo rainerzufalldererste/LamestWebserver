@@ -197,7 +197,8 @@ namespace LamestWebserver.Core
 
                 if (hasTasks)
                     using (_writeLock.LockWrite())
-                        currentTask = _tasks.Dequeue();
+                        if (_tasks.Count > 0)
+                            currentTask = _tasks.Dequeue();
 
                 if (currentTask == null)
                 {

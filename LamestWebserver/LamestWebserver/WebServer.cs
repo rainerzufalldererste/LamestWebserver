@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Threading;
 using System.Net.Sockets;
-using System.Drawing;
-using System.IO.Compression;
 using LamestWebserver.Collections;
 using System.IO;
 using System.Runtime.Serialization;
@@ -19,6 +17,8 @@ using LamestWebserver.RequestHandlers;
 using Newtonsoft.Json;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
+using LamestWebserver.Core;
+using LamestWebserver.Core.Memory;
 
 namespace LamestWebserver
 {
@@ -27,6 +27,8 @@ namespace LamestWebserver
     /// </summary>
     public class WebServer : IDisposable
     {
+        internal readonly Singleton<ThreadedWorker> WorkerThreads = new Singleton<ThreadedWorker>(() => new ThreadedWorker()); 
+
         internal static List<WebServer> RunningServers = new List<WebServer>();
         internal static UsableMutexSlim RunningServerMutex = new UsableMutexSlim();
 
@@ -36,7 +38,6 @@ namespace LamestWebserver
         [ThreadStatic] public static string CurrentClientRemoteEndpoint = null;
 
         private readonly TcpListener _tcpListener;
-        private readonly List<Thread> _threads = new List<Thread>();
         private readonly Thread _mThread;
 
         /// <summary>
@@ -103,7 +104,6 @@ namespace LamestWebserver
 
         private Mutex networkStreamsMutex = new Mutex();
         private AVLTree<int, Stream> streams = new AVLTree<int, Stream>();
-        private Mutex cleanMutex = new Mutex();
 
         private Task<TcpClient> tcpRcvTask;
 
@@ -247,18 +247,7 @@ namespace LamestWebserver
 
             networkStreamsMutex.ReleaseMutex();
 
-            int i = _threads.Count;
-
-            while (_threads.Count > 0)
-            {
-                try
-                {
-                    Master.ForceQuitThread(_threads[0]);
-                }
-                catch { }
-
-                _threads.RemoveAt(0);
-            }
+            WorkerThreads.Instance.Stop();
 
             using (RunningServerMutex.Lock())
                 RunningServers.Remove(this);
@@ -267,77 +256,25 @@ namespace LamestWebserver
                 Master.StopServers();
         }
 
-        /// <summary>
-        /// Retrieves the number of used threads by this Webserver.
-        /// </summary>
-        /// <returns>the number of used threads by this Webserver</returns>
-        public int GetThreadCount()
+        internal void ClearStreams()
         {
-            int num = 1;
+            networkStreamsMutex.WaitOne();
 
-            CleanThreads();
-
-            for (int i = 0; i < _threads.Count; i++)
+            foreach (Stream stream in streams.Values)
             {
-                if (_threads[i] != null && _threads[i].IsAlive)
-                {
-                    num++;
-                }
-            }
-
-            return num;
-        }
-
-        internal void CleanThreads()
-        {
-            cleanMutex.WaitOne();
-
-            int threadCount = _threads.Count;
-            int i = 0;
-
-            while (i < _threads.Count)
-            {
-                if (_threads[i] == null ||
-                    _threads[i].ThreadState == ThreadState.Running ||
-                    _threads[i].ThreadState == ThreadState.Unstarted ||
-                    _threads[i].ThreadState == ThreadState.AbortRequested)
-                {
-                    i++;
-                }
-                else
+                if (stream != null)
                 {
                     try
                     {
-                        Master.ForceQuitThread(_threads[i]);
+                        stream.Close();
                     }
                     catch { }
-
-                    networkStreamsMutex.WaitOne();
-
-                    var networkStream = streams[_threads[i].ManagedThreadId];
-
-                    if (networkStream != null)
-                    {
-                        try
-                        {
-                            networkStream.Close();
-                        }
-                        catch { }
-
-                        streams.Remove(_threads[i].ManagedThreadId);
-                    }
-
-                    networkStreamsMutex.ReleaseMutex();
-
-                    _threads.RemoveAt(i);
                 }
             }
 
-            int threadCountAfter = _threads.Count;
+            streams.Clear();
 
-            cleanMutex.ReleaseMutex();
-
-            ServerHandler.LogMessage("Cleaning up threads. Before: " + threadCount + ", After: " + threadCountAfter + ".");
+            networkStreamsMutex.ReleaseMutex();
         }
 
         private void HandleTcpListener()
@@ -360,16 +297,10 @@ namespace LamestWebserver
                     tcpRcvTask = _tcpListener.AcceptTcpClientAsync();
                     tcpRcvTask.Wait();
                     TcpClient tcpClient = tcpRcvTask.Result;
-                    Thread t = new Thread(HandleClient);
-                    _threads.Add(t);
-                    t.Start((object) tcpClient);
-                    ServerHandler.LogMessage("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
-                    if (_threads.Count % 25 == 0)
-                    {
-                        _threads.Add(new Thread(new ThreadStart(CleanThreads)));
-                        _threads[_threads.Count - 1].Start();
-                    }
+                    WorkerThreads.Instance.EnqueueJob((Action)(() => { FlushableMemoryPool.AquireOrFlush(); HandleClient(tcpClient); }));
+                    
+                    ServerHandler.LogMessage("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
                 }
                 catch (ThreadAbortException)
                 {
@@ -477,6 +408,18 @@ namespace LamestWebserver
             int bytes = 0;
 
             networkStreamsMutex.WaitOne();
+            
+            Stream lastStream = streams[Thread.CurrentThread.ManagedThreadId];
+
+            if(lastStream != null)
+            {
+                try
+                {
+                    lastStream.Dispose();
+                }
+                catch { };
+            }
+            
             streams.Add(Thread.CurrentThread.ManagedThreadId, stream);
             networkStreamsMutex.ReleaseMutex();
 
