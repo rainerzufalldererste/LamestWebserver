@@ -75,6 +75,7 @@
   <ItemGroup>
     <Compile Include="Caching\ECachingType.cs" />
     <Compile Include="Caching\ResponseCache.cs" />
+    <Compile Include="Collections\BitList.cs" />
     <Compile Include="Core\Hash.cs" />
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
