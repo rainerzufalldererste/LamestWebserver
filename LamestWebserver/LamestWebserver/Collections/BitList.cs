@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,12 +18,14 @@ namespace LamestWebserver.Collections
         private List<size_t> _data = new List<size_t>();
         private int _position = 0;
 
+        private const int BitsInSizeT = sizeof(size_t) * 8;
+
         public bool this[int index]
         {
             get
             {
                 if (index < _position)
-                    return ((size_t)_data[(int)((size_t)index / sizeof(size_t))] & (size_t)((size_t)1 << (int)(index % sizeof(size_t)))) != (size_t)1;
+                    return ((size_t)_data[(int)((size_t)index >> (sizeof(size_t) - 2))] & (size_t)((size_t)1 << (int)(index % BitsInSizeT))) != (size_t)0;
 
                 throw new IndexOutOfRangeException();
             }
@@ -32,8 +34,8 @@ namespace LamestWebserver.Collections
             {
                 if (index < _position)
                 {
-                    int i = (int)((size_t)index / sizeof(size_t));
-                    int j = (int)((size_t)index / sizeof(size_t));
+                    int i = (int)((size_t)index >> (sizeof(size_t) - 2));
+                    int j = (int)((size_t)index % BitsInSizeT);
                     size_t data = _data[i];
 
                     data &= ~((size_t)1 << j);
@@ -54,15 +56,18 @@ namespace LamestWebserver.Collections
 
         public void Add(bool item)
         {
-            int i = _position / sizeof(size_t);
+            int i = _position >> (sizeof(size_t) - 2);
 
             if (i >= _data.Count)
                 _data.Add(0);
 
             if (!item)
+            {
                 _position++;
+                return;
+            }
 
-            _data[i] |= ((size_t)1 << _position % sizeof(size_t));
+            _data[i] |= (size_t)((size_t)1 << (_position % BitsInSizeT));
 
             _position++;
         }
@@ -85,13 +90,13 @@ namespace LamestWebserver.Collections
             }
             else
             {
-                for (int i = 0; i < _position / sizeof(size_t) - 1; i++)
+                for (int i = 0; i < _position >> (sizeof(size_t) - 2) - 1; i++)
                     if (_data[i] != size_t.MaxValue)
                         return true;
 
                 size_t data = _data.Last();
 
-                for (int i = 0; i < _position % sizeof(size_t); i++)
+                for (int i = 0; i < _position % BitsInSizeT; i++)
                     if ((size_t)(data & ((size_t)1 << i)) == (size_t)0)
                         return true;
 
@@ -104,11 +109,11 @@ namespace LamestWebserver.Collections
             if (array.Length + arrayIndex < Count)
                 throw new InvalidOperationException($"The given array is not large enough (also considering {nameof(arrayIndex)}) to contain this {nameof(BitList)}.");
 
-            for (int i = 0; i < _position / sizeof(size_t) - 1; i++)
+            for (int i = 0; i < _position >> (sizeof(size_t) - 2) - 1; i++)
                 for (size_t j = 1; i > 0; i <<= 1)
                     array[arrayIndex++] = (size_t)(_data[i] & j) == (size_t)1;
 
-            for (int j = 0; j < _position % sizeof(size_t); j++)
+            for (int j = 0; j < _position % BitsInSizeT; j++)
                 array[arrayIndex++] = (size_t)(_data.Last() & (size_t)((size_t)1 << j)) == (size_t)1;
         }
 
@@ -135,23 +140,23 @@ namespace LamestWebserver.Collections
                 throw new IndexOutOfRangeException();
             }
 
-            int indexi = index / sizeof(size_t);
-            int indexj = index % sizeof(size_t);
+            int indexi = index >> (sizeof(size_t) - 2);
+            int indexj = index % BitsInSizeT;
 
-            if (_position % sizeof(size_t) == sizeof(size_t) - 1)
-                _data.Add((_data[_data.Count - 1] & (size_t)(1 << sizeof(size_t))) >> sizeof(size_t));
+            if (_position % BitsInSizeT == BitsInSizeT - 1)
+                _data.Add((_data[_data.Count - 1] & (size_t)(1 << BitsInSizeT)) >> BitsInSizeT);
             else
                 _data[_data.Count - 1] <<= 1;
 
             for (int i = _data.Count - 2; i > indexi; i--)
             {
-                _data[i + 1] |= ((_data[i] & (size_t)(1 << sizeof(size_t))) >> sizeof(size_t));
+                _data[i + 1] |= ((_data[i] & (size_t)(1 << BitsInSizeT)) >> BitsInSizeT);
                 _data[i] <<= 1;
             }
 
             size_t data = _data[indexi];
 
-            _data[indexi + 1] |= ((data & (size_t)(1 << sizeof(size_t))) >> sizeof(size_t));
+            _data[indexi + 1] |= ((data & (size_t)(1 << BitsInSizeT)) >> BitsInSizeT);
             _data[indexi] = 0;
 
             for (int j = 0; j < indexj; j++)
@@ -162,6 +167,8 @@ namespace LamestWebserver.Collections
 
             for (int j = 0; j < indexj - 1; j++)
                 _data[indexi] |= (data & ((size_t)1 << (j + 1)));
+
+            _position++;
         }
 
         public bool Remove(bool item)
@@ -190,8 +197,8 @@ namespace LamestWebserver.Collections
             if (index >= Count)
                 throw new IndexOutOfRangeException();
 
-            int indexi = index / sizeof(size_t);
-            int indexj = index % sizeof(size_t);
+            int indexi = index >> (sizeof(size_t) - 2);
+            int indexj = index % BitsInSizeT;
 
             size_t data = _data[indexi];
 
@@ -203,16 +210,16 @@ namespace LamestWebserver.Collections
             for (int j = indexj + 1; j < sizeof(size_t); j++)
                 _data[indexi] |= (data & (size_t)(1 << (j - 1)));
 
-            for (int i = indexi + 1; i < _position / sizeof(size_t); i++)
+            for (int i = indexi + 1; i < _position >> (sizeof(size_t) - 2); i++)
             {
                 _data[i - 1] |= ((size_t)(_data[i] & 1) << sizeof(size_t));
                 _data[i] >>= 1;
             }
 
-            if (_position % sizeof(size_t) == 0)
-                _data.RemoveAt(_data.Count - 1);
-
             _position--;
+
+            if (_position % BitsInSizeT == 0)
+                _data.RemoveAt(_data.Count - 1);
         }
 
         IEnumerator IEnumerable.GetEnumerator() => new BitListEnumerator(_data.GetEnumerator(), Count);
