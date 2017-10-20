@@ -40,6 +40,17 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'NETFX_CORE|AnyCPU'">
+    <OutputPath>bin\NETFX_CORE\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Release\lws.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="lwslibs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -75,7 +86,9 @@
   <ItemGroup>
     <Compile Include="Caching\ECachingType.cs" />
     <Compile Include="Caching\ResponseCache.cs" />
+    <Compile Include="Core\ClampedValue.cs" />
     <Compile Include="Core\Hash.cs" />
+    <Compile Include="Core\ID.cs" />
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
     <Compile Include="Core\Memory\FlushableMemoryPool.cs" />
@@ -108,6 +121,8 @@
     <Compile Include="Synchronization\SynchronizedCollection.cs" />
     <Compile Include="Synchronization\SynchronizedDictionary.cs" />
     <Compile Include="Synchronization\SynchronizedValue.cs" />
+    <Compile Include="Synchronization\UsableMutexSlim.cs" />
+    <Compile Include="UI\CachedByDefault\CachedByDefaultElements.cs" />
     <Compile Include="UI\ComplexElements.cs" />
     <Compile Include="UI\PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />
@@ -119,7 +134,7 @@
     <Compile Include="SessionContainer.cs" />
     <Compile Include="HttpSessionData.cs" />
     <Compile Include="Synchronization\UsableLocker.cs" />
-    <Compile Include="Synchronization\UsableMutex.cs" />
+    <Compile Include="Synchronization\UsableLockSimple.cs" />
     <Compile Include="Synchronization\UsableWriteLock.cs" />
     <Compile Include="WebServer.cs" />
     <Compile Include="ServerHandler.cs" />

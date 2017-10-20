@@ -66,7 +66,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Creates a new PageBuilder and registers it at the server for a specified url
         /// </summary>
-        /// <param name="pagetitle">The window title</param>
+        /// <param name="pagetitle">The window title.</param>
         /// <param name="URL">the URL at which to register this page</param>
         public PageBuilder(string pagetitle, string URL) : base("body></html")
         {
@@ -80,7 +80,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Creates a page builder and registers it as the server for a specified URL. If the conditionalCode returns false the page will not be parsed and the user will be refered to the referalURL
         /// </summary>
-        /// <param name="title">The window title</param>
+        /// <param name="title">The window title.</param>
         /// <param name="URL">the URL at which to register this page</param>
         /// <param name="referalURL">the URL at which to refer if the conditionalCode returns false</param>
         /// <param name="conditionalCode">the conditionalCode</param>
@@ -94,7 +94,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Creates a new PageBuilder, but does _NOT_ register it at the server for a specified url
         /// </summary>
-        /// <param name="title"></param>
+        /// <param name="title">The title of this window.</param>
         public PageBuilder(string title) : base("body></html")
         {
             this.PageTitle = title;
@@ -305,7 +305,7 @@ namespace LamestWebserver.UI
         /// <paramref name="defaultCachingType">The default CachingType to refer to.</paramref>
         /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
         /// </summary>
-        public virtual bool IsCacheable(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        public virtual bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
         {
             if(response != null)
                 response.Append(ToString());
@@ -320,7 +320,7 @@ namespace LamestWebserver.UI
     public abstract class HCacheableElement : HElement
     {
         /// <inheritdoc />
-        public override bool IsCacheable(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
         {
             if (response != null)
                 response.Append(ResponseCache.CurrentCacheInstance.Instance.GetCachedString(key, ToString));
@@ -340,7 +340,7 @@ namespace LamestWebserver.UI
         public ECachingType CachingType = ECachingType.Default;
 
         /// <inheritdoc />
-        public override bool IsCacheable(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
         {
             ECachingType ret = CachingType;
 
@@ -356,6 +356,17 @@ namespace LamestWebserver.UI
             }
 
             return ret == ECachingType.Cacheable;
+        }
+
+        /// <summary>
+        /// Sets the current HSelectivelyCacheableElement cacheable.
+        /// </summary>
+        /// <param name="cachingType">The CachingType to set. (ECachingType.Cacheable by default)</param>
+        /// <returns>Returns the current HSelectivelyCacheableElement.</returns>
+        public virtual HSelectivelyCacheableElement SetCacheable(ECachingType cachingType = ECachingType.Cacheable)
+        {
+            CachingType = cachingType;
+            return this;
         }
     }
 
@@ -378,7 +389,7 @@ namespace LamestWebserver.UI
     /// <summary>
     /// A hr element used to display a hoizontal line
     /// </summary>
-    public class HLine : HCacheableElement
+    public class HLine : HSelectivelyCacheableElement
     {
         /// <summary>
         /// This Method parses the current element to string
@@ -495,6 +506,110 @@ namespace LamestWebserver.UI
         /// <param name="multipleElements">the elements to cast</param>
         /// <returns>the elements as string</returns>
         public static implicit operator string(HMultipleElements multipleElements) => multipleElements.ToString();
+        
+        /// <summary>
+        /// Retrieves cached contents for nested elements.
+        /// </summary>
+        /// <paramref name="key">The cache key of the container.</paramref>
+        /// <paramref name="defaultCachingType">The default CachingType to refer to.</paramref>
+        /// <paramref name="response">The StringBuilder to attatch the response to.</paramref>
+        protected void GetCachedContents(string key, ECachingType defaultCachingType, StringBuilder response)
+        {
+            int firstSuccessfull = 0;
+
+            for (int i = 0; i < Elements.Count; i++)
+            {
+                if (!Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType))
+                {
+                    if (firstSuccessfull < i)
+                    {
+                        string responseString;
+
+                        if (firstSuccessfull == i - 1)
+                        {
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + (i - 1), out responseString))
+                                response.Append(responseString);
+                            else
+                                Elements[i - 1].IsStaticResponse(key + "/" + (i - 1), defaultCachingType, response);
+                        }
+                        else
+                        {
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), out responseString))
+                            {
+                                response.Append(responseString);
+                            }
+                            else
+                            {
+                                StringBuilder sb = new StringBuilder();
+
+                                for (int j = firstSuccessfull; j < i; j++)
+                                {
+                                    sb.Append(Elements[j].ToString());
+                                }
+
+                                string s = sb.ToString();
+
+                                ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), s);
+                                response.Append(s);
+                            }
+                        }
+                    }
+
+                    Elements[i].IsStaticResponse(key + "/" + i, ECachingType.Default, response); // <- Append the actual non-cacheable response.
+
+                    firstSuccessfull = i + 1;
+                }
+                else if (i + 1 == Elements.Count)
+                {
+                    if (firstSuccessfull == i)
+                    {
+                        string responseString;
+
+                        if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + i, out responseString))
+                            response.Append(responseString);
+                        else
+                            Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType, response);
+                    }
+                    else
+                    {
+                        StringBuilder sb = new StringBuilder();
+
+                        for (int j = firstSuccessfull; j < Elements.Count; j++)
+                        {
+                            sb.Append(Elements[j].ToString());
+                        }
+
+                        string s = sb.ToString();
+
+                        ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + i, s);
+                        response.Append(s);
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            ECachingType ret = CachingType;
+
+            if (ret == ECachingType.Default)
+                ret = defaultCachingType;
+
+            if (response != null)
+            {
+                if (ret == ECachingType.Cacheable)
+                {
+                    GetCachedContents(key, defaultCachingType, response);
+                }
+                else
+                {
+                    response.Append(ToString());
+                }
+            }
+
+            return ret == ECachingType.Cacheable && !(from e in Elements where !e.IsStaticResponse(null, ECachingType.Default, null) select false).Any();
+        }
     }
 
     /// <summary>
@@ -928,11 +1043,11 @@ namespace LamestWebserver.UI
         /// <param name="level">the level of this headline</param>
         public HHeadline(string text = "", int level = 1)
         {
+            if (level > 6 || level < 1)
+                throw new ArgumentOutOfRangeException("The level has to be between 1 and 6.");
+
             this.Text = text;
             this._level = level;
-
-            if (level > 6 || level < 1)
-                throw new Exception("the level has to be between 1 and 6!");
         }
 
         /// <summary>
@@ -1591,42 +1706,71 @@ namespace LamestWebserver.UI
 
             for (int i = 0; i < Elements.Count; i++)
             {
-                if (!Elements[i].IsCacheable(key + "/" + i, defaultCachingType) || i == Elements.Count - 1)
+                if (!Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType))
                 {
-                    if (i == Elements.Count - 1)
-                        i++;
-
                     if(firstSuccessfull < i)
                     {
                         string responseString;
 
                         if (firstSuccessfull == i - 1)
                         {
-                            Elements[i].IsCacheable(key + "/" + i, defaultCachingType, response);
-                        }
-                        else if(ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), out responseString))
-                        {
-                            response.Append(responseString);
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + (i - 1), out responseString))
+                                response.Append(responseString);
+                            else
+                                Elements[i - 1].IsStaticResponse(key + "/" + (i - 1), defaultCachingType, response);
                         }
                         else
                         {
-                            StringBuilder sb = new StringBuilder();
-
-                            for (int j = firstSuccessfull; j < i; j++)
+                            if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), out responseString))
                             {
-                                sb.Append(Elements[i].ToString());
+                                response.Append(responseString);
                             }
+                            else
+                            {
+                                StringBuilder sb = new StringBuilder();
 
-                            string s = sb.ToString();
+                                for (int j = firstSuccessfull; j < i; j++)
+                                {
+                                    sb.Append(Elements[j].ToString());
+                                }
 
-                            ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), s);
-                            response.Append(s);
+                                string s = sb.ToString();
+
+                                ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + (i - 1), s);
+                                response.Append(s);
+                            }
                         }
                     }
 
-                    firstSuccessfull = i + 1;
+                    Elements[i].IsStaticResponse(key + "/" + i, ECachingType.Default, response); // <- Append the actual non-cacheable response.
                     
-                    response.Append(Elements[i].ToString()); // <- The actual non-cacheable response.
+                    firstSuccessfull = i + 1;
+                }
+                else if(i + 1 == Elements.Count)
+                {
+                    if (firstSuccessfull == i)
+                    {
+                        string responseString;
+
+                        if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(key + "/" + i, out responseString))
+                            response.Append(responseString);
+                        else
+                            Elements[i].IsStaticResponse(key + "/" + i, defaultCachingType, response);
+                    }
+                    else
+                    {
+                        StringBuilder sb = new StringBuilder();
+
+                        for (int j = firstSuccessfull; j < Elements.Count; j++)
+                        {
+                            sb.Append(Elements[j].ToString());
+                        }
+
+                        string s = sb.ToString();
+
+                        ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(key + "/" + firstSuccessfull + "-" + i, s);
+                        response.Append(s);
+                    }
                 }
             }
 
@@ -1634,7 +1778,7 @@ namespace LamestWebserver.UI
         }
 
         /// <inheritdoc />
-        public override bool IsCacheable(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
         {
             ECachingType ret = CachingType;
 
@@ -1653,7 +1797,7 @@ namespace LamestWebserver.UI
                 }
             }
 
-            return ret == ECachingType.Cacheable;
+            return ret == ECachingType.Cacheable && !(from e in Elements where !e.IsStaticResponse(null, ECachingType.Default, null) select false).Any();
         }
     }
 
@@ -1740,7 +1884,7 @@ namespace LamestWebserver.UI
         /// <param name="redirectURLifTRUE">the url to redirect to if the conditionalCode returns true</param>
         /// <param name="redirectURLifFALSE">the url to redirect to if the conditionalCode returns false</param>
         /// <param name="conditionalCode">the conditional code</param>
-        public HForm(string redirectURLifTRUE, string redirectURLifFALSE, Func<SessionData, bool> conditionalCode)
+        public HForm(string redirectURLifTRUE, string redirectURLifFALSE, Func<SessionData, bool> conditionalCode) : base("form")
         {
             _fixedAction = false;
             _redirectTrue = redirectURLifTRUE;
@@ -1755,7 +1899,7 @@ namespace LamestWebserver.UI
         /// <param name="addSubmitButton">shall there be a submit button?</param>
         /// <param name="buttontext">if yes: what should the text on the submit button say?</param>
         /// <param name="values">additional values to set in the form as invisible parameters</param>
-        public HForm(string action, bool addSubmitButton, string buttontext = "", params Tuple<string, string>[] values)
+        public HForm(string action, bool addSubmitButton, string buttontext = "", params Tuple<string, string>[] values) : this(action)
         {
             _fixedAction = true;
             this.Action = action;
@@ -1839,24 +1983,21 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Creates a button. SUBMIT BUTTONS SHOULDN'T HAVE A HREF!
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="type"></param>
-        /// <param name="href">SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
+        /// <param name="text">the text of the button.</param>
+        /// <param name="type">the button type according to http standards.</param>
+        /// <param name="href">the destination of this button. SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
         /// <param name="onclick"></param>
-        public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "") : base("button")
+        public HButton(string text, EButtonType type = EButtonType.button, string href = "", string onclick = "") : this(text, href, onclick)
         {
-            this.Text = text;
-            this._href = href;
-            this._onclick = onclick;
             this._type = type;
         }
 
         /// <summary>
         /// Creates a button.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="href">SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
-        /// <param name="onclick"></param>
+        /// <param name="text">the text of the button.</param>
+        /// <param name="href">the destination of this button. SUBMIT BUTTONS SHOULDN'T HAVE A HREF!</param>
+        /// <param name="onclick">the executed javascript-code on clicking the button.</param>
         public HButton(string text, string href = "", string onclick = "") : base("button")
         {
             this.Text = text;
@@ -1972,24 +2113,24 @@ namespace LamestWebserver.UI
         /// <param name="name">the name of the element (for forms)</param>
         /// <param name="size">The amount of entries displayed if not expanded</param>
         /// <param name="multipleSelectable">does the dropdownmenu allow multiple selections?</param>
-        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
-        public HDropDownMenu(string name, int size, bool multipleSelectable, params Tuple<string, string>[] TextValuePairsToDisplay)
+        /// <param name="textValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
+        public HDropDownMenu(string name, int size, bool multipleSelectable, params Tuple<string, string>[] textValuePairsToDisplay)
         {
             this.Name = name;
             this.Size = size;
             this.MultipleSelectable = multipleSelectable;
-            this.options = TextValuePairsToDisplay;
+            this.options = textValuePairsToDisplay;
         }
 
         /// <summary>
         /// Constructs a new DropDownMenu element
         /// </summary>
         /// <param name="name">the name of the element (for forms)</param>
-        /// <param name="TextValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
-        public HDropDownMenu(string name, params Tuple<string, string>[] TextValuePairsToDisplay)
+        /// <param name="textValuePairsToDisplay">All possibly selectable items as a tuple (Text displayed for the user, Value presented to form)</param>
+        public HDropDownMenu(string name, params Tuple<string, string>[] textValuePairsToDisplay)
         {
             this.Name = name;
-            this.options = TextValuePairsToDisplay;
+            this.options = textValuePairsToDisplay;
         }
 
         /// <summary>
@@ -2102,6 +2243,11 @@ namespace LamestWebserver.UI
         private readonly EListType listType;
 
         /// <summary>
+        /// If true adds "display: list-item;" at the start of every subitem Style property.
+        /// </summary>
+        public bool SetListStyleToElements = true;
+
+        /// <summary>
         /// Constructs a new List Element
         /// </summary>
         /// <param name="listType">the type of the list</param>
@@ -2125,6 +2271,17 @@ namespace LamestWebserver.UI
             }
 
             this.Elements = data;
+        }
+
+        /// <inheritdoc />
+        protected override string GetTagHead(string additionalParams = null)
+        {
+            if (SetListStyleToElements)
+                foreach (HElement element in Elements)
+                    if (!element.Style.StartsWith("display: list-item;"))
+                        element.Style = "display: list-item;" + element.Style;
+
+            return base.GetTagHead(additionalParams);
         }
 
         /// <summary>
@@ -2684,6 +2841,88 @@ namespace LamestWebserver.UI
 
                 return elementIfFALSE == null ? "" : elementIfFALSE.GetContent(sessionData);
             });
+        }
+    }
+
+    /// <summary>
+    /// Provides functionality to dynamically cache HElements
+    /// (if CachingType in HSelectivelyCacheableElement is set to ECachingType.Cacheable for all elements or subelements that should be cached).
+    /// </summary>
+    public class HCachePool : HSelectivelyCacheableElement
+    {
+        private HElement ContainedElement;
+        private IURLIdentifyable CurrentResponse;
+        private int CachePoolIndex;
+
+        /// <summary>
+        /// Constructs a new HCachePool which provides functionality to cache contained HElements easily
+        /// (if CachingType in HSelectivelyCacheableElement is set to ECachingType.Cacheable for all elements or subelements that should be cached).
+        /// </summary>
+        /// <param name="containedElement">The contained Element to dynamically cache.</param>
+        /// <param name="currentResponse">The current Page.</param>
+        /// <param name="cachePoolIndex">The index of this HCachePool on this page (if you have multiple HCachePools on the same page).</param>
+        public HCachePool(HElement containedElement, IURLIdentifyable currentResponse, int cachePoolIndex = 0)
+        {
+            if (containedElement == null)
+                throw new NullReferenceException(nameof(containedElement));
+
+            if (currentResponse == null)
+                throw new NullReferenceException(nameof(currentResponse));
+
+            ContainedElement = containedElement;
+            CurrentResponse = currentResponse;
+            CachePoolIndex = cachePoolIndex;
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(SessionData sessionData)
+        {
+            if (ContainedElement == null)
+                throw new NullReferenceException(nameof(ContainedElement));
+
+            if (ContainedElement.IsStaticResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", ECachingType.Default, null))
+            {
+                string responseString;
+
+                if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", out responseString))
+                {
+                    return responseString;
+                }
+                else
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+
+                    ContainedElement.IsStaticResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", ECachingType.Default, stringBuilder);
+
+                    string ret = stringBuilder.ToString();
+
+                    ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", ret);
+
+                    return ret;
+                }
+            }
+            else
+            {
+                StringBuilder stringBuilder = new StringBuilder();
+
+                ContainedElement.IsStaticResponse(CurrentResponse.URL + "#" + CachePoolIndex + "#", ECachingType.Default, stringBuilder);
+
+                return stringBuilder.ToString();
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool IsStaticResponse(string key, ECachingType defaultCachingType, StringBuilder response = null)
+        {
+            ECachingType ret = CachingType;
+
+            if (ret == ECachingType.Default)
+                ret = defaultCachingType;
+
+            if (response != null)
+                response.Append(ToString());
+
+            return ret == ECachingType.Cacheable && !ContainedElement.IsStaticResponse(key, ECachingType.Default, null);
         }
     }
 }

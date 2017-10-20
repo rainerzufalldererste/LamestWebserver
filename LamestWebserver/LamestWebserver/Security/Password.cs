@@ -47,7 +47,7 @@ namespace LamestWebserver.Security
             if (string.IsNullOrEmpty(password))
                 throw new InvalidOperationException("You have to set a password.");
 
-            salt = Hash.GetComplexHash(new UTF8Encoding().GetBytes(Hash.GetHash() + Hash.GetHash() + Hash.GetHash() + Hash.GetHash()));
+            salt = Hash.GetComplexHashBytes();
 
             hash = GenerateSaltedHash(password, salt);
         }
@@ -79,7 +79,8 @@ namespace LamestWebserver.Security
             byte[] bytes = new UTF8Encoding().GetBytes(password);
             byte[] hash = Hash.GetComplexHash(bytes);
 
-            System.Diagnostics.Debug.Assert(hash.Length == salt.Length, "Hash and Salt are of different lengths.");
+            if(hash.Length != salt.Length)
+                Logger.LogDebugExcept("Hash and Salt are of different lengths.");
 
             for (int i = 0; i < hash.Length; i++)
             {
