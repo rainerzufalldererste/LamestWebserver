@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -201,31 +201,32 @@ namespace LamestWebserver.Core
                         if (_tasks.Count > 0)
                             currentTask = _tasks.Dequeue();
 
-                if (currentTask == null)
-                {
-                    Thread.Sleep(1);
-                    continue;
-                }
+                    if (currentTask == null)
+                    {
+                        Thread.Sleep(1);
+                        continue;
+                    }
 
 #if DEBUG
-                Logger.LogTrace($"Dequeued Job in WorkerThread: {currentTask.Task.Method.Name} ({_tasks.Count} tasks left.)");
+                    Logger.LogTrace($"Dequeued Job in WorkerThread: {currentTask.Task.Method.Name} ({_tasks.Count} tasks left.)");
 #endif
 
-                try
-                {
-                    currentTask.State = ETaskState.Executing;
+                    try
+                    {
+                        currentTask.State = ETaskState.Executing;
 
-                    object returnedValue = currentTask.Task.DynamicInvoke(currentTask.Parameters);
+                        object returnedValue = currentTask.Task.DynamicInvoke(currentTask.Parameters);
 
-                    currentTask.ReturnedValue = returnedValue;
-                    currentTask.State = ETaskState.Done;
-                }
-                catch (Exception e)
-                {
-                    currentTask.ExceptionThrown = e;
-                    currentTask.State = ETaskState.ExceptionThrown;
+                        currentTask.ReturnedValue = returnedValue;
+                        currentTask.State = ETaskState.Done;
+                    }
+                    catch (Exception e)
+                    {
+                        currentTask.ExceptionThrown = e;
+                        currentTask.State = ETaskState.ExceptionThrown;
 
-                    ServerHandler.LogMessage("Exception in WorkerTask '" + currentTask.Task.Method.Name + "'.\n" + e);
+                        Logger.LogError("Exception in WorkerTask '" + currentTask.Task.Method.Name + "'.\n" + e);
+                    }
                 }
             }
         }
