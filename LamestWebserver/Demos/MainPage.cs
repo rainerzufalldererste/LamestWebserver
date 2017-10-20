@@ -73,17 +73,20 @@ namespace Demos
         /// <param name="elements">the elements displayed on the page</param>
         /// <param name="filename">the filename to display</param>
         /// <returns>the page includig all layout elements</returns>
-        internal static HElement GetPage(IEnumerable<HElement> elements, string filename)
+        internal static HSelectivelyCacheableElement GetPage(IEnumerable<HElement> elements, string filename)
         {
             // Create the page
-            var page = new PageBuilder("LamestWebserver Reference") {StylesheetLinks = {"style.css"}};
+            var page = new PageBuilder("LamestWebserver Reference") { StylesheetLinks = {"style.css"} };
 
             // Add the main-Container with all the elements and the footer
             page.AddElements(
                 new HContainer()
                 {
                     Class = "main",
-                    Elements = elements.ToList()
+                    Elements = elements.ToList(), 
+                    
+                    // We'll take a look at what this does in the Caching tutorial.
+                    CachingType = LamestWebserver.Caching.ECachingType.Cacheable
                 },
                 new HContainer()
                 {
@@ -92,7 +95,10 @@ namespace Demos
                     {
                         new HImage("lwsfooter.png"),
                         new HText(filename + "\nLamestWebserver Reference v" + typeof(MainPage).Assembly.GetName().Version)
-                    }
+                    },
+
+                    // We'll take a look at what this does in the Caching tutorial.
+                    CachingType = LamestWebserver.Caching.ECachingType.Cacheable
                 });
 
             return page;

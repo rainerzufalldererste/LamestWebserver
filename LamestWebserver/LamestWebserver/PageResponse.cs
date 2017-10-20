@@ -1,6 +1,9 @@
 ﻿using System;
 using LamestWebserver.Synchronization;
 using LamestWebserver.UI;
+using System.Text;
+using LamestWebserver.Caching;
+using LamestWebserver.Core;
 
 namespace LamestWebserver
 {
@@ -59,7 +62,7 @@ namespace LamestWebserver
     /// </summary>
     public abstract class SyncronizedPageResponse : PageResponse
     {
-        private UsableMutex mutex = new UsableMutex();
+        private UsableLockSimple mutex = new UsableLockSimple();
 
         /// <summary>
         /// Constructs a new SyncronizedPageResponse and registers it if specified at the given URL
@@ -114,7 +117,7 @@ namespace LamestWebserver
         /// <summary>
         /// This method is used to remove the current page from the server (as URL identifyable object)
         /// </summary>
-        protected void RemoveFromServer()
+        protected virtual void RemoveFromServer()
         {
             Master.RemoveFunctionFromServer(URL);
         }
@@ -137,7 +140,7 @@ namespace LamestWebserver
     /// </summary>
     public abstract class SyncronizedElementResponse : ElementResponse
     {
-        private UsableMutex mutex = new UsableMutex();
+        private UsableLockSimple mutex = new UsableLockSimple();
 
         /// <summary>
         /// Constructs a new SyncronizedElementResponse and registers it if specified at the given URL
@@ -239,6 +242,119 @@ namespace LamestWebserver
         protected void RemoveFromServer()
         {
             Master.RemoveDirectoryPageFromServer(URL);
+        }
+    }
+
+    /// <summary>
+    /// An automatically caching derivate of ElementResponse.
+    /// </summary>
+    public abstract class CachedResponse : ElementResponse
+    {
+        /// <summary>
+        /// The default size of a response.
+        /// </summary>
+        public static int StartingStringBuilderSize = 1024;
+
+        private int MaxStringBuilderSize = StartingStringBuilderSize;
+        private int ConsecutiveResultsBelow80PercentSize = 0;
+        private ID CacheID;
+
+        /// <summary>
+        /// Constructs a new CachedResponse.
+        /// </summary>
+        /// <param name="URL">The URL to register at.</param>
+        /// <param name="register">Shall this page already be registered?</param>
+        public CachedResponse(string URL, bool register = true) : base(URL, register)
+        {
+            CacheID = new ID();
+        }
+
+        /// <summary>
+        /// Retrieves the auto-cached Element and it's subelements 
+        /// (if CachingType in HSelectivelyCacheableElement is set to ECachingType.Cacheable for all elements or subelements that should be cached).
+        /// </summary>
+        /// <param name="sessionData">The current SessionData.</param>
+        /// <returns></returns>
+        protected override HElement GetElement(SessionData sessionData)
+        {
+            StringBuilder stringBuilder = new StringBuilder(MaxStringBuilderSize);
+
+            HElement contents = GetContents(sessionData);
+
+            if (contents == null)
+                throw new ArgumentNullException(nameof(GetContents));
+
+            if (contents.IsStaticResponse(CacheID.Value + "/", ECachingType.Default, null))
+            {
+                string responseString;
+
+                if (ResponseCache.CurrentCacheInstance.Instance.GetCachedStringResponse(CacheID.Value + "/", out responseString))
+                {
+                    stringBuilder.Append(responseString);
+                }
+                else
+                {
+                    contents.IsStaticResponse(CacheID.Value + "/", ECachingType.Default, stringBuilder);
+
+                    ResponseCache.CurrentCacheInstance.Instance.SetCachedStringResponse(CacheID.Value + "/", stringBuilder.ToString());
+                }
+            }
+            else
+            {
+                contents.IsStaticResponse(CacheID.Value + "/", ECachingType.Default, stringBuilder);
+            }
+
+            if (stringBuilder.Length > MaxStringBuilderSize)
+            {
+                MaxStringBuilderSize = stringBuilder.Length;
+                ConsecutiveResultsBelow80PercentSize = 0;
+            }
+            else if(stringBuilder.Length < MaxStringBuilderSize * 0.8)
+            {
+                ConsecutiveResultsBelow80PercentSize++;
+
+                if(ConsecutiveResultsBelow80PercentSize > 5)
+                    MaxStringBuilderSize = (int)System.Math.Round(MaxStringBuilderSize * 0.95);
+            }
+            else
+            {
+                ConsecutiveResultsBelow80PercentSize = 0;
+            }
+
+            return new HStringBuilderContainerElement(stringBuilder);
+        }
+
+        /// <summary>
+        /// Returns a HElement that contains the contents of the requested page.
+        /// </summary>
+        /// <param name="sessionData">The current SessionData.</param>
+        /// <returns>Returns a HElement that contains the contents of the requested page.</returns>
+        protected abstract HElement GetContents(SessionData sessionData);
+
+        /// <inheritdoc />
+        protected override void RemoveFromServer()
+        {
+            base.RemoveFromServer();
+
+            ResponseCache.CurrentCacheInstance.Instance.RemoveCachedPrefixes(CacheID.Value);
+        }
+
+        private class HStringBuilderContainerElement : HElement
+        {
+            StringBuilder StringBuilder;
+
+            internal HStringBuilderContainerElement(StringBuilder stringBuilder)
+            {
+                if (stringBuilder == null)
+                    throw new ArgumentNullException(nameof(stringBuilder));
+
+                StringBuilder = stringBuilder;
+            }
+
+            public override string GetContent(SessionData sessionData)
+            {
+                return StringBuilder.ToString();
+            }
         }
     }
 
@@ -490,7 +606,7 @@ namespace LamestWebserver
             {
                 if (sessionData == null)
                 {
-                    return "<head><meta http-equiv=\"refresh\" content=\"" + Math.Round((float)milliseconds / 1000f) + "; url = "
+                    return "<head><meta http-equiv=\"refresh\" content=\"" + System.Math.Round(milliseconds / 1000f) + "; url = "
                                    + destinationURL + "\"><script type=\"text/javascript\">setTimeout(function() { window.location.href = \""
                                    + destinationURL + "\";}, "
                                    + milliseconds + ");</script><title>Page Redirection</title><style type=\"text/css\">hr{border:solid;border-width:3;color:#efefef;} p {overflow:overlay;}</style></head><body style='background-color: #f1f1f1;margin: 0;'><div style='font-family: \"Segoe UI\" ,sans-serif;width: 70%;max-width: 1200px;margin: 0em auto;font-size: 16pt;background-color: #fdfdfd;padding: 4em 8em;color: #4e4e4e;'><h2 style='font-weight: lighter;font-size: 40pt;'>"
@@ -515,7 +631,7 @@ namespace LamestWebserver
             {
                 if (sessionData == null)
                 {
-                    return "<head><meta http-equiv=\"refresh\" content=\"" + Math.Round((float)milliseconds / 1000f) + "; url = "
+                    return "<head><meta http-equiv=\"refresh\" content=\"" + System.Math.Round(milliseconds / 1000f) + "; url = "
                                    + destinationURL + "\"><script type=\"text/javascript\">setTimeout(function() { window.location.href = \""
                                    + destinationURL + "\";}, "
                                    + milliseconds + ");</script><title>Page Redirection</title><style type=\"text/css\">hr{border:solid;border-width:3;color:#efefef;} p {overflow:overlay;}</style></head><body style='background-color: #f1f1f1;margin: 0;'><div style='font-family: \"Segoe UI\" ,sans-serif;width: 70%;max-width: 1200px;margin: 0em auto;font-size: 16pt;background-color: #fdfdfd;padding: 4em 8em;color: #4e4e4e;'><h2 style='font-weight: lighter;font-size: 40pt;'>"

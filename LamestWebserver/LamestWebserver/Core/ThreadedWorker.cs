@@ -192,12 +192,19 @@ namespace LamestWebserver.Core
                 currentTask = null;
                 bool hasTasks = false;
 
-                using (_writeLock.LockRead())
+                using (_writeLock.LockRead()) // faster because multiple threads can read at the same time.
                     hasTasks = _tasks.Count > 0;
 
                 if (hasTasks)
+                {
                     using (_writeLock.LockWrite())
-                        currentTask = _tasks.Dequeue();
+                    {
+                        hasTasks = _tasks.Count > 0; // could have already changed.
+
+                        if (hasTasks)
+                            currentTask = _tasks.Dequeue();
+                    }
+                }
 
                 if (currentTask == null)
                 {

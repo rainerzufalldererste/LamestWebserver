@@ -20,7 +20,18 @@ namespace LamestWebserver.Synchronization
             obj.Mutex.WaitOne();
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Locks the internal Mutex again.
+        /// </summary>
+        public UsableLocker ReLock()
+        {
+            obj.Mutex.WaitOne();
+            return this;
+        }
+
+        /// <summary>
+        /// Releases the internal Mutex.
+        /// </summary>
         public void Dispose()
         {
             obj.Mutex.ReleaseMutex();

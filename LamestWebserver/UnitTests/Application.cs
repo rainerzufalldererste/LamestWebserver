@@ -10,6 +10,10 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new IDTests().TestID();
+            new IDTests().TestLongID();
+            new ClampedValueTest().TestClampedValue();
+            new WebCrawlerTest().TestWebCrawler();
             new StringExtentionTests().TestParsingStringExtentions_TestSplitIncludingDelimiters();
             new StringExtentionTests().TestParsingStringExtentions_TestStringBetween();
             new StringExtentionTests().TestParsingStringExtentions_TestSubStringIndex();
@@ -24,7 +28,7 @@ namespace UnitTests
             new CompressionTest().TestCompressDecompress();
             new EncryptDecryptTests().TestEncryptDecrypt();
             new CollectionSerializerTests().TestCollectionJsonSerialisazion();
-            new UsableMutexTest().TestUsableMutexes();
+            new UsableLockerSimpleTest().TestUsableLockerSimple();
             new WriteLockTest().TestWriteLock();
             new CollectionUnitTests().TestSerializeMultiple();
             new CollectionUnitTests().TestSerializeClassAvlTree();
