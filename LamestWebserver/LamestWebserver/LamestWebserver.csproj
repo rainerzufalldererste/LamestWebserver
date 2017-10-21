@@ -87,7 +87,7 @@
     <Compile Include="Caching\ECachingType.cs" />
     <Compile Include="Caching\ResponseCache.cs" />
     <Compile Include="Core\ClampedValue.cs" />
-    <Compile Include="Collections\BitList.cs" />
+    <Compile Include="Core\ExtentionMethods.cs" />
     <Compile Include="Core\Hash.cs" />
     <Compile Include="Core\ID.cs" />
     <Compile Include="Core\Logger.cs" />
@@ -99,6 +99,7 @@
     <Compile Include="Collections\AVLHashMap.cs" />
     <Compile Include="Collections\AVLTree.cs" />
     <Compile Include="Collections\QueuedAVLTree.cs" />
+    <Compile Include="Collections\BitList.cs" />
     <Compile Include="Attributes\HostAttributes.cs" />
     <Compile Include="Core\Web\WebCrawler.cs" />
     <Compile Include="Core\Web\WebRequestFactory.cs" />
@@ -123,6 +124,7 @@
     <Compile Include="Synchronization\UsableMutexSlim.cs" />
     <Compile Include="UI\CachedByDefault\CachedByDefaultElements.cs" />
     <Compile Include="UI\ComplexElements.cs" />
+    <Compile Include="UI\ExtentionMethods.cs" />
     <Compile Include="UI\PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />
     <Compile Include="PageResponse.cs" />

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using LamestWebserver.Core;
 
 #if x86
 using size_t = System.UInt32;
@@ -18,7 +19,7 @@ namespace LamestWebserver.Collections
         private List<size_t> _data = new List<size_t>();
         private int _position = 0;
 
-        private const int BitsInSizeT = sizeof(size_t) * 8;
+        private const int BitsInSizeT = sizeof(size_t) << 3;
 
         public bool this[int index]
         {
@@ -143,32 +144,52 @@ namespace LamestWebserver.Collections
             int indexi = index >> (sizeof(size_t) - 2);
             int indexj = index % BitsInSizeT;
 
+#if DEBUG
+            Console.WriteLine("INSERT " + index + ": " + item);
+
+            for (int i = indexi; i < _data.Count; i++)
+                Console.WriteLine($"{i}: {_data[i].ToBitString()}");
+
+            Console.WriteLine("----");
+#endif
+
             if (_position % BitsInSizeT == BitsInSizeT - 1)
-                _data.Add((_data[_data.Count - 1] & (size_t)(1 << BitsInSizeT)) >> BitsInSizeT);
-            else
+                _data.Add((_data[_data.Count - 1] & (size_t)((size_t)1 << (BitsInSizeT - 1))) >> (BitsInSizeT - 1));
+            else if(indexi + 1 < _data.Count)
                 _data[_data.Count - 1] <<= 1;
 
             for (int i = _data.Count - 2; i > indexi; i--)
             {
-                _data[i + 1] |= ((_data[i] & (size_t)(1 << BitsInSizeT)) >> BitsInSizeT);
+                _data[i + 1] |= ((_data[i] & (size_t)((size_t)1 << (BitsInSizeT - 1))) >> (BitsInSizeT - 1));
                 _data[i] <<= 1;
             }
 
             size_t data = _data[indexi];
 
-            _data[indexi + 1] |= ((data & (size_t)(1 << BitsInSizeT)) >> BitsInSizeT);
+            if(_data.Count > indexi + 1)
+                _data[indexi + 1] |= ((data & (size_t)((size_t)1 << (BitsInSizeT - 1))) >> (BitsInSizeT - 1));
+
             _data[indexi] = 0;
 
             for (int j = 0; j < indexj; j++)
-                _data[indexi] |= (data & ((size_t)1 << j));
+                _data[indexi] |= ((data & ((size_t)1 << j)));
 
             if (item)
                 _data[indexi] |= ((size_t)1 << indexj);
 
-            for (int j = 0; j < indexj - 1; j++)
-                _data[indexi] |= (data & ((size_t)1 << (j + 1)));
+            data <<= 1;
+
+            for (int j = indexj + 1; j < BitsInSizeT; j++)
+                _data[indexi] |= (data & ((size_t)1 << j));
 
             _position++;
+
+#if DEBUG
+            for (int i = indexi; i < _data.Count; i++)
+                Console.WriteLine($"{i}: {_data[i].ToBitString()}");
+
+            Console.WriteLine("\n");
+#endif
         }
 
         public bool Remove(bool item)
@@ -200,19 +221,28 @@ namespace LamestWebserver.Collections
             int indexi = index >> (sizeof(size_t) - 2);
             int indexj = index % BitsInSizeT;
 
+#if DEBUG
+            Console.WriteLine("REMOVE " + indexj);
+
+            for (int i = indexi; i < _data.Count; i++)
+                Console.WriteLine($"{i}: {_data[i].ToBitString()}");
+
+            Console.WriteLine("----");
+#endif
+
             size_t data = _data[indexi];
 
             _data[indexi] = 0;
 
             for (int j = 0; j < indexj; j++)
-                _data[indexi] |= (data & (size_t)(1 << j));
+                _data[indexi] |= (size_t)(data & (size_t)((size_t)1 << j));
 
-            for (int j = indexj + 1; j < sizeof(size_t); j++)
-                _data[indexi] |= (data & (size_t)(1 << (j - 1)));
+            for (int j = indexj + 1; j < BitsInSizeT; j++)
+                _data[indexi] |= ((data & (size_t)((size_t)1 << j)) >> 1);
 
-            for (int i = indexi + 1; i < _position >> (sizeof(size_t) - 2); i++)
+            for (int i = indexi + 1; i <= (_position - 1) >> (sizeof(size_t) - 2); i++)
             {
-                _data[i - 1] |= ((size_t)(_data[i] & 1) << sizeof(size_t));
+                _data[i - 1] |= ((size_t)(_data[i] & 1) << (BitsInSizeT - 1));
                 _data[i] >>= 1;
             }
 
@@ -220,6 +250,13 @@ namespace LamestWebserver.Collections
 
             if (_position % BitsInSizeT == 0)
                 _data.RemoveAt(_data.Count - 1);
+
+#if DEBUG
+            for (int i = indexi; i < _data.Count; i++)
+                Console.WriteLine($"{i}: {_data[i].ToBitString()}");
+
+            Console.WriteLine("\n");
+#endif
         }
 
         IEnumerator IEnumerable.GetEnumerator() => new BitListEnumerator(_data.GetEnumerator(), Count);
