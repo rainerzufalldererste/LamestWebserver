@@ -11,14 +11,85 @@ namespace UnitTests
         [TestMethod]
         public void TestBitList()
         {
-            TestBitList(128, 1234);
-            TestBitList(1024, 54321);
-            TestBitList(256, 11);
-            TestBitList(2048, 242);
-            TestBitList(1111, 42);
+            TestBitListWith(128, 1234);
+            TestBitListWith(1024, 54321);
+            TestBitListWith(256, 11);
+            TestBitListWith(2048, 242);
+            TestBitListWith(1111, 42);
+
+            BitList blist = new BitList();
+
+            blist.Add(false);
+            blist.Add(false);
+
+            Assert.IsTrue(blist.Contains(false));
+            Assert.IsFalse(blist.Contains(true));
+
+            blist.Add(true);
+
+            Assert.IsTrue(blist.Contains(false));
+            Assert.IsTrue(blist.Contains(true));
+
+            blist.Clear();
+            Assert.AreEqual(0, blist.Count);
+
+            blist.Add(true);
+            blist.Add(true);
+
+            Assert.IsFalse(blist.Contains(false));
+            Assert.IsTrue(blist.Contains(true));
+
+            blist.Add(false);
+
+            Assert.IsTrue(blist.Contains(false));
+            Assert.IsTrue(blist.Contains(true));
+
+            blist.Clear();
+            Assert.AreEqual(0, blist.Count);
+
+            for (int i = 0; i < 128; i++)
+                blist.Add(false);
+
+            Assert.IsTrue(blist.Contains(false));
+            Assert.IsFalse(blist.Contains(true));
+
+            blist.Add(true);
+
+            Assert.IsTrue(blist.Contains(false));
+            Assert.IsTrue(blist.Contains(true));
+
+            Assert.AreEqual(129, blist.Count);
+
+            blist.Remove(true);
+            Assert.AreEqual(128, blist.Count);
+
+            Assert.IsTrue(blist.Contains(false));
+            Assert.IsFalse(blist.Contains(true));
+
+            blist.Clear();
+            Assert.AreEqual(0, blist.Count);
+
+            for (int i = 0; i < 128; i++)
+                blist.Add(true);
+            
+            Assert.IsFalse(blist.Contains(false));
+            Assert.IsTrue(blist.Contains(true));
+
+            blist.Add(false);
+
+            Assert.IsTrue(blist.Contains(false));
+            Assert.IsTrue(blist.Contains(true));
+
+            Assert.AreEqual(129, blist.Count);
+
+            blist.Remove(false);
+            Assert.AreEqual(128, blist.Count);
+
+            Assert.IsFalse(blist.Contains(false));
+            Assert.IsTrue(blist.Contains(true));
         }
 
-        private void TestBitList(int size, int seed)
+        private void TestBitListWith(int size, int seed)
         {
             BitList blist = new BitList();
             List<bool> list = new List<bool>();
@@ -51,6 +122,27 @@ namespace UnitTests
 
                     AssertListEquals(list, blist);
                 }
+            }
+
+            for (int i = 0; i < blist.Count; i++)
+            {
+                bool b = r.NextDouble() < 0.5;
+                int index = r.Next(blist.Count);
+
+                blist[index] = b;
+                list[index] = b;
+
+                AssertListEquals(list, blist);
+            }
+
+            for (int i = 0; i < size; i++)
+            {
+                bool b = r.NextDouble() < 0.5;
+
+                blist.Add(b);
+                list.Add(b);
+
+                AssertListEquals(list, blist);
             }
         }
 

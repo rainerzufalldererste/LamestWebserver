@@ -14,6 +14,9 @@ using size_t = System.UInt64;
 
 namespace LamestWebserver.Collections
 {
+    /// <summary>
+    /// A special - very storage effective - List for Bits.
+    /// </summary>
     public class BitList : Core.NullCheckable, IList<bool>
     {
         private List<size_t> _data = new List<size_t>();
@@ -21,6 +24,7 @@ namespace LamestWebserver.Collections
 
         private const int BitsInSizeT = sizeof(size_t) << 3;
 
+        /// <inheritdoc />
         public bool this[int index]
         {
             get
@@ -45,16 +49,21 @@ namespace LamestWebserver.Collections
                         data |= ((size_t)1 << j);
 
                     _data[i] = data;
+
+                    return;
                 }
 
                 throw new IndexOutOfRangeException();
             }
         }
 
+        /// <inheritdoc />
         public int Count => _position;
 
+        /// <inheritdoc />
         public bool IsReadOnly => false;
 
+        /// <inheritdoc />
         public void Add(bool item)
         {
             int i = _position >> (sizeof(size_t) - 2);
@@ -73,12 +82,14 @@ namespace LamestWebserver.Collections
             _position++;
         }
 
+        /// <inheritdoc />
         public void Clear()
         {
             _position = 0;
             _data.Clear();
         }
 
+        /// <inheritdoc />
         public bool Contains(bool item)
         {
             if (item)
@@ -91,7 +102,7 @@ namespace LamestWebserver.Collections
             }
             else
             {
-                for (int i = 0; i < _position >> (sizeof(size_t) - 2) - 1; i++)
+                for (int i = 0; i < (_position - 1) >> (sizeof(size_t) - 2); i++)
                     if (_data[i] != size_t.MaxValue)
                         return true;
 
@@ -105,6 +116,7 @@ namespace LamestWebserver.Collections
             }
         }
 
+        /// <inheritdoc />
         public void CopyTo(bool[] array, int arrayIndex)
         {
             if (array.Length + arrayIndex < Count)
@@ -118,8 +130,10 @@ namespace LamestWebserver.Collections
                 array[arrayIndex++] = (size_t)(_data.Last() & (size_t)((size_t)1 << j)) == (size_t)1;
         }
 
+        /// <inheritdoc />
         public IEnumerator<bool> GetEnumerator() => new BitListEnumerator(_data.GetEnumerator(), Count);
 
+        /// <inheritdoc />
         public int IndexOf(bool item)
         {
             for (int i = 0; i < Count; i++)
@@ -129,6 +143,7 @@ namespace LamestWebserver.Collections
             return -1;
         }
 
+        /// <inheritdoc />
         public void Insert(int index, bool item)
         {
             if (index == Count)
@@ -143,15 +158,6 @@ namespace LamestWebserver.Collections
 
             int indexi = index >> (sizeof(size_t) - 2);
             int indexj = index % BitsInSizeT;
-
-#if DEBUG
-            Console.WriteLine("INSERT " + index + ": " + item);
-
-            for (int i = indexi; i < _data.Count; i++)
-                Console.WriteLine($"{i}: {_data[i].ToBitString()}");
-
-            Console.WriteLine("----");
-#endif
 
             if (_position % BitsInSizeT == BitsInSizeT - 1)
                 _data.Add((_data[_data.Count - 1] & (size_t)((size_t)1 << (BitsInSizeT - 1))) >> (BitsInSizeT - 1));
@@ -183,15 +189,9 @@ namespace LamestWebserver.Collections
                 _data[indexi] |= (data & ((size_t)1 << j));
 
             _position++;
-
-#if DEBUG
-            for (int i = indexi; i < _data.Count; i++)
-                Console.WriteLine($"{i}: {_data[i].ToBitString()}");
-
-            Console.WriteLine("\n");
-#endif
         }
 
+        /// <inheritdoc />
         public bool Remove(bool item)
         {
             int index = -1;
@@ -213,6 +213,7 @@ namespace LamestWebserver.Collections
             return true;
         }
 
+        /// <inheritdoc />
         public void RemoveAt(int index)
         {
             if (index >= Count)
@@ -220,15 +221,6 @@ namespace LamestWebserver.Collections
 
             int indexi = index >> (sizeof(size_t) - 2);
             int indexj = index % BitsInSizeT;
-
-#if DEBUG
-            Console.WriteLine("REMOVE " + indexj);
-
-            for (int i = indexi; i < _data.Count; i++)
-                Console.WriteLine($"{i}: {_data[i].ToBitString()}");
-
-            Console.WriteLine("----");
-#endif
 
             size_t data = _data[indexi];
 
@@ -250,15 +242,9 @@ namespace LamestWebserver.Collections
 
             if (_position % BitsInSizeT == 0)
                 _data.RemoveAt(_data.Count - 1);
-
-#if DEBUG
-            for (int i = indexi; i < _data.Count; i++)
-                Console.WriteLine($"{i}: {_data[i].ToBitString()}");
-
-            Console.WriteLine("\n");
-#endif
         }
 
+        /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator() => new BitListEnumerator(_data.GetEnumerator(), Count);
 
         private class BitListEnumerator : IEnumerator, IEnumerator<bool>
