@@ -108,8 +108,9 @@ namespace LamestWebserver.Core
 
         /// <summary>
         /// Stops all WorkerTasks
+        /// <paramref name="timeout">The timeout in milliseconds to wait before forcefully aborting threads.<para/>Warning: This will most likely NOT free some memory. Please just use with reasonable timespans.</paramref>
         /// </summary>
-        public void Stop(int? timeout = 250)
+        public void Stop(int? timeout = null)
         {
             _running = false;
 
@@ -145,6 +146,7 @@ namespace LamestWebserver.Core
 
         /// <summary>
         /// Waits until all WorkerTasks are done
+        /// <paramref name="timeout">The timeout in milliseconds to wait before forcefully aborting threads.<para/>Warning: This will most likely NOT free some memory. Please just use with reasonable timespans.</paramref>
         /// </summary>
         public void Join(int? timeout = null)
         {
@@ -229,6 +231,8 @@ namespace LamestWebserver.Core
                     }
                 }
             }
+
+            Memory.FlushableMemoryPool.Destroy();
         }
 
         /// <summary>
