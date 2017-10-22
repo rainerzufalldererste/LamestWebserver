@@ -13,7 +13,7 @@ namespace UnitTests
         [TestMethod]
         public void TestFlushableMemoryPool()
         {
-            FlushableMemoryPool.AquireOrFlush();
+            Assert.AreEqual(0, FlushableMemoryPool.AllocatedSize);
 
             List<IntPtr> pointers = new List<IntPtr>();
 

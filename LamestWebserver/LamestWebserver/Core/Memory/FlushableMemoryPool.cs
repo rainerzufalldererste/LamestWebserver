@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.Core.Memory
 {
+    /// <summary>
+    /// Provides very fast Allocation for a flushable volatile memory pool.
+    /// </summary>
     public unsafe class FlushableMemoryPool : IAllocator, IDisposable
     {
         /// <summary>
@@ -43,7 +46,7 @@ namespace LamestWebserver.Core.Memory
                 if (ThreadFlushableMemoryPool == null)
                     return 0;
 
-                return ThreadFlushableMemoryPool._highWaterMark;
+                return ThreadFlushableMemoryPool.Size;
             }
         }
 
@@ -102,7 +105,10 @@ namespace LamestWebserver.Core.Memory
             }
         }
 
-        public FlushableMemoryPool()
+        /// <summary>
+        /// Constructs a new FlushableMemoryPool.
+        /// </summary>
+        public FlushableMemoryPool(int DefaultAllocationSize = 1024)
         {
             using (_threadCountMutex.Lock())
             {
@@ -113,14 +119,16 @@ namespace LamestWebserver.Core.Memory
                     throw new IndexOutOfRangeException($"The maximum specified count of concurrent Flushable Memory Pools has been exceeded. You can remove or increase this limit by changing {nameof(FlushableMemoryPool)}.{nameof(MaximumThreads)} either to <= 0 to disable it, or to a greater value to increase the limit.");
             }
 
+            _highWaterMark = DefaultAllocationSize;
+
             _memoryBlocks.Add(Marshal.AllocHGlobal(_highWaterMark));
         }
 
+        /// <summary>
+        /// Destructs the current Flushable Memory Pool by calling Dispose();
+        /// </summary>
         ~FlushableMemoryPool()
         {
-            using (_threadCountMutex.Lock())
-                _concurrentThreads--;
-
             Dispose();
         }
 
@@ -184,6 +192,9 @@ namespace LamestWebserver.Core.Memory
         /// <inheritdoc />
         public void Dispose()
         {
+            using (_threadCountMutex.Lock())
+                _concurrentThreads--;
+
             using (_mutex.Lock())
             {
                 foreach (IntPtr memoryBlock in _memoryBlocks)
