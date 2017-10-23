@@ -147,7 +147,7 @@ namespace LamestWebserver.Core.Memory
                     if(_memoryBlocks.Count == 1)
                         _highWaterMark += (_position + totalSize - _highWaterMark);
 
-                    _currentSize *= 2;
+                    _currentSize = System.Math.Max(2 * _currentSize, totalSize);
                     _memoryBlocks.Add(Marshal.AllocHGlobal(_currentSize));
                     _position = 0;
                 }
