@@ -17,7 +17,7 @@ namespace LamestWebserver.Collections
     /// <summary>
     /// A special - very storage effective - List for Bits.
     /// </summary>
-    public class BitList : Core.NullCheckable, IList<bool>
+    public class BitList : NullCheckable, IList<bool>
     {
         private List<size_t> _data = new List<size_t>();
         private int _position = 0;
@@ -119,15 +119,28 @@ namespace LamestWebserver.Collections
         /// <inheritdoc />
         public void CopyTo(bool[] array, int arrayIndex)
         {
-            if (array.Length + arrayIndex < Count)
-                throw new InvalidOperationException($"The given array is not large enough (also considering {nameof(arrayIndex)}) to contain this {nameof(BitList)}.");
+            if (array == null)
+                throw new NullReferenceException(nameof(array));
 
-            for (int i = 0; i < _position >> (sizeof(size_t) - 2) - 1; i++)
-                for (size_t j = 1; i > 0; i <<= 1)
-                    array[arrayIndex++] = (size_t)(_data[i] & j) == (size_t)1;
+            if (arrayIndex < 0)
+                throw new IndexOutOfRangeException($"The given {nameof(arrayIndex)} has to be greater than zero.");
 
-            for (int j = 0; j < _position % BitsInSizeT; j++)
-                array[arrayIndex++] = (size_t)(_data.Last() & (size_t)((size_t)1 << j)) == (size_t)1;
+            if (array.Length < Count + arrayIndex)
+                throw new InvalidOperationException($"The given array is not large enough (also taking {nameof(arrayIndex)} into account) to contain this {nameof(BitList)}.");
+
+            if (Count == 0)
+                return;
+
+            for (int i = 0; i < _data.Count - 1; i++)
+                for (size_t j = 1; j > 0; j <<= 1)
+                    array[arrayIndex++] = (size_t)(_data[i] & j) != (size_t)0;
+
+            if(_position % BitsInSizeT != 0)
+                for (int j = 0; j < _position % BitsInSizeT; j++)
+                    array[arrayIndex++] = (size_t)(_data.Last() & (size_t)((size_t)1 << j)) != (size_t)0;
+            else
+                for (int j = 0; j < BitsInSizeT; j++)
+                    array[arrayIndex++] = (size_t)(_data.Last() & (size_t)((size_t)1 << j)) != (size_t)0;
         }
 
         /// <inheritdoc />
@@ -250,7 +263,7 @@ namespace LamestWebserver.Collections
         private class BitListEnumerator : IEnumerator, IEnumerator<bool>
         {
             private IEnumerator<size_t> _enumerator;
-            private int _position = 0;
+            private int _position = -1;
             private int _blocks = 0;
             private int _size;
 
@@ -260,15 +273,18 @@ namespace LamestWebserver.Collections
                 _size = size;
             }
 
-            public object Current => (_enumerator.Current & ((size_t)1 << _position)) == 1;
+            object IEnumerator.Current => (_enumerator.Current & ((size_t)1 << _position)) != 0;
 
-            bool IEnumerator<bool>.Current => (_enumerator.Current & ((size_t)1 << _position)) == 1;
+            bool IEnumerator<bool>.Current => (_enumerator.Current & ((size_t)1 << _position)) != 0;
 
             public bool MoveNext()
             {
+                if (_position < 0 && !_enumerator.MoveNext()) // simply exists to call _enumerator.MoveNext() on first call.
+                    return false;
+
                 _position++;
 
-                if (_position == sizeof(size_t))
+                if (_position == BitsInSizeT)
                 {
                     if (!_enumerator.MoveNext())
                         return false;
@@ -277,7 +293,7 @@ namespace LamestWebserver.Collections
                     _blocks++;
                 }
 
-                if (_blocks * sizeof(size_t) + _position >= _size)
+                if (_blocks * BitsInSizeT + _position >= _size)
                     return false;
 
                 return true;

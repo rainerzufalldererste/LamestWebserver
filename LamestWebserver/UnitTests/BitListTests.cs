@@ -11,6 +11,113 @@ namespace UnitTests
         [TestMethod]
         public void TestBitList()
         {
+            BitList list = new BitList();
+
+            for (int i = 0; i < 1025; i++)
+                list.Add(true);
+
+            Assert.AreEqual(0, list.IndexOf(true));
+            Assert.AreEqual(-1, list.IndexOf(false));
+
+            list.Add(false);
+            Assert.AreEqual(0, list.IndexOf(true));
+            Assert.AreEqual(1025, list.IndexOf(false));
+
+            Assert.IsTrue(list.Remove(false));
+            Assert.AreEqual(0, list.IndexOf(true));
+            Assert.AreEqual(-1, list.IndexOf(false));
+
+            try
+            {
+                var x = new bool[1024];
+                list.CopyTo(x, 0);
+
+                Assert.Fail();
+            }
+            catch (InvalidOperationException) { }
+
+            try
+            {
+                var x = new bool[1026];
+                list.CopyTo(x, 3);
+
+                Assert.Fail();
+            }
+            catch (InvalidOperationException) { }
+
+            var array = new bool[1025];
+            list.CopyTo(array, 0);
+            int index = 0;
+
+            foreach (bool value in array)
+                Assert.AreEqual(list[index++], value);
+
+            Assert.AreEqual(1025, list.Count);
+
+            for (int i = 0; i < 1025; i++)
+                list.RemoveAt(list.Count / 2);
+
+            Assert.AreEqual(0, list.Count);
+
+            if (list.Remove(false))
+                Assert.Fail();
+
+            if (list.Remove(true))
+                Assert.Fail();
+
+            try
+            {
+                list.RemoveAt(0);
+                Assert.Fail();
+            }
+            catch (IndexOutOfRangeException) { }
+
+            try
+            {
+                list[0] = false;
+
+                Assert.Fail();
+            }
+            catch (IndexOutOfRangeException) { }
+            
+            try
+            {
+                var a = list[0];
+
+                Assert.Fail();
+            }
+            catch (IndexOutOfRangeException) { }
+
+            list.Insert(0, true);
+
+            if (!list.Remove(true))
+                Assert.Fail();
+
+            try
+            {
+                list.Insert(1, true);
+                Assert.Fail();
+            }
+            catch (IndexOutOfRangeException) { }
+
+
+            try
+            {
+                list.CopyTo(null, 0);
+                Assert.Fail();
+            }
+            catch (NullReferenceException) { }
+            
+            array = new bool[0];
+            list.CopyTo(array, 0);
+
+            try
+            {
+                list.CopyTo(array, -1);
+                Assert.Fail();
+            }
+            catch (IndexOutOfRangeException) { }
+
             TestBitListWith(128, 1234);
             TestBitListWith(1024, 54321);
             TestBitListWith(256, 11);
@@ -144,6 +251,25 @@ namespace UnitTests
 
                 AssertListEquals(list, blist);
             }
+
+            bool[] arrayA = new bool[list.Count + 2];
+            bool[] arrayB = new bool[blist.Count + 2];
+
+            Assert.AreEqual(arrayA.Length, arrayB.Length);
+
+            list.CopyTo(arrayA, 2);
+            blist.CopyTo(arrayB, 2);
+
+            for (int i = 0; i < arrayA.Length; i++)
+                Assert.AreEqual(arrayA[i], arrayB[i]);
+
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                blist.RemoveAt(i);
+                list.RemoveAt(i);
+
+                AssertListEquals(list, blist);
+            }
         }
 
         private void AssertListEquals<T>(IList<T> a, IList<T> b)
@@ -152,6 +278,24 @@ namespace UnitTests
 
             for (int i = 0; i < a.Count; i++)
                 Assert.AreEqual(a[i], b[i]);
+
+            int index = 0;
+
+            foreach (T x in b)
+            {
+                Assert.AreEqual(a[index], x);
+
+                index++;
+            }
+
+            index = 0;
+
+            foreach (T x in a)
+            {
+                Assert.AreEqual(b[index], x);
+
+                index++;
+            }
         }
     }
 }
