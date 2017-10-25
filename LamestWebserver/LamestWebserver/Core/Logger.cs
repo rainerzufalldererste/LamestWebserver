@@ -395,14 +395,14 @@ namespace LamestWebserver.Core
         private void CreateMultiStreamWriter()
         {
             List<Stream> streamsToApply = new List<Stream>();
-            streamsToApply.Add(File.Open(_currentFilePath, FileMode.Append, FileAccess.Write));
-
+            
             if ((_currentOutputSource & EOutputSource.Console) == EOutputSource.Console)
                 streamsToApply.Add(Console.OpenStandardOutput());
 
             if ((_currentOutputSource & EOutputSource.File) == EOutputSource.File)
-                streamsToApply.AddRange(_streams);
+                streamsToApply.Add(File.Open(_currentFilePath, FileMode.Append, FileAccess.Write));
 
+            streamsToApply.AddRange(_streams);
             _multiStreamWriter = new MultiStreamWriter(streamsToApply);
         }
 
