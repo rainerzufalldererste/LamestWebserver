@@ -71,6 +71,7 @@
     <Compile Include="StringExtentionTests.cs" />
     <Compile Include="ClampedValueTest.cs" />
     <Compile Include="FlushableMemoryPoolTests.cs" />
+    <Compile Include="BitListTests.cs" />
     <Compile Include="WebCrawlerTest.cs" />
     <Compile Include="UsableLockerSimpleTest.cs" />
     <Compile Include="WriteLockTest.cs" />

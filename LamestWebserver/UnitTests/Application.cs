@@ -11,6 +11,7 @@ namespace UnitTests
         public static void Main(string[] args)
         {
             new FlushableMemoryPoolTests().TestFlushableMemoryPool();
+            new BitListTests().TestBitList();
             new IDTests().TestID();
             new IDTests().TestLongID();
             new ClampedValueTest().TestClampedValue();

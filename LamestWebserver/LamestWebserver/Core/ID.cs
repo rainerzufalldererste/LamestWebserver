@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -222,7 +222,7 @@ namespace LamestWebserver.Core
                 {
                     for (int j = 0; j < HexCharsInUlong; j++)
                     {
-                        pChars[i * HexCharsInUlong + j] = Master.HexToCharLookupTable[(int)((ulong)(id[i] & (0xFul << (4 * j))) >> (4 * j))];
+                        pChars[i * HexCharsInUlong + j] = ExtentionMethods.HexToCharLookupTable[(int)((ulong)(id[i] & (0xFul << (4 * j))) >> (4 * j))];
                     }
                 }
 
@@ -246,7 +246,7 @@ namespace LamestWebserver.Core
                 {
                     for (int j = 0; j < HexCharsInUlong; j++)
                     {
-                        pChars[i * HexCharsInUlong + j] = Master.HexToCharLookupTable[(int)((ulong)(_id[i] & (0xFul << (4 * j))) >> (4 * j))];
+                        pChars[i * HexCharsInUlong + j] = ExtentionMethods.HexToCharLookupTable[(int)((ulong)(_id[i] & (0xFul << (4 * j))) >> (4 * j))];
                     }
                 }
 
