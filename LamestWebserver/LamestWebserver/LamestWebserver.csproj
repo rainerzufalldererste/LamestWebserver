@@ -93,6 +93,7 @@
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
+    <Compile Include="Core\MultiStreamWriter.cs" />
     <Compile Include="Core\NullCheckable.cs" />
     <Compile Include="Core\Parsing\ParsingStringExtentions.cs" />
     <Compile Include="Core\Singleton.cs" />
@@ -100,6 +101,7 @@
     <Compile Include="Collections\AVLTree.cs" />
     <Compile Include="Collections\QueuedAVLTree.cs" />
     <Compile Include="Collections\BitList.cs" />
+    <Compile Include="Collections\ActionList.cs" />
     <Compile Include="Attributes\HostAttributes.cs" />
     <Compile Include="Core\Web\WebCrawler.cs" />
     <Compile Include="Core\Web\WebRequestFactory.cs" />

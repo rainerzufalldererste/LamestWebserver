@@ -1,5 +1,9 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using LamestWebserver.Synchronization;
+using LamestWebserver.Collections;
 
 namespace LamestWebserver.Core
 {
@@ -27,6 +31,64 @@ namespace LamestWebserver.Core
         /// The minimum logging level for this logger.
         /// </summary>
         public ELoggingLevel MinimumLoggingLevel = DefaultMinimumLoggingLevel;
+
+        /// <summary>
+        /// Set the Flags for the Output Sources
+        /// </summary>
+        public EOutputSource OutputSourceFlags
+        {
+            get
+            {
+                return _currentOutputSource;
+            }
+            set
+            {
+                if (_currentOutputSource == value) return;
+                _currentOutputSource = value;
+                CurrentLogger.Instance.RestartStream();
+            }
+        }
+
+        /// <summary>
+        /// Stream Writer to handle the writing from multiple streams
+        /// </summary>
+        private MultiStreamWriter _multiStreamWriter;
+
+        /// <summary>
+        /// Path for the Logging File
+        /// </summary>
+        public string FilePath
+        {
+            get
+            {
+                return _currentFilePath;
+            }
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (_currentFilePath == value) return;
+                _currentFilePath = value;
+                RestartStream();
+            }
+        }
+        /// <summary>
+        /// Currently used File Path
+        /// </summary>
+        private string _currentFilePath = "LWS" + DateTime.Now.ToFileTime().ToString() + ".log";
+
+        private UsableWriteLock _loggerWriteLock = new UsableWriteLock();
+
+        private List<Stream> _streams = new List<Stream>();
+
+        /// <summary>
+        /// Currently used output source
+        /// </summary>
+        private EOutputSource _currentOutputSource = EOutputSource.File | EOutputSource.Console;
+
+        /// <summary>
+        /// If manually closed or opened check this value
+        /// </summary>
+        public bool IsOpen { get; private set; }
 
         /// <summary>
         /// Logging a message on logging level 'Trace'.
@@ -234,6 +296,27 @@ namespace LamestWebserver.Core
         public static void LogCrashAndBurn(string msg) => CurrentLogger.Instance.CrashAndBurn(msg);
 
         /// <summary>
+        /// Add some Custom Streams.
+        /// Call RestartStream to let the changes take action.
+        /// </summary>
+        /// <param name="stream"></param>
+        public void AddCustomStream(Stream stream) => _streams.Add(stream);
+
+        /// <summary>
+        /// Remove some Custom Streams.
+        /// Call RestartStream to let the changes take action.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        public bool RemoveCustomStream(Stream stream) => _streams.Remove(stream);
+
+        /// <summary>
+        /// Clear all Custom Streams.
+        /// Call RestartStream to let the changes take action.
+        /// </summary>
+        public void ClearCustomStreams() => _streams.Clear();
+
+        /// <summary>
         /// Logging a message on logging level 'CrashAndBurn'. The logger will be closed, a dump file will be written and the application will be exited with error code -1.
         /// </summary>
         /// <param name="msg">The message to log.</param>
@@ -259,28 +342,68 @@ namespace LamestWebserver.Core
             Environment.Exit(-1);
         }
 
-        internal void Log(ELoggingLevel loggingLevel, string msg)
+        private void Log(ELoggingLevel loggingLevel, string msg)
         {
-            // TODO: Implement propper logging!
-
-            ServerHandler.LogMessage($"[{loggingLevel.ToString()} \\\\\\\\ {msg}]");
+            if (_currentOutputSource != EOutputSource.None && _multiStreamWriter != null && !_multiStreamWriter.IsDisposed)
+            {
+                using (_loggerWriteLock.LockWrite())
+                {
+                    _multiStreamWriter.WriteLine($"[{loggingLevel.ToString()} \\\\\\\\ {msg}]");
+                }
+            }
         }
 
         /// <summary>
         /// Closes and Flushes the Logger stream.
+        /// If you want to restart the stream manually use 'Restart'.
         /// </summary>
         public void Close()
         {
-            // TODO: Close and Flush stream!
-            DebugExcept(new NotImplementedException());
+            using (_loggerWriteLock.LockWrite())
+            {
+                _multiStreamWriter.Dispose();
+            }
         }
 
         /// <summary>
         /// Opens and initializes the steam to write to.
+        /// If you want to restart the stream manually use 'Restart'.
         /// </summary>
         protected void Open()
         {
-            DebugExcept(new NotImplementedException());
+            using (_loggerWriteLock.LockWrite())
+            {
+                if (_currentOutputSource != EOutputSource.None)
+                {
+                    CreateMultiStreamWriter();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Atomic operation to close and open the Logger save by a mutex.
+        /// </summary>
+        public void RestartStream()
+        {
+            using (_loggerWriteLock.LockWrite())
+            {
+                Close();
+                Open();
+            }
+        }
+
+        private void CreateMultiStreamWriter()
+        {
+            List<Stream> streamsToApply = new List<Stream>();
+            
+            if ((_currentOutputSource & EOutputSource.Console) == EOutputSource.Console)
+                streamsToApply.Add(Console.OpenStandardOutput());
+
+            if ((_currentOutputSource & EOutputSource.File) == EOutputSource.File)
+                streamsToApply.Add(File.Open(_currentFilePath, FileMode.Append, FileAccess.Write));
+
+            streamsToApply.AddRange(_streams);
+            _multiStreamWriter = new MultiStreamWriter(streamsToApply);
         }
 
         /// <summary>
@@ -310,7 +433,7 @@ namespace LamestWebserver.Core
             CrashAndBurn = 6,
 
             /// <summary>
-            /// Throws an Excption.
+            /// Throws an Exception.
             /// </summary>
             Except = 5,
 
@@ -338,6 +461,28 @@ namespace LamestWebserver.Core
             /// Debugging Information.
             /// </summary>
             Trace = 0
+        }
+
+        /// <summary>
+        /// Flags for output Sources
+        /// </summary>
+        [Flags]
+        public enum EOutputSource : byte
+        {
+            /// <summary>
+            /// No Logging output at all.
+            /// </summary>
+            None = 0,
+
+            /// <summary>
+            /// Write To Console.
+            /// </summary>
+            Console = 1,
+
+            /// <summary>
+            /// Write into File.
+            /// </summary>
+            File = 2,
         }
     }
 }
