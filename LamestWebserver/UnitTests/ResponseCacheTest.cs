@@ -18,7 +18,7 @@ namespace UnitTests
 
             ResponseCache cache = new ResponseCache();
             cache.MaximumStringResponseCacheSize = 1024 * 128;
-            cache.CacheMakeRoom_AdditionalFreeSpacePercentage = 0;
+            cache.CacheMakeRoom_AdditionalFreeSpacePercentage.Value = 0;
 
             string s = new string((char)(0 + 50), 1024 * 2 - 1);
             cache.SetCachedStringResponse(0.ToString(), s);

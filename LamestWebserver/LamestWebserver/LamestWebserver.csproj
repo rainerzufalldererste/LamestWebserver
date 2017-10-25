@@ -22,7 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>false</Prefer32Bit>
     <DocumentationFile>bin\Debug\lws.XML</DocumentationFile>
   </PropertyGroup>
@@ -34,11 +34,22 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Release\lws.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'NETFX_CORE|AnyCPU'">
+    <OutputPath>bin\NETFX_CORE\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Release\lws.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="lwslibs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -75,8 +86,10 @@
   <ItemGroup>
     <Compile Include="Caching\ECachingType.cs" />
     <Compile Include="Caching\ResponseCache.cs" />
-    <Compile Include="Collections\ActionList.cs" />
+    <Compile Include="Core\ClampedValue.cs" />
+    <Compile Include="Core\ExtentionMethods.cs" />
     <Compile Include="Core\Hash.cs" />
+    <Compile Include="Core\ID.cs" />
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
@@ -87,6 +100,8 @@
     <Compile Include="Collections\AVLHashMap.cs" />
     <Compile Include="Collections\AVLTree.cs" />
     <Compile Include="Collections\QueuedAVLTree.cs" />
+    <Compile Include="Collections\BitList.cs" />
+    <Compile Include="Collections\ActionList.cs" />
     <Compile Include="Attributes\HostAttributes.cs" />
     <Compile Include="Core\Web\WebCrawler.cs" />
     <Compile Include="Core\Web\WebRequestFactory.cs" />
@@ -108,8 +123,10 @@
     <Compile Include="Synchronization\SynchronizedCollection.cs" />
     <Compile Include="Synchronization\SynchronizedDictionary.cs" />
     <Compile Include="Synchronization\SynchronizedValue.cs" />
+    <Compile Include="Synchronization\UsableMutexSlim.cs" />
     <Compile Include="UI\CachedByDefault\CachedByDefaultElements.cs" />
     <Compile Include="UI\ComplexElements.cs" />
+    <Compile Include="UI\ExtentionMethods.cs" />
     <Compile Include="UI\PageBuilder.cs" />
     <Compile Include="PageFiller.cs" />
     <Compile Include="PageResponse.cs" />
@@ -120,7 +137,7 @@
     <Compile Include="SessionContainer.cs" />
     <Compile Include="HttpSessionData.cs" />
     <Compile Include="Synchronization\UsableLocker.cs" />
-    <Compile Include="Synchronization\UsableMutex.cs" />
+    <Compile Include="Synchronization\UsableLockSimple.cs" />
     <Compile Include="Synchronization\UsableWriteLock.cs" />
     <Compile Include="WebServer.cs" />
     <Compile Include="ServerHandler.cs" />
