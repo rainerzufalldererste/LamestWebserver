@@ -375,7 +375,7 @@ namespace LamestWebserver.Core
             {
                 if (_currentOutputSource != EOutputSource.None)
                 {
-                    _createMultiStreamWR();
+                    CreateMultiStreamWriter();
                 }
             }
         }
@@ -392,7 +392,7 @@ namespace LamestWebserver.Core
             }
         }
 
-        private void _createMultiStreamWR()
+        private void CreateMultiStreamWriter()
         {
             List<Stream> streamsToApply = new List<Stream>();
             streamsToApply.Add(File.Open(_currentFilePath, FileMode.Append, FileAccess.Write));
@@ -403,9 +403,7 @@ namespace LamestWebserver.Core
             if ((_currentOutputSource & EOutputSource.File) == EOutputSource.File)
                 streamsToApply.AddRange(_streams);
 
-
             _multiStreamWriter = new MultiStreamWriter(streamsToApply);
-
         }
 
         /// <summary>
