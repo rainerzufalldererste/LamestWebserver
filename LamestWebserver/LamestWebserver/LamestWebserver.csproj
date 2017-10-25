@@ -75,10 +75,12 @@
   <ItemGroup>
     <Compile Include="Caching\ECachingType.cs" />
     <Compile Include="Caching\ResponseCache.cs" />
+    <Compile Include="Collections\ActionList.cs" />
     <Compile Include="Core\Hash.cs" />
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
+    <Compile Include="Core\MultiStreamWriter.cs" />
     <Compile Include="Core\NullCheckable.cs" />
     <Compile Include="Core\Parsing\ParsingStringExtentions.cs" />
     <Compile Include="Core\Singleton.cs" />
