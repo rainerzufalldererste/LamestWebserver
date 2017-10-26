@@ -1072,10 +1072,15 @@ namespace LamestWebserver.RequestHandlers
     {
         private readonly Random _random = new Random();
 
+        /// <summary>
+        /// The maximum amount of retries if deadlocks prevented the execution.
+        /// </summary>
+        public static int Retries = 10;
+
         /// <inheritdoc />
         public HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
-            var requestFunction = GetResponseFunction(requestPacket);
+            T requestFunction = GetResponseFunction(requestPacket);
 
             if (requestFunction == null)
                 return null;
@@ -1085,24 +1090,37 @@ namespace LamestWebserver.RequestHandlers
 
             RETRY:
 
-            while (tries < 10)
+            try
             {
-                try
+                while (tries < Retries)
                 {
-                    return GetRetriableResponse(requestFunction, requestPacket, sessionData);
-                }
-                catch (MutexRetryException)
-                {
-                    tries++;
-
-                    if (tries == 10)
+                    try
                     {
-                        throw;
-                    }
+                        HttpResponse response = GetRetriableResponse(requestFunction, requestPacket, sessionData);
 
-                    Thread.Sleep(_random.Next(25 * tries));
-                    goto RETRY;
+                        FinishResponse(requestFunction, null, currentStopwatch);
+
+                        return response;
+                    }
+                    catch (MutexRetryException)
+                    {
+                        tries++;
+
+                        if (tries == Retries)
+                        {
+                            throw;
+                        }
+
+                        Thread.Sleep(_random.Next(25 * tries));
+                        goto RETRY;
+                    }
                 }
+            }
+            catch(Exception e)
+            {
+                FinishResponse(requestFunction, e, currentStopwatch);
+
+                throw;
             }
 
             return null;
@@ -1117,6 +1135,17 @@ namespace LamestWebserver.RequestHandlers
         /// <param name="sessionData">the current sessionData</param>
         /// <returns>the http response-packet</returns>
         public abstract HttpResponse GetRetriableResponse(T requestFunction, HttpRequest requestPacket, HttpSessionData sessionData);
+
+        /// <summary>
+        /// Provides information about the last response and is called whenever a response finished.
+        /// </summary>
+        /// <param name="requestFunction">The called request function.</param>
+        /// <param name="exception">The thrown exception.</param>
+        /// <param name="stopwatch">The current stopwatch.</param>
+        public virtual void FinishResponse(T requestFunction, Exception exception, Stopwatch stopwatch)
+        {
+            // default behaviour: do nothing.
+        }
 
         /// <summary>
         /// Gets the response function which can be called multiple times in GetRetriableResponse.
@@ -1175,7 +1204,7 @@ namespace LamestWebserver.RequestHandlers
 
             ReaderWriterLock.EnterReadLock();
 
-            var ret = new HTable((from e in PageResponses select new List<HElement> { new HLink(e.Key, e.Key), e.Value.Method.ToString(), $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
+            var ret = new HTable((from e in PageResponses select new List<HElement> { new HString(e.Key), e.Value.Method.ToString(), $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
             {
                 TableHeader = new HElement[] { "Registered URL", "Associated GetContents Function", "Instance Object" }
             };
@@ -1208,6 +1237,10 @@ namespace LamestWebserver.RequestHandlers
         {
             ReaderWriterLock.EnterWriteLock();
             PageResponses.Add(url, getc);
+
+            if (getc.Target is IDebugRespondable)
+                DebugResponseNode.AddNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
+
             ReaderWriterLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The URL '" + url + "' is now assigned to a Page. (WebserverApi)");
@@ -1216,13 +1249,30 @@ namespace LamestWebserver.RequestHandlers
         private void RemoveFunction(string url)
         {
             ReaderWriterLock.EnterWriteLock();
+
+            Master.GetContents getc = PageResponses[url];
+
+            if (getc != null)
+                if (getc.Target is IDebugRespondable)
+                    DebugResponseNode.RemoveNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
+
             PageResponses.Remove(url);
+
             ReaderWriterLock.ExitWriteLock();
 
             ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a Page anymore. (WebserverApi)");
         }
 
         public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        /// <inheritdoc />
+        public override void FinishResponse(Master.GetContents requestFunction, Exception exception, Stopwatch stopwatch)
+        {
+            base.FinishResponse(requestFunction, exception, stopwatch);
+
+            if (requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan>)
+                ((IDebugUpdateableResponse<Exception, TimeSpan>)requestFunction.Target).UpdateDebugResponseData(exception, stopwatch.Elapsed);
+        }
     }
 
     /// <summary>

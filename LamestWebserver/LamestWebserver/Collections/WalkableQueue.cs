@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,17 +7,19 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.Collections
 {
-    public class PositionQueue<T>
+    public class WalkableQueue<T> : IEnumerable<T>
     {
         public List<T> InternalList;
         public int Position = 0;
 
-        public PositionQueue(params T[] objs)
+        public T Current => InternalList[Position];
+
+        public WalkableQueue(params T[] objs)
         {
             InternalList = new List<T>(objs);
         }
 
-        public PositionQueue(List<T> objs)
+        public WalkableQueue(List<T> objs)
         {
             InternalList = objs;
         }
@@ -60,5 +63,9 @@ namespace LamestWebserver.Collections
         }
 
         public bool AtEnd() => Position >= InternalList.Count - 1;
+
+        public IEnumerator<T> GetEnumerator() => InternalList.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => InternalList.GetEnumerator();
     }
 }

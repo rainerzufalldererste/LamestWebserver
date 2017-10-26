@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.Collections
 {
-    public class FixedSizeQueue<T> : IEnumerable<T>
+    public class FixedSizeQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>
     {
         private T[] _data;
         private int _startPosition = 0;
@@ -24,9 +24,9 @@ namespace LamestWebserver.Collections
                 if (_data != null)
                 {
                     CopyTo(newData, 0);
-                    _data = newData;
                 }
 
+                _data = newData;
                 _maxSize = value;
             }
         }
@@ -89,23 +89,39 @@ namespace LamestWebserver.Collections
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-### COPY FROM BITLIST!!!
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
 
-            for (int i = _startPosition; i > -0; i--)
-                array[arrayIndex++] = _data[i];
+            if (arrayIndex < 0)
+                throw new IndexOutOfRangeException($"The given {nameof(arrayIndex)} has to be greater than zero.");
 
-            for (int i = _maxSize - 1; i > _startPosition; i--)
-                array[arrayIndex++] = _data[i];
+            if (array.Length < Count + arrayIndex)
+                throw new InvalidOperationException($"The given array is not large enough (also taking {nameof(arrayIndex)} into account) to contain this {nameof(FixedSizeQueue<T>)}.");
+
+            for (int i = 0; i < Count; i++)
+                array[arrayIndex++] = _data[(_startPosition + i) % _maxSize];
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            throw new NotImplementedException();
+            // TODO: Implement properly.
+
+            T[] array = new T[Count];
+
+            CopyTo(array, 0);
+
+            return array.ToList().GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException();
+            // TODO: Implement properly.
+
+            T[] array = new T[Count];
+
+            CopyTo(array, 0);
+
+            return array.GetEnumerator();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LamestWebserver.JScriptBuilder;
@@ -2358,8 +2358,7 @@ namespace LamestWebserver.UI
     /// </summary>
     public class HTable : HSelectivelyCacheableElement
     {
-        private List<List<HElement>> elements;
-        private IEnumerable<object>[] data;
+        private IEnumerable<IEnumerable<object>> _elements;
 
         /// <summary>
         /// The table header displayed on top of the table rows.
@@ -2375,24 +2374,12 @@ namespace LamestWebserver.UI
         /// Constructs a new Table containing the given elements
         /// </summary>
         /// <param name="elements">the contained elements</param>
-        public HTable(List<List<HElement>> elements)
+        public HTable(IEnumerable<IEnumerable<object>> elements)
         {
             if (elements == null || elements.Contains(null))
                 throw new ArgumentNullException(nameof(elements));
 
-            this.elements = elements;
-        }
-
-        /// <summary>
-        /// Constructs a new Table containing the given elements
-        /// </summary>
-        /// <param name="elements">the contained elements</param>
-        public HTable(IEnumerable<List<HElement>> elements)
-        {
-            if (elements == null || elements.Contains(null))
-                throw new ArgumentNullException(nameof(elements));
-
-            this.elements = elements.ToList();
+            this._elements = elements;
         }
 
         /// <summary>
@@ -2402,9 +2389,31 @@ namespace LamestWebserver.UI
         public HTable(params IEnumerable<object>[] data)
         {
             if (data == null || data.Contains(null))
-                throw new ArgumentNullException(nameof(elements));
+                throw new ArgumentNullException(nameof(_elements));
 
-            this.data = data;
+            if (data.Length == 1 && data[0] is IEnumerable<object>)
+            {
+                if (data[0] is IEnumerable<IEnumerable<object>>)
+                {
+                    _elements = (IEnumerable<IEnumerable<object>>)data[0];
+
+                    return;
+                }
+                else
+                {
+                    foreach (var element in (IEnumerable<object>)data[0])
+                        if (!(element is IEnumerable<object>))
+                            goto NOT_ALREADY_LIST_OF_LISTS;
+
+                    _elements = (from entry in data[0] select ((IEnumerable<object>)entry));
+
+                    return;
+                }
+            }
+
+            NOT_ALREADY_LIST_OF_LISTS:
+
+            _elements = data;
         }
 
         /// <summary>
@@ -2446,29 +2455,18 @@ namespace LamestWebserver.UI
                 ret += "</tr>";
             }
 
-            if (elements != null)
+            if (_elements != null)
             {
-                foreach (ICollection<HElement> outer in elements)
+                foreach (IEnumerable<object> outer in _elements)
                 {
                     ret += "<tr>";
 
-                    foreach (HElement element in outer)
+                    foreach (object element in outer)
                     {
-                        ret += "<td>" + element.GetContent(sessionData) + "</td>";
-                    }
-
-                    ret += "</tr>";
-                }
-            }
-            else
-            {
-                foreach (IEnumerable<object> outer in data)
-                {
-                    ret += "<tr>";
-
-                    foreach (object obj in outer)
-                    {
-                        ret += "<td>" + obj + "</td>";
+                        if(element is HElement)
+                            ret += "<td>" + ((HElement)element).GetContent(sessionData) + "</td>";
+                        else
+                            ret += "<td>" + element.ToString() + "</td>";
                     }
 
                     ret += "</tr>";

@@ -87,7 +87,7 @@
     <Compile Include="Caching\ECachingType.cs" />
     <Compile Include="Caching\ResponseCache.cs" />
     <Compile Include="Collections\FixedSizeQueue.cs" />
-    <Compile Include="Collections\PositionQueue.cs" />
+    <Compile Include="Collections\WalkableQueue.cs" />
     <Compile Include="Collections\URL.cs" />
     <Compile Include="Core\ClampedValue.cs" />
     <Compile Include="Core\ExtentionMethods.cs" />
@@ -110,6 +110,7 @@
     <Compile Include="Core\Web\WebRequestFactory.cs" />
     <Compile Include="RequestHandlers\DebugView\DebugResponse.cs" />
     <Compile Include="HttpResponse.cs" />
+    <Compile Include="RequestHandlers\DebugView\IDebugUpdateableResponse.cs" />
     <Compile Include="Serialization\SerializableKeyValuePair.cs" />
     <Compile Include="SessionData.cs" />
     <Compile Include="Compression\GZipCompression.cs" />

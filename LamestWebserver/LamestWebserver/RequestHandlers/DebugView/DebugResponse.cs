@@ -201,12 +201,12 @@ p.warning {
     background: repeating-linear-gradient( 45deg, #e2c42f, #e2c42f 0.5em, #d8b91e 0.5em, #d8b91e 1em );
     text-shadow: #000 1px 1px 2px;
 }";
-#endregion
+        #endregion
 
         public HttpResponse GetResponse(HttpRequest requestPacket, System.Diagnostics.Stopwatch currentStopwatch)
         {
             SessionData sessionData = new HttpSessionData(requestPacket);
-            PositionQueue<Tuple<ID, string>> unpackedUrls = UnpackUrlActions(requestPacket);
+            WalkableQueue<Tuple<ID, string>> unpackedUrls = UnpackUrlActions(requestPacket);
             HElement e = _debugNode.GetContents(sessionData, unpackedUrls.Peek()?.Item2, unpackedUrls);
 
             PageBuilder pb = new PageBuilder("LamestWebserver Debug View")
@@ -236,12 +236,12 @@ p.warning {
             return new HttpResponse(requestPacket, pb.GetContent(sessionData)) { Cookies = ((HttpSessionData)(sessionData)).Cookies.ToList() };
         }
 
-        public PositionQueue<Tuple<ID, string>> UnpackUrlActions(HttpRequest request)
+        public WalkableQueue<Tuple<ID, string>> UnpackUrlActions(HttpRequest request)
         {
             List<string> links = request.RequestUrl.Split('/').ToList();
             links.Remove("");
 
-            PositionQueue<Tuple<ID, string>> ret = new PositionQueue<Tuple<ID, string>>();
+            WalkableQueue<Tuple<ID, string>> ret = new WalkableQueue<Tuple<ID, string>>();
 
             ret.Push(new Tuple<ID, string>(new ID(new ulong[] { 0xFFFFFFFFul }), null));
 
@@ -254,7 +254,7 @@ p.warning {
 
                 try
                 {
-                    ret.Push(new Tuple<ID, string>(new ID(links[i]), Master.DecodeUrl(action)));
+                    ret.Push(new Tuple<ID, string>(new ID(links[i]), action.DecodeUrl()));
                 }
                 catch
                 {
@@ -317,7 +317,7 @@ p.warning {
 
         public URL<ID> URL { get; private set; }
 
-        public void SetParent(DebugContainerResponseNode node)
+        public void SetParentURL(DebugContainerResponseNode node)
         {
             if (URL != null)
                 throw new InvalidOperationException($"The field {nameof(URL)} can only be set once.");
@@ -333,9 +333,9 @@ p.warning {
             URL = new URL<ID>(new ID[0]);
         }
 
-        public abstract HElement GetContents(SessionData sessionData, string requestedAction, PositionQueue<Tuple<ID, string>> positionQueue);
+        public abstract HElement GetContents(SessionData sessionData, string requestedAction, WalkableQueue<Tuple<ID, string>> positionQueue);
 
-        public static HLink GetLink(string text, ID subUrl, PositionQueue<Tuple<ID, string>> positionQueue, string requestedAction = null)
+        public static HLink GetLink(string text, ID subUrl, WalkableQueue<Tuple<ID, string>> positionQueue, string requestedAction = null)
         {
             List<Tuple<ID, string>> already = positionQueue.GetPassed();
 
@@ -354,7 +354,7 @@ p.warning {
                     ret += $"action_{i}={already[i].Item2}&";
 
             if (!string.IsNullOrEmpty(requestedAction))
-                ret += $"action_{already.Count - 1}={Master.FormatToHttpUrl(requestedAction)}";
+                ret += $"action_{already.Count - 1}={requestedAction.FormatToHttpUrl()}";
 
             return new HLink(text, ret);
         }
@@ -364,16 +364,16 @@ p.warning {
             string ret = "/" + url.ToString() + "?";
 
             if (!string.IsNullOrEmpty(requestedAction))
-                ret += $"action_{url.Count - 1}={Master.FormatToHttpUrl(requestedAction)}";
+                ret += $"action_{url.Count - 1}={requestedAction.FormatToHttpUrl()}";
 
             return new HLink(text, ret);
         }
 
-        public static HLink GetLink(string text, ID subUrl, PositionQueue<Tuple<ID, string>> positionQueue, int position, string requestedAction)
+        public static HLink GetLink(string text, ID subUrl, WalkableQueue<Tuple<ID, string>> positionQueue, int position, string requestedAction)
         {
             List<Tuple<ID, string>> nodes = positionQueue.InternalList.GetRange(1, position);
 
-            string ret = "./";
+            string ret = "/";
 
             foreach (Tuple<ID, string> tuple in nodes)
                 ret += tuple.Item1 + "/";
@@ -385,7 +385,7 @@ p.warning {
                     ret += $"action_{i}={nodes[i].Item2}&";
 
             if (!string.IsNullOrEmpty(requestedAction))
-                ret += $"action_{nodes.Count - 1}={Master.FormatToHttpUrl(requestedAction)}";
+                ret += $"action_{nodes.Count - 1}={requestedAction.FormatToHttpUrl()}";
 
             return new HLink(text, ret);
         }
@@ -405,7 +405,6 @@ p.warning {
     {
         private string _description;
         private AVLTree<ID, DebugResponseNode> _subNodes;
-        private bool addedToParent = false;
 
         public Func<SessionData, HElement> GetElements;
 
@@ -424,8 +423,6 @@ p.warning {
                     DebugResponse.AddNode(this);
                 else
                     parentNode.AddNode(this);
-
-                addedToParent = true;
             }
         }
 
@@ -444,7 +441,7 @@ p.warning {
 
         public void AddNode(DebugResponseNode node)
         {
-            node.SetParent(this);
+            node.SetParentURL(this);
             _subNodes.Add(node.ID, node);
         }
 
@@ -458,7 +455,7 @@ p.warning {
             _subNodes.Clear();
         }
 
-        public override HElement GetContents(SessionData sessionData, string requestedAction, PositionQueue<Tuple<ID, string>> positionQueue)
+        public override HElement GetContents(SessionData sessionData, string requestedAction, WalkableQueue<Tuple<ID, string>> positionQueue)
         {
             if(positionQueue.AtEnd())
             {

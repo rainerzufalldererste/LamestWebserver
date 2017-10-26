@@ -5,6 +5,9 @@ using LamestWebserver.Core;
 using LamestWebserver.RequestHandlers.DebugView;
 using LamestWebserver.Synchronization;
 using LamestWebserver.UI;
+using LamestWebserver.Collections;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace LamestWebserver
 {
@@ -20,9 +23,9 @@ namespace LamestWebserver
     }
 
     /// <summary>
-    /// A abstract class for directly responding with a string to the client request.
+    /// Simplifies implementation of IURLIdentifyables.
     /// </summary>
-    public abstract class PageResponse : IURLIdentifyable, IDebugRespondable
+    public abstract class ResponseCore : IURLIdentifyable, IDebugRespondable, IDebugUpdateableResponse<Exception, TimeSpan>
     {
         /// <summary>
         /// The URL of this Page.
@@ -30,20 +33,91 @@ namespace LamestWebserver
         public string URL { get; protected set; }
 
         private DebugContainerResponseNode _debugResponseNode;
+        private FixedSizeQueue<Tuple<Exception, DateTime>> _exceptions = new FixedSizeQueue<Tuple<Exception, DateTime>>(20);
+        private FixedSizeQueue<Tuple<TimeSpan, DateTime>> _responseTimes = new FixedSizeQueue<Tuple<TimeSpan, DateTime>>(20);
+        private int _totalPageViews = 0;
+        private double? _averageResponseTime = null;
+        private TimeSpan _minimumResponseTime = TimeSpan.FromDays(365);
+        private TimeSpan _maximumResponseTime = TimeSpan.FromMilliseconds(0);
+        private int _totalExceptions = 0;
 
+        protected ResponseCore(string URL)
+        {
+            this.URL = URL;
+            _debugResponseNode = new DebugContainerResponseNode($"[{GetType().Name}] '{URL}'", null, GetDebugViewResponse, null, false);
+        }
+
+        /// <inheritdoc />
+        DebugResponseNode IDebugRespondable.GetDebugResponseNode() => _debugResponseNode;
+
+        protected virtual HElement GetDebugViewResponse(SessionData sessionData)
+        {
+            HMultipleElements ret = new HMultipleElements();
+
+            ret += new HText($"This page has been called {_totalPageViews} times.");
+
+            if (_totalPageViews > 0)
+            {
+                ret += new HText($"The average response time of this page is {_averageResponseTime} milliseconds. (maximum: {_maximumResponseTime} | minimum {_minimumResponseTime})");
+
+                ret += new HHeadline("Last Response Times", 2);
+                ret += new HTable((from r in _responseTimes select r.ToEnumerable())) { TableHeader = new List<HElement>() { "Response Time", "Time" } };
+                ret += new HNewLine();
+            }
+
+            if (_totalExceptions > 0)
+            {
+                ret += new HText($"This page has thrown an exception {_totalExceptions} times.");
+
+                ret += new HHeadline("Last Exceptions", 2);
+                ret += new HTable((from e in _exceptions select e.ToEnumerable())) { TableHeader = new List<HElement>() { "Exception", "Time" } };
+                ret += new HNewLine();
+            }
+
+            return ret;
+        }
+
+        /// <inheritdoc />
+        public void UpdateDebugResponseData(Exception exception, TimeSpan timeSpan)
+        {
+            _totalPageViews++;
+
+            if (exception != null)
+            {
+                _exceptions.Push(new Tuple<Exception, DateTime>(exception, DateTime.Now));
+
+                _totalExceptions++;
+            }
+
+            _responseTimes.Push(new Tuple<TimeSpan, DateTime>(timeSpan, DateTime.Now));
+
+            if (_averageResponseTime.HasValue)
+                _averageResponseTime = (_averageResponseTime.Value * (_totalPageViews - 1) + timeSpan.TotalMilliseconds) / _totalPageViews;
+            else
+                _averageResponseTime = timeSpan.TotalMilliseconds;
+
+            if (_maximumResponseTime < timeSpan)
+                _maximumResponseTime = timeSpan;
+
+            if (_minimumResponseTime > timeSpan)
+                _minimumResponseTime = timeSpan;
+        }
+    }
+
+    /// <summary>
+    /// A abstract class for directly responding with a string to the client request.
+    /// </summary>
+    public abstract class PageResponse : ResponseCore
+    {
         /// <summary>
         /// Constructs (and also registers if you want to) a new Page Response.
         /// </summary>
         /// <param name="URL">The URL of this page.</param>
         /// <param name="register">Shall this page automatically be registered?</param>
-        protected PageResponse(string URL, bool register = true)
+        protected PageResponse(string URL, bool register = true) : base(URL)
         {
-            this.URL = URL;
-
             if (register)
                 Master.AddFuntionToServer(URL, GetContents);
-
-            _debugResponseNode = new DebugContainerResponseNode($"[{GetType().Name}] '{URL}'", null, GetDebugViewResponse, null, true);
         }
 
         /// <summary>
@@ -60,17 +134,6 @@ namespace LamestWebserver
         /// <param name="sessionData">The current SessionData.</param>
         /// <returns>The response.</returns>
         protected abstract string GetContents(SessionData sessionData);
-
-        /// <inheritdoc />
-        DebugResponseNode IDebugRespondable.GetDebugResponseNode() => _debugResponseNode;
-
-        protected virtual HElement GetDebugViewResponse(SessionData sessionData)
-        {
-            return new HTable();
-            {
-
-            }
-        }
     }
 
     /// <summary>
@@ -110,22 +173,15 @@ namespace LamestWebserver
     /// <summary>
     /// A direct response as HElement to the client request
     /// </summary>
-    public abstract class ElementResponse : IURLIdentifyable
+    public abstract class ElementResponse : ResponseCore
     {
-        /// <summary>
-        /// the specified URL of this page
-        /// </summary>
-        public string URL { get; protected set; }
-
         /// <summary>
         /// Constructs a new ElementResponse and registers it if specified at the given URL
         /// </summary>
         /// <param name="URL">the URL of this page</param>
         /// <param name="register">shall this page be automatically registered?</param>
-        protected ElementResponse(string URL, bool register = true)
+        protected ElementResponse(string URL, bool register = true) : base(URL)
         {
-            this.URL = URL;
-
             if (register)
                 Master.AddFuntionToServer(URL, GetContents);
         }
@@ -188,20 +244,15 @@ namespace LamestWebserver
     /// <summary>
     /// A direct response as string to the client directory / directory item request
     /// </summary>
-    public abstract class DirectoryResponse : IURLIdentifyable
+    public abstract class DirectoryResponse : ResponseCore
     {
-        /// <inheritdoc />
-        public string URL { get; }
-
         /// <summary>
         /// Constructs a new Directory Response object
         /// </summary>
         /// <param name="URL">the URLL of the directory</param>
         /// <param name="register">shall this directory be automatically registered at the server?</param>
-        public DirectoryResponse(string URL, bool register = true)
+        public DirectoryResponse(string URL, bool register = true) : base(URL)
         {
-            this.URL = URL;
-
             if(register)
                 Master.AddDirectoryPageToServer(this.URL, GetContent);
         }
@@ -226,20 +277,15 @@ namespace LamestWebserver
     /// <summary>
     /// A direct response as HElement to the client directory / directory item request
     /// </summary>
-    public abstract class DirectoryElementResponse : IURLIdentifyable
+    public abstract class DirectoryElementResponse : ResponseCore
     {
-        /// <inheritdoc />
-        public string URL { get; }
-
         /// <summary>
         /// Constructs a new Directory Element Response object
         /// </summary>
         /// <param name="URL">the URLL of the directory</param>
         /// <param name="register">shall this directory be automatically registered at the server?</param>
-        public DirectoryElementResponse(string URL, bool register = true)
+        public DirectoryElementResponse(string URL, bool register = true) : base(URL)
         {
-            this.URL = URL;
-
             if (register)
                 Master.AddDirectoryPageToServer(this.URL, (sessionData, subURL) => GetContent(sessionData, subURL)*sessionData);
         }
