@@ -1,4 +1,4 @@
-﻿using LamestWebserver.Collections;
+using LamestWebserver.Collections;
 using LamestWebserver.Core;
 using LamestWebserver.RequestHandlers;
 using LamestWebserver.UI;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LamestWebserver.DebugView
+namespace LamestWebserver.RequestHandlers.DebugView
 {
     public interface IDebugRespondable
     {
@@ -203,7 +203,7 @@ p.warning {
 }";
 #endregion
 
-        public HttpResponse GetResponse(HttpRequest requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket, System.Diagnostics.Stopwatch currentStopwatch)
         {
             SessionData sessionData = new HttpSessionData(requestPacket);
             PositionQueue<Tuple<ID, string>> unpackedUrls = UnpackUrlActions(requestPacket);
@@ -404,23 +404,29 @@ p.warning {
     public class DebugContainerResponseNode : DebugResponseNode
     {
         private string _description;
-        private AVLTree<ID, DebugResponseNode> SubNodes;
+        private AVLTree<ID, DebugResponseNode> _subNodes;
+        private bool addedToParent = false;
 
         public Func<SessionData, HElement> GetElements;
 
         private DebugContainerResponseNode() { }
 
-        public DebugContainerResponseNode(string name, string description = null, Func<SessionData, HElement> getElementFunc = null, DebugContainerResponseNode parentNode = null)
+        public DebugContainerResponseNode(string name, string description = null, Func<SessionData, HElement> getElementFunc = null, DebugContainerResponseNode parentNode = null, bool AddToParent = true)
         {
             Name = name;
             _description = description;
-            SubNodes = new AVLTree<ID, DebugResponseNode>();
+            _subNodes = new AVLTree<ID, DebugResponseNode>();
             GetElements = getElementFunc ?? (s => new HText($"No {nameof(GetElements)} function was specified."));
 
-            if (parentNode == null)
-                DebugResponse.AddNode(this);
-            else
-                parentNode.AddNode(this);
+            if (AddToParent)
+            {
+                if (parentNode == null)
+                    DebugResponse.AddNode(this);
+                else
+                    parentNode.AddNode(this);
+
+                addedToParent = true;
+            }
         }
 
         internal static DebugContainerResponseNode ConstructRootNode(string name, string description = null, Func<SessionData, HElement> getElementFunc = null)
@@ -429,7 +435,7 @@ p.warning {
 
             ret.Name = name;
             ret._description = description;
-            ret.SubNodes = new AVLTree<ID, DebugResponseNode>();
+            ret._subNodes = new AVLTree<ID, DebugResponseNode>();
             ret.GetElements = getElementFunc ?? (s => new HPlainText());
             ret.SetRootNode();
 
@@ -439,24 +445,24 @@ p.warning {
         public void AddNode(DebugResponseNode node)
         {
             node.SetParent(this);
-            SubNodes.Add(node.ID, node);
+            _subNodes.Add(node.ID, node);
         }
 
         public void RemoveNode(DebugResponseNode node)
         {
-            SubNodes.Remove(new KeyValuePair<ID, DebugResponseNode>(node.ID, node));
+            _subNodes.Remove(new KeyValuePair<ID, DebugResponseNode>(node.ID, node));
         }
 
         public void ClearNodes()
         {
-            SubNodes.Clear();
+            _subNodes.Clear();
         }
 
         public override HElement GetContents(SessionData sessionData, string requestedAction, PositionQueue<Tuple<ID, string>> positionQueue)
         {
             if(positionQueue.AtEnd())
             {
-                HElement list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray())
+                HElement list = new HList(HList.EListType.UnorderedList, (from s in _subNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray())
                 {
                     Class = "subnodes"
                 };
@@ -478,14 +484,14 @@ p.warning {
 
                 positionQueue.Pop();
 
-                if(SubNodes)
+                if(_subNodes)
                 {
-                    node = SubNodes[positionQueue.Peek().Item1];
+                    node = _subNodes[positionQueue.Peek().Item1];
                 }
 
                 if(ReferenceEquals(node, null))
                 {
-                    HElement list = new HList(HList.EListType.UnorderedList, (from s in SubNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray())
+                    HElement list = new HList(HList.EListType.UnorderedList, (from s in _subNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray())
                     {
                         Class = "subnodes"
                     };

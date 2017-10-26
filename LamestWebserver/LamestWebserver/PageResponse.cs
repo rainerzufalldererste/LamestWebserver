@@ -1,9 +1,10 @@
-﻿using System;
-using LamestWebserver.Synchronization;
-using LamestWebserver.UI;
+using System;
 using System.Text;
 using LamestWebserver.Caching;
 using LamestWebserver.Core;
+using LamestWebserver.RequestHandlers.DebugView;
+using LamestWebserver.Synchronization;
+using LamestWebserver.UI;
 
 namespace LamestWebserver
 {
@@ -19,26 +20,30 @@ namespace LamestWebserver
     }
 
     /// <summary>
-    /// A abstract class for directly responding with a string to the client request
+    /// A abstract class for directly responding with a string to the client request.
     /// </summary>
-    public abstract class PageResponse : IURLIdentifyable
+    public abstract class PageResponse : IURLIdentifyable, IDebugRespondable
     {
         /// <summary>
-        /// The URL of this Page
+        /// The URL of this Page.
         /// </summary>
         public string URL { get; protected set; }
 
+        private DebugContainerResponseNode _debugResponseNode;
+
         /// <summary>
-        /// Constructs (and also registers if you want to) a new Page Response
+        /// Constructs (and also registers if you want to) a new Page Response.
         /// </summary>
-        /// <param name="URL">the URL of this page</param>
-        /// <param name="register">shall this page automatically be registered?</param>
+        /// <param name="URL">The URL of this page.</param>
+        /// <param name="register">Shall this page automatically be registered?</param>
         protected PageResponse(string URL, bool register = true)
         {
             this.URL = URL;
 
             if (register)
                 Master.AddFuntionToServer(URL, GetContents);
+
+            _debugResponseNode = new DebugContainerResponseNode($"[{GetType().Name}] '{URL}'", null, GetDebugViewResponse, null, true);
         }
 
         /// <summary>
@@ -50,11 +55,22 @@ namespace LamestWebserver
         }
 
         /// <summary>
-        /// A direct answer to the client as string
+        /// A direct answer to the client as string.
         /// </summary>
-        /// <param name="sessionData">the current sessionData</param>
-        /// <returns>the response</returns>
+        /// <param name="sessionData">The current SessionData.</param>
+        /// <returns>The response.</returns>
         protected abstract string GetContents(SessionData sessionData);
+
+        /// <inheritdoc />
+        DebugResponseNode IDebugRespondable.GetDebugResponseNode() => _debugResponseNode;
+
+        protected virtual HElement GetDebugViewResponse(SessionData sessionData)
+        {
+            return new HTable();
+            {
+
+            }
+        }
     }
 
     /// <summary>

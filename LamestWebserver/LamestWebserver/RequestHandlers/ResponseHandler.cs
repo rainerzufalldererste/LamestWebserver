@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,7 +8,7 @@ using System.Threading;
 using LamestWebserver.Collections;
 using LamestWebserver.Serialization;
 using LamestWebserver.Synchronization;
-using LamestWebserver.DebugView;
+using LamestWebserver.RequestHandlers.DebugView;
 using LamestWebserver.UI;
 
 namespace LamestWebserver.RequestHandlers
@@ -68,10 +68,10 @@ namespace LamestWebserver.RequestHandlers
             {
                 Elements =
                 {
-                    new HHeadline(nameof(ResponseHandler.RequestHandlers), 2),
+                    new HHeadline(nameof(RequestHandlers), 2),
                     new HList(HList.EListType.UnorderedList, (from rh in RequestHandlers select (rh is IDebugRespondable ? (HElement)DebugView.DebugResponseNode.GetLink((IDebugRespondable)rh) : new HItalic(rh.GetType().Name)))),
                     new HNewLine(),
-                    new HHeadline(nameof(ResponseHandler.SecondaryRequestHandlers), 2),
+                    new HHeadline(nameof(SecondaryRequestHandlers), 2),
                     new HList(HList.EListType.UnorderedList, (from srh in SecondaryRequestHandlers select (srh is IDebugRespondable ? (HElement)DebugView.DebugResponseNode.GetLink((IDebugRespondable)srh) : new HItalic(srh.GetType().Name))))
                 }
             };
@@ -95,7 +95,7 @@ namespace LamestWebserver.RequestHandlers
             {
                 foreach (IRequestHandler requestHandler in RequestHandlers)
                 {
-                    var response = requestHandler.GetResponse(requestPacket);
+                    var response = requestHandler.GetResponse(requestPacket, stopwatch);
 
                     if (response != null)
                     {
@@ -107,7 +107,7 @@ namespace LamestWebserver.RequestHandlers
 
                 foreach (IRequestHandler requestHandler in SecondaryRequestHandlers)
                 {
-                    var response = requestHandler.GetResponse(requestPacket);
+                    var response = requestHandler.GetResponse(requestPacket, stopwatch);
 
                     if (response != null)
                     {
@@ -216,8 +216,9 @@ namespace LamestWebserver.RequestHandlers
         /// Retrieves a response from a http-request.
         /// </summary>
         /// <param name="requestPacket">the request packet</param>
+        /// <param name="currentStopwatch">a reference to a started response time stopwatch.</param>
         /// <returns>the response packet</returns>
-        HttpResponse GetResponse(HttpRequest requestPacket);
+        HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch);
     }
 
     /// <summary>
@@ -243,7 +244,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public virtual HttpResponse GetResponse(HttpRequest requestPacket)
+        public virtual HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             string fileName = requestPacket.RequestUrl;
             byte[] contents = null;
@@ -543,7 +544,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public override HttpResponse GetResponse(HttpRequest requestPacket)
+        public override HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             string fileName = requestPacket.RequestUrl;
             byte[] contents = null;
@@ -853,7 +854,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public HttpResponse GetResponse(HttpRequest requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             var file = _cache[requestPacket.RequestUrl];
 
@@ -991,7 +992,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public HttpResponse GetResponse(HttpRequest requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             if(StoreErrorMessages && _accumulatedErrors != null)
             {
@@ -1072,7 +1073,7 @@ namespace LamestWebserver.RequestHandlers
         private readonly Random _random = new Random();
 
         /// <inheritdoc />
-        public HttpResponse GetResponse(HttpRequest requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             var requestFunction = GetResponseFunction(requestPacket);
 
@@ -1305,7 +1306,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public HttpResponse GetResponse(HttpRequest requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             if (!requestPacket.IsWebsocketUpgradeRequest)
                 return null;

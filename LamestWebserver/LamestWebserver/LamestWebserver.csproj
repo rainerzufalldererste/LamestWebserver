@@ -86,6 +86,7 @@
   <ItemGroup>
     <Compile Include="Caching\ECachingType.cs" />
     <Compile Include="Caching\ResponseCache.cs" />
+    <Compile Include="Collections\FixedSizeQueue.cs" />
     <Compile Include="Collections\PositionQueue.cs" />
     <Compile Include="Collections\URL.cs" />
     <Compile Include="Core\ClampedValue.cs" />
@@ -103,7 +104,7 @@
     <Compile Include="Attributes\HostAttributes.cs" />
     <Compile Include="Core\Web\WebCrawler.cs" />
     <Compile Include="Core\Web\WebRequestFactory.cs" />
-    <Compile Include="DebugView\DebugResponse.cs" />
+    <Compile Include="RequestHandlers\DebugView\DebugResponse.cs" />
     <Compile Include="HttpResponse.cs" />
     <Compile Include="Serialization\SerializableKeyValuePair.cs" />
     <Compile Include="SessionData.cs" />
