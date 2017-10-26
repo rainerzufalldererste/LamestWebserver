@@ -59,6 +59,7 @@
     <Compile Include="CollectionUnitTests.cs" />
     <Compile Include="Application.cs" />
     <Compile Include="CompressionTest.cs" />
+    <Compile Include="LoggerTests.cs" />
     <Compile Include="IDTests.cs" />
     <Compile Include="EncryptDecryptTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -68,6 +69,7 @@
     <Compile Include="ResponseCacheTest.cs" />
     <Compile Include="StringExtentionTests.cs" />
     <Compile Include="ClampedValueTest.cs" />
+    <Compile Include="BitListTests.cs" />
     <Compile Include="WebCrawlerTest.cs" />
     <Compile Include="UsableLockerSimpleTest.cs" />
     <Compile Include="WriteLockTest.cs" />

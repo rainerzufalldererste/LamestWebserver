@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -153,20 +153,6 @@ namespace LamestWebserver
         public static event RemoveFunction RemoveDirectoryFunctionEvent = (url) => { };
 
         /// <summary>
-        /// Decodes the characters of a HTML string.
-        /// </summary>
-        /// <param name="s">the string to decode</param>
-        /// <returns>the decoded string</returns>
-        public static string DecodeHtml(string s) => HttpUtility.HtmlDecode(s);
-
-        /// <summary>
-        /// Decodes the characters of a Url string.
-        /// </summary>
-        /// <param name="s">the string to decode</param>
-        /// <returns>the decoded string</returns>
-        public static string DecodeUrl(string s) => HttpUtility.UrlDecode(s);
-
-        /// <summary>
         /// Adds an arbitrary response to the listening servers
         /// </summary>
         /// <param name="url">the url of the page to add</param>
@@ -247,26 +233,6 @@ namespace LamestWebserver
         }
 
         /// <summary>
-        /// casts a string to HPlainText
-        /// </summary>
-        /// <param name="s">the string</param>
-        /// <returns>the string as HElement</returns>
-        public static HElement ToHElement(this string s)
-        {
-            return new HPlainText(s);
-        }
-
-        /// <summary>
-        /// casts a int to string to HPlainText
-        /// </summary>
-        /// <param name="i">the int</param>
-        /// <returns>the int as string as HElement</returns>
-        public static HElement ToHElement(this int i)
-        {
-            return new HPlainText(i.ToString());
-        }
-
-        /// <summary>
         /// Starts a new Webserver listening for pages to add &amp; remove
         /// </summary>
         /// <param name="port">the port of the server</param>
@@ -324,63 +290,6 @@ namespace LamestWebserver
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// HTTP URL encodes a given input
-        /// </summary>
-        /// <param name="input">the input</param>
-        /// <returns>the input encoded as HTTP URL</returns>
-        public static string FormatToHttpUrl(string input) => System.Web.HttpUtility.HtmlEncode(input);
-
-        /// <summary>
-        /// HTML encodes a given input
-        /// </summary>
-        /// <param name="text">the input</param>
-        /// <returns>the input encoded as HTML</returns>
-        public static string FormatToHtml(string text) => new System.Web.HtmlString(text).ToHtmlString();
-
-        /// <summary>
-        /// Gets the index of an Element from a List
-        /// </summary>
-        /// <typeparam name="T">The Type of the List-Elements</typeparam>
-        /// <param name="list">The List</param>
-        /// <param name="value">The Value</param>
-        /// <returns>Index or null if not contained or value is null</returns>
-        public static int? GetIndex<T>(this List<T> list, T value)
-        {
-            if (value == null)
-                return null;
-
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (list[i] != null && list[i].Equals(value))
-                {
-                    return i;
-                }
-            }
-
-            return null;
-        }
-
-        internal static char[] HexToCharLookupTable = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-        /// <summary>
-        /// Converts a byte[] to a hex string
-        /// </summary>
-        /// <param name="bytes">the byte[]</param>
-        /// <returns>the byte[] as hex string</returns>
-        public static string ToHexString(this byte[] bytes)
-        {
-            char[] s = new char[bytes.Length * 2];
-
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                s[i * 2] = HexToCharLookupTable[bytes[i] & 0x0F];
-                s[i * 2 + 1] = HexToCharLookupTable[(bytes[i] & 0xF0) >> 4];
-            }
-
-            return new string(s);
         }
 
         internal static event Action<WebSocketCommunicationHandler> AddWebsocketHandlerEvent = x => { };
