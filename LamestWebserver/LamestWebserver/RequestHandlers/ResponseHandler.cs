@@ -534,6 +534,9 @@ namespace LamestWebserver.RequestHandlers
         internal UsableLockSimple CacheMutex = new UsableLockSimple();
         internal static readonly byte[] CrLf = Encoding.UTF8.GetBytes("\r\n");
 
+        /// <summary>
+        /// The DebugResponseNode for this CachedFileRequestHandler.
+        /// </summary>
         public readonly DebugContainerResponseNode DebugResponseNode;
 
         /// <inheritdoc />
@@ -977,12 +980,21 @@ namespace LamestWebserver.RequestHandlers
     /// </summary>
     public class ErrorRequestHandler : IRequestHandler, IDebugRespondable
     {
+        /// <summary>
+        /// Shall this RequestHandler store DebugView information?
+        /// </summary>
         public static bool StoreErrorMessages = true;
 
+        /// <summary>
+        /// The DebugResponseNode for this ErrorRequestHandler.
+        /// </summary>
         public readonly DebugContainerResponseNode DebugResponseNode;
 
         private AVLHashMap<string, (int, int)> _accumulatedErrors;
 
+        /// <summary>
+        /// Creates a new ErrorRequestHandler.
+        /// </summary>
         public ErrorRequestHandler()
         {
             DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, ResponseHandler.CurrentResponseHandler.DebugResponseNode);
@@ -1039,6 +1051,7 @@ namespace LamestWebserver.RequestHandlers
             return true;
         }
 
+        /// <inheritdoc />
         public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
 
         private HElement GetDebugResponse(SessionData arg)
@@ -1098,7 +1111,7 @@ namespace LamestWebserver.RequestHandlers
                     {
                         HttpResponse response = GetRetriableResponse(requestFunction, requestPacket, sessionData);
 
-                        FinishResponse(requestFunction, null, currentStopwatch);
+                        FinishResponse(requestFunction, null, currentStopwatch, requestPacket, response);
 
                         return response;
                     }
@@ -1118,7 +1131,7 @@ namespace LamestWebserver.RequestHandlers
             }
             catch(Exception e)
             {
-                FinishResponse(requestFunction, e, currentStopwatch);
+                FinishResponse(requestFunction, e, currentStopwatch, requestPacket, null);
 
                 throw;
             }
@@ -1142,7 +1155,9 @@ namespace LamestWebserver.RequestHandlers
         /// <param name="requestFunction">The called request function.</param>
         /// <param name="exception">The thrown exception.</param>
         /// <param name="stopwatch">The current stopwatch.</param>
-        public virtual void FinishResponse(T requestFunction, Exception exception, Stopwatch stopwatch)
+        /// <param name="requestPacket">The original Request Packet.</param>
+        /// <param name="httpResponse">The response Packet.</param>
+        public virtual void FinishResponse(T requestFunction, Exception exception, Stopwatch stopwatch, HttpRequest requestPacket, HttpResponse httpResponse)
         {
             // default behaviour: do nothing.
         }
@@ -1172,14 +1187,20 @@ namespace LamestWebserver.RequestHandlers
     /// </summary>
     public class PageResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetContents>, IDebugRespondable
     {
+        /// <summary>
+        /// Shall this RequestHandler store DebugView information?
+        /// </summary>
         public static bool StoreDebugInformation = true;
 
+        /// <summary>
+        /// The DebugResponseNode for this PageResponseRequestHandler.
+        /// </summary>
         public readonly DebugContainerResponseNode DebugResponseNode;
 
         /// <summary>
         /// A ReaderWriterLock for accessing pages synchronously.
         /// </summary>
-        protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        protected UsableWriteLock ReaderWriterLock = new UsableWriteLock();
 
         /// <summary>
         /// The currently listed PageResponses.
@@ -1202,16 +1223,15 @@ namespace LamestWebserver.RequestHandlers
             if(!StoreDebugInformation)
                 return new HText($"This {GetType().Name} does not store Error-Information. If you want Error-Information to be stored enable the '{StoreDebugInformation}' Flag.") { Class = "warning" };
 
-            ReaderWriterLock.EnterReadLock();
-
-            var ret = new HTable((from e in PageResponses select new List<HElement> { new HString(e.Key), e.Value.Method.ToString(), $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
+            using (ReaderWriterLock.LockRead())
             {
-                TableHeader = new HElement[] { "Registered URL", "Associated GetContents Function", "Instance Object" }
-            };
+                var ret = new HTable((from e in PageResponses select new List<HElement> { new HString(e.Key), e.Value.Method.ToString(), $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
+                {
+                    TableHeader = new HElement[] { "Registered URL", "Associated GetContents Function", "Instance Object" }
+                };
 
-            ReaderWriterLock.ExitReadLock();
-
-            return ret;
+                return ret;
+            }
         }
 
         /// <inheritdoc />
@@ -1226,52 +1246,53 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override Master.GetContents GetResponseFunction(HttpRequest requestPacket)
         {
-            ReaderWriterLock.EnterReadLock();
-            var response = PageResponses[requestPacket.RequestUrl];
-            ReaderWriterLock.ExitReadLock();
-
-            return response;
+            using (ReaderWriterLock.LockRead())
+                return PageResponses[requestPacket.RequestUrl];
         }
 
         private void AddFunction(string url, Master.GetContents getc)
         {
-            ReaderWriterLock.EnterWriteLock();
-            PageResponses.Add(url, getc);
+            using (ReaderWriterLock.LockWrite())
+            {
+                PageResponses.Add(url, getc);
 
-            if (getc.Target is IDebugRespondable)
-                DebugResponseNode.AddNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
-
-            ReaderWriterLock.ExitWriteLock();
+                if (getc.Target is IDebugRespondable)
+                    DebugResponseNode.AddNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
+            }
 
             ServerHandler.LogMessage("The URL '" + url + "' is now assigned to a Page. (WebserverApi)");
         }
 
         private void RemoveFunction(string url)
         {
-            ReaderWriterLock.EnterWriteLock();
+            using (ReaderWriterLock.LockWrite())
+            {
+                Master.GetContents getc = PageResponses[url];
 
-            Master.GetContents getc = PageResponses[url];
+                if (getc != null)
+                {
+                    if (getc.Target is IDebugRespondable)
+                        DebugResponseNode.RemoveNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
 
-            if (getc != null)
-                if (getc.Target is IDebugRespondable)
-                    DebugResponseNode.RemoveNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
-
-            PageResponses.Remove(url);
-
-            ReaderWriterLock.ExitWriteLock();
-
-            ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a Page anymore. (WebserverApi)");
+                    PageResponses.Remove(url);
+                    ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a Page anymore. (WebserverApi)");
+                }
+            }
         }
 
+        /// <inheritdoc />
         public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
 
         /// <inheritdoc />
-        public override void FinishResponse(Master.GetContents requestFunction, Exception exception, Stopwatch stopwatch)
+        public override void FinishResponse(Master.GetContents requestFunction, Exception exception, Stopwatch stopwatch, HttpRequest requestPacket, HttpResponse httpResponse)
         {
-            base.FinishResponse(requestFunction, exception, stopwatch);
+            if (StoreDebugInformation)
+            {
+                base.FinishResponse(requestFunction, exception, stopwatch, requestPacket, httpResponse);
 
-            if (requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan>)
-                ((IDebugUpdateableResponse<Exception, TimeSpan>)requestFunction.Target).UpdateDebugResponseData(exception, stopwatch.Elapsed);
+                if (requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>)
+                    ((IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>)requestFunction.Target).UpdateDebugResponseData(exception, stopwatch.Elapsed, requestPacket, httpResponse);
+            }
         }
     }
 

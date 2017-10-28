@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,13 +7,25 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.Collections
 {
-    public class URL<T>
+    /// <summary>
+    /// A fixed collection of elements.
+    /// </summary>
+    /// <typeparam name="T">The type of the elements.</typeparam>
+    public class URL<T> : IEnumerable<T>, IReadOnlyCollection<T>
     {
         private T[] _folders;
         private string _delimiter;
 
+        /// <summary>
+        /// Retrieves the amount of elements in this URL.
+        /// </summary>
         public int Count => _folders.Length;
 
+        /// <summary>
+        /// Gets an element inside the URL.
+        /// </summary>
+        /// <param name="index">The index to get the element at.</param>
+        /// <returns>Returns the element at this index.</returns>
         public T this[int index]
         {
             get
@@ -24,6 +37,11 @@ namespace LamestWebserver.Collections
             }
         }
         
+        /// <summary>
+        /// Creates a new URL out of the given folders.
+        /// </summary>
+        /// <param name="folders">The folders of this URL.</param>
+        /// <param name="delimiter">The delimiter to display the URL with.</param>
         public URL(IEnumerable<T> folders, string delimiter = "/")
         {
             if (folders is T[])
@@ -34,6 +52,11 @@ namespace LamestWebserver.Collections
             _delimiter = delimiter;
         }
 
+        /// <summary>
+        /// Adds and item to the URL.
+        /// </summary>
+        /// <param name="item">The item to add.</param>
+        /// <returns>A new URL with this element appended to.</returns>
         public URL<T> Append(T item)
         {
             T[] innerFolders = new T[_folders.Length + 1];
@@ -44,6 +67,7 @@ namespace LamestWebserver.Collections
             return new URL<T>(innerFolders, _delimiter);
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             string ret = "";
@@ -58,5 +82,11 @@ namespace LamestWebserver.Collections
 
             return ret;
         }
+
+        /// <inheritdoc />
+        public IEnumerator<T> GetEnumerator() => _folders.ToList().GetEnumerator();
+
+        /// <inheritdoc />
+        IEnumerator IEnumerable.GetEnumerator() => _folders.GetEnumerator();
     }
 }

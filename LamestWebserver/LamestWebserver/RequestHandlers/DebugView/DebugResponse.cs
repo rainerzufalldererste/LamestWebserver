@@ -10,15 +10,31 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.RequestHandlers.DebugView
 {
+    /// <summary>
+    /// An Object that a DebugResponseNode can be retrieved from.
+    /// </summary>
     public interface IDebugRespondable
     {
+        /// <summary>
+        /// Retrieves the DebugResponseNode for this object.
+        /// </summary>
+        /// <returns>Retrieves the DebugResponseNode for this object.</returns>
         DebugResponseNode GetDebugResponseNode();
     }
 
+    /// <summary>
+    /// A request handler for the LamestWebserver DebugView.
+    /// </summary>
     public class DebugResponse : IRequestHandler
     {
+        /// <summary>
+        /// The Singleton holding the main DebugResponse instance.
+        /// </summary>
         public static readonly Singleton<DebugResponse> DebugResponseInstance = new Singleton<DebugResponse>(() => new DebugResponse());
 
+        /// <summary>
+        /// The Singleton holding the ResponseHandler for the DebugResponse. This instance can simply be attatched to a Webserver in order to view the DebugView.
+        /// </summary>
         public static readonly Singleton<ResponseHandler> DebugViewResponseHandler = new Singleton<ResponseHandler>(() => 
         {
             ResponseHandler ret = new ResponseHandler(nameof(DebugViewResponseHandler));
@@ -31,6 +47,9 @@ namespace LamestWebserver.RequestHandlers.DebugView
         private static DebugContainerResponseNode _debugNode = DebugContainerResponseNode.ConstructRootNode("LamestWebserver Debug View", "All collected Debug Information can be retrieved using this page.");
 
 #region StyleSheet
+        /// <summary>
+        /// The css stylesheet for the DebugView.
+        /// </summary>
         public static string StyleSheet =
 @"body {
     margin: 0;
@@ -203,6 +222,7 @@ p.warning {
 }";
         #endregion
 
+        /// <inheritdoc />
         public HttpResponse GetResponse(HttpRequest requestPacket, System.Diagnostics.Stopwatch currentStopwatch)
         {
             SessionData sessionData = new HttpSessionData(requestPacket);
@@ -236,6 +256,11 @@ p.warning {
             return new HttpResponse(requestPacket, pb.GetContent(sessionData)) { Cookies = ((HttpSessionData)(sessionData)).Cookies.ToList() };
         }
 
+        /// <summary>
+        /// Unpacks the URL of the Request into a WalkableQueue.
+        /// </summary>
+        /// <param name="request">The HttpRequest to take the URL from.</param>
+        /// <returns>A Walkable Queue containing the URL.</returns>
         public WalkableQueue<Tuple<ID, string>> UnpackUrlActions(HttpRequest request)
         {
             List<string> links = request.RequestUrl.Split('/').ToList();
@@ -265,16 +290,27 @@ p.warning {
             return ret;
         }
 
+        /// <summary>
+        /// Adds a node to the static DebugNode.
+        /// </summary>
+        /// <param name="node">The node to add.</param>
         public static void AddNode(DebugResponseNode node)
         {
             _debugNode.AddNode(node);
         }
 
+        /// <summary>
+        /// Removes a node from the static DebugNode.
+        /// </summary>
+        /// <param name="node">The node to remove.</param>
         public static void RemoveNode(DebugResponseNode node)
         {
             _debugNode.RemoveNode(node);
         }
 
+        /// <summary>
+        /// Clears the static DebugNode.
+        /// </summary>
         public static void ClearNodes()
         {
             _debugNode.ClearNodes();
@@ -293,12 +329,21 @@ p.warning {
         }
     }
 
+    /// <summary>
+    /// A Node of Contents for the DebugView.
+    /// </summary>
     public abstract class DebugResponseNode
     {
+        /// <summary>
+        /// The Name of this DebugResponseNode.
+        /// </summary>
         public string Name;
 
         private ID _id;
 
+        /// <summary>
+        /// The ID of this DebugResponseNode.
+        /// </summary>
         public ID ID
         {
             get
@@ -315,10 +360,19 @@ p.warning {
             }
         }
 
+        /// <summary>
+        /// The URL of this DebugResponseNode.
+        /// </summary>
         public URL<ID> URL { get; private set; }
 
-        public void SetParentURL(DebugContainerResponseNode node)
+        /// <summary>
+        /// Sets the the current node as Child of a given DebugContainerResponseNode.
+        /// </summary>
+        /// <param name="node">The parent node for this node.</param>
+        internal void SetParentURL(DebugContainerResponseNode node)
         {
+            // We don't want to expose this to someone who does not know how exactly this works. Please just use 'parentNode.AddNode(this);' to add this node to a parentNode.
+
             if (URL != null)
                 throw new InvalidOperationException($"The field {nameof(URL)} can only be set once.");
 
@@ -328,19 +382,46 @@ p.warning {
                 URL = node.URL.Append(ID);
         }
 
+        /// <summary>
+        /// Sets the current node as RootNode.
+        /// </summary>
         protected void SetRootNode()
         {
             URL = new URL<ID>(new ID[0]);
         }
 
-        public abstract HElement GetContents(SessionData sessionData, string requestedAction, WalkableQueue<Tuple<ID, string>> positionQueue);
+        /// <summary>
+        /// Retrieves the contents of the DebugView node as HElement.
+        /// </summary>
+        /// <param name="sessionData">The current SessionData.</param>
+        /// <param name="requestedAction">The requested Action for this particular node (if any).</param>
+        /// <param name="walkableQueue">The current WalkableQueue containing all Subnodes of the requested URL.</param>
+        /// <returns></returns>
+        public abstract HElement GetContents(SessionData sessionData, string requestedAction, WalkableQueue<Tuple<ID, string>> walkableQueue);
 
-        public static HLink GetLink(string text, ID subUrl, WalkableQueue<Tuple<ID, string>> positionQueue, string requestedAction = null)
+        /// <summary>
+        /// Creates a link to another DebugNode.
+        /// </summary>
+        /// <param name="text">The text of the link.</param>
+        /// <param name="subUrl">The subUrl to link to.</param>
+        /// <param name="walkableQueue">The current walkableQueue.</param>
+        /// <param name="requestedAction">The requested Action for the linked DebugNode.</param>
+        /// <returns>The link as HLink.</returns>
+        public static HLink GetLink(string text, ID subUrl, WalkableQueue<Tuple<ID, string>> walkableQueue, string requestedAction = null)
         {
-            List<Tuple<ID, string>> already = positionQueue.GetPassed();
+            if (text == null)
+                throw new ArgumentNullException(nameof(text));
 
-            if (!positionQueue.AtEnd())
-                already.Add(positionQueue.Peek());
+            if (subUrl == null)
+                throw new ArgumentNullException(nameof(subUrl));
+
+            if (walkableQueue == null)
+                throw new ArgumentNullException(nameof(walkableQueue));
+
+            List<Tuple<ID, string>> already = walkableQueue.GetPassed();
+
+            if (!walkableQueue.AtEnd())
+                already.Add(walkableQueue.Peek());
 
             string ret = "/";
 
@@ -359,8 +440,21 @@ p.warning {
             return new HLink(text, ret);
         }
 
+        /// <summary>
+        /// Creates a link to another DebugNode.
+        /// </summary>
+        /// <param name="text">The text of the link.</param>
+        /// <param name="url">The URL of the DebugNode to link to.</param>
+        /// <param name="requestedAction">The requested Action for the linked DebugNode.</param>
+        /// <returns>The link as HLink.</returns>
         public static HLink GetLink(string text, URL<ID> url, string requestedAction = null)
         {
+            if (text == null)
+                throw new ArgumentNullException(nameof(text));
+
+            if (url == null)
+                throw new ArgumentNullException(nameof(url));
+
             string ret = "/" + url.ToString() + "?";
 
             if (!string.IsNullOrEmpty(requestedAction))
@@ -369,9 +463,27 @@ p.warning {
             return new HLink(text, ret);
         }
 
-        public static HLink GetLink(string text, ID subUrl, WalkableQueue<Tuple<ID, string>> positionQueue, int position, string requestedAction)
+        /// <summary>
+        /// Creates a link to another DebugNode.
+        /// </summary>
+        /// <param name="text">The text of the link.</param>
+        /// <param name="subUrl">The subUrl to link to.</param>
+        /// <param name="walkableQueue">The current walkableQueue.</param>
+        /// <param name="position">The maximum Position to get from in the walkable queue.</param>
+        /// <param name="requestedAction">The requested Action for the linked DebugNode.</param>
+        /// <returns>The link as HLink.</returns>
+        public static HLink GetLink(string text, ID subUrl, WalkableQueue<Tuple<ID, string>> walkableQueue, int position, string requestedAction = null)
         {
-            List<Tuple<ID, string>> nodes = positionQueue.InternalList.GetRange(1, position);
+            if (text == null)
+                throw new ArgumentNullException(nameof(text));
+
+            if (subUrl == null)
+                throw new ArgumentNullException(nameof(subUrl));
+
+            if (walkableQueue == null)
+                throw new ArgumentNullException(nameof(walkableQueue));
+
+            List<Tuple<ID, string>> nodes = walkableQueue.GetRange(1, position);
 
             string ret = "/";
 
@@ -390,26 +502,56 @@ p.warning {
             return new HLink(text, ret);
         }
 
+        /// <summary>
+        /// Creates a link to another DebugNode.
+        /// </summary>
+        /// <param name="node">The Node to link to.</param>
+        /// <returns>The link as HLink.</returns>
         public static HLink GetLink(DebugResponseNode node)
         {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
             return GetLink(node.Name, node.URL);
         }
 
+        /// <summary>
+        /// Creates a link to another DebugNode.
+        /// </summary>
+        /// <param name="respondable">The IDebugRespondable that contains the Node to link to.</param>
+        /// <returns>The link as HLink.</returns>
         public static HLink GetLink(IDebugRespondable respondable)
         {
+            if (respondable == null)
+                throw new ArgumentNullException(nameof(respondable));
+
             return GetLink(respondable.GetDebugResponseNode());
         }
     }
 
+    /// <summary>
+    /// A kind of DebugResponseNode that can contain subnodes.
+    /// </summary>
     public class DebugContainerResponseNode : DebugResponseNode
     {
         private string _description;
         private AVLTree<ID, DebugResponseNode> _subNodes;
 
+        /// <summary>
+        /// This Func is Called whenever the contents of this particular node are requested.
+        /// </summary>
         public Func<SessionData, HElement> GetElements;
 
         private DebugContainerResponseNode() { }
 
+        /// <summary>
+        /// Creates a new DebugContainerResponseNode.
+        /// </summary>
+        /// <param name="name">The name of this DebugResponseNode.</param>
+        /// <param name="description">The description for this DebugResponseNode.</param>
+        /// <param name="getElementFunc">The function to execute whenever the contents of this DebugResponseNode are requested.</param>
+        /// <param name="parentNode">The parent node of this node.</param>
+        /// <param name="AddToParent">Shall this node be added to it's parent already?</param>
         public DebugContainerResponseNode(string name, string description = null, Func<SessionData, HElement> getElementFunc = null, DebugContainerResponseNode parentNode = null, bool AddToParent = true)
         {
             Name = name;
@@ -426,7 +568,14 @@ p.warning {
             }
         }
 
-        internal static DebugContainerResponseNode ConstructRootNode(string name, string description = null, Func<SessionData, HElement> getElementFunc = null)
+        /// <summary>
+        /// Constructs a new root-DebugResponse-node.
+        /// </summary>
+        /// <param name="name">The name of the Node.</param>
+        /// <param name="description">The description for the node.</param>
+        /// <param name="getElementFunc">The function to call whenever the contents of the node will be requested.</param>
+        /// <returns>A root-DebugResponse-node.</returns>
+        public static DebugContainerResponseNode ConstructRootNode(string name, string description = null, Func<SessionData, HElement> getElementFunc = null)
         {
             DebugContainerResponseNode ret = new DebugContainerResponseNode();
 
@@ -439,22 +588,34 @@ p.warning {
             return ret;
         }
 
+        /// <summary>
+        /// Adds a specified node as sub-node of this node.
+        /// </summary>
+        /// <param name="node">The node to add as subnode.</param>
         public void AddNode(DebugResponseNode node)
         {
             node.SetParentURL(this);
             _subNodes.Add(node.ID, node);
         }
 
+        /// <summary>
+        /// Removes a specified node from the sub-nodes of this node.
+        /// </summary>
+        /// <param name="node">The node to remove from the subnodes.</param>
         public void RemoveNode(DebugResponseNode node)
         {
             _subNodes.Remove(new KeyValuePair<ID, DebugResponseNode>(node.ID, node));
         }
 
+        /// <summary>
+        /// Clears the Subnodes of this node.
+        /// </summary>
         public void ClearNodes()
         {
             _subNodes.Clear();
         }
 
+        /// <inheritdoc />
         public override HElement GetContents(SessionData sessionData, string requestedAction, WalkableQueue<Tuple<ID, string>> positionQueue)
         {
             if(positionQueue.AtEnd())
@@ -508,10 +669,22 @@ p.warning {
         }
     }
 
+    /// <summary>
+    /// A DebugResponseNode that retrieves a static response.
+    /// </summary>
     public class StaticDebugContainerResponseNode : DebugContainerResponseNode
     {
+        /// <summary>
+        /// The elements to return on request of the contents of this node.
+        /// </summary>
         public List<HElement> Elements;
 
+        /// <summary>
+        /// Constructs a new StaticDebugContainerResponseNode.
+        /// </summary>
+        /// <param name="name">The name of this node.</param>
+        /// <param name="description">The description of this node.</param>
+        /// <param name="elements">The elements contained in this node.</param>
         public StaticDebugContainerResponseNode(string name, string description = null, params HElement[] elements) : base(name, description)
         {
             Elements = new List<HElement>(elements);

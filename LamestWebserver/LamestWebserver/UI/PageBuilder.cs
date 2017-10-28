@@ -2315,6 +2315,10 @@ namespace LamestWebserver.UI
             return base.GetTagHead(additionalParams);
         }
 
+        /// <summary>
+        /// Returns true if there are no elements in this List.
+        /// </summary>
+        /// <returns>Returns true if there are no elements in this List.</returns>
         public bool IsEmpty() => (Elements != null && Elements.Count == 0);
 
         /// <summary>

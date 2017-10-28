@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -80,11 +80,21 @@ namespace LamestWebserver
             }
         }
 
+        /// <summary>
+        /// Creates a new HttpResponse from the given requestPacket with the given data as response.
+        /// </summary>
+        /// <param name="requestPacket">The request packet.</param>
+        /// <param name="binaryData">The binary data to reply with.</param>
         public HttpResponse(HttpRequest requestPacket, byte[] binaryData) : this(requestPacket)
         {
             BinaryData = binaryData;
         }
 
+        /// <summary>
+        /// Creates a new HttpResponse from the given requestPacket with the given string as response.
+        /// </summary>
+        /// <param name="requestPacket">The request packet.</param>
+        /// <param name="responseString">The string response to reply with.</param>
         public HttpResponse(HttpRequest requestPacket, string responseString) : this(requestPacket)
         {
             if (responseString != null)

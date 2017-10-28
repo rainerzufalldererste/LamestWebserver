@@ -25,7 +25,7 @@ namespace LamestWebserver
     /// <summary>
     /// Simplifies implementation of IURLIdentifyables.
     /// </summary>
-    public abstract class ResponseCore : IURLIdentifyable, IDebugRespondable, IDebugUpdateableResponse<Exception, TimeSpan>
+    public abstract class ResponseCoreImplementation : IURLIdentifyable, IDebugRespondable, IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>
     {
         /// <summary>
         /// The URL of this Page.
@@ -34,14 +34,19 @@ namespace LamestWebserver
 
         private DebugContainerResponseNode _debugResponseNode;
         private FixedSizeQueue<Tuple<Exception, DateTime>> _exceptions = new FixedSizeQueue<Tuple<Exception, DateTime>>(20);
-        private FixedSizeQueue<Tuple<TimeSpan, DateTime>> _responseTimes = new FixedSizeQueue<Tuple<TimeSpan, DateTime>>(20);
+        private FixedSizeQueue<Tuple<TimeSpan, DateTime, string, string, string>> _responseTimes = new FixedSizeQueue<Tuple<TimeSpan, DateTime, string, string, string>>(20);
         private int _totalPageViews = 0;
-        private double? _averageResponseTime = null;
+        private double _averageResponseTime = 0;
         private TimeSpan _minimumResponseTime = TimeSpan.FromDays(365);
         private TimeSpan _maximumResponseTime = TimeSpan.FromMilliseconds(0);
         private int _totalExceptions = 0;
+        private int _averageResponseSize = 0, _minimumResponseSize = int.MaxValue, _maximumResponseSize = int.MinValue;
 
-        protected ResponseCore(string URL)
+        /// <summary>
+        /// Creates a new ResponseCoreImplementation element.
+        /// </summary>
+        /// <param name="URL">The URL of the Response.</param>
+        protected ResponseCoreImplementation(string URL)
         {
             this.URL = URL;
             _debugResponseNode = new DebugContainerResponseNode($"[{GetType().Name}] '{URL}'", null, GetDebugViewResponse, null, false);
@@ -50,6 +55,11 @@ namespace LamestWebserver
         /// <inheritdoc />
         DebugResponseNode IDebugRespondable.GetDebugResponseNode() => _debugResponseNode;
 
+        /// <summary>
+        /// The response for the DebugView for this Response.
+        /// </summary>
+        /// <param name="sessionData">The current SessionData.</param>
+        /// <returns>Returns a HElement containing the Response.</returns>
         protected virtual HElement GetDebugViewResponse(SessionData sessionData)
         {
             HMultipleElements ret = new HMultipleElements();
@@ -61,7 +71,7 @@ namespace LamestWebserver
                 ret += new HText($"The average response time of this page is {_averageResponseTime} milliseconds. (maximum: {_maximumResponseTime} | minimum {_minimumResponseTime})");
 
                 ret += new HHeadline("Last Response Times", 2);
-                ret += new HTable((from r in _responseTimes select r.ToEnumerable())) { TableHeader = new List<HElement>() { "Response Time", "Time" } };
+                ret += new HTable((from r in _responseTimes select r.ToEnumerable())) { TableHeader = new List<HElement>() { "Response Time", "Time", "IP Address", "HTTP Head Variables", "HTTP Post Variables" } };
                 ret += new HNewLine();
             }
 
@@ -78,7 +88,7 @@ namespace LamestWebserver
         }
 
         /// <inheritdoc />
-        public void UpdateDebugResponseData(Exception exception, TimeSpan timeSpan)
+        public void UpdateDebugResponseData(Exception exception, TimeSpan timeSpan, HttpRequest request, HttpResponse response)
         {
             _totalPageViews++;
 
@@ -89,25 +99,62 @@ namespace LamestWebserver
                 _totalExceptions++;
             }
 
-            _responseTimes.Push(new Tuple<TimeSpan, DateTime>(timeSpan, DateTime.Now));
+            if (request != null)
+            {
+                string ip = "";
+                string head = "";
+                string post = "";
 
-            if (_averageResponseTime.HasValue)
-                _averageResponseTime = (_averageResponseTime.Value * (_totalPageViews - 1) + timeSpan.TotalMilliseconds) / _totalPageViews;
+                if(request.Stream != null && request.Stream is System.Net.Sockets.NetworkStream) // not a nice solution...
+                    ip = ((System.Net.Sockets.Socket)(typeof(System.Net.Sockets.NetworkStream).GetProperty("Socket", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)).GetValue((System.Net.Sockets.NetworkStream)request.Stream, null)).RemoteEndPoint.ToString();
+
+                foreach (var param in request.VariablesHttpHead)
+                    head += $"&{param.Key}={param.Value}";
+
+                head.TrimStart('&');
+
+                foreach (var param in request.VariablesHttpPost)
+                    post += $"&{param.Key}={param.Value}";
+
+                post.TrimStart('&');
+
+                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string>(timeSpan, DateTime.Now, ip, head, post));
+            }
             else
-                _averageResponseTime = timeSpan.TotalMilliseconds;
+            {
+                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string>(timeSpan, DateTime.Now, "", "", ""));
+            }
+
+            _averageResponseTime = (_averageResponseTime * (_totalPageViews - 1) + timeSpan.TotalMilliseconds) / _totalPageViews;
 
             if (_maximumResponseTime < timeSpan)
                 _maximumResponseTime = timeSpan;
 
             if (_minimumResponseTime > timeSpan)
                 _minimumResponseTime = timeSpan;
+
+            
+            if (response != null && response.BinaryData != null)
+            {
+                _averageResponseSize = (int)System.Math.Round((double)_averageResponseSize * (_totalPageViews - 1) + (double)response.BinaryData.Length) / _totalPageViews;
+
+                if (_maximumResponseSize < response.BinaryData.Length)
+                    _maximumResponseSize = response.BinaryData.Length;
+
+                if (_minimumResponseSize > response.BinaryData.Length)
+                    _minimumResponseSize = response.BinaryData.Length;
+            }
+            else
+            {
+
+            }
         }
     }
 
     /// <summary>
     /// A abstract class for directly responding with a string to the client request.
     /// </summary>
-    public abstract class PageResponse : ResponseCore
+    public abstract class PageResponse : ResponseCoreImplementation
     {
         /// <summary>
         /// Constructs (and also registers if you want to) a new Page Response.
@@ -173,7 +220,7 @@ namespace LamestWebserver
     /// <summary>
     /// A direct response as HElement to the client request
     /// </summary>
-    public abstract class ElementResponse : ResponseCore
+    public abstract class ElementResponse : ResponseCoreImplementation
     {
         /// <summary>
         /// Constructs a new ElementResponse and registers it if specified at the given URL
@@ -244,7 +291,7 @@ namespace LamestWebserver
     /// <summary>
     /// A direct response as string to the client directory / directory item request
     /// </summary>
-    public abstract class DirectoryResponse : ResponseCore
+    public abstract class DirectoryResponse : ResponseCoreImplementation
     {
         /// <summary>
         /// Constructs a new Directory Response object
@@ -277,7 +324,7 @@ namespace LamestWebserver
     /// <summary>
     /// A direct response as HElement to the client directory / directory item request
     /// </summary>
-    public abstract class DirectoryElementResponse : ResponseCore
+    public abstract class DirectoryElementResponse : ResponseCoreImplementation
     {
         /// <summary>
         /// Constructs a new Directory Element Response object
