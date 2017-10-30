@@ -28,6 +28,7 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -38,6 +39,7 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>UnitTests.Application</StartupObject>
@@ -69,6 +71,7 @@
     <Compile Include="ResponseCacheTest.cs" />
     <Compile Include="StringExtentionTests.cs" />
     <Compile Include="ClampedValueTest.cs" />
+    <Compile Include="FlushableMemoryPoolTests.cs" />
     <Compile Include="BitListTests.cs" />
     <Compile Include="WebCrawlerTest.cs" />
     <Compile Include="UsableLockerSimpleTest.cs" />

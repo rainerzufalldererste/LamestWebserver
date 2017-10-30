@@ -92,6 +92,8 @@
     <Compile Include="Core\ID.cs" />
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
+    <Compile Include="Core\Memory\FlushableMemoryPool.cs" />
+    <Compile Include="Core\Memory\IAllocator.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
     <Compile Include="Core\MultiStreamWriter.cs" />
     <Compile Include="Core\NullCheckable.cs" />
