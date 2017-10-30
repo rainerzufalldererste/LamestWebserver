@@ -230,6 +230,10 @@ namespace LamestWebserver.Core
                         Logger.LogError("Exception in WorkerTask '" + currentTask.Task.Method.Name + "'.\n" + e);
                     }
                 }
+                else
+                {
+                    Thread.Sleep(1);
+                }
             }
 
             Memory.FlushableMemoryPool.Destroy();

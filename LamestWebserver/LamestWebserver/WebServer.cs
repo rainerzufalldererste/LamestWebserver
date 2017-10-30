@@ -261,11 +261,17 @@ namespace LamestWebserver
             }
             catch { }
 
-            try
+            // Give the _mThread Thread time to finish.
+            Thread.Sleep(1);
+
+            if (_mThread.ThreadState != ThreadState.Stopped)
             {
-                Master.ForceQuitThread(_mThread);
+                try
+                {
+                    Master.ForceQuitThread(_mThread);
+                }
+                catch { }
             }
-            catch { }
 
             try
             {
