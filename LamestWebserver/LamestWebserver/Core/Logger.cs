@@ -49,9 +49,11 @@ namespace LamestWebserver.Core
 
             set
             {
-                if (_currentOutputSource == value) return;
+                if (_currentOutputSource == value)
+                    return;
+                
                 _currentOutputSource = value;
-                CurrentLogger.Instance.RestartStream();
+                RestartStream();
             }
         }
 
@@ -404,7 +406,7 @@ namespace LamestWebserver.Core
         {
             using (_loggerWriteLock.LockWrite())
             {
-                _multiStreamWriter.Dispose();
+                _multiStreamWriter.DisposeExcept(_streams);
                 CreateMultiStreamWriter();
             }
         }

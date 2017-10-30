@@ -49,14 +49,17 @@ namespace UnitTests
                 Logger.LogInformation(i + " stuff3");
             }
 
-            Logger.CurrentLogger.Instance.OutputSourceFlags = Logger.EOutputSource.None;
-            long FI = new FileInfo(PathToNewFile).Length;
+            Logger.OutputSource = Logger.EOutputSource.None;
+            long fileInfo = new FileInfo(PathToNewFile).Length;
 
             for (int i = 0; i < 1000; i++)
             {
                 Logger.LogInformation(i + " stuff4");
             }
-            Assert.IsTrue(new FileInfo(PathToNewFile).Length == FI);
+
+            Assert.IsTrue(new FileInfo(PathToNewFile).Length == fileInfo);
+
+            Logger.CurrentLogger.Instance.Close();
 
             //Clean up
             File.Delete(autoLogFile);
