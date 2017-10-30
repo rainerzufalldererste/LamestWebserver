@@ -400,8 +400,20 @@ namespace LamestWebserver.UI
         {
             string ret = "<hr ";
 
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
             if (!string.IsNullOrWhiteSpace(Style))
                 ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
 
             return ret + ">";
         }
@@ -2367,7 +2379,7 @@ namespace LamestWebserver.UI
         /// <summary>
         /// The table header displayed on top of the table rows.
         /// </summary>
-        public IEnumerable<HElement> TableHeader = null;
+        public IEnumerable<object> TableHeader = null;
 
         /// <summary>
         /// Additional attributes to be added to this node
@@ -2453,8 +2465,11 @@ namespace LamestWebserver.UI
             {
                 ret += "<tr>";
 
-                foreach (HElement header in TableHeader)
-                    ret += "<th>" + header.GetContent(sessionData) + "</th>";
+                foreach (object header in TableHeader)
+                    if(header is HElement)
+                        ret += "<th>" + ((HElement)header).GetContent(sessionData) + "</th>";
+                    else
+                        ret += "<th>" + header?.ToString() + "</th>";
 
                 ret += "</tr>";
             }

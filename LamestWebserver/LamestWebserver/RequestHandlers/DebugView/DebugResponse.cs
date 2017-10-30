@@ -206,19 +206,38 @@ i.subnodes {
     font-size: 11pt;
 }
 
+hr.subnodes {
+    width: 80%;
+    margin: auto;
+    margin-top: 5em;
+    margin-bottom: -2em;
+    border: 0;
+    height: 1px;
+    background: linear-gradient(to right, #ff6c8e, #ffb06c, #ffe66c);
+}
+
+hr.start {
+    width: 80%;
+    margin: auto;
+    margin-top: -1.5em;
+    border: 0;
+    height: 1px;
+    background: linear-gradient(to left, #ff6c8e, #ffb06c, #ffe66c);
+}
+
 p.invalid, p.error {
     margin: 3em auto 3em auto;
-    border-radius: 0.5em;
+    border: 0.2em solid #d02f55;
     padding: 1em 2em;
-    background: repeating-linear-gradient( 45deg, #ff5d4d, #ff5d4d 0.5em, #e03d2c 0.5em, #e03d2c 1em );
+    background: repeating-linear-gradient( 45deg, #d02f55, #d02f55 0.5em, #f3416a 0.5em, #f3416a 1em );
     text-shadow: #000 1px 1px 2px;
 }
 
 p.warning {
     margin: 3em auto 3em auto;
-    border-radius: 0.5em;
+    border: 0.2em solid #e49928;
     padding: 1em 2em;
-    background: repeating-linear-gradient( 45deg, #e2c42f, #e2c42f 0.5em, #d8b91e 0.5em, #d8b91e 1em );
+    background: repeating-linear-gradient( 45deg, #f1bb42, #f1bb42 0.5em, #e49928 0.5em, #e49928 1em );
     text-shadow: #000 1px 1px 2px;
 }";
         #endregion
@@ -640,7 +659,7 @@ p.warning {
                 else
                     list = new HHeadline("Subnodes of this DebugNode", 3) { Class = "subnodes" } + list;
 
-                return new HHeadline(Name) + (_description == null ? new HText(_description) : new HText()) + new HContainer(GetElements(sessionData)) + list;
+                return new HHeadline(Name) + new HLine() { Class = "start" } + (_description == null ? new HText(_description) : (HElement)new HString()) + new HContainer(GetElements(sessionData)) + new HLine() { Class = "subnodes" } + list;
             }
             else
             {
@@ -669,7 +688,7 @@ p.warning {
                     else
                         list = new HHeadline("Subnodes of this DebugNode", 3) { Class = "subnodes" } + list;
 
-                    return name + new HHeadline(Name) + new HText($"The ID '{positionQueue.Peek().Item1.Value}' is not a child of this {nameof(DebugContainerResponseNode)}.") { Class = "invalid" } + list;
+                    return name + new HHeadline(Name) + new HLine() { Class = "start" } + new HText($"The ID '{positionQueue.Peek().Item1.Value}' is not a child of this {nameof(DebugContainerResponseNode)}.") { Class = "invalid" } + new HLine() { Class = "subnodes" } + list;
                 }
                 else
                 {

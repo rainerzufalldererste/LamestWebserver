@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -20,6 +20,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
 
 using ThreadState = System.Threading.ThreadState;
+using LamestWebserver.Core;
 
 namespace LamestWebserver
 {
@@ -137,7 +138,7 @@ namespace LamestWebserver
                     return;
 
                 if (!value.Verify())
-                    ServerHandler.LogMessage("The certificate could not be verified.");
+                    Logger.LogError("The certificate could not be verified.");
 
                 // TODO: check & throw exception if sslStream.AuthenticateAsServer with this certificate will fail.
             }
@@ -385,7 +386,7 @@ namespace LamestWebserver
 
             cleanMutex.ReleaseMutex();
 
-            ServerHandler.LogMessage("Cleaning up threads. Before: " + threadCount + ", After: " + threadCountAfter + ".");
+            Logger.LogTrace("Cleaning up threads. Before: " + threadCount + ", After: " + threadCountAfter + ".");
         }
 
         private void HandleTcpListener()
@@ -393,10 +394,11 @@ namespace LamestWebserver
             try
             {
                 _tcpListener.Start();
+                Logger.LogInformation($"{nameof(WebServer)} {nameof(TcpListener)} successfully started on port {Port}.");
             }
             catch (Exception e)
             {
-                ServerHandler.LogMessage("The TcpListener couldn't be started. The Port is probably blocked.\n" + e);
+                Logger.LogDebugExcept("The TcpListener couldn't be started. The Port is probably blocked.", e);
 
                 return;
             }
@@ -411,7 +413,7 @@ namespace LamestWebserver
                     Thread t = new Thread(HandleClient);
                     _threads.Add(t);
                     t.Start((object) tcpClient);
-                    ServerHandler.LogMessage("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
+                    Logger.LogTrace("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
                     if (_threads.Count % 25 == 0)
                     {
@@ -425,7 +427,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.LogMessage("The TcpListener failed.\n" + e);
+                    Logger.LogDebugExcept("The TcpListener failed.", e);
                 }
             }
         }
@@ -463,7 +465,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.LogMessage($"Failed to authenticate. ({e.Message} / Inner Exception: {e.InnerException?.Message})");
+                    Logger.LogError($"Failed to authenticate. ({e.Message} / Inner Exception: {e.InnerException?.Message})");
 
                     // With misconfigured Certificates every request might fail here.
 
@@ -491,11 +493,11 @@ namespace LamestWebserver
 
                         nws.Write(response, 0, response.Length);
                         
-                        ServerHandler.LogMessage($"Replied authentication error to client.");
+                        Logger.LogInformation($"Replied authentication error to client.");
                     }
                     catch (Exception ex)
                     {
-                        ServerHandler.LogMessage($"Failed to reply securely to unauthenticated ssl Connection. ({ex.Message})");
+                        Logger.LogInformation($"Failed to reply securely to unauthenticated ssl Connection. ({ex.Message})");
                     }
 
                     try
@@ -509,7 +511,7 @@ namespace LamestWebserver
             }
             else if (BlockInsecureConnections)
             {
-                ServerHandler.LogMessage($"Failed to authenticate. (No Certificate given.)");
+                Logger.LogCrashAndBurn($"Failed to authenticate. (No Certificate given.) This will fail every single time. Crashing...");
 
                 try
                 {
@@ -547,7 +549,9 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.LogMessage("An error occured in the client handler:  " + e, stopwatch);
+                    if(Running)
+                        Logger.LogError("An exception occured in the client handler:  " + e, stopwatch);
+
                     break;
                 }
 
@@ -588,7 +592,7 @@ namespace LamestWebserver
                             buffer = htp_.GetPackage();
                             stream.Write(buffer, 0, buffer.Length);
 
-                            ServerHandler.LogMessage("Client requested an empty URL. We sent Error 501.", stopwatch);
+                            Logger.LogInformation("Client requested an empty URL. We sent Error 501.", stopwatch);
                         }
                         else
                         {
@@ -605,7 +609,7 @@ namespace LamestWebserver
                                 buffer = response.GetPackage();
                                 stream.Write(buffer, 0, buffer.Length);
 
-                                ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(ResponseHandler)}.", stopwatch);
+                                Logger.LogInformation($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(ResponseHandler)}.", stopwatch);
 
                                 continue;
                             }
@@ -637,7 +641,7 @@ namespace LamestWebserver
                                 buffer = htp_.GetPackage();
                                 stream.Write(buffer, 0, buffer.Length);
 
-                                ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e, stopwatch);
+                                Logger.LogWarning($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e, stopwatch);
 
                                 continue;
                             }
@@ -676,13 +680,12 @@ namespace LamestWebserver
 
                             stream.Write(buffer, 0, buffer.Length);
 
-                            ServerHandler.LogMessage(
-                                "Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 403/404.", stopwatch);
+                            Logger.LogInformation("Client requested the URL '" + htp.RequestUrl + "' which couldn't be found on the server. Retrieved Error 403/404.", stopwatch);
                         }
                     }
                     catch (Exception e)
                     {
-                        ServerHandler.LogMessage("An error occured in the client handler: " + e, stopwatch);
+                        Logger.LogError("An error occured in the client handler: " + e, stopwatch);
                     }
                 }
                 catch (ThreadAbortException)
@@ -697,7 +700,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    ServerHandler.LogMessage("An error occured in the client handler: " + e, stopwatch);
+                    Logger.LogError("An error occured in the client handler: " + e, stopwatch);
                 }
             }
         }
