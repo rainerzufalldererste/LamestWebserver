@@ -1225,9 +1225,9 @@ namespace LamestWebserver.RequestHandlers
 
             using (ReaderWriterLock.LockRead())
             {
-                var ret = new HTable((from e in PageResponses select new List<HElement> { new HString(e.Key), e.Value.Method.ToString(), $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
+                var ret = new HTable((from e in PageResponses select new List<HElement> { new HString(e.Key), e.Value.Method.ToString(), e.Value.Target == null ? $"Declared in {e.Value.Method.DeclaringType.Name}" : $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
                 {
-                    TableHeader = new HElement[] { "Registered URL", "Associated GetContents Function", "Instance Object" }
+                    TableHeader = new HElement[] { "Registered URL", "Associated GetContents Function", "Instance Object or Declaring Class" }
                 };
 
                 return ret;

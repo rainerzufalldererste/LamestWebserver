@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace LamestWebserver.Collections
 {
     /// <summary>
-    /// List with the ability to do a action every time you manipulate it.
+    /// List with the ability to do a action every time it's been change.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class ActionList<T> : IEnumerable<T>
@@ -16,36 +16,50 @@ namespace LamestWebserver.Collections
         /// <summary>
         /// Action that get executed after each manipulation.
         /// </summary>
-        public Action action;
+        public Action ActionToExecute;
 
         private List<T> _internalList;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Constructs an empty ActionList.
+        /// </summary>
         public ActionList()
         {
             _internalList = new List<T>();
         }
-
-        /// <inheritdoc />
+        
+        /// <summary>
+        /// Constructs an empty ActionList.
+        /// </summary>
+        /// <param name="action">The action to execute on change.</param>
         public ActionList(Action action)
         {
-            _internalList = new List<T>();
-            this.action = action;
-        }
+            if (action == null)
+                throw new ArgumentNullException();
 
-        /// <inheritdoc />
-        public ActionList(IEnumerable<T> collection)
-        {
-            _internalList = new List<T>(collection);
+            _internalList = new List<T>();
+            ActionToExecute = action;
         }
 
         /// <summary>
-        /// Initialize a new ActionList with a capacity.
+        /// Constructs an empty ActionList.
         /// </summary>
-        /// <param name="capacity"></param>
-        public ActionList(int capacity)
+        /// <param name="collection">The collection to use as internal list.</param>
+        /// <param name="action">The action to execute on change.</param>
+        public ActionList(IEnumerable<T> collection, Action action)
         {
-            _internalList = new List<T>(capacity);
+            if (collection == null)
+                throw new ArgumentNullException();
+
+            if (action == null)
+                throw new ArgumentNullException();
+
+            if (collection is List<T>)
+                _internalList = (List<T>)collection;
+            else
+                _internalList = new List<T>(collection);
+
+            ActionToExecute = action;
         }
 
         /// <inheritdoc />
@@ -61,14 +75,14 @@ namespace LamestWebserver.Collections
         public void Add(T item)
         {
             _internalList.Add(item);
-            action();
+            ActionToExecute();
         }
 
         /// <inheritdoc />
         public void Clear()
         {
             _internalList.Clear();
-            action();
+            ActionToExecute();
         }
 
         /// <inheritdoc />
@@ -87,14 +101,17 @@ namespace LamestWebserver.Collections
         public void Insert(int index, T item)
         {
             _internalList.Insert(index, item);
-            action();
+            ActionToExecute();
         }
 
         /// <inheritdoc />
         public bool Remove(T item)
         {
             bool ret = _internalList.Remove(item);
-            action();
+
+            if (ret)
+                ActionToExecute();
+
             return ret;
         }
 
@@ -102,14 +119,14 @@ namespace LamestWebserver.Collections
         public void RemoveAt(int index)
         {
             _internalList.RemoveAt(index);
-            action();
+            ActionToExecute();
         }
 
         /// <inheritdoc />
         public void RemoveAll(Predicate<T> match)
         {
             _internalList.RemoveAll(match);
-            action();
+            ActionToExecute();
         }
 
         /// <inheritdoc />

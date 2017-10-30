@@ -19,6 +19,8 @@ namespace UnitTests
         [TestMethod]
         public void TestLoggerFileSwitch()
         {
+            Logger.OutputSource = Logger.EOutputSource.File;
+
             string autoLogFile = Logger.CurrentLogger.Instance.FilePath;
 
             for (int i = 0; i < 1000; i++)
@@ -66,14 +68,30 @@ namespace UnitTests
         public void TestLoggerActionList()
         {
             int operationCount = 0;
-            ActionList<int> actionList = new ActionList<int>(
-                () => operationCount++);
+            ActionList<int> actionList = new ActionList<int>(() => operationCount++);
 
             actionList.Add(5);
             actionList.Add(4);
             actionList.Add(12);
-            Assert.IsFalse(operationCount == 10);
-            Assert.IsTrue(operationCount == 3);
+
+            Assert.AreEqual(3, operationCount);
+
+            Assert.AreEqual(5, actionList[0]);
+            Assert.AreEqual(4, actionList[1]);
+            Assert.AreEqual(12, actionList[2]);
+
+            actionList.RemoveAt(0);
+
+            Assert.AreEqual(4, operationCount);
+
+            try
+            {
+                actionList.RemoveAt(300);
+                Assert.Fail();
+            }
+            catch (ArgumentOutOfRangeException) { }
+
+            Assert.AreEqual(4, operationCount);
         }
 
     }

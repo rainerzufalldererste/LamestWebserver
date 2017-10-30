@@ -59,6 +59,7 @@ namespace LamestWebserver.RequestHandlers.DebugView
 p, a, h1, h2, h3, div.container, b, i {
     max-width: 1100px;
     margin: 1em auto 0.5em auto;
+    display: block;
 }
 
 div.main {
@@ -340,6 +341,7 @@ p.warning {
         public string Name;
 
         private ID _id;
+        private DebugContainerResponseNode _parentNode;
 
         /// <summary>
         /// The ID of this DebugResponseNode.
@@ -374,12 +376,20 @@ p.warning {
             // We don't want to expose this to someone who does not know how exactly this works. Please just use 'parentNode.AddNode(this);' to add this node to a parentNode.
 
             if (URL != null)
-                throw new InvalidOperationException($"The field {nameof(URL)} can only be set once.");
+            {
+                if (_parentNode != null)
+                {
+                    Logger.LogTrace($"SetParentURL: A DebugNodes parent is being modified and it will not be accessible anymore via the old URL. (The URL is changing from '{URL}' to '{node.URL}/{ID}'.)");
+                    _parentNode.RemoveNode(this);
+                }
+            }
 
             if (node == null)
                 URL = new URL<ID>(new ID[] { ID });
             else
                 URL = node.URL.Append(ID);
+
+            _parentNode = node;
         }
 
         /// <summary>

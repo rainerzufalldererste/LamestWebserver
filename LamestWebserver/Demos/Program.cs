@@ -1,6 +1,6 @@
 using System;
-using System.Threading;
 using LamestWebserver;
+using LamestWebserver.Core;
 
 namespace Demos
 {
@@ -12,6 +12,9 @@ namespace Demos
         /// <param name="args">the arguments the executable has started with</param>
         static void Main(string[] args)
         {
+            // Configures the Logger to write all information to the console and to a file ('lws.log' by default).
+            Logger.OutputSource = Logger.EOutputSource.Console | Logger.EOutputSource.File;
+
             try
             {
                 // Create a new Webserver at port 8080 with the data location "./web" - the web folder of this Project

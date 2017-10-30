@@ -111,12 +111,12 @@ namespace LamestWebserver
                 foreach (var param in request.VariablesHttpHead)
                     head += $"&{param.Key}={param.Value}";
 
-                head.TrimStart('&');
+                head = head.TrimStart('&');
 
                 foreach (var param in request.VariablesHttpPost)
                     post += $"&{param.Key}={param.Value}";
 
-                post.TrimStart('&');
+                post = post.TrimStart('&');
 
                 _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string>(timeSpan, DateTime.Now, ip, head, post));
             }

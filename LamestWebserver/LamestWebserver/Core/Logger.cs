@@ -4,13 +4,16 @@ using System.IO;
 using System.Threading;
 using LamestWebserver.Synchronization;
 using LamestWebserver.Collections;
+using LamestWebserver.RequestHandlers.DebugView;
+using LamestWebserver.UI;
+using System.Linq;
 
 namespace LamestWebserver.Core
 {
     /// <summary>
     /// A simple Logger for LamestWebserver.
     /// </summary>
-    public class Logger
+    public class Logger : IDebugRespondable
     {
         /// <summary>
         /// The Main Logger for LamestWebserver.
@@ -33,14 +36,17 @@ namespace LamestWebserver.Core
         public ELoggingLevel MinimumLoggingLevel = DefaultMinimumLoggingLevel;
 
         /// <summary>
-        /// Set the Flags for the Output Sources
+        /// Currently used output source
+        /// </summary>
+        private EOutputSource _currentOutputSource = EOutputSource.Console;
+
+        /// <summary>
+        /// The Flags representing the Output Source(s) to write to.
         /// </summary>
         public EOutputSource OutputSourceFlags
         {
-            get
-            {
-                return _currentOutputSource;
-            }
+            get => _currentOutputSource;
+
             set
             {
                 if (_currentOutputSource == value) return;
@@ -50,12 +56,31 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
+        /// The Output Source(s) the main Logger instance writes to.
+        /// </summary>
+        public static EOutputSource OutputSource
+        {
+            get => CurrentLogger.Instance.OutputSourceFlags;
+            set => CurrentLogger.Instance.OutputSourceFlags = value;
+        }
+
+        /// <summary>
         /// Stream Writer to handle the writing from multiple streams
         /// </summary>
         private MultiStreamWriter _multiStreamWriter;
 
+        private UsableWriteLock _loggerWriteLock = new UsableWriteLock();
+        private List<Stream> _streams = new List<Stream>();
+        private FixedSizeQueue<Tuple<DateTime, ELoggingLevel, string>> _lastMessages = new FixedSizeQueue<Tuple<DateTime, ELoggingLevel, string>>(100);
+        private DebugContainerResponseNode _debugResponseNode;
+
         /// <summary>
-        /// Path for the Logging File
+        /// The currently used File Path that the logger writes to.
+        /// </summary>
+        private string _currentFilePath = "lws.log";
+
+        /// <summary>
+        /// Path for the File the logger writes to (if OutputSourceFlags contains EOutputSource.File)
         /// </summary>
         public string FilePath
         {
@@ -65,25 +90,16 @@ namespace LamestWebserver.Core
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
-                if (_currentFilePath == value) return;
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                if (_currentFilePath == value)
+                    return;
+
                 _currentFilePath = value;
                 RestartStream();
             }
         }
-        /// <summary>
-        /// Currently used File Path
-        /// </summary>
-        private string _currentFilePath = "LWS" + DateTime.Now.ToFileTime().ToString() + ".log";
-
-        private UsableWriteLock _loggerWriteLock = new UsableWriteLock();
-
-        private List<Stream> _streams = new List<Stream>();
-
-        /// <summary>
-        /// Currently used output source
-        /// </summary>
-        private EOutputSource _currentOutputSource = EOutputSource.File | EOutputSource.Console;
 
         /// <summary>
         /// If manually closed or opened check this value
@@ -348,7 +364,8 @@ namespace LamestWebserver.Core
             {
                 using (_loggerWriteLock.LockWrite())
                 {
-                    _multiStreamWriter.WriteLine($"[{loggingLevel.ToString()} \\\\\\\\ {msg}]");
+                    _multiStreamWriter.WriteLine($"{DateTime.Now} [{loggingLevel.ToString()}] \\\\\\\\ {msg}");
+                    _lastMessages.Push(new Tuple<DateTime, ELoggingLevel, string>(DateTime.Now, loggingLevel, msg));
                 }
             }
         }
@@ -387,8 +404,8 @@ namespace LamestWebserver.Core
         {
             using (_loggerWriteLock.LockWrite())
             {
-                Close();
-                Open();
+                _multiStreamWriter.Dispose();
+                CreateMultiStreamWriter();
             }
         }
 
@@ -406,12 +423,24 @@ namespace LamestWebserver.Core
             _multiStreamWriter = new MultiStreamWriter(streamsToApply);
         }
 
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => _debugResponseNode;
+
+        private HElement GetDebugResponse(SessionData sessionData)
+        {
+            if (_lastMessages.Count == 0)
+                return new HItalic("There have not been any logged messages yet.");
+            else
+                return new HTable((from e in _lastMessages select e.ToEnumerable()));
+        }
+
         /// <summary>
         /// Creates a new Logger instance.
         /// </summary>
         public Logger()
         {
             Open();
+            _debugResponseNode = new DebugContainerResponseNode(nameof(Logger), null, GetDebugResponse);
         }
 
         /// <summary>

@@ -164,9 +164,10 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>cd $(OutDir)
+del ilmerge.log
 "\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\sn.exe" -R ..\..\..\dependencies\ILMerge\ILMerge\bin\Release\net452\final\ILMerge.exe ..\..\..\dependencies\ILMerge\Common\InterimKey.snk
 mkdir final
-..\..\..\dependencies\ILMerge\ILMerge\bin\Release\net452\final\ILMerge.exe /log:ilmerge_log.txt /t:library /copyattrs /xmldocs /allowMultiple /wildcards /out:final/LamestWebserver.dll lws.dll SHA3.dll Fleck.dll Newtonsoft.Json.dll System.*.dll</PostBuildEvent>
+..\..\..\dependencies\ILMerge\ILMerge\bin\Release\net452\final\ILMerge.exe /log:ilmerge.log /t:library /copyattrs /xmldocs /allowMultiple /wildcards /out:final/LamestWebserver.dll lws.dll SHA3.dll Fleck.dll Newtonsoft.Json.dll System.*.dll</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
