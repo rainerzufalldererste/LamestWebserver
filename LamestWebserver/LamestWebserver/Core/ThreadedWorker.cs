@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -108,8 +108,9 @@ namespace LamestWebserver.Core
 
         /// <summary>
         /// Stops all WorkerTasks
+        /// <paramref name="timeout">The timeout in milliseconds to wait before forcefully aborting threads.<para/>Warning: This will most likely NOT free some memory. Please just use with reasonable timespans.</paramref>
         /// </summary>
-        public void Stop(int? timeout = 250)
+        public void Stop(int? timeout = null)
         {
             _running = false;
 
@@ -145,6 +146,7 @@ namespace LamestWebserver.Core
 
         /// <summary>
         /// Waits until all WorkerTasks are done
+        /// <paramref name="timeout">The timeout in milliseconds to wait before forcefully aborting threads.<para/>Warning: This will most likely NOT free some memory. Please just use with reasonable timespans.</paramref>
         /// </summary>
         public void Join(int? timeout = null)
         {
@@ -198,41 +200,39 @@ namespace LamestWebserver.Core
                 if (hasTasks)
                 {
                     using (_writeLock.LockWrite())
-                    {
-                        hasTasks = _tasks.Count > 0; // could have already changed.
-
-                        if (hasTasks)
+                        if (_tasks.Count > 0)
                             currentTask = _tasks.Dequeue();
-                    }
-                }
 
-                if (currentTask == null)
-                {
-                    Thread.Sleep(1);
-                    continue;
-                }
+                    if (currentTask == null)
+                    {
+                        Thread.Sleep(1);
+                        continue;
+                    }
 
 #if DEBUG
-                Logger.LogTrace($"Dequeued Job in WorkerThread: {currentTask.Task.Method.Name} ({_tasks.Count} tasks left.)");
+                    Logger.LogTrace($"Dequeued Job in WorkerThread: {currentTask.Task.Method.Name} ({_tasks.Count} tasks left.)");
 #endif
 
-                try
-                {
-                    currentTask.State = ETaskState.Executing;
+                    try
+                    {
+                        currentTask.State = ETaskState.Executing;
 
-                    object returnedValue = currentTask.Task.DynamicInvoke(currentTask.Parameters);
+                        object returnedValue = currentTask.Task.DynamicInvoke(currentTask.Parameters);
 
-                    currentTask.ReturnedValue = returnedValue;
-                    currentTask.State = ETaskState.Done;
-                }
-                catch (Exception e)
-                {
-                    currentTask.ExceptionThrown = e;
-                    currentTask.State = ETaskState.ExceptionThrown;
+                        currentTask.ReturnedValue = returnedValue;
+                        currentTask.State = ETaskState.Done;
+                    }
+                    catch (Exception e)
+                    {
+                        currentTask.ExceptionThrown = e;
+                        currentTask.State = ETaskState.ExceptionThrown;
 
-                    ServerHandler.LogMessage("Exception in WorkerTask '" + currentTask.Task.Method.Name + "'.\n" + e);
+                        Logger.LogError("Exception in WorkerTask '" + currentTask.Task.Method.Name + "'.\n" + e);
+                    }
                 }
             }
+
+            Memory.FlushableMemoryPool.Destroy();
         }
 
         /// <summary>
