@@ -128,7 +128,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void Trace(string msg, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.Trace)
+            if (MinimumLoggingLevel > ELoggingLevel.Trace)
                 return;
 
             Log(ELoggingLevel.Trace, msg, stopwatch);
@@ -148,7 +148,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void Information(string msg, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.Information)
+            if (MinimumLoggingLevel > ELoggingLevel.Information)
                 return;
 
             Log(ELoggingLevel.Information, msg, stopwatch);
@@ -168,7 +168,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void Warning(string msg, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.Warning)
+            if (MinimumLoggingLevel > ELoggingLevel.Warning)
                 return;
 
             Log(ELoggingLevel.Warning, msg, stopwatch);
@@ -188,7 +188,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void Error(string msg, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.Error)
+            if (MinimumLoggingLevel > ELoggingLevel.Error)
                 return;
 
             Log(ELoggingLevel.Error, msg, stopwatch);
@@ -208,7 +208,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void DebugExcept(Exception exception, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.DebugExcept)
+            if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
                 return;
 
             Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + exception.Message, stopwatch);
@@ -233,7 +233,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void DebugExcept(string message, Exception exception, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.DebugExcept)
+            if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
                 return;
 
             Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + message, stopwatch);
@@ -256,7 +256,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void DebugExcept(string msg, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.DebugExcept)
+            if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
                 return;
 
             Log(ELoggingLevel.DebugExcept, msg, stopwatch);
@@ -279,7 +279,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void Except(Exception exception, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.Except)
+            if (MinimumLoggingLevel > ELoggingLevel.Except)
                 return;
 
             Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + exception.Message, stopwatch);
@@ -303,7 +303,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void Except(string message, Exception exception, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.Except)
+            if (MinimumLoggingLevel > ELoggingLevel.Except)
                 return;
 
             Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + message, stopwatch);
@@ -325,7 +325,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void Except(string msg, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.Except)
+            if (MinimumLoggingLevel > ELoggingLevel.Except)
                 return;
 
             Log(ELoggingLevel.Except, msg, stopwatch);
@@ -347,7 +347,7 @@ namespace LamestWebserver.Core
         /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
         public void CrashAndBurn(string msg, Stopwatch stopwatch = null)
         {
-            if (MinimumLoggingLevel >= ELoggingLevel.CrashAndBurn)
+            if (MinimumLoggingLevel > ELoggingLevel.CrashAndBurn)
                 return;
 
             Log(ELoggingLevel.CrashAndBurn, msg, stopwatch);
@@ -427,6 +427,15 @@ namespace LamestWebserver.Core
                     CreateMultiStreamWriter();
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Flushes all available Streams.
+        /// </summary>
+        public void Flush()
+        {
+            _multiStreamWriter.Flush();
         }
 
         /// <summary>

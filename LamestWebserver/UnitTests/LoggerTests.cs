@@ -23,28 +23,30 @@ namespace UnitTests
 
             string autoLogFile = Logger.CurrentLogger.Instance.FilePath;
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 2048; i++)
             {
                 Logger.LogInformation(i + "stuff");
             }
 
+            Logger.CurrentLogger.Instance.Flush();
             Assert.IsTrue(File.Exists(Logger.CurrentLogger.Instance.FilePath));
             Assert.IsTrue(new FileInfo(Logger.CurrentLogger.Instance.FilePath).Length > 0);
 
             Logger.CurrentLogger.Instance.FilePath = PathToNewFile;
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 2048; i++)
             {
                 Logger.LogInformation(i + " stuff2");
             }
 
+            Logger.CurrentLogger.Instance.Flush();
             Assert.IsTrue(File.Exists(PathToNewFile));
             Assert.IsTrue(new FileInfo(PathToNewFile).Length > 0);
 
             Logger.CurrentLogger.Instance.AddCustomStream(File.Open(PathToParallelLog, FileMode.Append,FileAccess.Write));
             Logger.CurrentLogger.Instance.RestartStream();
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 2048; i++)
             {
                 Logger.LogInformation(i + " stuff3");
             }
@@ -52,7 +54,7 @@ namespace UnitTests
             Logger.OutputSource = Logger.EOutputSource.None;
             long fileInfo = new FileInfo(PathToNewFile).Length;
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 2048; i++)
             {
                 Logger.LogInformation(i + " stuff4");
             }
