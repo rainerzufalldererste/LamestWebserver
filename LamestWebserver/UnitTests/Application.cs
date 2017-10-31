@@ -10,6 +10,7 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new FixedSizeQueueTests().TestFixedSizeQueue();
             new FlushableMemoryPoolTests().TestFlushableMemoryPool();
             new BitListTests().TestBitList();
             new IDTests().TestID();
