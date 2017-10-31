@@ -20,7 +20,6 @@ using LamestWebserver.Core;
 using LamestWebserver.Core.Memory;
 
 using ThreadState = System.Threading.ThreadState;
-using LamestWebserver.Core;
 
 namespace LamestWebserver
 {

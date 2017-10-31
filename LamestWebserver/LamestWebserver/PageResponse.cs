@@ -27,9 +27,7 @@ namespace LamestWebserver
     /// </summary>
     public abstract class ResponseCoreImplementation : IURLIdentifyable, IDebugRespondable, IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>
     {
-        /// <summary>
-        /// The URL of this Page.
-        /// </summary>
+        /// <inheritdoc />
         public string URL { get; protected set; }
 
         private DebugContainerResponseNode _debugResponseNode;
@@ -48,6 +46,9 @@ namespace LamestWebserver
         /// <param name="URL">The URL of the Response.</param>
         protected ResponseCoreImplementation(string URL)
         {
+            if (URL == null)
+                throw new ArgumentNullException(nameof(URL));
+
             this.URL = URL;
             _debugResponseNode = new DebugContainerResponseNode($"[{GetType().Name}] '{URL}'", null, GetDebugViewResponse, null, false);
         }
@@ -291,16 +292,35 @@ namespace LamestWebserver
     /// <summary>
     /// A direct response as string to the client directory / directory item request
     /// </summary>
-    public abstract class DirectoryResponse : ResponseCoreImplementation
+    public abstract class DirectoryResponse : IURLIdentifyable, IDebugRespondable, IDebugUpdateableResponse<Exception, TimeSpan, string, HttpRequest, HttpResponse>
     {
+        /// <inheritdoc />
+        public string URL { get; protected set; }
+
+        private DebugContainerResponseNode _debugResponseNode;
+        private FixedSizeQueue<Tuple<Exception, DateTime>> _exceptions = new FixedSizeQueue<Tuple<Exception, DateTime>>(20);
+        private FixedSizeQueue<Tuple<TimeSpan, DateTime, string, string, string, string>> _responseTimes = new FixedSizeQueue<Tuple<TimeSpan, DateTime, string, string, string, string>>(50);
+        private int _totalPageViews = 0;
+        private double _averageResponseTime = 0;
+        private TimeSpan _minimumResponseTime = TimeSpan.FromDays(365);
+        private TimeSpan _maximumResponseTime = TimeSpan.FromMilliseconds(0);
+        private int _totalExceptions = 0;
+        private int _averageResponseSize = 0, _minimumResponseSize = int.MaxValue, _maximumResponseSize = int.MinValue;
+
         /// <summary>
         /// Constructs a new Directory Response object
         /// </summary>
         /// <param name="URL">the URLL of the directory</param>
         /// <param name="register">shall this directory be automatically registered at the server?</param>
-        public DirectoryResponse(string URL, bool register = true) : base(URL)
+        public DirectoryResponse(string URL, bool register = true)
         {
-            if(register)
+            if (URL == null)
+                throw new ArgumentNullException(nameof(URL));
+
+            this.URL = URL;
+            _debugResponseNode = new DebugContainerResponseNode($"[{GetType().Name}] '{URL}'", null, GetDebugViewResponse, null, false);
+
+            if (register)
                 Master.AddDirectoryPageToServer(this.URL, GetContent);
         }
 
@@ -318,6 +338,104 @@ namespace LamestWebserver
         protected void RemoveFromServer()
         {
             Master.RemoveDirectoryPageFromServer(URL);
+        }
+
+        /// <inheritdoc />
+        DebugResponseNode IDebugRespondable.GetDebugResponseNode() => _debugResponseNode;
+
+        /// <summary>
+        /// The response for the DebugView for this Response.
+        /// </summary>
+        /// <param name="sessionData">The current SessionData.</param>
+        /// <returns>Returns a HElement containing the Response.</returns>
+        protected virtual HElement GetDebugViewResponse(SessionData sessionData)
+        {
+            HMultipleElements ret = new HMultipleElements();
+
+            ret += new HText($"This page has been called {_totalPageViews} times.");
+
+            if (_totalPageViews > 0)
+            {
+                ret += new HText($"The average response time of this page is {_averageResponseTime} milliseconds. (maximum: {_maximumResponseTime} | minimum {_minimumResponseTime})");
+
+                ret += new HHeadline("Last Response Times", 2);
+                ret += new HTable((from r in _responseTimes select r.ToEnumerable())) { TableHeader = new List<HElement>() { "Response Time", "Time", "Requested Sub-URL", "IP Address", "HTTP Head Variables", "HTTP Post Variables" } };
+                ret += new HNewLine();
+            }
+
+            if (_totalExceptions > 0)
+            {
+                ret += new HText($"This page has thrown an exception {_totalExceptions} times.");
+
+                ret += new HHeadline("Last Exceptions", 2);
+                ret += new HTable((from e in _exceptions select e.ToEnumerable())) { TableHeader = new List<HElement>() { "Exception", "Time" } };
+                ret += new HNewLine();
+            }
+
+            return ret;
+        }
+        
+        /// <inheritdoc />
+        public void UpdateDebugResponseData(Exception exception, TimeSpan timeSpan, string subUrl, HttpRequest request, HttpResponse response)
+        {
+            _totalPageViews++;
+
+            if (exception != null)
+            {
+                _exceptions.Push(new Tuple<Exception, DateTime>(exception, DateTime.Now));
+
+                _totalExceptions++;
+            }
+
+            if (request != null)
+            {
+                string ip = "";
+                string head = "";
+                string post = "";
+
+                if (request.Stream != null && request.Stream is System.Net.Sockets.NetworkStream) // not a nice solution...
+                    ip = ((System.Net.Sockets.Socket)(typeof(System.Net.Sockets.NetworkStream).GetProperty("Socket", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)).GetValue((System.Net.Sockets.NetworkStream)request.Stream, null)).RemoteEndPoint.ToString();
+
+                foreach (var param in request.VariablesHttpHead)
+                    head += $"&{param.Key}={param.Value}";
+
+                head = head.TrimStart('&');
+
+                foreach (var param in request.VariablesHttpPost)
+                    post += $"&{param.Key}={param.Value}";
+
+                post = post.TrimStart('&');
+
+                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string>(timeSpan, DateTime.Now, subUrl, ip, head, post));
+            }
+            else
+            {
+                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string>(timeSpan, DateTime.Now, subUrl, "", "", ""));
+            }
+
+            _averageResponseTime = (_averageResponseTime * (_totalPageViews - 1) + timeSpan.TotalMilliseconds) / _totalPageViews;
+
+            if (_maximumResponseTime < timeSpan)
+                _maximumResponseTime = timeSpan;
+
+            if (_minimumResponseTime > timeSpan)
+                _minimumResponseTime = timeSpan;
+
+
+            if (response != null && response.BinaryData != null)
+            {
+                _averageResponseSize = (int)System.Math.Round((double)_averageResponseSize * (_totalPageViews - 1) + (double)response.BinaryData.Length) / _totalPageViews;
+
+                if (_maximumResponseSize < response.BinaryData.Length)
+                    _maximumResponseSize = response.BinaryData.Length;
+
+                if (_minimumResponseSize > response.BinaryData.Length)
+                    _minimumResponseSize = response.BinaryData.Length;
+            }
+            else
+            {
+
+            }
         }
     }
 

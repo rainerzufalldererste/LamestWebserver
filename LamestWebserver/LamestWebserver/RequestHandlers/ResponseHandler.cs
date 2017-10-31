@@ -38,28 +38,47 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         protected UsableWriteLock RequestWriteLock = new UsableWriteLock();
 
+        /// <summary>
+        /// The Root DebugResponseNode.
+        /// </summary>
         public readonly DebugContainerResponseNode DebugResponseNode;
 
+        /// <summary>
+        /// Constructs a new ResponseHandler.
+        /// </summary>
+        /// <param name="debugResponseNodeName">The DebugView name for this ResponseHandler.</param>
         public ResponseHandler(string debugResponseNodeName = null)
         {
             DebugResponseNode = new DebugContainerResponseNode(debugResponseNodeName == null ? GetType().Name : debugResponseNodeName, null, DebugViewResponse, null);
         }
 
+        /// <summary>
+        /// Adds a DebugResponseNode as Subnode to the Root DebugResponseNode.
+        /// </summary>
+        /// <param name="node">The node to add as subnode.</param>
         public void AddDebugResponseNode(DebugResponseNode node)
         {
             DebugResponseNode.AddNode(node);
         }
 
+        /// <summary>
+        /// Removes a DebugResponseNode from the Subnodes of the Root DebugResponseNode.
+        /// </summary>
+        /// <param name="node">The node to remove.</param>
         public void RemoveDebugResponseNode(DebugResponseNode node)
         {
             DebugResponseNode.RemoveNode(node);
         }
 
+        /// <summary>
+        /// Clears the subnodes of the Root DebugResponseNode.
+        /// </summary>
         public void ClearDebugResponseNodes()
         {
             DebugResponseNode.ClearNodes();
         }
 
+        /// <inheritdoc />
         public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
 
         private HElement DebugViewResponse(SessionData sessionData)
@@ -1256,7 +1275,7 @@ namespace LamestWebserver.RequestHandlers
             {
                 PageResponses.Add(url, getc);
 
-                if (getc.Target is IDebugRespondable)
+                if (getc.Target != null && getc.Target is IDebugRespondable)
                     DebugResponseNode.AddNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
             }
 
@@ -1290,7 +1309,7 @@ namespace LamestWebserver.RequestHandlers
             {
                 base.FinishResponse(requestFunction, exception, stopwatch, requestPacket, httpResponse);
 
-                if (requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>)
+                if (requestFunction.Target != null && requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>)
                     ((IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>)requestFunction.Target).UpdateDebugResponseData(exception, stopwatch.Elapsed, requestPacket, httpResponse);
             }
         }
@@ -1443,17 +1462,27 @@ namespace LamestWebserver.RequestHandlers
     /// <summary>
     /// A response handler for DirectoryResponses
     /// </summary>
-    public class DirectoryResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetDirectoryContents>
+    public class DirectoryResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetDirectoryContents>, IDebugRespondable
     {
+        /// <summary>
+        /// Shall this RequestHandler store DebugView information?
+        /// </summary>
+        public static bool StoreDebugInformation = true;
+        
         /// <summary>
         /// A ReaderWriterLock for accessing pages synchronously.
         /// </summary>
-        protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        protected UsableWriteLock ReaderWriterLock = new UsableWriteLock();
 
         /// <summary>
         /// The currently listed DirectoryResponses.
         /// </summary>
         protected AVLHashMap<string, Master.GetDirectoryContents> DirectoryResponses = new AVLHashMap<string, Master.GetDirectoryContents>(WebServer.DirectoryResponseStorageHashMapSize);
+
+        /// <summary>
+        /// The DebugResponseNode for this PageResponseRequestHandler.
+        /// </summary>
+        public readonly DebugContainerResponseNode DebugResponseNode;
 
         [ThreadStatic]
         private static string _subUrl = "";
@@ -1463,6 +1492,8 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         public DirectoryResponseRequestHandler()
         {
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, ResponseHandler.CurrentResponseHandler.DebugResponseNode);
+
             Master.AddDirectoryFunctionEvent += AddDirectoryFunction;
             Master.RemoveDirectoryFunctionEvent += RemoveDirectoryFunction;
         }
@@ -1502,9 +1533,8 @@ namespace LamestWebserver.RequestHandlers
                     }
                 }
 
-                ReaderWriterLock.EnterReadLock();
-                response = DirectoryResponses[bestUrlMatch];
-                ReaderWriterLock.ExitReadLock();
+                using (ReaderWriterLock.LockRead())
+                    response = DirectoryResponses[bestUrlMatch];
 
                 if (response != null || bestUrlMatch.Length == 0)
                 {
@@ -1519,20 +1549,63 @@ namespace LamestWebserver.RequestHandlers
 
         private void AddDirectoryFunction(string URL, Master.GetDirectoryContents function)
         {
-            ReaderWriterLock.EnterWriteLock();
-            DirectoryResponses.Add(URL, function);
-            ReaderWriterLock.ExitWriteLock();
+            using (ReaderWriterLock.LockWrite())
+            {
+                DirectoryResponses.Add(URL, function);
+                
+                if (function.Target != null && function.Target is IDebugRespondable)
+                    DebugResponseNode.AddNode(((IDebugRespondable)function.Target).GetDebugResponseNode());
+            }
 
             ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is now available at the Webserver. (WebserverApi)");
         }
 
         private void RemoveDirectoryFunction(string URL)
         {
-            ReaderWriterLock.EnterWriteLock();
-            DirectoryResponses.Remove(URL);
-            ReaderWriterLock.ExitWriteLock();
+            using (ReaderWriterLock.LockWrite())
+            {
+                Master.GetDirectoryContents function = DirectoryResponses[URL];
 
-            ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
+                if (function != null)
+                {
+                    if (function.Target is IDebugRespondable)
+                        DebugResponseNode.RemoveNode(((IDebugRespondable)function.Target).GetDebugResponseNode());
+
+                    DirectoryResponses.Remove(URL);
+                    ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        private HElement GetDebugResponse(SessionData arg)
+        {
+            if (!StoreDebugInformation)
+                return new HText($"This {GetType().Name} does not store Error-Information. If you want Error-Information to be stored enable the '{StoreDebugInformation}' Flag.") { Class = "warning" };
+
+            using (ReaderWriterLock.LockRead())
+            {
+                var ret = new HTable((from e in DirectoryResponses select new List<HElement> { new HString(e.Key), e.Value.Method.ToString(), e.Value.Target == null ? $"Declared in {e.Value.Method.DeclaringType.Name}" : $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
+                {
+                    TableHeader = new HElement[] { "Registered URL", "Associated GetContents Function", "Instance Object or Declaring Class" }
+                };
+
+                return ret;
+            }
+        }
+
+        /// <inheritdoc />
+        public override void FinishResponse(Master.GetDirectoryContents requestFunction, Exception exception, Stopwatch stopwatch, HttpRequest requestPacket, HttpResponse httpResponse)
+        {
+            if (StoreDebugInformation)
+            {
+                base.FinishResponse(requestFunction, exception, stopwatch, requestPacket, httpResponse);
+
+                if (requestFunction.Target != null && requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan, string, HttpRequest, HttpResponse>)
+                    ((IDebugUpdateableResponse<Exception, TimeSpan, string, HttpRequest, HttpResponse>)requestFunction.Target).UpdateDebugResponseData(exception, stopwatch.Elapsed, _subUrl, requestPacket, httpResponse);
+            }
         }
     }
 }
