@@ -36,8 +36,11 @@ namespace LamestWebserver.Collections
             {
                 if (_internalList.Count <= Position)
                     return default(T);
+                
+                if (0 >= Position)
+                    return default(T);
 
-                return _internalList[Position];
+                return _internalList[Position - 1];
             }
         }
 
@@ -71,7 +74,7 @@ namespace LamestWebserver.Collections
                 if (Position >= Count)
                     throw new IndexOutOfRangeException();
 
-                return _internalList[Position];
+                return _internalList[index];
             }
 
             set
@@ -79,7 +82,7 @@ namespace LamestWebserver.Collections
                 if (Position >= Count)
                     throw new IndexOutOfRangeException();
 
-                _internalList[Position] = value;
+                _internalList[index] = value;
             }
         }
 
