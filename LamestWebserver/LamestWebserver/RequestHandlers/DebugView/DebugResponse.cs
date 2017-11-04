@@ -33,11 +33,11 @@ namespace LamestWebserver.RequestHandlers.DebugView
         public static readonly Singleton<DebugResponse> DebugResponseInstance = new Singleton<DebugResponse>(() => new DebugResponse());
 
         /// <summary>
-        /// The Singleton holding the ResponseHandler for the DebugResponse. This instance can simply be attatched to a Webserver in order to view the DebugView.
+        /// The Singleton holding the RequestHandler for the DebugResponse. This instance can simply be attatched to a Webserver in order to view the DebugView.
         /// </summary>
-        public static readonly Singleton<ResponseHandler> DebugViewResponseHandler = new Singleton<ResponseHandler>(() => 
+        public static readonly Singleton<RequestHandler> DebugViewRequestHandler = new Singleton<RequestHandler>(() => 
         {
-            ResponseHandler ret = new ResponseHandler(nameof(DebugViewResponseHandler));
+            RequestHandler ret = new RequestHandler(nameof(DebugViewRequestHandler));
 
             ret.AddRequestHandler(DebugResponseInstance.Instance);
 
@@ -274,11 +274,11 @@ button {
 }
 
 button:hover {
-    background: linear-gradient(20deg, #ffa770, #ffcc6c);
+    background: linear-gradient(20deg, #ff8e7d, #ffcc6c);
 }
 
 button:active, button:focus {
-    background: linear-gradient(20deg, #ff6b8e, #ffe66b);
+    background: linear-gradient(20deg, #ffc16c, #ffe66b);
     outline: none;
 }";
         #endregion
@@ -716,7 +716,7 @@ button:active, button:focus {
 
                 if(ReferenceEquals(node, null))
                 {
-                    HElement list = new HList(HList.EListType.UnorderedList, (from s in _subNodes select GetLink(s.Value.Name, s.Key, positionQueue, positionQueue.Position, null)).ToArray())
+                    HElement list = new HList(HList.EListType.UnorderedList, (from s in _subNodes select GetLink(s.Value.Name, s.Value.URL)).ToArray())
                     {
                         Class = "subnodes"
                     };

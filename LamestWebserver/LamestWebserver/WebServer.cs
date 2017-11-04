@@ -34,6 +34,11 @@ namespace LamestWebserver
         internal static UsableMutexSlim RunningServerMutex = new UsableMutexSlim();
 
         /// <summary>
+        /// The default time to wait until a NetworkStream is being closed because of a no data coming in.
+        /// </summary>
+        public static int DefaultReadTimeout = 5000;
+
+        /// <summary>
         /// The IP and Port of the currently Connected Client.
         /// </summary>
         [ThreadStatic] public static string CurrentClientRemoteEndpoint = null;
@@ -41,6 +46,7 @@ namespace LamestWebserver
         private readonly TcpListener _tcpListener;
         private readonly Thread _mThread;
         private List<WebServer> _dependentWebservers = new List<WebServer>();
+        private readonly int _readTimeout = DefaultReadTimeout;
 
         /// <summary>
         /// The Port, the server is listening at.
@@ -159,12 +165,12 @@ namespace LamestWebserver
         public SslProtocols EnabledSslProtocols { get; set; } = SslProtocols.Tls12;
 
         /// <summary>
-        /// The ResponseHandler used in this Webserver instance.
+        /// The RequestHandler used in this Webserver instance.
         /// </summary>
-        public readonly ResponseHandler ResponseHandler;
+        public readonly RequestHandler RequestHandler;
 
         /// <summary>
-        /// Starts a new Webserver and adds the folder and default components to the CurrentResponseHandler. If you are just adding a server listening on another port as well - just use a different constructor.
+        /// Starts a new Webserver and adds the folder and default components to the CurrentRequestHandler. If you are just adding a server listening on another port as well - just use a different constructor.
         /// </summary>
         /// <param name="port">The port to listen to</param>
         /// <param name="folder">a folder to read from (can be null)</param>
@@ -174,29 +180,29 @@ namespace LamestWebserver
         /// <param name="enabledSslProtocols">The available ssl protocols if the connection is https.</param>
         public WebServer(int port, string folder = null, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12) : this(port, certificate, enabledSslProtocols)
         {
-            ResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
-            ResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
-            ResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
-            ResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
+            RequestHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
+            RequestHandler.AddRequestHandler(new WebSocketRequestHandler());
+            RequestHandler.AddRequestHandler(new PageResponseRequestHandler());
+            RequestHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
 
             if(folder != null)
-                ResponseHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
+                RequestHandler.AddRequestHandler(new CachedFileRequestHandler(folder));
 
-            ResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
+            RequestHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
         }
 
         /// <summary>
-        /// Starts a new Webserver on a specified ResponseHandler.
+        /// Starts a new Webserver on a specified RequestHandler.
         /// </summary>
         /// <param name="port">The port to listen to.</param>
-        /// <param name="responseHandler">The ResponseHandler to use. If null, ResponseHandler.CurrentResponseHandler will be used.</param>
+        /// <param name="requestHandler">The RequestHandler to use. If null, RequestHandler.CurrentRequestHandler will be used.</param>
         /// <param name="certificate">The ssl certificate for https (if null: connection will be http; if set will only be https)
         /// <para /> If the webserver does not respond after including your certificate, it might not be loaded or set up correctly.
         /// Consider looking at the LamestWebserver Logger output.</param>
         /// <param name="enabledSslProtocols">The available ssl protocols if the connection is https.</param>
-        public WebServer(int port, ResponseHandler responseHandler, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12) : this(port, certificate, enabledSslProtocols)
+        public WebServer(int port, RequestHandler requestHandler, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12) : this(port, certificate, enabledSslProtocols)
         {
-            ResponseHandler = responseHandler;
+            RequestHandler = requestHandler;
         }
 
         /// <summary>
@@ -211,13 +217,13 @@ namespace LamestWebserver
         {
             if (!TcpPortIsUnused(port))
             {
-                throw new InvalidOperationException("The tcp port " + port + " is currently used by another application.");
+                Logger.LogExcept(new InvalidOperationException("The tcp port " + port + " is currently used by another application."));
             }
 
             EnabledSslProtocols = enabledSslProtocols;
             Certificate = certificate;
 
-            ResponseHandler = ResponseHandler.CurrentResponseHandler;
+            RequestHandler = RequestHandler.CurrentRequestHandler;
 
             this.Port = port;
             this._tcpListener = new TcpListener(IPAddress.Any, port);
@@ -354,10 +360,11 @@ namespace LamestWebserver
                     tcpRcvTask = _tcpListener.AcceptTcpClientAsync();
                     tcpRcvTask.Wait();
                     TcpClient tcpClient = tcpRcvTask.Result;
+                    tcpClient.ReceiveTimeout = _readTimeout;
+                    tcpClient.NoDelay = true;
 
                     WorkerThreads.Instance.EnqueueJob((Action)(() => { FlushableMemoryPool.AquireOrFlush(); HandleClient(tcpClient); }));
                     Logger.LogTrace("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
-
                 }
                 catch (ThreadAbortException)
                 {
@@ -499,8 +506,19 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    if(Running)
+                    if (Running)
+                    {
                         Logger.LogError("An exception occured in the client handler:  " + e, stopwatch);
+
+                        try
+                        {
+                            client.Client.Shutdown(SocketShutdown.Both);
+                            client.Close();
+
+                            Logger.LogInformation($"The connection to {client.Client.RemoteEndPoint} has been closed ordinarily.", stopwatch);
+                        }
+                        catch { };
+                    }
 
                     break;
                 }
@@ -551,7 +569,7 @@ namespace LamestWebserver
 
                             try
                             {
-                                response = ResponseHandler.GetResponse(htp);
+                                response = RequestHandler.GetResponse(htp);
 
                                 if (response == null)
                                     goto InvalidResponse;
@@ -559,7 +577,7 @@ namespace LamestWebserver
                                 buffer = response.GetPackage();
                                 stream.Write(buffer, 0, buffer.Length);
 
-                                Logger.LogInformation($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(ResponseHandler)}.", stopwatch);
+                                Logger.LogInformation($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(RequestHandler)}.", stopwatch);
 
                                 continue;
                             }

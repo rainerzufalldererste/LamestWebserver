@@ -40,7 +40,24 @@ namespace LamestWebserver.Core
         /// <returns>the input encoded as HTML</returns>
         public static string EncodeHtml(this string text) => new System.Web.HtmlString(text).ToHtmlString();
 
+        /// <summary>
+        /// Appends all contained values separated by a given string.
+        /// </summary>
+        /// <param name="obj">The IEnumerable to extract the values from.</param>
+        /// <param name="separator">The string to separate with.</param>
+        /// <returns>The appended values separated by the separator string.</returns>
+        public static string ToSeparatedValueString(this IEnumerable<object> obj, string separator = ", ")
+        {
+            string ret = "";
 
+            foreach (object o in obj)
+                ret += o?.ToString() + separator;
+
+            if (ret.Length > 0)
+                return ret.Substring(0, ret.Length - separator.Length);
+
+            return "";
+        }
 
         /// <summary>
         /// Gets the index of an Element from a List

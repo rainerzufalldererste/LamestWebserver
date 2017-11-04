@@ -39,18 +39,18 @@ namespace lwshostsvc
 
             HostConfig.CurrentHostConfig.ApplyConfig();
 
-            ResponseHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
+            RequestHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
+            RequestHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
+            RequestHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
+            RequestHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
 
             foreach (var directory in HostConfig.CurrentHostConfig.WebserverFileDirectories)
             {
-                ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(directory));
+                RequestHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(directory));
                 ServerHandler.LogMessage($"Added WebserverFileDirectory '{directory}'");
             }
 
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
+            RequestHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
 
             foreach (var port in HostConfig.CurrentHostConfig.Ports)
             {

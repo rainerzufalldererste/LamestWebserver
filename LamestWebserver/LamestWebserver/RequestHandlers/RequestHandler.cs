@@ -14,14 +14,14 @@ using LamestWebserver.UI;
 namespace LamestWebserver.RequestHandlers
 {
     /// <summary>
-    /// A ResponseHandler contains tools to resolve HTTP-Requests to responses.
+    /// A RequestHandler contains tools to resolve HTTP-Requests to responses.
     /// </summary>
-    public class ResponseHandler : IDebugRespondable
+    public class RequestHandler : IDebugRespondable
     {
         /// <summary>
-        /// The ResponseHandler used across all default Webserver Instances.
+        /// The RequestHandler used across all default Webserver Instances.
         /// </summary>
-        public static readonly ResponseHandler CurrentResponseHandler = new ResponseHandler();
+        public static readonly RequestHandler CurrentRequestHandler = new RequestHandler();
 
         /// <summary>
         /// The RequestHandlers to look through primarily.
@@ -44,10 +44,10 @@ namespace LamestWebserver.RequestHandlers
         public readonly DebugContainerResponseNode DebugResponseNode;
 
         /// <summary>
-        /// Constructs a new ResponseHandler.
+        /// Constructs a new RequestHandler.
         /// </summary>
-        /// <param name="debugResponseNodeName">The DebugView name for this ResponseHandler.</param>
-        public ResponseHandler(string debugResponseNodeName = null)
+        /// <param name="debugResponseNodeName">The DebugView name for this RequestHandler.</param>
+        public RequestHandler(string debugResponseNodeName = null)
         {
             DebugResponseNode = new DebugContainerResponseNode(debugResponseNodeName == null ? GetType().Name : debugResponseNodeName, null, DebugViewResponse, null);
         }
@@ -561,7 +561,7 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public CachedFileRequestHandler(string folder) : base(folder)
         {
-            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, ResponseHandler.CurrentResponseHandler.DebugResponseNode);
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
             SetupFileSystemWatcher();
         }
 
@@ -1016,7 +1016,7 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         public ErrorRequestHandler()
         {
-            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, ResponseHandler.CurrentResponseHandler.DebugResponseNode);
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
 
             if (StoreErrorMessages)
                 _accumulatedErrors = new AVLHashMap<string, (int, int)>();
@@ -1234,7 +1234,7 @@ namespace LamestWebserver.RequestHandlers
             Master.AddFunctionEvent += AddFunction;
             Master.RemoveFunctionEvent += RemoveFunction;
             
-            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, ResponseHandler.CurrentResponseHandler.DebugResponseNode);
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
         }
 
         private HElement GetDebugResponse(SessionData arg)
@@ -1492,7 +1492,7 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         public DirectoryResponseRequestHandler()
         {
-            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, ResponseHandler.CurrentResponseHandler.DebugResponseNode);
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
 
             Master.AddDirectoryFunctionEvent += AddDirectoryFunction;
             Master.RemoveDirectoryFunctionEvent += RemoveDirectoryFunction;

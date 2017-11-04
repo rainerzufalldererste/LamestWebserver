@@ -41,9 +41,12 @@ namespace LamestWebserver.Caching
 
         private DebugContainerResponseNode DebugResponseNode;
 
+        /// <summary>
+        /// Creates a new ResponseCache.
+        /// </summary>
         public ResponseCache()
         {
-            DebugResponseNode = new DebugContainerResponseNode(nameof(ResponseCache), null, GetDebugResponse);
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse);
         }
 
         /// <summary>
@@ -431,7 +434,7 @@ namespace LamestWebserver.Caching
                 {
                     if (sessionData.HttpHeadVariables.TryGetValue("key", out request))
                     {
-                        ret += new HLink("Back to all entries", "?all=true");
+                        ret += new HButton("Back to all entries", "?all=true");
 
                         ResponseCacheEntry<string> response;
 
