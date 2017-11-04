@@ -4,13 +4,17 @@ using System.IO;
 using System.Threading;
 using LamestWebserver.Synchronization;
 using LamestWebserver.Collections;
+using LamestWebserver.RequestHandlers.DebugView;
+using LamestWebserver.UI;
+using System.Linq;
+using System.Diagnostics;
 
 namespace LamestWebserver.Core
 {
     /// <summary>
     /// A simple Logger for LamestWebserver.
     /// </summary>
-    public class Logger
+    public class Logger : IDebugRespondable
     {
         /// <summary>
         /// The Main Logger for LamestWebserver.
@@ -25,7 +29,12 @@ namespace LamestWebserver.Core
         /// <summary>
         /// The default minimum logging level. (should probably be ELoggingLevel.Warning by default)
         /// </summary>
-        public static ELoggingLevel DefaultMinimumLoggingLevel = ELoggingLevel.Trace;
+        public static ELoggingLevel DefaultMinimumLoggingLevel =
+#if DEBUG
+            ELoggingLevel.Trace;
+#else
+            ELoggingLevel.Information;
+#endif
 
         /// <summary>
         /// The minimum logging level for this logger.
@@ -33,20 +42,34 @@ namespace LamestWebserver.Core
         public ELoggingLevel MinimumLoggingLevel = DefaultMinimumLoggingLevel;
 
         /// <summary>
-        /// Set the Flags for the Output Sources
+        /// Currently used output source
+        /// </summary>
+        private EOutputSource _currentOutputSource = EOutputSource.Console;
+
+        /// <summary>
+        /// The Flags representing the Output Source(s) to write to.
         /// </summary>
         public EOutputSource OutputSourceFlags
         {
-            get
-            {
-                return _currentOutputSource;
-            }
+            get => _currentOutputSource;
+
             set
             {
-                if (_currentOutputSource == value) return;
+                if (_currentOutputSource == value)
+                    return;
+                
                 _currentOutputSource = value;
-                CurrentLogger.Instance.RestartStream();
+                RestartStream();
             }
+        }
+
+        /// <summary>
+        /// The Output Source(s) the main Logger instance writes to.
+        /// </summary>
+        public static EOutputSource OutputSource
+        {
+            get => CurrentLogger.Instance.OutputSourceFlags;
+            set => CurrentLogger.Instance.OutputSourceFlags = value;
         }
 
         /// <summary>
@@ -54,8 +77,18 @@ namespace LamestWebserver.Core
         /// </summary>
         private MultiStreamWriter _multiStreamWriter;
 
+        private UsableWriteLock _loggerWriteLock = new UsableWriteLock();
+        private List<Stream> _streams = new List<Stream>();
+        private FixedSizeQueue<Tuple<DateTime, ELoggingLevel, string, string>> _lastMessages = new FixedSizeQueue<Tuple<DateTime, ELoggingLevel, string, string>>(100);
+        private DebugContainerResponseNode _debugResponseNode;
+
         /// <summary>
-        /// Path for the Logging File
+        /// The currently used File Path that the logger writes to.
+        /// </summary>
+        private string _currentFilePath = "lws.log";
+
+        /// <summary>
+        /// Path for the File the logger writes to (if OutputSourceFlags contains EOutputSource.File)
         /// </summary>
         public string FilePath
         {
@@ -65,25 +98,16 @@ namespace LamestWebserver.Core
             }
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
-                if (_currentFilePath == value) return;
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                if (_currentFilePath == value)
+                    return;
+
                 _currentFilePath = value;
                 RestartStream();
             }
         }
-        /// <summary>
-        /// Currently used File Path
-        /// </summary>
-        private string _currentFilePath = "LWS" + DateTime.Now.ToFileTime().ToString() + ".log";
-
-        private UsableWriteLock _loggerWriteLock = new UsableWriteLock();
-
-        private List<Stream> _streams = new List<Stream>();
-
-        /// <summary>
-        /// Currently used output source
-        /// </summary>
-        private EOutputSource _currentOutputSource = EOutputSource.File | EOutputSource.Console;
 
         /// <summary>
         /// If manually closed or opened check this value
@@ -94,90 +118,100 @@ namespace LamestWebserver.Core
         /// Logging a message on logging level 'Trace'.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public static void LogTrace(string msg) => CurrentLogger.Instance.Trace(msg);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogTrace(string msg, Stopwatch stopwatch = null) => CurrentLogger.Instance.Trace(msg, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'Trace'.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public void Trace(string msg)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void Trace(string msg, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.Trace)
                 return;
 
-            Log(ELoggingLevel.Trace, msg);
+            Log(ELoggingLevel.Trace, msg, stopwatch);
         }
 
         /// <summary>
         /// Logging a message on logging level 'Information'.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public static void LogInformation(string msg) => CurrentLogger.Instance.Information(msg);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogInformation(string msg, Stopwatch stopwatch = null) => CurrentLogger.Instance.Information(msg, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'Information'.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public void Information(string msg)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void Information(string msg, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.Information)
                 return;
 
-            Log(ELoggingLevel.Information, msg);
+            Log(ELoggingLevel.Information, msg, stopwatch);
         }
 
         /// <summary>
         /// Logging a message on logging level 'Warning'.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public static void LogWarning(string msg) => CurrentLogger.Instance.Warning(msg);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogWarning(string msg, Stopwatch stopwatch = null) => CurrentLogger.Instance.Warning(msg, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'Warning'.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public void Warning(string msg)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void Warning(string msg, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.Warning)
                 return;
 
-            Log(ELoggingLevel.Warning, msg);
+            Log(ELoggingLevel.Warning, msg, stopwatch);
         }
 
         /// <summary>
         /// Logging a message on logging level 'Error'.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public static void LogError(string msg) => CurrentLogger.Instance.Error(msg);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogError(string msg, Stopwatch stopwatch = null) => CurrentLogger.Instance.Error(msg, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'Error'.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public void Error(string msg)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void Error(string msg, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.Error)
                 return;
 
-            Log(ELoggingLevel.Error, msg);
+            Log(ELoggingLevel.Error, msg, stopwatch);
         }
 
         /// <summary>
         /// Logging a message on logging level 'DebugExcept'. The Exception will be thrown if Logger.LoggerDebugMode is true.
         /// </summary>
         /// <param name="exception">The exception, of which the message will be logged.</param>
-        public static void LogDebugExcept(Exception exception) => CurrentLogger.Instance.DebugExcept(exception);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogDebugExcept(Exception exception, Stopwatch stopwatch = null) => CurrentLogger.Instance.DebugExcept(exception, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'DebugExcept'. The Exception will be thrown if Logger.LoggerDebugMode is true.
         /// </summary>
         /// <param name="exception">The exception, of which the message will be logged.</param>
-        public void DebugExcept(Exception exception)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void DebugExcept(Exception exception, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
                 return;
 
-            Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + exception.Message);
+            Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + exception.Message, stopwatch);
 
             if (LoggerDebugMode)
                 throw exception;
@@ -188,19 +222,21 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <param name="message">The message to log.</param>
         /// <param name="exception">The exception to throw.</param>
-        public static void LogDebugExcept(string message, Exception exception) => CurrentLogger.Instance.DebugExcept(message, exception);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogDebugExcept(string message, Exception exception, Stopwatch stopwatch = null) => CurrentLogger.Instance.DebugExcept(message, exception, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'DebugExcept'. The Exception will be thrown if Logger.LoggerDebugMode is true.
         /// </summary>
         /// <param name="message">The message to log.</param>
         /// <param name="exception">The exception to throw.</param>
-        public void DebugExcept(string message, Exception exception)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void DebugExcept(string message, Exception exception, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
                 return;
 
-            Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + message);
+            Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + message, stopwatch);
 
             if (LoggerDebugMode)
                 throw exception;
@@ -210,18 +246,20 @@ namespace LamestWebserver.Core
         /// Logging a message on logging level 'DebugExcept'. An Exception will be thrown if Logger.LoggerDebugMode is true.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public static void LogDebugExcept(string msg) => CurrentLogger.Instance.DebugExcept(msg);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogDebugExcept(string msg, Stopwatch stopwatch = null) => CurrentLogger.Instance.DebugExcept(msg, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'DebugExcept'. The Exception will be thrown if Logger.LoggerDebugMode is true.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public void DebugExcept(string msg)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void DebugExcept(string msg, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
                 return;
 
-            Log(ELoggingLevel.DebugExcept, msg);
+            Log(ELoggingLevel.DebugExcept, msg, stopwatch);
 
             if (LoggerDebugMode)
                 throw new Exception(msg);
@@ -231,18 +269,20 @@ namespace LamestWebserver.Core
         /// Logging a message on logging level 'Except'. The Exception will be thrown.
         /// </summary>
         /// <param name="exception">The exception, of which the message will be logged.</param>
-        public static void LogExcept(Exception exception) => CurrentLogger.Instance.Except(exception);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogExcept(Exception exception, Stopwatch stopwatch = null) => CurrentLogger.Instance.Except(exception, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'Except'. The Exception will be thrown.
         /// </summary>
         /// <param name="exception">The exception, of which the message will be logged.</param>
-        public void Except(Exception exception)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void Except(Exception exception, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.Except)
                 return;
 
-            Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + exception.Message);
+            Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + exception.Message, stopwatch);
 
             throw exception;
         }
@@ -252,19 +292,21 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <param name="message">The message to log.</param>
         /// <param name="exception">The exception to throw.</param>
-        public static void LogExcept(string message, Exception exception) => CurrentLogger.Instance.Except(message, exception);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogExcept(string message, Exception exception, Stopwatch stopwatch = null) => CurrentLogger.Instance.Except(message, exception, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'Except'. The Exception will be thrown.
         /// </summary>
         /// <param name="message">The message to log.</param>
         /// <param name="exception">The exception to throw.</param>
-        public void Except(string message, Exception exception)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void Except(string message, Exception exception, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.Except)
                 return;
 
-            Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + message);
+            Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + message, stopwatch);
 
             throw exception;
         }
@@ -273,18 +315,20 @@ namespace LamestWebserver.Core
         /// Logging a message on logging level 'Except'.  An exception will be thrown.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public static void LogExcept(string msg) => CurrentLogger.Instance.Except(msg);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogExcept(string msg, Stopwatch stopwatch = null) => CurrentLogger.Instance.Except(msg, stopwatch);
 
         /// <summary>
         /// Logging a message on logging level 'Except'. The Exception will be thrown.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public void Except(string msg)
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void Except(string msg, Stopwatch stopwatch = null)
         {
             if (MinimumLoggingLevel > ELoggingLevel.Except)
                 return;
 
-            Log(ELoggingLevel.Except, msg);
+            Log(ELoggingLevel.Except, msg, stopwatch);
 
             throw new Exception(msg);
         }
@@ -293,7 +337,49 @@ namespace LamestWebserver.Core
         /// Logging a message on logging level 'CrashAndBurn'. The logger will be closed, a dump file will be written and the application will be exited with error code -1.
         /// </summary>
         /// <param name="msg">The message to log.</param>
-        public static void LogCrashAndBurn(string msg) => CurrentLogger.Instance.CrashAndBurn(msg);
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public static void LogCrashAndBurn(string msg, Stopwatch stopwatch = null) => CurrentLogger.Instance.CrashAndBurn(msg, stopwatch);
+
+        /// <summary>
+        /// Logging a message on logging level 'CrashAndBurn'. The logger will be closed, a dump file will be written and the application will be exited with error code -1.
+        /// </summary>
+        /// <param name="msg">The message to log.</param>
+        /// <param name="stopwatch">A stopwatch carrying the elapsed time.</param>
+        public void CrashAndBurn(string msg, Stopwatch stopwatch = null)
+        {
+            if (MinimumLoggingLevel > ELoggingLevel.CrashAndBurn)
+                return;
+
+            Log(ELoggingLevel.CrashAndBurn, msg, stopwatch);
+
+            try
+            {
+                Close();
+            }
+            catch { }
+
+            try
+            {
+                MiniDump.Write();
+            }
+            catch { }
+
+            Environment.Exit(-1);
+        }
+
+        private void Log(ELoggingLevel loggingLevel, string msg, Stopwatch stopwatch = null)
+        {
+            if (_currentOutputSource != EOutputSource.None && _multiStreamWriter != null && !_multiStreamWriter.IsDisposed)
+            {
+                using (_loggerWriteLock.LockWrite())
+                {
+                    string stopwatchString = stopwatch != null ? $"{(stopwatch.ElapsedTicks / (double)TimeSpan.TicksPerMillisecond):0.000} ms" : "";
+
+                    _multiStreamWriter.WriteLine($"{DateTime.Now} [{loggingLevel.ToString()}] {(stopwatch != null ? "(" + stopwatchString + ") " : "")}\\\\\\\\ {msg}");
+                    _lastMessages.Push(new Tuple<DateTime, ELoggingLevel, string, string>(DateTime.Now, loggingLevel, msg, stopwatchString));
+                }
+            }
+        }
 
         /// <summary>
         /// Add some Custom Streams.
@@ -315,43 +401,6 @@ namespace LamestWebserver.Core
         /// Call RestartStream to let the changes take action.
         /// </summary>
         public void ClearCustomStreams() => _streams.Clear();
-
-        /// <summary>
-        /// Logging a message on logging level 'CrashAndBurn'. The logger will be closed, a dump file will be written and the application will be exited with error code -1.
-        /// </summary>
-        /// <param name="msg">The message to log.</param>
-        public void CrashAndBurn(string msg)
-        {
-            if (MinimumLoggingLevel > ELoggingLevel.CrashAndBurn)
-                return;
-
-            Log(ELoggingLevel.CrashAndBurn, msg);
-
-            try
-            {
-                Close();
-            }
-            catch { }
-
-            try
-            {
-                MiniDump.Write();
-            }
-            catch { }
-
-            Environment.Exit(-1);
-        }
-
-        private void Log(ELoggingLevel loggingLevel, string msg)
-        {
-            if (_currentOutputSource != EOutputSource.None && _multiStreamWriter != null && !_multiStreamWriter.IsDisposed)
-            {
-                using (_loggerWriteLock.LockWrite())
-                {
-                    _multiStreamWriter.WriteLine($"[{loggingLevel.ToString()} \\\\\\\\ {msg}]");
-                }
-            }
-        }
 
         /// <summary>
         /// Closes and Flushes the Logger stream.
@@ -380,6 +429,15 @@ namespace LamestWebserver.Core
             }
         }
 
+
+        /// <summary>
+        /// Flushes all available Streams.
+        /// </summary>
+        public void Flush()
+        {
+            _multiStreamWriter.Flush();
+        }
+
         /// <summary>
         /// Atomic operation to close and open the Logger save by a mutex.
         /// </summary>
@@ -387,8 +445,8 @@ namespace LamestWebserver.Core
         {
             using (_loggerWriteLock.LockWrite())
             {
-                Close();
-                Open();
+                _multiStreamWriter.DisposeExcept(_streams);
+                CreateMultiStreamWriter();
             }
         }
 
@@ -406,12 +464,24 @@ namespace LamestWebserver.Core
             _multiStreamWriter = new MultiStreamWriter(streamsToApply);
         }
 
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => _debugResponseNode;
+
+        private HElement GetDebugResponse(SessionData sessionData)
+        {
+            if (_lastMessages.Count == 0)
+                return new HItalic("There have not been any logged messages yet.");
+            else
+                return new HTable((from e in _lastMessages select e.ToEnumerable())) { TableHeader = new string[] { "Timestamp", "Logging Level", "Message", "Elapsed Time" } };
+        }
+
         /// <summary>
         /// Creates a new Logger instance.
         /// </summary>
         public Logger()
         {
             Open();
+            _debugResponseNode = new DebugContainerResponseNode(nameof(Logger), null, GetDebugResponse);
         }
 
         /// <summary>

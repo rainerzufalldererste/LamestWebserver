@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +16,7 @@ namespace lwshostsvc
         }
 
         /// <inheritdoc />
-        protected override HElement GetContent(SessionData sessionData, string subUrl)
+        protected override HElement GetResponse(SessionData sessionData, string subUrl)
         {
             PageBuilder pageBuilder = new PageBuilder("LamestWebserver Host Service");
             HContainer container = new HContainer() {Class = "main"};

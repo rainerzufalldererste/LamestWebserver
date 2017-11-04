@@ -1,9 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LamestWebserver", "LamestWebserver\LamestWebserver.csproj", "{2E0E1F99-3DE7-4636-9E18-93E5CB837965}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F761DE99-DE01-4F02-B299-F10E3AD5EAAD} = {F761DE99-DE01-4F02-B299-F10E3AD5EAAD}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demos", "Demos\Demos.csproj", "{5F05A28F-82E7-454B-B974-2A45251B504E}"
 EndProject
@@ -17,6 +20,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{2225FF
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dependencies", "dependencies", "{A0F66516-FF08-4FF9-9987-8DE84DE6A91D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sha3", "sha3", "{691F3D99-8062-4863-B590-14A74E8A5F30}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SHA3", "dependencies\sha3\SHA3.csproj", "{34D852DC-B308-409F-8243-4B645B0CBE80}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ILMerge", "ILMerge", "{CB41F305-89B4-4FA6-B24D-518A77519737}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Compiler", "dependencies\ILMerge\System.Compiler\System.Compiler.csproj", "{D7E16B38-3893-4EEF-847F-A3BE807E9546}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILMerge", "dependencies\ILMerge\ILMerge\ILMerge.csproj", "{F761DE99-DE01-4F02-B299-F10E3AD5EAAD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,8 +70,36 @@ Global
 		{9172F3B2-58AF-4A5A-8678-E902A2A19FF7}.NETFX_CORE|Any CPU.Build.0 = Release|Any CPU
 		{9172F3B2-58AF-4A5A-8678-E902A2A19FF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9172F3B2-58AF-4A5A-8678-E902A2A19FF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34D852DC-B308-409F-8243-4B645B0CBE80}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{34D852DC-B308-409F-8243-4B645B0CBE80}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{34D852DC-B308-409F-8243-4B645B0CBE80}.NETFX_CORE|Any CPU.ActiveCfg = Release|Any CPU
+		{34D852DC-B308-409F-8243-4B645B0CBE80}.NETFX_CORE|Any CPU.Build.0 = Release|Any CPU
+		{34D852DC-B308-409F-8243-4B645B0CBE80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34D852DC-B308-409F-8243-4B645B0CBE80}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7E16B38-3893-4EEF-847F-A3BE807E9546}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{D7E16B38-3893-4EEF-847F-A3BE807E9546}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{D7E16B38-3893-4EEF-847F-A3BE807E9546}.NETFX_CORE|Any CPU.ActiveCfg = Release|Any CPU
+		{D7E16B38-3893-4EEF-847F-A3BE807E9546}.NETFX_CORE|Any CPU.Build.0 = Release|Any CPU
+		{D7E16B38-3893-4EEF-847F-A3BE807E9546}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7E16B38-3893-4EEF-847F-A3BE807E9546}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F761DE99-DE01-4F02-B299-F10E3AD5EAAD}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{F761DE99-DE01-4F02-B299-F10E3AD5EAAD}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{F761DE99-DE01-4F02-B299-F10E3AD5EAAD}.NETFX_CORE|Any CPU.ActiveCfg = Release|Any CPU
+		{F761DE99-DE01-4F02-B299-F10E3AD5EAAD}.NETFX_CORE|Any CPU.Build.0 = Release|Any CPU
+		{F761DE99-DE01-4F02-B299-F10E3AD5EAAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F761DE99-DE01-4F02-B299-F10E3AD5EAAD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{691F3D99-8062-4863-B590-14A74E8A5F30} = {A0F66516-FF08-4FF9-9987-8DE84DE6A91D}
+		{34D852DC-B308-409F-8243-4B645B0CBE80} = {691F3D99-8062-4863-B590-14A74E8A5F30}
+		{CB41F305-89B4-4FA6-B24D-518A77519737} = {A0F66516-FF08-4FF9-9987-8DE84DE6A91D}
+		{D7E16B38-3893-4EEF-847F-A3BE807E9546} = {CB41F305-89B4-4FA6-B24D-518A77519737}
+		{F761DE99-DE01-4F02-B299-F10E3AD5EAAD} = {CB41F305-89B4-4FA6-B24D-518A77519737}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9A6DD9A7-68F2-4B25-B445-02CC06EF892E}
 	EndGlobalSection
 EndGlobal
