@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -312,6 +312,15 @@ namespace LamestWebserver.JScriptBuilder
                 default:
                     return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".value, true);xmlhttp.send();")).DefineAndCall();
             }
+        }
+
+        /// <summary>
+        /// Retrieves a JSValue containing the "value" property of this input element.
+        /// </summary>
+        /// <returns>The value of this element.</returns>
+        public virtual JSValue GetInnerValue()
+        {
+            return new JSValue(GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".value");
         }
 
         /// <summary>

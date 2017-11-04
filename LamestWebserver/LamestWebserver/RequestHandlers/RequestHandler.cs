@@ -1516,9 +1516,18 @@ namespace LamestWebserver.RequestHandlers
             if (bestUrlMatch.StartsWith("/"))
                 bestUrlMatch = bestUrlMatch.Remove(0);
 
-            while (true)
+            using (ReaderWriterLock.LockRead())
+                if(bestUrlMatch.Last() == '/')
+                    response = DirectoryResponses[bestUrlMatch];
+                else
+                    response = DirectoryResponses[bestUrlMatch + '/'];
+
+            if (response != null || bestUrlMatch.Length == 0)
+                return response;
+
+                while (true)
             {
-                for (int i = bestUrlMatch.Length - 2; i >= 0; i--)
+                for (int i = bestUrlMatch.Length - 1; i >= 0; i--)
                 {
                     if (bestUrlMatch[i] == '/')
                     {

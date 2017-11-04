@@ -58,6 +58,7 @@
     <Compile Include="Tut01.cs" />
     <Compile Include="Tut02.cs" />
     <Compile Include="Tut03.cs" />
+    <Compile Include="Tut04.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

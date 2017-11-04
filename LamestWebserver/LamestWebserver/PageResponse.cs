@@ -420,8 +420,7 @@ namespace LamestWebserver
 
             if (_minimumResponseTime > timeSpan)
                 _minimumResponseTime = timeSpan;
-
-
+            
             if (response != null && response.BinaryData != null)
             {
                 _averageResponseSize = (int)System.Math.Round((double)_averageResponseSize * (_totalPageViews - 1) + (double)response.BinaryData.Length) / _totalPageViews;
@@ -432,44 +431,31 @@ namespace LamestWebserver
                 if (_minimumResponseSize > response.BinaryData.Length)
                     _minimumResponseSize = response.BinaryData.Length;
             }
-            else
-            {
-
-            }
         }
     }
 
     /// <summary>
     /// A direct response as HElement to the client directory / directory item request
     /// </summary>
-    public abstract class DirectoryElementResponse : ResponseCoreImplementation
+    public abstract class DirectoryElementResponse : DirectoryResponse
     {
         /// <summary>
         /// Constructs a new Directory Element Response object
         /// </summary>
         /// <param name="URL">the URLL of the directory</param>
         /// <param name="register">shall this directory be automatically registered at the server?</param>
-        public DirectoryElementResponse(string URL, bool register = true) : base(URL)
-        {
-            if (register)
-                Master.AddDirectoryPageToServer(this.URL, (sessionData, subURL) => GetContent(sessionData, subURL)*sessionData);
-        }
+        public DirectoryElementResponse(string URL, bool register = true) : base(URL, register) { }
+
+        /// <inheritdoc />
+        protected override string GetContent(SessionData sessionData, string subUrl) => GetElement(sessionData, subUrl) * sessionData;
 
         /// <summary>
         /// Retrieves the content of this Directory as HElement to the response
         /// </summary>
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="subUrl">the requested Sub-URL of the request</param>
-        /// <returns></returns>
-        protected abstract HElement GetContent(SessionData sessionData, string subUrl);
-
-        /// <summary>
-        /// Removes this DirectoryElementResponse from the Server.
-        /// </summary>
-        protected void RemoveFromServer()
-        {
-            Master.RemoveDirectoryPageFromServer(URL);
-        }
+        /// <returns>A HElement as response.</returns>
+        protected abstract HElement GetElement(SessionData sessionData, string subUrl);
     }
 
     /// <summary>
