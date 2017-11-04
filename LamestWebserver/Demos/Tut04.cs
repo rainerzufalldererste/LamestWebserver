@@ -19,7 +19,7 @@ namespace Demos
         /// <param name="sessionData">The current SessionData.</param>
         /// <param name="subUrl">The suburl that this page has been called with.</param>
         /// <returns>The response page as HElement.</returns>
-        protected override HElement GetElement(SessionData sessionData, string subUrl)
+        protected override HElement GetResponse(SessionData sessionData, string subUrl)
         {
             return MainPage.GetPage(GetPageContents(sessionData, subUrl), nameof(Tut04) + ".cs");
         }

@@ -447,7 +447,7 @@ namespace LamestWebserver
         public DirectoryElementResponse(string URL, bool register = true) : base(URL, register) { }
 
         /// <inheritdoc />
-        protected override string GetContent(SessionData sessionData, string subUrl) => GetElement(sessionData, subUrl) * sessionData;
+        protected override string GetContent(SessionData sessionData, string subUrl) => GetResponse(sessionData, subUrl) * sessionData;
 
         /// <summary>
         /// Retrieves the content of this Directory as HElement to the response
@@ -455,7 +455,7 @@ namespace LamestWebserver
         /// <param name="sessionData">the current SessionData</param>
         /// <param name="subUrl">the requested Sub-URL of the request</param>
         /// <returns>A HElement as response.</returns>
-        protected abstract HElement GetElement(SessionData sessionData, string subUrl);
+        protected abstract HElement GetResponse(SessionData sessionData, string subUrl);
     }
 
     /// <summary>
