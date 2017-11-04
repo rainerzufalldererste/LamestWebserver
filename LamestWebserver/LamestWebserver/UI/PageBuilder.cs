@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LamestWebserver.JScriptBuilder;
@@ -400,8 +400,20 @@ namespace LamestWebserver.UI
         {
             string ret = "<hr ";
 
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
             if (!string.IsNullOrWhiteSpace(Style))
                 ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
 
             return ret + ">";
         }
@@ -472,6 +484,18 @@ namespace LamestWebserver.UI
         public HMultipleElements(params HElement[] elements)
         {
             Elements = elements.ToList();
+        }
+
+        /// <summary>
+        /// Constructs a new HMultipleElements containing the given elements
+        /// </summary>
+        /// <param name="elements">the elements to add</param>
+        public HMultipleElements(IEnumerable<HElement> elements)
+        {
+            if (elements is List<HElement>)
+                Elements = (List<HElement>)elements;
+            else
+                Elements = elements.ToList();
         }
 
         /// <inheritdoc />
@@ -796,7 +820,12 @@ namespace LamestWebserver.UI
             if (!string.IsNullOrWhiteSpace(DescriptionTags))
                 ret += DescriptionTags;
 
-            ret += ">" + System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
+            ret += ">";
+
+            if (Text != null)
+                ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
+                    
+            ret += "</p>";
 
             return ret;
         }
@@ -827,7 +856,7 @@ namespace LamestWebserver.UI
                 if (text == null)
                     Elements.Add("null");
                 else if(text is string)
-                    Elements.Add(new HText((string)text));
+                    Elements.Add(new HString((string)text));
                 else if(text is HElement)
                     Elements.Add((HElement)text);
                 else
@@ -1557,6 +1586,20 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Adds all listed objects into the container.
         /// </summary>
+        /// <param name="elements">the elements to add</param>
+        public HContainer(IEnumerable<HElement> elements)
+        {
+            Tag = "div";
+
+            if (elements is List<HElement>)
+                Elements = (List<HElement>)elements;
+            else
+                Elements = elements.ToList();
+        }
+
+        /// <summary>
+        /// Adds all listed objects into the container.
+        /// </summary>
         /// <param name="tag">the html tag of this element.</param>
         /// <param name="elements">the elements to add</param>
         protected HContainer(string tag, params HElement[] elements) : this(tag)
@@ -2276,7 +2319,7 @@ namespace LamestWebserver.UI
         /// <inheritdoc />
         protected override string GetTagHead(string additionalParams = null)
         {
-            if (SetListStyleToElements)
+            if (SetListStyleToElements && Elements != null)
                 foreach (HElement element in Elements)
                     if (!element.Style.StartsWith("display: list-item;"))
                         element.Style = "display: list-item;" + element.Style;
@@ -2285,11 +2328,27 @@ namespace LamestWebserver.UI
         }
 
         /// <summary>
+        /// Returns true if there are no elements in this List.
+        /// </summary>
+        /// <returns>Returns true if there are no elements in this List.</returns>
+        public bool IsEmpty() => (Elements != null && Elements.Count == 0);
+
+        /// <summary>
         /// Constructs a new List Element
         /// </summary>
         /// <param name="listType">the type of the list</param>
         /// <param name="elements">the contents of the list</param>
         public HList(EListType listType, params HElement[] elements) : this(listType)
+        {
+            this.Elements = elements.ToList();
+        }
+
+        /// <summary>
+        /// Constructs a new List Element
+        /// </summary>
+        /// <param name="listType">the type of the list</param>
+        /// <param name="elements">the contents of the list</param>
+        public HList(EListType listType, IEnumerable<HElement> elements) : this(listType)
         {
             this.Elements = elements.ToList();
         }
@@ -2315,8 +2374,12 @@ namespace LamestWebserver.UI
     /// </summary>
     public class HTable : HSelectivelyCacheableElement
     {
-        private List<List<HElement>> elements;
-        private IEnumerable<object>[] data;
+        private IEnumerable<IEnumerable<object>> _elements;
+
+        /// <summary>
+        /// The table header displayed on top of the table rows.
+        /// </summary>
+        public IEnumerable<object> TableHeader = null;
 
         /// <summary>
         /// Additional attributes to be added to this node
@@ -2327,9 +2390,12 @@ namespace LamestWebserver.UI
         /// Constructs a new Table containing the given elements
         /// </summary>
         /// <param name="elements">the contained elements</param>
-        public HTable(List<List<HElement>> elements)
+        public HTable(IEnumerable<IEnumerable<object>> elements)
         {
-            this.elements = elements;
+            if (elements == null || elements.Contains(null))
+                throw new ArgumentNullException(nameof(elements));
+
+            this._elements = elements;
         }
 
         /// <summary>
@@ -2338,7 +2404,32 @@ namespace LamestWebserver.UI
         /// <param name="data">the contents of this table</param>
         public HTable(params IEnumerable<object>[] data)
         {
-            this.data = data;
+            if (data == null || data.Contains(null))
+                throw new ArgumentNullException(nameof(_elements));
+
+            if (data.Length == 1 && data[0] is IEnumerable<object>)
+            {
+                if (data[0] is IEnumerable<IEnumerable<object>>)
+                {
+                    _elements = (IEnumerable<IEnumerable<object>>)data[0];
+
+                    return;
+                }
+                else
+                {
+                    foreach (var element in (IEnumerable<object>)data[0])
+                        if (!(element is IEnumerable<object>))
+                            goto NOT_ALREADY_LIST_OF_LISTS;
+
+                    _elements = (from entry in data[0] select ((IEnumerable<object>)entry));
+
+                    return;
+                }
+            }
+
+            NOT_ALREADY_LIST_OF_LISTS:
+
+            _elements = data;
         }
 
         /// <summary>
@@ -2370,29 +2461,31 @@ namespace LamestWebserver.UI
 
             ret += ">";
 
-            if (elements != null)
+            if(TableHeader != null)
             {
-                foreach (ICollection<HElement> outer in elements)
-                {
-                    ret += "<tr>";
+                ret += "<tr>";
 
-                    foreach (HElement element in outer)
-                    {
-                        ret += "<td>" + element.GetContent(sessionData) + "</td>";
-                    }
+                foreach (object header in TableHeader)
+                    if(header is HElement)
+                        ret += "<th>" + ((HElement)header).GetContent(sessionData) + "</th>";
+                    else
+                        ret += "<th>" + header?.ToString() + "</th>";
 
-                    ret += "</tr>";
-                }
+                ret += "</tr>";
             }
-            else
+
+            if (_elements != null)
             {
-                foreach (IEnumerable<object> outer in data)
+                foreach (IEnumerable<object> outer in _elements)
                 {
                     ret += "<tr>";
 
-                    foreach (object obj in outer)
+                    foreach (object element in outer)
                     {
-                        ret += "<td>" + obj + "</td>";
+                        if(element is HElement)
+                            ret += "<td>" + ((HElement)element).GetContent(sessionData) + "</td>";
+                        else
+                            ret += "<td>" + element?.ToString() + "</td>";
                     }
 
                     ret += "</tr>";

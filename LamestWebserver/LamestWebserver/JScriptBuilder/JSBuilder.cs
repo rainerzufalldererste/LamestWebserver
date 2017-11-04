@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -177,12 +177,12 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of this Function
         /// </summary>
-        public override string content => _content;
+        public override string Content => _content;
 
         /// <summary>
         /// The name of this Function as JSValue
         /// </summary>
-        public IJSValue FunctionPointer => new JSValue(content);
+        public IJSValue FunctionPointer => new JSValue(Content);
 
         /// <summary>
         /// Constructs a new JSFunction
@@ -266,14 +266,14 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            string ret = "function " + content + " ( ";
+            string ret = "function " + Content + " ( ";
 
             for (int i = 0; i < parameters.Count; i++)
             {
                 if (i > 0)
                     ret += ", ";
 
-                ret += parameters[i].content;
+                ret += parameters[i].Content;
             }
 
             ret += ") { ";
@@ -293,7 +293,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public JSFunctionCall callFunction(params IJSValue[] values)
         {
-            return new JSFunctionCall(this.content, values);
+            return new JSFunctionCall(this.Content, values);
         }
 
         /// <summary>
@@ -332,7 +332,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of the given function.
         /// </summary>
-        public override string content => _function.content;
+        public override string Content => _function.Content;
 
         /// <summary>
         /// Sets the result of this FunctionCall to a Value
@@ -375,7 +375,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of the Value
         /// </summary>
-        public abstract string content { get; }
+        public abstract string Content { get; }
 
         /// <summary>
         /// A way to quickly set this Value.
@@ -539,7 +539,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// Returns the value of this Operation
         /// </summary>
-        public override string content => GetJsCode(SessionData.CurrentSession);
+        public override string Content => GetJsCode(SessionData.CurrentSession);
 
         /// <summary>
         /// Constructs a new Operation
@@ -700,7 +700,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string content => "\"" + _content + "\"";
+        public override string Content => "\"" + _content + "\"";
 
         /// <inheritdoc />
         public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
@@ -763,7 +763,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// Retrieves the Value
         /// </summary>
-        public override string content => _content;
+        public override string Content => _content;
 
         /// <summary>
         /// Constructs a new JSValue from an Object. ToString will be Called.
@@ -814,7 +814,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return content + (context == CallingContext.Default ? ";" : " ");
+            return Content + (context == CallingContext.Default ? ";" : " ");
         }
 
         /// <inheritdoc />
@@ -842,7 +842,12 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of this Variable
         /// </summary>
-        public override string content => _content;
+        public override string Content => _content;
+
+        /// <summary>
+        /// Retrieves the name of the JSVariable as JSValue.
+        /// </summary>
+        public JSValue Name => new JSValue(_content);
 
         /// <summary>
         /// Constructs a new JSVariable
@@ -858,25 +863,25 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override IJSValue Set(IJSValue value)
         {
-            return new JSOperator(JSOperator.JSOperatorType.Set, new JSValue(content), value);
+            return new JSOperator(JSOperator.JSOperatorType.Set, new JSValue(Content), value);
         }
 
         /// <inheritdoc />
         public override IJSValue IsEqualTo(IJSValue value)
         {
-            return new JSOperator(JSOperator.JSOperatorType.Equals, new JSValue(content), value);
+            return new JSOperator(JSOperator.JSOperatorType.Equals, new JSValue(Content), value);
         }
 
         /// <inheritdoc />
         public override IJSValue IsNotEqualTo(IJSValue value)
         {
-            return new JSOperator(JSOperator.JSOperatorType.NotEquals, new JSValue(content), value);
+            return new JSOperator(JSOperator.JSOperatorType.NotEquals, new JSValue(Content), value);
         }
 
         /// <inheritdoc />
         public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "var " + content + (context == CallingContext.Default ? ";" : " ");
+            return "var " + Content + (context == CallingContext.Default ? ";" : " ");
         }
     }
 
@@ -891,7 +896,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of the Method to call
         /// </summary>
-        public override string content => _methodName;
+        public override string Content => _methodName;
 
         /// <summary>
         /// Constructs a new JavaScript functionCall
@@ -986,7 +991,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public static IJSValue EncodeURIComponent(IJSValue value)
         {
-            return new JSValue("encodeURIComponent(" + value.content + ")");
+            return new JSValue("encodeURIComponent(" + value.Content + ")");
         }
 
         /// <summary>
@@ -1057,12 +1062,12 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The Name of this Element or the Function retrieving it
         /// </summary>
-        public override string content => _content;
+        public override string Content => _content;
 
         /// <inheritdoc />
         public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return content + (context == CallingContext.Default ? ";" : " ");
+            return Content + (context == CallingContext.Default ? ";" : " ");
         }
         
         /// <inheritdoc />
@@ -1074,67 +1079,67 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The 'innerHTML' attribute of this Element
         /// </summary>
-        public JSValue InnerHTML => new JSValue(content + ".innerHTML");
+        public JSValue InnerHTML => new JSValue(Content + ".innerHTML");
 
         /// <summary>
         /// The 'innerText' attribute of this Element
         /// </summary>
-        public JSValue InnerText => new JSValue(content + ".innerText");
+        public JSValue InnerText => new JSValue(Content + ".innerText");
 
         /// <summary>
         /// The 'value' attribute of this Element
         /// </summary>
-        public JSValue Value => new JSValue(content + ".value");
+        public JSValue Value => new JSValue(Content + ".value");
 
         /// <summary>
         /// The 'name' attribute of this Element
         /// </summary>
-        public JSValue Name => new JSValue(content + ".name");
+        public JSValue Name => new JSValue(Content + ".name");
 
         /// <summary>
         /// The 'id' attribute of this Element
         /// </summary>
-        public JSValue ID => new JSValue(content + ".id");
+        public JSValue ID => new JSValue(Content + ".id");
 
         /// <summary>
         /// The 'checked' attribute of this Element
         /// </summary>
-        public JSValue Checked => new JSValue(content + ".checked");
+        public JSValue Checked => new JSValue(Content + ".checked");
 
         /// <summary>
         /// The 'className' attribute of this Element
         /// </summary>
-        public JSValue ClassName => new JSValue(content + ".className");
+        public JSValue ClassName => new JSValue(Content + ".className");
 
         /// <summary>
         /// The 'outerHTML' attribute of this Element
         /// </summary>
-        public JSValue OuterHTML => new JSValue(content + ".outerHTML");
+        public JSValue OuterHTML => new JSValue(Content + ".outerHTML");
 
         /// <summary>
         /// The 'outerText' attribute of this Element
         /// </summary>
-        public JSValue OuterText => new JSValue(content + ".outerText");
+        public JSValue OuterText => new JSValue(Content + ".outerText");
 
         /// <summary>
         /// The 'selectedOptions[0].value' attribute of this Element
         /// </summary>
-        public JSValue FirstSelected => new JSValue(content + ".selectedOptions[0].value");
+        public JSValue FirstSelected => new JSValue(Content + ".selectedOptions[0].value");
 
         /// <summary>
         /// Displays (display = 'block') this Element
         /// </summary>
-        public IJSPiece Show => JSFunctionCall.DisplayElementByID(ID.content);
+        public IJSPiece Show => JSFunctionCall.DisplayElementByID(ID.Content);
 
         /// <summary>
         /// Hides (display = 'none') this Element
         /// </summary>
-        public IJSPiece Hide => JSFunctionCall.HideElementByID(ID.content);
+        public IJSPiece Hide => JSFunctionCall.HideElementByID(ID.Content);
 
         /// <summary>
         /// Removes this Element from the page
         /// </summary>
-        public IJSPiece Delete => JSFunctionCall.DisplayElementByID(ID.content);
+        public IJSPiece Delete => JSFunctionCall.DisplayElementByID(ID.Content);
     }
 
     /// <summary>
@@ -1332,7 +1337,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// Retrieves the whole Inline-If-Statement
         /// </summary>
-        public override string content => GetJsCode(SessionData.CurrentSession, CallingContext.Inner);
+        public override string Content => GetJsCode(SessionData.CurrentSession, CallingContext.Inner);
 
         /// <inheritdoc />
         public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
@@ -1428,8 +1433,8 @@ namespace LamestWebserver.JScriptBuilder
         {
             _variable = new JSVariable();
             _startValue = new JSValue(0);
-            _booleanExpression = (new JSValue(_variable.content) < endValue);
-            _stepOperation = new JSValue(_variable.content).Set(new JSValue(_variable.content) + new JSValue(1));
+            _booleanExpression = (new JSValue(_variable.Content) < endValue);
+            _stepOperation = new JSValue(_variable.Content).Set(new JSValue(_variable.Content) + new JSValue(1));
             _pieces = code;
         }
 
@@ -1443,8 +1448,8 @@ namespace LamestWebserver.JScriptBuilder
         {
             _variable = variable;
             _startValue = new JSValue(0);
-            _booleanExpression = (new JSValue(variable.content) < endValue);
-            _stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            _booleanExpression = (new JSValue(variable.Content) < endValue);
+            _stepOperation = new JSValue(variable.Content).Set(new JSValue(variable.Content) + new JSValue(1));
             _pieces = code;
         }
         
@@ -1459,8 +1464,8 @@ namespace LamestWebserver.JScriptBuilder
         {
             _variable = variable;
             _startValue = startValue;
-            _booleanExpression = (new JSValue(variable.content) < endValue);
-            _stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            _booleanExpression = (new JSValue(variable.Content) < endValue);
+            _stepOperation = new JSValue(variable.Content).Set(new JSValue(variable.Content) + new JSValue(1));
             _pieces = code;
         }
 
@@ -1477,7 +1482,7 @@ namespace LamestWebserver.JScriptBuilder
         {
             _variable = variable;
             _startValue = startValue;
-            _booleanExpression = new JSOperator(_operator, new JSValue(variable.content), endValue);
+            _booleanExpression = new JSOperator(_operator, new JSValue(variable.Content), endValue);
             _stepOperation = stepOperation;
             _pieces = code;
         }

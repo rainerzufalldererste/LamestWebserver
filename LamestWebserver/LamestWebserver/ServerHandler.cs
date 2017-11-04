@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -76,8 +76,7 @@ namespace LamestWebserver
                                 {
                                     for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                     {
-                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Threads: " +
-                                                          WebServer.RunningServers[i].GetThreadCount());
+                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Worker Threads: " + WebServer.RunningServers[i].WorkerThreads.Instance.WorkerCount);
                                     }
                                 }
                                 Console.WriteLine("Done!");

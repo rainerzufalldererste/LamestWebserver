@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,7 +18,7 @@ namespace Demos
         /// <summary>
         /// Register this Page to be the default response of the server - located at the "/" URL
         /// You don't need to call this constructor anywhere if you are using Master.DiscoverPages() or the LamestWebserver Host Service.
-        /// If you want to let your constructor be called automatically, please make sure, that it needs no parameters.
+        /// If you want to let your constructor be called automatically, please make sure, that it needs no parameters to be called - like this one.
         /// </summary>
         public MainPage() : base("/")
         {
@@ -68,7 +68,8 @@ namespace Demos
         }
 
         /// <summary>
-        /// Let's just create a prototype of this layout, so we can use it more easily
+        /// Let's just create a prototype of this layout, so we can use it more easily.
+        /// Don't worry too much about the `HSelectivelyCacheableElement`. You'll learn more about that in the Caching tutorial.
         /// </summary>
         /// <param name="elements">the elements displayed on the page</param>
         /// <param name="filename">the filename to display</param>
@@ -76,7 +77,7 @@ namespace Demos
         internal static HSelectivelyCacheableElement GetPage(IEnumerable<HElement> elements, string filename)
         {
             // Create the page
-            var page = new PageBuilder("LamestWebserver Reference") { StylesheetLinks = {"style.css"} };
+            var page = new PageBuilder("LamestWebserver Reference") { StylesheetLinks = {"/style.css"} };
 
             // Add the main-Container with all the elements and the footer
             page.AddElements(
@@ -93,7 +94,7 @@ namespace Demos
                     Class = "footer",
                     Elements =
                     {
-                        new HImage("lwsfooter.png"),
+                        new HImage("/lwsfooter.png"),
                         new HText(filename + "\nLamestWebserver Reference v" + typeof(MainPage).Assembly.GetName().Version)
                     },
 

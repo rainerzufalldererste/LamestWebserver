@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -224,6 +224,12 @@ namespace LamestWebserver.UI.CachedByDefault
         {
             CachingType = ECachingType.Cacheable;
         }
+
+        /// <inheritdoc />
+        public CContainer(IEnumerable<HElement> elements) : base(elements)
+        {
+            CachingType = ECachingType.Cacheable;
+        }
     }
 
     /// <inheritdoc />
@@ -324,13 +330,19 @@ namespace LamestWebserver.UI.CachedByDefault
         {
             CachingType = ECachingType.Cacheable;
         }
+
+        /// <inheritdoc />
+        public CList(EListType listType, IEnumerable<HElement> elements) : base(listType, elements)
+        {
+            CachingType = ECachingType.Cacheable;
+        }
     }
 
     /// <inheritdoc />
     public class CTable : HTable
     {
         /// <inheritdoc />
-        public CTable(List<List<HElement>> elements) : base(elements)
+        public CTable(IEnumerable<IEnumerable<object>> elements) : base(elements)
         {
             CachingType = ECachingType.Cacheable;
         }

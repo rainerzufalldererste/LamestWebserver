@@ -39,6 +39,11 @@ div.footer {
     color: #fff;
 }
 
+div.fit {
+    margin: 2em auto 2em auto;
+    max-width: 1100px;
+}
+
 .footer p {
     font-family: Consolas, "Courier New", monospace;
     font-size: 11pt;
@@ -169,4 +174,42 @@ ul {
     margin-right: 3%;
     list-style: url(bullet.png);
     padding-left: 10%;
+}
+
+input[type="text"] {
+    background: #fafafa;
+    border: 1pt #cecece solid;
+    padding: 2pt 5pt;
+    margin: 5pt;
+    color: #737373;
+    font-size: 12pt;
+}
+
+input[type="text"]:hover {
+    background: #fff;
+}
+
+input[type="text"]:active, input[type="text"]:focus {
+    outline: none;
+    color: #232323;
+}
+
+button {
+    background: #fb905e;
+    border: 1.5pt #e07f50 solid;
+    padding: 3pt 5pt;
+    color: #fff;
+    font-size: 12pt;
+    font-weight: 700;
+}
+
+button:hover {
+    background: #fbb55e;
+    border-color: #e0a050;
+}
+
+button:active, button:focus {
+    outline: none;
+    background: #fbcb5e;
+    border-color: #e0b758;
 }

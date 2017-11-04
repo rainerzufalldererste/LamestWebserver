@@ -33,7 +33,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>0</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Release\lws.XML</DocumentationFile>
   </PropertyGroup>
@@ -52,9 +52,11 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="lwslibs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>lib\lwslibs.dll</HintPath>
+    <Reference Include="Fleck, Version=0.14.0.59, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Fleck.0.14.0.59\lib\net40\Fleck.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -75,8 +77,8 @@
     <Reference Include="System.Security.Cryptography.X509Certificates, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Security.Cryptography.X509Certificates.4.3.0\lib\net46\System.Security.Cryptography.X509Certificates.dll</HintPath>
     </Reference>
-    <Reference Include="System.ValueTuple, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.3.1\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
@@ -86,12 +88,17 @@
   <ItemGroup>
     <Compile Include="Caching\ECachingType.cs" />
     <Compile Include="Caching\ResponseCache.cs" />
+    <Compile Include="Collections\FixedSizeQueue.cs" />
+    <Compile Include="Collections\WalkableQueue.cs" />
+    <Compile Include="Collections\URL.cs" />
     <Compile Include="Core\ClampedValue.cs" />
     <Compile Include="Core\ExtentionMethods.cs" />
     <Compile Include="Core\Hash.cs" />
     <Compile Include="Core\ID.cs" />
     <Compile Include="Core\Logger.cs" />
     <Compile Include="Core\Math.cs" />
+    <Compile Include="Core\Memory\FlushableMemoryPool.cs" />
+    <Compile Include="Core\Memory\IAllocator.cs" />
     <Compile Include="Core\MiniDumpWindows.cs" />
     <Compile Include="Core\MultiStreamWriter.cs" />
     <Compile Include="Core\NullCheckable.cs" />
@@ -105,7 +112,9 @@
     <Compile Include="Attributes\HostAttributes.cs" />
     <Compile Include="Core\Web\WebCrawler.cs" />
     <Compile Include="Core\Web\WebRequestFactory.cs" />
+    <Compile Include="RequestHandlers\DebugView\DebugResponse.cs" />
     <Compile Include="HttpResponse.cs" />
+    <Compile Include="RequestHandlers\DebugView\IDebugUpdateableResponse.cs" />
     <Compile Include="Serialization\SerializableKeyValuePair.cs" />
     <Compile Include="SessionData.cs" />
     <Compile Include="Compression\GZipCompression.cs" />
@@ -117,7 +126,7 @@
     <Compile Include="JScriptBuilder\JSAnimation.cs" />
     <Compile Include="JScriptBuilder\JSBuilder.cs" />
     <Compile Include="Master.cs" />
-    <Compile Include="RequestHandlers\ResponseHandler.cs" />
+    <Compile Include="RequestHandlers\RequestHandler.cs" />
     <Compile Include="Security\Encryption.cs" />
     <Compile Include="Core\ThreadedWorker.cs" />
     <Compile Include="Synchronization\SynchronizedCollection.cs" />
@@ -149,9 +158,19 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="lib\lwslibs.dll" />
+    <ProjectReference Include="..\dependencies\sha3\SHA3.csproj">
+      <Project>{34d852dc-b308-409f-8243-4b645b0cbe80}</Project>
+      <Name>SHA3</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>cd $(OutDir)
+del ilmerge.log
+"\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\sn.exe" -R ..\..\..\dependencies\ILMerge\ILMerge\bin\Release\net452\final\ILMerge.exe ..\..\..\dependencies\ILMerge\Common\InterimKey.snk
+mkdir final
+..\..\..\dependencies\ILMerge\ILMerge\bin\Release\net452\final\ILMerge.exe /log:ilmerge.log /t:library /copyattrs /xmldocs /allowMultiple /wildcards /out:final/LamestWebserver.dll lws.dll SHA3.dll Fleck.dll Newtonsoft.Json.dll System.*.dll</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

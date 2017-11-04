@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,16 +31,33 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <param name="input">the input</param>
         /// <returns>the input encoded as HTTP URL</returns>
-        public static string FormatToHttpUrl(string input) => System.Web.HttpUtility.HtmlEncode(input);
+        public static string EncodeUrl(this string input) => System.Web.HttpUtility.UrlEncode(input);
 
         /// <summary>
         /// HTML encodes a given input
         /// </summary>
         /// <param name="text">the input</param>
         /// <returns>the input encoded as HTML</returns>
-        public static string FormatToHtml(string text) => new System.Web.HtmlString(text).ToHtmlString();
+        public static string EncodeHtml(this string text) => new System.Web.HtmlString(text).ToHtmlString();
 
+        /// <summary>
+        /// Appends all contained values separated by a given string.
+        /// </summary>
+        /// <param name="obj">The IEnumerable to extract the values from.</param>
+        /// <param name="separator">The string to separate with.</param>
+        /// <returns>The appended values separated by the separator string.</returns>
+        public static string ToSeparatedValueString(this IEnumerable<object> obj, string separator = ", ")
+        {
+            string ret = "";
 
+            foreach (object o in obj)
+                ret += o?.ToString() + separator;
+
+            if (ret.Length > 0)
+                return ret.Substring(0, ret.Length - separator.Length);
+
+            return "";
+        }
 
         /// <summary>
         /// Gets the index of an Element from a List
@@ -158,5 +176,117 @@ namespace LamestWebserver.Core
         /// <param name="value">The integer.</param>
         /// <returns>The Bits as '1' and '0'.</returns>
         public static string ToBitString(this sbyte value) => BitConverter.ToUInt64(BitConverter.GetBytes(value), 0).ToBitString(sizeof(sbyte));
+
+        /// <summary>
+        /// Casts a Tuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The tuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1>(this Tuple<T1> tuple) => new object[] { tuple.Item1 };
+
+        /// <summary>
+        /// Casts a Tuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The tuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2>(this Tuple<T1, T2> tuple) => new object[] { tuple.Item1, tuple.Item2 };
+
+        /// <summary>
+        /// Casts a Tuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The tuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3>(this Tuple<T1, T2, T3> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3 };
+
+        /// <summary>
+        /// Casts a Tuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The tuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4 };
+
+        /// <summary>
+        /// Casts a Tuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The tuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5>(this Tuple<T1, T2, T3, T4, T5> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5 };
+
+        /// <summary>
+        /// Casts a Tuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The tuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6>(this Tuple<T1, T2, T3, T4, T5, T6> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6 };
+
+        /// <summary>
+        /// Casts a Tuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The tuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6, T7>(this Tuple<T1, T2, T3, T4, T5, T6, T7> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7 };
+
+        /// <summary>
+        /// Casts a Tuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The tuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6, T7, T8>(this Tuple<T1, T2, T3, T4, T5, T6, T7, T8> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7, tuple.Rest };
+
+        /// <summary>
+        /// Casts a ValueTuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1>(this ValueTuple<T1> tuple) => new object[] { tuple.Item1 };
+
+        /// <summary>
+        /// Casts a ValueTuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2>(this ValueTuple<T1, T2> tuple) => new object[] { tuple.Item1, tuple.Item2 };
+
+        /// <summary>
+        /// Casts a ValueTuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3>(this ValueTuple<T1, T2, T3> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3 };
+
+        /// <summary>
+        /// Casts a ValueTuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4>(this ValueTuple<T1, T2, T3, T4> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4 };
+
+        /// <summary>
+        /// Casts a ValueTuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5>(this ValueTuple<T1, T2, T3, T4, T5> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5 };
+
+        /// <summary>
+        /// Casts a ValueTuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6>(this ValueTuple<T1, T2, T3, T4, T5, T6> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6 };
+
+        /// <summary>
+        /// Casts a ValueTuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<T1, T2, T3, T4, T5, T6, T7> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7 };
+
+        /// <summary>
+        /// Casts a ValueTuple to an IEnumerable.
+        /// </summary>
+        /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
+        /// <returns>The elements in order as IEnumerable (object[]).</returns>
+        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6, T7, T8>(this ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8> tuple) where T8 : struct => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7, tuple.Rest };
     }
 }

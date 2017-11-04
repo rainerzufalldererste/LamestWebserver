@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,18 +8,20 @@ using System.Threading;
 using LamestWebserver.Collections;
 using LamestWebserver.Serialization;
 using LamestWebserver.Synchronization;
+using LamestWebserver.RequestHandlers.DebugView;
+using LamestWebserver.UI;
 
 namespace LamestWebserver.RequestHandlers
 {
     /// <summary>
-    /// A ResponseHandler contains tools to resolve HTTP-Requests to responses.
+    /// A RequestHandler contains tools to resolve HTTP-Requests to responses.
     /// </summary>
-    public class ResponseHandler
+    public class RequestHandler : IDebugRespondable
     {
         /// <summary>
-        /// The ResponseHandler used in the Webservers.
+        /// The RequestHandler used across all default Webserver Instances.
         /// </summary>
-        public static ResponseHandler CurrentResponseHandler { get; } = new ResponseHandler();
+        public static readonly RequestHandler CurrentRequestHandler = new RequestHandler();
 
         /// <summary>
         /// The RequestHandlers to look through primarily.
@@ -35,6 +37,64 @@ namespace LamestWebserver.RequestHandlers
         /// A WriteLock to safely add and remove response handlers.
         /// </summary>
         protected UsableWriteLock RequestWriteLock = new UsableWriteLock();
+
+        /// <summary>
+        /// The Root DebugResponseNode.
+        /// </summary>
+        public readonly DebugContainerResponseNode DebugResponseNode;
+
+        /// <summary>
+        /// Constructs a new RequestHandler.
+        /// </summary>
+        /// <param name="debugResponseNodeName">The DebugView name for this RequestHandler.</param>
+        public RequestHandler(string debugResponseNodeName = null)
+        {
+            DebugResponseNode = new DebugContainerResponseNode(debugResponseNodeName == null ? GetType().Name : debugResponseNodeName, null, DebugViewResponse, null);
+        }
+
+        /// <summary>
+        /// Adds a DebugResponseNode as Subnode to the Root DebugResponseNode.
+        /// </summary>
+        /// <param name="node">The node to add as subnode.</param>
+        public void AddDebugResponseNode(DebugResponseNode node)
+        {
+            DebugResponseNode.AddNode(node);
+        }
+
+        /// <summary>
+        /// Removes a DebugResponseNode from the Subnodes of the Root DebugResponseNode.
+        /// </summary>
+        /// <param name="node">The node to remove.</param>
+        public void RemoveDebugResponseNode(DebugResponseNode node)
+        {
+            DebugResponseNode.RemoveNode(node);
+        }
+
+        /// <summary>
+        /// Clears the subnodes of the Root DebugResponseNode.
+        /// </summary>
+        public void ClearDebugResponseNodes()
+        {
+            DebugResponseNode.ClearNodes();
+        }
+
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        private HElement DebugViewResponse(SessionData sessionData)
+        {
+            return new HContainer
+            {
+                Elements =
+                {
+                    new HHeadline(nameof(RequestHandlers), 2),
+                    new HList(HList.EListType.UnorderedList, (from rh in RequestHandlers select (rh is IDebugRespondable ? (HElement)DebugView.DebugResponseNode.GetLink((IDebugRespondable)rh) : new HItalic(rh.GetType().Name)))),
+                    new HNewLine(),
+                    new HHeadline(nameof(SecondaryRequestHandlers), 2),
+                    new HList(HList.EListType.UnorderedList, (from srh in SecondaryRequestHandlers select (srh is IDebugRespondable ? (HElement)DebugView.DebugResponseNode.GetLink((IDebugRespondable)srh) : new HItalic(srh.GetType().Name))))
+                }
+            };
+        }
 
         /// <summary>
         /// Retrieves a response (or null) from a given http packet by looking through all primary and secondary request handlers as long as none has a propper response to it.
@@ -54,7 +114,7 @@ namespace LamestWebserver.RequestHandlers
             {
                 foreach (IRequestHandler requestHandler in RequestHandlers)
                 {
-                    var response = requestHandler.GetResponse(requestPacket);
+                    var response = requestHandler.GetResponse(requestPacket, stopwatch);
 
                     if (response != null)
                     {
@@ -66,7 +126,7 @@ namespace LamestWebserver.RequestHandlers
 
                 foreach (IRequestHandler requestHandler in SecondaryRequestHandlers)
                 {
-                    var response = requestHandler.GetResponse(requestPacket);
+                    var response = requestHandler.GetResponse(requestPacket, stopwatch);
 
                     if (response != null)
                     {
@@ -169,14 +229,15 @@ namespace LamestWebserver.RequestHandlers
     /// <summary>
     /// An Interface for HTTP-Request handlers.
     /// </summary>
-    public interface IRequestHandler
+    public interface IRequestHandler : IEquatable<IRequestHandler>
     {
         /// <summary>
         /// Retrieves a response from a http-request.
         /// </summary>
         /// <param name="requestPacket">the request packet</param>
+        /// <param name="currentStopwatch">a reference to a started response time stopwatch.</param>
         /// <returns>the response packet</returns>
-        HttpResponse GetResponse(HttpRequest requestPacket);
+        HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch);
     }
 
     /// <summary>
@@ -202,7 +263,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public virtual HttpResponse GetResponse(HttpRequest requestPacket)
+        public virtual HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             string fileName = requestPacket.RequestUrl;
             byte[] contents = null;
@@ -239,7 +300,7 @@ namespace LamestWebserver.RequestHandlers
                 return null;
             }
 
-            return new HttpResponse(requestPacket) {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
+            return new HttpResponse(requestPacket, contents) {ContentType = GetMimeType(extention), ModifiedDate = lastModified};
         }
 
         /// <summary>
@@ -460,12 +521,27 @@ namespace LamestWebserver.RequestHandlers
                     return "application/octet-stream";
             }
         }
+
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            if (((FileRequestHandler)(other)).Folder != Folder)
+                return false;
+
+            return true;
+        }
     }
 
     /// <summary>
     /// A RequestHanlder that delivers Files from local storage - which will be cached on use.
     /// </summary>
-    public class CachedFileRequestHandler : FileRequestHandler
+    public class CachedFileRequestHandler : FileRequestHandler, IDebugRespondable
     {
         /// <summary>
         /// The size of the cache hash map. this does not limit the amount of cached items - it's just there to preference size or performance.
@@ -477,14 +553,20 @@ namespace LamestWebserver.RequestHandlers
         internal UsableLockSimple CacheMutex = new UsableLockSimple();
         internal static readonly byte[] CrLf = Encoding.UTF8.GetBytes("\r\n");
 
+        /// <summary>
+        /// The DebugResponseNode for this CachedFileRequestHandler.
+        /// </summary>
+        public readonly DebugContainerResponseNode DebugResponseNode;
+
         /// <inheritdoc />
         public CachedFileRequestHandler(string folder) : base(folder)
         {
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
             SetupFileSystemWatcher();
         }
 
         /// <inheritdoc />
-        public override HttpResponse GetResponse(HttpRequest requestPacket)
+        public override HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             string fileName = requestPacket.RequestUrl;
             byte[] contents = null;
@@ -576,23 +658,22 @@ namespace LamestWebserver.RequestHandlers
 
                 if (notModified)
                 {
-                    return new HttpResponse(null) {Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified, BinaryData = CrLf};
+                    return new HttpResponse(null, CrLf) { Status = "304 Not Modified", ContentType = null, ModifiedDate = lastModified };
                 }
                 else
                 {
-                    return new HttpResponse(requestPacket) {ContentType = GetMimeType(extention), BinaryData = contents, ModifiedDate = lastModified};
+                    return new HttpResponse(requestPacket, contents) { ContentType = GetMimeType(extention), ModifiedDate = lastModified };
                 }
             }
             catch (Exception e)
             {
-                return new HttpResponse(null)
-                {
-                    Status = "500 Internal Server Error",
-                    BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                return new HttpResponse(null, Master.GetErrorMsg(
                         "Error 500: Internal Server Error",
                         "<p>An Exception occurred while sending the response:<br><br></p><div style='font-family:\"Consolas\",monospace;font-size: 13;color:#4C4C4C;'>"
                         + WebServer.GetErrorMsg(e, null, requestPacket.RawRequest).Replace("\r\n", "<br>").Replace(" ", "&nbsp;") + "</div><br>"
                         + "</div>"))
+                {
+                    Status = "500 Internal Server Error"
                 };
             }
         }
@@ -692,6 +773,29 @@ namespace LamestWebserver.RequestHandlers
 
             return true;
         }
+
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        private HElement GetDebugResponse(SessionData sessionData)
+        {
+            using (CacheMutex.Lock())
+            {
+                return new HContainer()
+                {
+                    Elements =
+                    {
+                        new HText($"Cache HashMap Size: {Cache.HashMap.Length}.\nCache HashMap Entry Count: {Cache.Count}.\nOperating Folder: '{Folder}'."),
+                        new HLine(),
+                        new HHeadline("Cached Entries", 3),
+                        new HTable((from e in Cache select new List<HElement> { e.Key, e.Value.Size.ToString() + " bytes", e.Value.LoadCount.ToString(), e.Value.LastModified.ToString() }))
+                        {
+                            TableHeader = new List<HElement> { "File Name", "Size", "Load Count", "Last Modified" }
+                        }
+                    }
+                };
+            }
+        }
     }
 
     /// <summary>
@@ -772,7 +876,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public HttpResponse GetResponse(HttpRequest requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             var file = _cache[requestPacket.RequestUrl];
 
@@ -780,9 +884,28 @@ namespace LamestWebserver.RequestHandlers
                 return null;
 
             if (requestPacket.ModifiedDate != null && requestPacket.ModifiedDate.Value <= file.LastModified)
-                return new HttpResponse(null) {Status = "304 Not Modified", ContentType = null, BinaryData = CachedFileRequestHandler.CrLf, ModifiedDate = file.LastModified};
+                return new HttpResponse(null, CachedFileRequestHandler.CrLf) { Status = "304 Not Modified", ContentType = null, ModifiedDate = file.LastModified };
 
-            return new HttpResponse(requestPacket) {BinaryData = file.Contents, ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
+            return new HttpResponse(requestPacket, file.Contents) { ContentType = FileRequestHandler.GetMimeType(FileRequestHandler.GetExtention(requestPacket.RequestUrl)), ModifiedDate = file.LastModified };
+        }
+
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            if (((PackedFileRequestHandler)(other))._cache.Count != _cache.Count)
+                return false;
+
+            foreach(var e in ((PackedFileRequestHandler)(other))._cache)
+                if(!_cache.Contains(e))
+                    return false;
+
+            return true;
         }
     }
 
@@ -790,7 +913,7 @@ namespace LamestWebserver.RequestHandlers
     /// A Cacheable preloaded file.
     /// </summary>
     [Serializable]
-    public class PreloadedFile : ICloneable
+    public class PreloadedFile : ICloneable, IEquatable<PreloadedFile>
     {
         /// <summary>
         /// The name of the file.
@@ -849,39 +972,127 @@ namespace LamestWebserver.RequestHandlers
         {
             return new PreloadedFile((string) Filename.Clone(), Contents.ToArray(), LastModified, IsBinary);
         }
+
+        /// <inheritdoc />
+        public bool Equals(PreloadedFile other)
+        {
+            if (other.Filename != Filename)
+                return false;
+
+            if (other.Contents != Contents)
+                return false;
+
+            if (other.IsBinary != IsBinary)
+                return false;
+
+            if (other.LastModified != LastModified)
+                return false;
+
+            // LoadCount would not be a good idea and Size should be already checked by Contents.
+
+            return true;
+        }
     }
 
     /// <summary>
     /// Displays error messages for every request that passed through.
     /// </summary>
-    public class ErrorRequestHandler : IRequestHandler
+    public class ErrorRequestHandler : IRequestHandler, IDebugRespondable
     {
-        /// <inheritdoc />
-        public HttpResponse GetResponse(HttpRequest requestPacket)
+        /// <summary>
+        /// Shall this RequestHandler store DebugView information?
+        /// </summary>
+        public static bool StoreErrorMessages = true;
+
+        /// <summary>
+        /// The DebugResponseNode for this ErrorRequestHandler.
+        /// </summary>
+        public readonly DebugContainerResponseNode DebugResponseNode;
+
+        private AVLHashMap<string, (int, int)> _accumulatedErrors;
+
+        /// <summary>
+        /// Creates a new ErrorRequestHandler.
+        /// </summary>
+        public ErrorRequestHandler()
         {
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
+
+            if (StoreErrorMessages)
+                _accumulatedErrors = new AVLHashMap<string, (int, int)>();
+        }
+
+        /// <inheritdoc />
+        public HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
+        {
+            if(StoreErrorMessages && _accumulatedErrors != null)
+            {
+                (int count, int error) t = _accumulatedErrors[requestPacket.RequestUrl];
+
+                t.count++;
+                t.error = requestPacket.RequestUrl.EndsWith("/") ? 403 : 404;
+
+                _accumulatedErrors[requestPacket.RequestUrl] = t;
+            }
+
             if (requestPacket.RequestUrl.EndsWith("/"))
             {
-                return new HttpResponse(null)
-                {
-                    Status = "403 Forbidden",
-                    BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                return new HttpResponse(null, Master.GetErrorMsg(
                         "Error 403: Forbidden",
                         "<p>The Requested URL cannot be delivered due to insufficient priveleges.</p>" +
                         "</div></p>"))
+                {
+                    Status = "403 Forbidden"
                 };
             }
             else
             {
-                return new HttpResponse(null)
-                {
-                    Status = "404 File Not Found",
-                    BinaryData = Encoding.UTF8.GetBytes(Master.GetErrorMsg(
+                return new HttpResponse(null, Master.GetErrorMsg(
                         "Error 404: Page Not Found",
                         "<p>The URL you requested did not match any page or file on the server.</p>" +
 
                         "</div></p>"))
+                {
+                    Status = "404 File Not Found"
                 };
             }
+        }
+
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        private HElement GetDebugResponse(SessionData arg)
+        {
+            if (!StoreErrorMessages || _accumulatedErrors == null)
+                return new HText($"This {GetType().Name} does not store Error-Information. If you want Error-Information to be stored enable the '{StoreErrorMessages}' Flag.") { Class = "warning" };
+
+            return new HTable(
+                (from KeyValuePair<string, (int count, int error)> e in
+                     (from KeyValuePair<string, (int count, int error)> _e in _accumulatedErrors select _e).OrderByDescending(x => x.Value.count)
+                 select new List<HElement>
+                 {
+                     e.Key,
+                     e.Value.count.ToHElement(),
+                     e.Value.error.ToHElement()
+                 }))
+            {
+                TableHeader = new HElement[]
+                {
+                    "Requested URL", "Failed Requests", "Last HTTP-Error"
+                }
+            };
         }
     }
 
@@ -893,10 +1104,15 @@ namespace LamestWebserver.RequestHandlers
     {
         private readonly Random _random = new Random();
 
+        /// <summary>
+        /// The maximum amount of retries if deadlocks prevented the execution.
+        /// </summary>
+        public static int Retries = 10;
+
         /// <inheritdoc />
-        public HttpResponse GetResponse(HttpRequest requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
-            var requestFunction = GetResponseFunction(requestPacket);
+            T requestFunction = GetResponseFunction(requestPacket);
 
             if (requestFunction == null)
                 return null;
@@ -906,24 +1122,37 @@ namespace LamestWebserver.RequestHandlers
 
             RETRY:
 
-            while (tries < 10)
+            try
             {
-                try
+                while (tries < Retries)
                 {
-                    return GetRetriableResponse(requestFunction, requestPacket, sessionData);
-                }
-                catch (MutexRetryException)
-                {
-                    tries++;
-
-                    if (tries == 10)
+                    try
                     {
-                        throw;
-                    }
+                        HttpResponse response = GetRetriableResponse(requestFunction, requestPacket, sessionData);
 
-                    Thread.Sleep(_random.Next(25 * tries));
-                    goto RETRY;
+                        FinishResponse(requestFunction, null, currentStopwatch, requestPacket, response);
+
+                        return response;
+                    }
+                    catch (MutexRetryException)
+                    {
+                        tries++;
+
+                        if (tries == Retries)
+                        {
+                            throw;
+                        }
+
+                        Thread.Sleep(_random.Next(25 * tries));
+                        goto RETRY;
+                    }
                 }
+            }
+            catch(Exception e)
+            {
+                FinishResponse(requestFunction, e, currentStopwatch, requestPacket, null);
+
+                throw;
             }
 
             return null;
@@ -940,22 +1169,57 @@ namespace LamestWebserver.RequestHandlers
         public abstract HttpResponse GetRetriableResponse(T requestFunction, HttpRequest requestPacket, HttpSessionData sessionData);
 
         /// <summary>
+        /// Provides information about the last response and is called whenever a response finished.
+        /// </summary>
+        /// <param name="requestFunction">The called request function.</param>
+        /// <param name="exception">The thrown exception.</param>
+        /// <param name="stopwatch">The current stopwatch.</param>
+        /// <param name="requestPacket">The original Request Packet.</param>
+        /// <param name="httpResponse">The response Packet.</param>
+        public virtual void FinishResponse(T requestFunction, Exception exception, Stopwatch stopwatch, HttpRequest requestPacket, HttpResponse httpResponse)
+        {
+            // default behaviour: do nothing.
+        }
+
+        /// <summary>
         /// Gets the response function which can be called multiple times in GetRetriableResponse.
         /// </summary>
         /// <param name="requestPacket">the http-request</param>
         /// <returns>the method to call.</returns>
         public abstract T GetResponseFunction(HttpRequest requestPacket);
+        
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            return true;
+        }
     }
 
     /// <summary>
     /// A response handler for PageResponses
     /// </summary>
-    public class PageResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetContents>
+    public class PageResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetContents>, IDebugRespondable
     {
+        /// <summary>
+        /// Shall this RequestHandler store DebugView information?
+        /// </summary>
+        public static bool StoreDebugInformation = true;
+
+        /// <summary>
+        /// The DebugResponseNode for this PageResponseRequestHandler.
+        /// </summary>
+        public readonly DebugContainerResponseNode DebugResponseNode;
+
         /// <summary>
         /// A ReaderWriterLock for accessing pages synchronously.
         /// </summary>
-        protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        protected UsableWriteLock ReaderWriterLock = new UsableWriteLock();
 
         /// <summary>
         /// The currently listed PageResponses.
@@ -969,14 +1233,31 @@ namespace LamestWebserver.RequestHandlers
         {
             Master.AddFunctionEvent += AddFunction;
             Master.RemoveFunctionEvent += RemoveFunction;
+            
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
+        }
+
+        private HElement GetDebugResponse(SessionData arg)
+        {
+            if(!StoreDebugInformation)
+                return new HText($"This {GetType().Name} does not store Error-Information. If you want Error-Information to be stored enable the '{StoreDebugInformation}' Flag.") { Class = "warning" };
+
+            using (ReaderWriterLock.LockRead())
+            {
+                var ret = new HTable((from e in PageResponses select new List<HElement> { new HString(e.Key), e.Value.Method.ToString(), e.Value.Target == null ? $"Declared in {e.Value.Method.DeclaringType.Name}" : $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
+                {
+                    TableHeader = new HElement[] { "Registered URL", "Associated GetContents Function", "Instance Object or Declaring Class" }
+                };
+
+                return ret;
+            }
         }
 
         /// <inheritdoc />
         public override HttpResponse GetRetriableResponse(Master.GetContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpResponse(requestPacket)
+            return new HttpResponse(requestPacket, requestFunction.Invoke(sessionData))
             {
-                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
                 Cookies = sessionData.SetCookies
             };
         }
@@ -984,29 +1265,53 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override Master.GetContents GetResponseFunction(HttpRequest requestPacket)
         {
-            ReaderWriterLock.EnterReadLock();
-            var response = PageResponses[requestPacket.RequestUrl];
-            ReaderWriterLock.ExitReadLock();
-
-            return response;
+            using (ReaderWriterLock.LockRead())
+                return PageResponses[requestPacket.RequestUrl];
         }
 
         private void AddFunction(string url, Master.GetContents getc)
         {
-            ReaderWriterLock.EnterWriteLock();
-            PageResponses.Add(url, getc);
-            ReaderWriterLock.ExitWriteLock();
+            using (ReaderWriterLock.LockWrite())
+            {
+                PageResponses.Add(url, getc);
+
+                if (getc.Target != null && getc.Target is IDebugRespondable)
+                    DebugResponseNode.AddNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
+            }
 
             ServerHandler.LogMessage("The URL '" + url + "' is now assigned to a Page. (WebserverApi)");
         }
 
         private void RemoveFunction(string url)
         {
-            ReaderWriterLock.EnterWriteLock();
-            PageResponses.Remove(url);
-            ReaderWriterLock.ExitWriteLock();
+            using (ReaderWriterLock.LockWrite())
+            {
+                Master.GetContents getc = PageResponses[url];
 
-            ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a Page anymore. (WebserverApi)");
+                if (getc != null)
+                {
+                    if (getc.Target is IDebugRespondable)
+                        DebugResponseNode.RemoveNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
+
+                    PageResponses.Remove(url);
+                    ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a Page anymore. (WebserverApi)");
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        /// <inheritdoc />
+        public override void FinishResponse(Master.GetContents requestFunction, Exception exception, Stopwatch stopwatch, HttpRequest requestPacket, HttpResponse httpResponse)
+        {
+            if (StoreDebugInformation)
+            {
+                base.FinishResponse(requestFunction, exception, stopwatch, requestPacket, httpResponse);
+
+                if (requestFunction.Target != null && requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>)
+                    ((IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>)requestFunction.Target).UpdateDebugResponseData(exception, stopwatch.Elapsed, requestPacket, httpResponse);
+            }
         }
     }
 
@@ -1036,9 +1341,8 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override HttpResponse GetRetriableResponse(Master.GetContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpResponse(requestPacket)
+            return new HttpResponse(requestPacket, requestFunction.Invoke(sessionData))
             {
-                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData)),
                 Cookies = sessionData.SetCookies
             };
         }
@@ -1092,7 +1396,7 @@ namespace LamestWebserver.RequestHandlers
         }
 
         /// <inheritdoc />
-        public HttpResponse GetResponse(HttpRequest requestPacket)
+        public HttpResponse GetResponse(HttpRequest requestPacket, Stopwatch currentStopwatch)
         {
             if (!requestPacket.IsWebsocketUpgradeRequest)
                 return null;
@@ -1141,22 +1445,44 @@ namespace LamestWebserver.RequestHandlers
 
             ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
         }
+
+        /// <inheritdoc />
+        public bool Equals(IRequestHandler other)
+        {
+            if (other == null)
+                return false;
+
+            if (!other.GetType().Equals(GetType()))
+                return false;
+
+            return true;
+        }
     }
 
     /// <summary>
     /// A response handler for DirectoryResponses
     /// </summary>
-    public class DirectoryResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetDirectoryContents>
+    public class DirectoryResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetDirectoryContents>, IDebugRespondable
     {
+        /// <summary>
+        /// Shall this RequestHandler store DebugView information?
+        /// </summary>
+        public static bool StoreDebugInformation = true;
+        
         /// <summary>
         /// A ReaderWriterLock for accessing pages synchronously.
         /// </summary>
-        protected ReaderWriterLockSlim ReaderWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        protected UsableWriteLock ReaderWriterLock = new UsableWriteLock();
 
         /// <summary>
         /// The currently listed DirectoryResponses.
         /// </summary>
         protected AVLHashMap<string, Master.GetDirectoryContents> DirectoryResponses = new AVLHashMap<string, Master.GetDirectoryContents>(WebServer.DirectoryResponseStorageHashMapSize);
+
+        /// <summary>
+        /// The DebugResponseNode for this PageResponseRequestHandler.
+        /// </summary>
+        public readonly DebugContainerResponseNode DebugResponseNode;
 
         [ThreadStatic]
         private static string _subUrl = "";
@@ -1166,6 +1492,8 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         public DirectoryResponseRequestHandler()
         {
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
+
             Master.AddDirectoryFunctionEvent += AddDirectoryFunction;
             Master.RemoveDirectoryFunctionEvent += RemoveDirectoryFunction;
         }
@@ -1173,9 +1501,8 @@ namespace LamestWebserver.RequestHandlers
         /// <inheritdoc />
         public override HttpResponse GetRetriableResponse(Master.GetDirectoryContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
-            return new HttpResponse(requestPacket)
+            return new HttpResponse(requestPacket, requestFunction.Invoke(sessionData, _subUrl))
             {
-                BinaryData = Encoding.UTF8.GetBytes(requestFunction.Invoke(sessionData, _subUrl)),
                 Cookies = sessionData.SetCookies
             };
         }
@@ -1189,9 +1516,21 @@ namespace LamestWebserver.RequestHandlers
             if (bestUrlMatch.StartsWith("/"))
                 bestUrlMatch = bestUrlMatch.Remove(0);
 
+            using (ReaderWriterLock.LockRead())
+                if(bestUrlMatch.Last() == '/')
+                    response = DirectoryResponses[bestUrlMatch];
+                else
+                    response = DirectoryResponses[bestUrlMatch + '/'];
+
+            if (response != null || bestUrlMatch.Length == 0)
+            {
+                _subUrl = "";
+                return response;
+            }
+
             while (true)
             {
-                for (int i = bestUrlMatch.Length - 2; i >= 0; i--)
+                for (int i = bestUrlMatch.Length - 1; i >= 0; i--)
                 {
                     if (bestUrlMatch[i] == '/')
                     {
@@ -1206,9 +1545,8 @@ namespace LamestWebserver.RequestHandlers
                     }
                 }
 
-                ReaderWriterLock.EnterReadLock();
-                response = DirectoryResponses[bestUrlMatch];
-                ReaderWriterLock.ExitReadLock();
+                using (ReaderWriterLock.LockRead())
+                    response = DirectoryResponses[bestUrlMatch];
 
                 if (response != null || bestUrlMatch.Length == 0)
                 {
@@ -1223,20 +1561,63 @@ namespace LamestWebserver.RequestHandlers
 
         private void AddDirectoryFunction(string URL, Master.GetDirectoryContents function)
         {
-            ReaderWriterLock.EnterWriteLock();
-            DirectoryResponses.Add(URL, function);
-            ReaderWriterLock.ExitWriteLock();
+            using (ReaderWriterLock.LockWrite())
+            {
+                DirectoryResponses.Add(URL, function);
+                
+                if (function.Target != null && function.Target is IDebugRespondable)
+                    DebugResponseNode.AddNode(((IDebugRespondable)function.Target).GetDebugResponseNode());
+            }
 
             ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is now available at the Webserver. (WebserverApi)");
         }
 
         private void RemoveDirectoryFunction(string URL)
         {
-            ReaderWriterLock.EnterWriteLock();
-            DirectoryResponses.Remove(URL);
-            ReaderWriterLock.ExitWriteLock();
+            using (ReaderWriterLock.LockWrite())
+            {
+                Master.GetDirectoryContents function = DirectoryResponses[URL];
 
-            ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
+                if (function != null)
+                {
+                    if (function.Target is IDebugRespondable)
+                        DebugResponseNode.RemoveNode(((IDebugRespondable)function.Target).GetDebugResponseNode());
+
+                    DirectoryResponses.Remove(URL);
+                    ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        private HElement GetDebugResponse(SessionData arg)
+        {
+            if (!StoreDebugInformation)
+                return new HText($"This {GetType().Name} does not store Error-Information. If you want Error-Information to be stored enable the '{StoreDebugInformation}' Flag.") { Class = "warning" };
+
+            using (ReaderWriterLock.LockRead())
+            {
+                var ret = new HTable((from e in DirectoryResponses select new List<HElement> { new HString(e.Key), e.Value.Method.ToString(), e.Value.Target == null ? $"Declared in {e.Value.Method.DeclaringType.Name}" : $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
+                {
+                    TableHeader = new HElement[] { "Registered URL", "Associated GetContents Function", "Instance Object or Declaring Class" }
+                };
+
+                return ret;
+            }
+        }
+
+        /// <inheritdoc />
+        public override void FinishResponse(Master.GetDirectoryContents requestFunction, Exception exception, Stopwatch stopwatch, HttpRequest requestPacket, HttpResponse httpResponse)
+        {
+            if (StoreDebugInformation)
+            {
+                base.FinishResponse(requestFunction, exception, stopwatch, requestPacket, httpResponse);
+
+                if (requestFunction.Target != null && requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan, string, HttpRequest, HttpResponse>)
+                    ((IDebugUpdateableResponse<Exception, TimeSpan, string, HttpRequest, HttpResponse>)requestFunction.Target).UpdateDebugResponseData(exception, stopwatch.Elapsed, _subUrl, requestPacket, httpResponse);
+            }
         }
     }
 }

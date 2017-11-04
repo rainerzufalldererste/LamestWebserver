@@ -1,17 +1,19 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using LamestWebserver.Synchronization;
 
 using static LamestWebserver.Core.WorkerTask;
+using LamestWebserver.RequestHandlers.DebugView;
+using LamestWebserver.UI;
 
 namespace LamestWebserver.Core
 {
     /// <summary>
     /// Executes enqueued tasks using a fixed amount of worker threads.
     /// </summary>
-    public class ThreadedWorker : NullCheckable
+    public class ThreadedWorker : NullCheckable, IDebugRespondable
     {
         /// <summary>
         /// The ThreadedWorker used in the Server.
@@ -30,6 +32,8 @@ namespace LamestWebserver.Core
 
         private readonly Queue<WorkerTask> _tasks = new Queue<WorkerTask>();
         private readonly Thread[] _workers;
+
+        private DebugContainerResponseNode DebugResponseNode;
 
         private bool _running
         {
@@ -62,7 +66,7 @@ namespace LamestWebserver.Core
         /// <param name="workerCount">the amount of WorkerThreads</param>
         public ThreadedWorker(uint workerCount)
         {
-            ServerHandler.LogMessage($"Starting ThreadedWorker with {workerCount} WorkerThreads.");
+            Logger.LogTrace($"Starting ThreadedWorker with {workerCount} WorkerThreads.");
 
             WorkerCount = workerCount;
             _running = true;
@@ -73,6 +77,8 @@ namespace LamestWebserver.Core
                 _workers[i] = new Thread(Work);
                 _workers[i].Start();
             }
+
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse);
         }
 
         /// <summary>
@@ -108,8 +114,9 @@ namespace LamestWebserver.Core
 
         /// <summary>
         /// Stops all WorkerTasks
+        /// <paramref name="timeout">The timeout in milliseconds to wait before forcefully aborting threads.<para/>Warning: This will most likely NOT free some memory. Please just use with reasonable timespans.</paramref>
         /// </summary>
-        public void Stop(int? timeout = 250)
+        public void Stop(int? timeout = null)
         {
             _running = false;
 
@@ -123,12 +130,12 @@ namespace LamestWebserver.Core
                         {
                             try
                             {
-                                ServerHandler.LogMessage("Worker Thread didn't complete in time. Forcing to quit.");
+                                Logger.LogWarning("Worker Thread didn't complete in time. Forcing to quit.");
                                 Master.ForceQuitThread(worker);
                             }
                             catch (Exception e)
                             {
-                                ServerHandler.LogMessage("Failed to quit WorkerThread.\n" + e);
+                                Logger.LogError("Failed to quit WorkerThread.\n" + e);
                             }
                         }
                     }
@@ -145,6 +152,7 @@ namespace LamestWebserver.Core
 
         /// <summary>
         /// Waits until all WorkerTasks are done
+        /// <paramref name="timeout">The timeout in milliseconds to wait before forcefully aborting threads.<para/>Warning: This will most likely NOT free some memory. Please just use with reasonable timespans.</paramref>
         /// </summary>
         public void Join(int? timeout = null)
         {
@@ -163,12 +171,12 @@ namespace LamestWebserver.Core
                         {
                             try
                             {
-                                ServerHandler.LogMessage("Worker Thread didn't complete in time. Forcing to quit.");
+                                Logger.LogWarning("Worker Thread didn't complete in time. Forcing to quit.");
                                 Master.ForceQuitThread(worker);
                             }
                             catch (Exception e)
                             {
-                                ServerHandler.LogMessage("Failed to quit WorkerThread.\n" + e);
+                                Logger.LogError("Failed to quit WorkerThread.\n" + e);
                             }
                         }
                     }
@@ -198,41 +206,43 @@ namespace LamestWebserver.Core
                 if (hasTasks)
                 {
                     using (_writeLock.LockWrite())
-                    {
-                        hasTasks = _tasks.Count > 0; // could have already changed.
-
-                        if (hasTasks)
+                        if (_tasks.Count > 0)
                             currentTask = _tasks.Dequeue();
-                    }
-                }
 
-                if (currentTask == null)
-                {
-                    Thread.Sleep(1);
-                    continue;
-                }
+                    if (currentTask == null)
+                    {
+                        Thread.Sleep(1);
+                        continue;
+                    }
 
 #if DEBUG
-                Logger.LogTrace($"Dequeued Job in WorkerThread: {currentTask.Task.Method.Name} ({_tasks.Count} tasks left.)");
+                    Logger.LogTrace($"Dequeued Job in WorkerThread: {currentTask.Task.Method.Name} ({_tasks.Count} tasks left.)");
 #endif
 
-                try
-                {
-                    currentTask.State = ETaskState.Executing;
+                    try
+                    {
+                        currentTask.State = ETaskState.Executing;
 
-                    object returnedValue = currentTask.Task.DynamicInvoke(currentTask.Parameters);
+                        object returnedValue = currentTask.Task.DynamicInvoke(currentTask.Parameters);
 
-                    currentTask.ReturnedValue = returnedValue;
-                    currentTask.State = ETaskState.Done;
+                        currentTask.ReturnedValue = returnedValue;
+                        currentTask.State = ETaskState.Done;
+                    }
+                    catch (Exception e)
+                    {
+                        currentTask.ExceptionThrown = e;
+                        currentTask.State = ETaskState.ExceptionThrown;
+
+                        Logger.LogError("Exception in WorkerTask '" + currentTask.Task.Method.Name + "'.\n" + e);
+                    }
                 }
-                catch (Exception e)
+                else
                 {
-                    currentTask.ExceptionThrown = e;
-                    currentTask.State = ETaskState.ExceptionThrown;
-
-                    ServerHandler.LogMessage("Exception in WorkerTask '" + currentTask.Task.Method.Name + "'.\n" + e);
+                    Thread.Sleep(1);
                 }
             }
+
+            Memory.FlushableMemoryPool.Destroy();
         }
 
         /// <summary>
@@ -321,6 +331,30 @@ namespace LamestWebserver.Core
             }
 
             return true;
+        }
+
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+        
+        private HElement GetDebugResponse(SessionData sessionData)
+        {
+            HMultipleElements ret = new HMultipleElements();
+
+            ret += new HText($"Currently Enqueued tasks: {TaskCount}");
+            ret += new HText($"Worker Count: {WorkerCount}");
+
+            if (TaskCount > 0)
+            {
+                using (_writeLock.LockRead())
+                {
+                    ret += new HTable((from x in _tasks select new object[] { x.Task.Method?.Name, x.Task.Target?.GetType().Name, x.Parameters.ToSeparatedValueString(), x.State, x.ExceptionThrown?.GetType().Name, x.ReturnedValue?.GetType().Name }).ToList())
+                    {
+                        TableHeader = new string[] { "Method Name", "Target Type", "Parameters", "State", "Thrown Exception", "Returned Value" }
+                    };
+                }
+            }
+
+            return ret;
         }
     }
 

@@ -94,7 +94,34 @@ namespace LamestWebserver.Core
         {
             foreach(StreamWriter sw in _streamWriters)
             {
-                sw.Dispose();
+                try
+                {
+                    if(sw.BaseStream != null)
+                        sw.Dispose();
+                }
+                catch { }
+            }
+
+            IsDisposed = true;
+        }
+
+        /// <summary>
+        /// Disposes all streams except the ones listed in the parameter.
+        /// </summary>
+        /// <param name="streams">The Streams not to dispose.</param>
+        public void DisposeExcept(IEnumerable<Stream> streams)
+        {
+            foreach (StreamWriter sw in _streamWriters)
+            {
+                if (streams.Contains(sw.BaseStream))
+                    continue;
+
+                try
+                {
+                    if (sw.BaseStream != null)
+                        sw.Dispose();
+                }
+                catch { }
             }
 
             IsDisposed = true;
