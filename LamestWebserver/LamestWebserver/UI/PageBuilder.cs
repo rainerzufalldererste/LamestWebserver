@@ -856,7 +856,7 @@ namespace LamestWebserver.UI
                 if (text == null)
                     Elements.Add("null");
                 else if(text is string)
-                    Elements.Add(new HText((string)text));
+                    Elements.Add(new HString((string)text));
                 else if(text is HElement)
                     Elements.Add((HElement)text);
                 else

@@ -1523,9 +1523,12 @@ namespace LamestWebserver.RequestHandlers
                     response = DirectoryResponses[bestUrlMatch + '/'];
 
             if (response != null || bestUrlMatch.Length == 0)
+            {
+                _subUrl = "";
                 return response;
+            }
 
-                while (true)
+            while (true)
             {
                 for (int i = bestUrlMatch.Length - 1; i >= 0; i--)
                 {

@@ -33,18 +33,20 @@ namespace Demos
                 yield return new HText($"Directoy Responses are called for all request targeting a specific sub-directory like '{URL}/<suburl>' for this {nameof(DirectoryElementResponse)}.");
                 yield return new HText($"Enter a suburl to visit:");
 
-                JSVariable variable = new JSVariable();
+                // Create a text-field that changes the sub-url, a button should go to on click.
+                JSVariable suburl = new JSVariable();
                 JSButton button = new JSButton("Go to Sub-URL");
-                button.onclick = new JScript(JSValue.CurrentBrowserURL.Set(new JSStringValue($"{URL}/") + variable.Name));
+                button.onclick = new JScript(JSValue.CurrentBrowserURL.Set(new JSStringValue($"{URL}/") + suburl.Name));
 
                 JSInput input = new JSInput(HInput.EInputType.text, "suburl");
-                input.onchange = new JScript(variable.Set(input.GetInnerValue()));
+                input.onchange = new JScript(suburl.Set(input.GetInnerValue()));
 
-                yield return new HContainer(new HScript(variable.GetJsCode(sessionData)), input, button);
+                yield return new HContainer(new HScript(suburl.GetJsCode(sessionData)), input, button) { Class = "fit" };
             }
             else
             {
                 yield return new HHeadline($"Sub-URL '{subUrl}' has been called.", 3);
+                yield return new HTextBlock($"You can return to the main-page of this {nameof(DirectoryElementResponse)} by clicking ", new HLink("here", "/" + URL) { Style="display: initial;" }, ".");
             }
         }
     }
