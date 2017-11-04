@@ -225,7 +225,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<button type='" + buttonType + "' " + GetDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</button>";
+            return "<button type='" + buttonType + "' " + GetDefaultAttributes() + GetEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</button>";
         }
     }
 
@@ -245,7 +245,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<p " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
+            return "<p " + GetDefaultAttributes() + GetEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
         }
     }
 
@@ -280,7 +280,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
+            return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "' " + GetEventAttributes(sessionData, CallingContext.Default) + "></input>";
         }
 
         /// <summary>
@@ -394,7 +394,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            string ret = "<textarea " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
+            string ret = "<textarea " + GetDefaultAttributes() + GetEventAttributes(sessionData, CallingContext.Default);
 
             if (cols.HasValue)
                 ret += "cols='" + cols.Value + "' ";
@@ -510,7 +510,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            string ret = "<select " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
+            string ret = "<select " + GetDefaultAttributes() + GetEventAttributes(sessionData, CallingContext.Default);
 
             ret += "size=\"" + size + "\" ";
 
@@ -1031,251 +1031,251 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="sessionData">the sessionData</param>
         /// <param name="context">the current Calling Context</param>
         /// <returns>the event attributes as string</returns>
-        public string getEventAttributes(SessionData sessionData, CallingContext context = CallingContext.Default)
+        public string GetEventAttributes(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             // #AREYOUREADYFORTHEWEB?
 
             string ret = " ";
 
             if (onabort != null)
-                ret += "onabort=" + onabort.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onabort='" + onabort.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onafterprint != null)
-                ret += "onafterprint=" + onafterprint.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onafterprint='" + onafterprint.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onbeforeprint != null)
-                ret += "onbeforeprint=" + onbeforeprint.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onbeforeprint='" + onbeforeprint.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onbeforeunload != null)
-                ret += "onbeforeunload=" + onbeforeunload.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onbeforeunload='" + onbeforeunload.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onblur != null)
-                ret += "onblur=" + onblur.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onblur='" + onblur.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncanplay != null)
-                ret += "oncanplay=" + oncanplay.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncanplay='" + oncanplay.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncanplaythrough != null)
-                ret += "oncanplaythrough=" + oncanplaythrough.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncanplaythrough='" + oncanplaythrough.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onchange != null)
-                ret += "onchange=" + onchange.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onchange='" + onchange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onclick != null)
-                ret += "onclick=" + onclick.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onclick='" + onclick.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncontextmenu != null)
-                ret += "oncontextmenu=" + oncontextmenu.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncontextmenu='" + oncontextmenu.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncopy != null)
-                ret += "oncopy=" + oncopy.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncopy='" + oncopy.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncut != null)
-                ret += "oncut=" + oncut.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncut='" + oncut.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondblclick != null)
-                ret += "ondblclick=" + ondblclick.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondblclick='" + ondblclick.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondrag != null)
-                ret += "ondrag=" + ondrag.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondrag='" + ondrag.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragend != null)
-                ret += "ondragend=" + ondragend.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragend='" + ondragend.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragenter != null)
-                ret += "ondragenter=" + ondragenter.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragenter='" + ondragenter.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragleave != null)
-                ret += "ondragleave=" + ondragleave.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragleave='" + ondragleave.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragover != null)
-                ret += "ondragover=" + ondragover.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragover='" + ondragover.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragstart != null)
-                ret += "ondragstart=" + ondragstart.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragstart='" + ondragstart.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondrop != null)
-                ret += "ondrop=" + ondrop.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondrop='" + ondrop.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondurationchange != null)
-                ret += "ondurationchange=" + ondurationchange.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondurationchange='" + ondurationchange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onemptied != null)
-                ret += "onemptied=" + onemptied.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onemptied='" + onemptied.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onended != null)
-                ret += "onended=" + onended.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onended='" + onended.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onerror != null)
-                ret += "onerror=" + onerror.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onerror='" + onerror.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onfocus != null)
-                ret += "onfocus=" + onfocus.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onfocus='" + onfocus.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onfocusin != null)
-                ret += "onfocusin=" + onfocusin.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onfocusin='" + onfocusin.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onfocusout != null)
-                ret += "onfocusout=" + onfocusout.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onfocusout='" + onfocusout.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onhashchange != null)
-                ret += "onhashchange=" + onhashchange.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onhashchange='" + onhashchange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oninput != null)
-                ret += "oninput=" + oninput.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "oninput='" + oninput.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oninvalid != null)
-                ret += "oninvalid=" + oninvalid.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "oninvalid='" + oninvalid.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onkeydown != null)
-                ret += "onkeydown=" + onkeydown.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onkeydown='" + onkeydown.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onkeypress != null)
-                ret += "onkeypress=" + onkeypress.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onkeypress='" + onkeypress.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onkeyup != null)
-                ret += "onkeyup=" + onkeyup.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onkeyup='" + onkeyup.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onload != null)
-                ret += "onload=" + onload.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onload='" + onload.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onloadeddata != null)
-                ret += "onloadeddata=" + onloadeddata.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onloadeddata='" + onloadeddata.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onloadedmetadata != null)
-                ret += "onloadedmetadata=" + onloadedmetadata.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onloadedmetadata='" + onloadedmetadata.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onloadstart != null)
-                ret += "onloadstart=" + onloadstart.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onloadstart='" + onloadstart.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmessage != null)
-                ret += "onmessage=" + onmessage.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmessage='" + onmessage.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmousedown != null)
-                ret += "onmousedown=" + onmousedown.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmousedown='" + onmousedown.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseenter != null)
-                ret += "onmouseenter=" + onmouseenter.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseenter='" + onmouseenter.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseleave != null)
-                ret += "onmouseleave=" + onmouseleave.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseleave='" + onmouseleave.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmousemove != null)
-                ret += "onmousemove=" + onmousemove.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmousemove='" + onmousemove.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseout != null)
-                ret += "onmouseout=" + onmouseout.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseout='" + onmouseout.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseover != null)
-                ret += "onmouseover=" + onmouseover.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseover='" + onmouseover.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseup != null)
-                ret += "onmouseup=" + onmouseup.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseup='" + onmouseup.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmousewheel != null)
-                ret += "onmousewheel=" + onmousewheel.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmousewheel='" + onmousewheel.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onoffline != null)
-                ret += "onoffline=" + onoffline.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onoffline='" + onoffline.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ononline != null)
-                ret += "ononline=" + ononline.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ononline='" + ononline.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onopen != null)
-                ret += "onopen=" + onopen.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onopen='" + onopen.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpagehide != null)
-                ret += "onpagehide=" + onpagehide.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpagehide='" + onpagehide.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpageshow != null)
-                ret += "onpageshow=" + onpageshow.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpageshow='" + onpageshow.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpaste != null)
-                ret += "onpaste=" + onpaste.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpaste='" + onpaste.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpause != null)
-                ret += "onpause=" + onpause.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpause='" + onpause.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onplay != null)
-                ret += "onplay=" + onplay.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onplay='" + onplay.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onplaying != null)
-                ret += "onplaying=" + onplaying.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onplaying='" + onplaying.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpopstate != null)
-                ret += "onpopstate=" + onpopstate.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpopstate='" + onpopstate.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onprogress != null)
-                ret += "onprogress=" + onprogress.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onprogress='" + onprogress.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onratechange != null)
-                ret += "onratechange=" + onratechange.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onratechange='" + onratechange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onreset != null)
-                ret += "onreset=" + onreset.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onreset='" + onreset.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onresize != null)
-                ret += "onresize=" + onresize.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onresize='" + onresize.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onscroll != null)
-                ret += "onscroll=" + onscroll.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onscroll='" + onscroll.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onsearch != null)
-                ret += "onsearch=" + onsearch.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onsearch='" + onsearch.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onseeked != null)
-                ret += "onseeked=" + onseeked.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onseeked='" + onseeked.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onseeking != null)
-                ret += "onseeking=" + onseeking.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onseeking='" + onseeking.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onselect != null)
-                ret += "onselect=" + onselect.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onselect='" + onselect.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onshow != null)
-                ret += "onshow=" + onshow.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onshow='" + onshow.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onstalled != null)
-                ret += "onstalled=" + onstalled.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onstalled='" + onstalled.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onstorage != null)
-                ret += "onstorage=" + onstorage.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onstorage='" + onstorage.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onsubmit != null)
-                ret += "onsubmit=" + onsubmit.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onsubmit='" + onsubmit.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onsuspend != null)
-                ret += "onsuspend=" + onsuspend.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onsuspend='" + onsuspend.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontimeupdate != null)
-                ret += "ontimeupdate=" + ontimeupdate.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontimeupdate='" + ontimeupdate.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontoggle != null)
-                ret += "ontoggle=" + ontoggle.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontoggle='" + ontoggle.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontouchcancel != null)
-                ret += "ontouchcancel=" + ontouchcancel.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontouchcancel='" + ontouchcancel.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontouchend != null)
-                ret += "ontouchend=" + ontouchend.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontouchend='" + ontouchend.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontouchmove != null)
-                ret += "ontouchmove=" + ontouchmove.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontouchmove='" + ontouchmove.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontouchstart != null)
-                ret += "ontouchstart=" + ontouchstart.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontouchstart='" + ontouchstart.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onunload != null)
-                ret += "onunload=" + onunload.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onunload='" + onunload.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onvolumechange != null)
-                ret += "onvolumechange=" + onvolumechange.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onvolumechange='" + onvolumechange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onwaiting != null)
-                ret += "onwaiting=" + onwaiting.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onwaiting='" + onwaiting.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onwheel != null)
-                ret += "onwheel=" + onwheel.GetJsCode(sessionData, context).EvalBase64() + " ";
+                ret += "onwheel='" + onwheel.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             return ret;
         }
