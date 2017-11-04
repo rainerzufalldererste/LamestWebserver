@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -226,18 +226,18 @@ namespace lwshostsvc
 
             HostConfig.CurrentHostConfig.ApplyConfig();
 
-            RequestHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
-            RequestHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
-            RequestHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
-            RequestHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
+            RequestHandler.CurrentRequestHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
+            RequestHandler.CurrentRequestHandler.AddRequestHandler(new WebSocketRequestHandler());
+            RequestHandler.CurrentRequestHandler.AddRequestHandler(new PageResponseRequestHandler());
+            RequestHandler.CurrentRequestHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
 
             foreach (var directory in HostConfig.CurrentHostConfig.WebserverFileDirectories)
             {
-                RequestHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(directory));
+                RequestHandler.CurrentRequestHandler.AddRequestHandler(new CachedFileRequestHandler(directory));
                 ServerHandler.LogMessage($"Added WebserverFileDirectory '{directory}'");
             }
 
-            RequestHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
+            RequestHandler.CurrentRequestHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
 
             foreach (var port in HostConfig.CurrentHostConfig.Ports)
             {
