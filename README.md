@@ -21,6 +21,8 @@ using (new WebServer(80, "./web"))
     // Automatically discovers all dynamic response-pages in this assembly and registers them at the webserver.
     Master.DiscoverPages();
     
+	Console.WriteLine("LamestWebserver Demo.\nEnter 'exit' to quit.");
+	
     // Keep the Server available until we enter exit.
     while (Console.ReadLine() != "exit") { }
 }
@@ -37,7 +39,7 @@ using LamestWebserver.UI;
 public class Page : ElementResponse
 {
     // The constructor of this page sets the URL that the page shall be available at by calling `base(<URL>)`.
-    // The constructor has to be empty (like this one) to be able to be automatically called.
+    // It also has to be empty (like this one) to be able to be automatically called.
     public Page() : base("/") { }
     
     // This method will be called whenever the page is requested.
