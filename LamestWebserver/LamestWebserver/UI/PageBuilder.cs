@@ -2485,7 +2485,7 @@ namespace LamestWebserver.UI
                         if(element is HElement)
                             ret += "<td>" + ((HElement)element).GetContent(sessionData) + "</td>";
                         else
-                            ret += "<td>" + element.ToString() + "</td>";
+                            ret += "<td>" + element?.ToString() + "</td>";
                     }
 
                     ret += "</tr>";

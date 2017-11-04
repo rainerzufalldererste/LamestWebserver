@@ -1,16 +1,18 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LamestWebserver.Core;
 using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
+using LamestWebserver.RequestHandlers.DebugView;
+using LamestWebserver.UI;
 
 namespace LamestWebserver.Caching
 {
     /// <summary>
     /// A general purpose key-value string cache.
     /// </summary>
-    public class ResponseCache : NullCheckable
+    public class ResponseCache : NullCheckable, IDebugRespondable
     {
         /// <summary>
         /// The main ResponseCache instance for LamestWebserver.
@@ -36,6 +38,13 @@ namespace LamestWebserver.Caching
 
         private readonly AVLHashMap<string, ResponseCacheEntry<string>> StringResponses = new AVLHashMap<string, ResponseCacheEntry<string>>(StringResponseCacheHashmapSize);
         private UsableWriteLock StringResponseLock = new UsableWriteLock();
+
+        private DebugContainerResponseNode DebugResponseNode;
+
+        public ResponseCache()
+        {
+            DebugResponseNode = new DebugContainerResponseNode(nameof(ResponseCache), null, GetDebugResponse);
+        }
 
         /// <summary>
         /// Retrieves a cached string response if it is cached.
@@ -401,6 +410,67 @@ namespace LamestWebserver.Caching
                 CurrentStringResponseCacheSize += (ulong)value.Response.Length;
                 StringResponses[key] = value;
             }
+        }
+
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        private HElement GetDebugResponse(SessionData sessionData)
+        {
+            HMultipleElements ret = new HMultipleElements();
+
+            ret += new HText($"Current Response Count: {StringResponses.Count} ({CurrentStringResponseCacheSize * sizeof(char)} bytes).");
+
+            if (MaximumStringResponseCacheSize > 0)
+            {
+                ret += new HText($"Cache Fillrate: {CurrentStringResponseCacheSize} / {MaximumStringResponseCacheSize} = {((CurrentStringResponseCacheSize / MaximumStringResponseCacheSize) * 100f):0.000}%.");
+
+                string request;
+
+                using (StringResponseLock.LockRead())
+                {
+                    if (sessionData.HttpHeadVariables.TryGetValue("key", out request))
+                    {
+                        ret += new HLink("Back to all entries", "?all=true");
+
+                        ResponseCacheEntry<string> response;
+
+                        if (StringResponses.TryGetValue(request, out response))
+                        {
+                            ret += new HHeadline($"Entry '{request}'", 2);
+                            ret += new HText("Requested Times: " + response.Count);
+                            ret += new HText("Response Length: " + response.Response.Length);
+                            ret += new HText("Last Requested: " + response.LastRequestedDateTime);
+                            ret += new HText("Last Updated Times: " + response.LastUpdatedDateTime);
+                            ret += new HText("Lifetime: " + response.RefreshTime);
+
+                            ret += new HLine();
+                            ret += new HText("Contents:");
+
+                            ret += new HText(response.Response) { Class = "code" };
+                        }
+                        else
+                        {
+                            ret += new HText($"The requested entry '{request}' could not be found.") { Class = "error" };
+                        }
+                    }
+                    else if (sessionData.HttpHeadVariables.ContainsKey("all"))
+                    {
+                        ret += new HTable((from e in StringResponses
+                                    select new object[] { e.Key, e.Value.Count, e.Value.Response.Length, e.Value.LastRequestedDateTime, e.Value.LastUpdatedDateTime, e.Value.RefreshTime, new HLink("Show Contents", "?key=" + e.Key.EncodeUrl()) }
+                                    ).OrderByDescending(e => (int)(ulong)e[1] * (int)e[2]))
+                        {
+                            TableHeader = new string[] { "Key", "Request Count", "Response Length", "Last Request Time", "Last Updated Time", "Lifetime", "Contents" }
+                        };
+                    }
+                    else
+                    {
+                        ret += new HButton("Show all entries (might take a long time to load)", HButton.EButtonType.button, "?all=true");
+                    }
+                }
+            }
+
+            return ret;
         }
 
         /// <summary>

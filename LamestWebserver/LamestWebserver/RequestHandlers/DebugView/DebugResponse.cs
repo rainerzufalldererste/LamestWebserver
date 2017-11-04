@@ -56,7 +56,7 @@ namespace LamestWebserver.RequestHandlers.DebugView
     background: #111215;
 }
 
-p, a, h1, h2, h3, div.container, b, i {
+p, a, h1, h2, h3, div.container, b, i, button, form, img {
     max-width: 1100px;
     margin: 1em auto 0.5em auto;
     display: block;
@@ -88,12 +88,11 @@ span {
     color: #575d61;
 }
 
-hr {
+hr {    
     width: 80%;
-    border-style: solid;
-    border-width: 1px;
     margin: 1.5em auto;
     color: #575d61;
+    border: 1.5px dashed #3c3c3c;
 }
 
 h1 {
@@ -139,14 +138,27 @@ div.footer {
 }
 
 a {
-    color: #aaa;
+    color: #e2907e;
     text-decoration: none;
     display: block;
 }
 
 a:hover {
-    color: #92b8ce;
+    color: #ffd45b;
     text-decoration: underline;
+}
+
+a:active {
+    color: #ffe89e;
+    text-decoration: underline;
+}
+
+.subnodes a {
+    color: #8e8e8e;
+}
+
+.subnodes a:hover, .subnodes a:active {
+    color: #ffffff;
 }
 
 a.nav {
@@ -225,6 +237,14 @@ hr.start {
     background: linear-gradient(to left, #ff6c8e, #ffb06c, #ffe66c);
 }
 
+p.code {
+    background-color: #323438;
+    color: #dedede;
+    padding: 1.75em;
+    word-wrap: break-word;
+    font-family: Consolas, 'Courier New', monospace;
+}
+
 p.invalid, p.error {
     margin: 3em auto 3em auto;
     border: 0.2em solid #d02f55;
@@ -239,6 +259,27 @@ p.warning {
     padding: 1em 2em;
     background: repeating-linear-gradient( 45deg, #f1bb42, #f1bb42 0.5em, #e49928 0.5em, #e49928 1em );
     text-shadow: #000 1px 1px 2px;
+}
+
+button {
+    margin: 1.5em 10% 1.5em 10%;
+    background: linear-gradient(20deg, #ff6e8b, #ffa770);
+    border-radius: 5px;
+    border: none;
+    color: #ffffff;
+    text-align: center;
+    font-weight: bold;
+    font-size: 11.5pt;
+    padding: 0.5em 0.75em;
+}
+
+button:hover {
+    background: linear-gradient(20deg, #ffa770, #ffcc6c);
+}
+
+button:active, button:focus {
+    background: linear-gradient(20deg, #ff6b8e, #ffe66b);
+    outline: none;
 }";
         #endregion
 
@@ -264,9 +305,6 @@ p.warning {
                         Elements =
                         {
                             new HText($"LamestWebserver DebugView v{typeof(DebugResponse).Assembly.GetName().Version}")
-                            {
-                                Class = "code"
-                            }
                         },
                         Class = "footer"
                     }
@@ -464,7 +502,7 @@ p.warning {
                     ret += $"action_{i}={already[i].Item2}&";
 
             if (!string.IsNullOrEmpty(requestedAction))
-                ret += $"action_{already.Count - 1}={requestedAction.FormatToHttpUrl()}";
+                ret += $"action_{already.Count - 1}={requestedAction.EncodeUrl()}";
 
             return new HLink(text, ret);
         }
@@ -487,7 +525,7 @@ p.warning {
             string ret = "/" + url.ToString() + "?";
 
             if (!string.IsNullOrEmpty(requestedAction))
-                ret += $"action_{url.Count - 1}={requestedAction.FormatToHttpUrl()}";
+                ret += $"action_{url.Count - 1}={requestedAction.EncodeUrl()}";
 
             return new HLink(text, ret);
         }
@@ -526,7 +564,7 @@ p.warning {
                     ret += $"action_{i}={nodes[i].Item2}&";
 
             if (!string.IsNullOrEmpty(requestedAction))
-                ret += $"action_{nodes.Count - 1}={requestedAction.FormatToHttpUrl()}";
+                ret += $"action_{nodes.Count - 1}={requestedAction.EncodeUrl()}";
 
             return new HLink(text, ret);
         }

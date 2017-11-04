@@ -31,14 +31,14 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <param name="input">the input</param>
         /// <returns>the input encoded as HTTP URL</returns>
-        public static string FormatToHttpUrl(this string input) => System.Web.HttpUtility.HtmlEncode(input);
+        public static string EncodeUrl(this string input) => System.Web.HttpUtility.UrlEncode(input);
 
         /// <summary>
         /// HTML encodes a given input
         /// </summary>
         /// <param name="text">the input</param>
         /// <returns>the input encoded as HTML</returns>
-        public static string FormatToHtml(this string text) => new System.Web.HtmlString(text).ToHtmlString();
+        public static string EncodeHtml(this string text) => new System.Web.HtmlString(text).ToHtmlString();
 
 
 
