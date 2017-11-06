@@ -2,6 +2,7 @@
   <br>
   <a href="https://github.com/rainerzufalldererste/LamestWebserver"><img src="https://raw.githubusercontent.com/rainerzufalldererste/LamestWebserver/master/LamestWebserver/content/lws-promo.png" alt="LamestWebserver" style="width: 700px; max-width: 80%"></a>
   <br>
+  <br>
 </h1>
 
 LamestWebserver is an open-source WebApp- and Webserver framework built to be simple and easy to use but still powerful and low-level.
@@ -21,7 +22,7 @@ using (new WebServer(80, "./web"))
     // Automatically discovers all dynamic response-pages in this assembly and registers them at the webserver.
     Master.DiscoverPages();
     
-	Console.WriteLine("LamestWebserver Demo.\nEnter 'exit' to quit.");
+    Console.WriteLine("LamestWebserver Demo.\nEnter 'exit' to quit.");
 	
     // Keep the Server available until we enter exit.
     while (Console.ReadLine() != "exit") { }
