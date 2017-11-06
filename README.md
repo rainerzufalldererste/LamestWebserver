@@ -1,5 +1,4 @@
 <h1 align="center">
-  <br>
   <a href="https://github.com/rainerzufalldererste/LamestWebserver"><img src="https://raw.githubusercontent.com/rainerzufalldererste/LamestWebserver/master/LamestWebserver/content/lws-promo.png" alt="LamestWebserver" style="width: 700px; max-width: 80%"></a>
   <br>
   <br>
