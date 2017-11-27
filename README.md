@@ -39,7 +39,7 @@ using LamestWebserver.UI;
 public class Page : ElementResponse
 {
     // The constructor of this page sets the URL that the page shall be available at by calling `base(<URL>)`.
-    // It also has to be empty (like this one) to be able to be automatically called.
+    // It also has to be empty (like this one) and `public` to be able to be automatically called.
     public Page() : base("/") { }
     
     // This method will be called whenever the page is requested.
