@@ -824,7 +824,7 @@ namespace LamestWebserver.UI
 
             if (Text != null)
                 ret += System.Web.HttpUtility.HtmlEncode(Text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-                    
+
             ret += "</p>";
 
             return ret;
@@ -2786,6 +2786,103 @@ namespace LamestWebserver.UI
                 ret += DescriptionTags;
 
             return ret + ">" + System.Web.HttpUtility.HtmlEncode(Value) + "</textarea>";
+        }
+    }
+
+    /// <summary>
+    /// A "p" tag, representing a textblock
+    /// </summary>
+    public class HIframe : HSelectivelyCacheableElement
+    {
+        /// <summary>
+        /// Additional attributes to add to this HTML-Tag
+        /// </summary>
+        public string DescriptionTags;
+
+        /// <summary>
+        /// The source to display
+        /// </summary>
+        public string Source;
+
+        /// <summary>
+        /// The HTML-Content to display
+        /// </summary>
+        public string SourceHtml;
+
+        /// <summary>
+        /// The HTML5 sandbox attribute for iframes. null if nonexistent. SandboxMode.enabled no specific attribute.
+        /// </summary>
+        public SandboxMode? SandboxAttribute = null;
+
+        /// <summary>
+        /// Constructs a TextBlock
+        /// </summary>
+        /// <param name="text">the Text displayed</param>
+        public HIframe(string src = "")
+        {
+            this.Source = src;
+        }
+
+        /// <summary>
+        /// This Method parses the current element to string
+        /// </summary>
+        /// <param name="sessionData">the current ISessionIdentificator</param>
+        /// <returns>the element as string</returns>
+        public override string GetContent(SessionData sessionData)
+        {
+            string ret = "<iframe ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                ret += "id='" + ID + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Name))
+                ret += "name='" + Name + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Class))
+                ret += "class='" + Class + "' ";
+
+            if (!string.IsNullOrWhiteSpace(Style))
+                ret += "style=\"" + Style + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Title))
+                ret += "title=\"" + Title + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(Source))
+                ret += "src=\"" + Source + "\" ";
+
+            if (!string.IsNullOrWhiteSpace(SourceHtml))
+                ret += "srcdoc=\"" + SourceHtml.Replace("\n", "").Replace("\t", "").Replace("\"", "&quot;") + "\" ";
+
+            if (SandboxAttribute.HasValue)
+            {
+                if (SandboxAttribute == SandboxMode.enabled)
+                    ret += "sandbox ";
+                else
+                    foreach (SandboxMode s in Enum.GetValues(typeof(SandboxMode)))
+                        if (((int)SandboxAttribute & (int)s) != 0)
+                            ret += $"sandbox=\"{s.ToString().Replace('_', '-')}\" ";
+            }
+
+            if (!string.IsNullOrWhiteSpace(DescriptionTags))
+                ret += DescriptionTags;
+
+            ret += "></iframe>";
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Represents the HTML5 Sandbox attributes to an iframe.
+        /// </summary>
+        public enum SandboxMode
+        {
+            enabled = 0,
+            allow_forms = 0x1,
+            allow_pointer_lock = 0x2,
+            allow_popups = 0x4,
+            allow_same_origin = 0x8,
+            allow_scripts = 0x10,
+            allow_top_navigation = 0x20
         }
     }
 
