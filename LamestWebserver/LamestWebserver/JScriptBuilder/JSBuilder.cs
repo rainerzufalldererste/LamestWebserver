@@ -720,6 +720,40 @@ namespace LamestWebserver.JScriptBuilder
     }
 
     /// <summary>
+    /// A String literal Value in JavaScript without any processing to the string (other than '"' to '&quot;').
+    /// </summary>
+    public class JSRawStringValue : JSValue
+    {
+        /// <summary>
+        /// Constructs a new JSRawStringValue of a given string
+        /// </summary>
+        /// <param name="value">the string to set this value to</param>
+        public JSRawStringValue(string value) : base(value)
+        {
+            _content = value;
+        }
+
+        /// <inheritdoc />
+        public override string Content => "\"" + _content + "\"";
+
+        /// <inheritdoc />
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            return "\"" + _content.Replace("\"", "&quot;") + "\"" + (context == CallingContext.Default ? ";" : " ");
+        }
+
+        /// <summary>
+        /// Casts a string to a JSRawStringValue
+        /// </summary>
+        /// <param name="value">the string being casted</param>
+        /// <returns>the string as JSRawStringValue</returns>
+        public static implicit operator JSRawStringValue(string value)
+        {
+            return new JSRawStringValue(value);
+        }
+    }
+
+    /// <summary>
     /// Represents an already masked string value. A JSUnmaskedStringValue will not be encoded when processing.
     /// </summary>
     public class JSUnmaskedStringValue : JSStringValue
@@ -1140,6 +1174,16 @@ namespace LamestWebserver.JScriptBuilder
         /// Removes this Element from the page
         /// </summary>
         public IJSPiece Delete => JSFunctionCall.DisplayElementByID(ID.Content);
+
+        /// <summary>
+        /// A custom attribute of this Element
+        /// </summary>
+        public JSValue this[string parameter] => new JSValue(Content + "." + parameter);
+
+        /// <summary>
+        /// A custom attribute of this Element
+        /// </summary>
+        public JSValue CustomParameter(string parameter) => new JSValue(Content + "." + parameter);
     }
 
     /// <summary>

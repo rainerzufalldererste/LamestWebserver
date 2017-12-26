@@ -399,4 +399,14 @@ namespace LamestWebserver.UI.CachedByDefault
             CachingType = ECachingType.Cacheable;
         }
     }
+
+    /// <inheritdoc />
+    public class CIframe : HIframe
+    {
+        /// <inheritdoc />
+        public CIframe(string src = "") : base(src)
+        {
+            CachingType = ECachingType.Cacheable;
+        }
+    }
 }
