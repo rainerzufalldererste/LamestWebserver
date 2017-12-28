@@ -288,5 +288,21 @@ namespace LamestWebserver.Core
         /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
         public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6, T7, T8>(this ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8> tuple) where T8 : struct => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7, tuple.Rest };
+
+        /// <summary>
+        /// Checks whether a list of lists contains a given list, that is equal to the provided sequence.
+        /// </summary>
+        /// <typeparam name="T">Type contained in the lists inside the list.</typeparam>
+        /// <param name="listOfLists">This list of lists.</param>
+        /// <param name="sequence">The sequence to look for.</param>
+        /// <returns>True if contained, False if not contained.</returns>
+        public static bool ContainsEqualSequence<T>(this IEnumerable<IEnumerable<T>> listOfLists, IEnumerable<T> sequence)
+        {
+            foreach (IEnumerable<T> list in listOfLists)
+                if (list.SequenceEqual(sequence))
+                    return true;
+
+            return false;
+        }
     }
 }

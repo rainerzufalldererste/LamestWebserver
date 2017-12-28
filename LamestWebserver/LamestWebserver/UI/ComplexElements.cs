@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -77,8 +77,85 @@ namespace LamestWebserver.UI
             {
                 ret += new HLink(entries[i].Item1, entries[i].Item2)
                 {
-                    DescriptionTags = "onmousedown='" + new JScript(JSValue.CurrentBrowserURL.Set((JSStringValue) entries[i].Item2), JSElement.GetByID(ContainerID).Hide) + "'"
+                    DescriptionTags = "onmousedown='" + new JScript(JSValue.CurrentBrowserURL.Set((JSStringValue)entries[i].Item2), JSElement.GetByID(ContainerID).Hide) + "'"
                 };
+
+                if (i + 1 < entries.Length)
+                    ret += new HNewLine();
+            }
+
+            return ret;
+        }
+    }
+
+    public class HSearchBox : HElement
+    {
+        public string Value = "";
+        public string Placeholder = "";
+        private readonly string _pageUrl;
+        private readonly Func<SessionData, string, IEnumerable<string>> _func;
+        public string ContainerID;
+
+        public HSearchBox(Func<SessionData, string, IEnumerable<string>> responseFunction, string placeholder = null, string responseUrl = null)
+        {
+            if (responseUrl == null)
+                responseUrl = SessionContainer.GenerateUnusedHash();
+
+            _pageUrl = responseUrl;
+            _func = responseFunction;
+            ContainerID = responseUrl;
+            Placeholder = placeholder;
+
+            if (responseUrl != null)
+                InstantPageResponse.AddInstantPageResponse(_pageUrl, GetResponse);
+        }
+
+        /// <inheritdoc />
+        public override string GetContent(SessionData sessionData)
+        {
+            var input = new JSInput(HInput.EInputType.text, Name, Value) { Class = Class, Style = Style, Title = Title };
+
+            if (!string.IsNullOrWhiteSpace(Placeholder))
+                input.DescriptionTags = "placeholder='" + Placeholder + "' ";
+
+            if (!string.IsNullOrWhiteSpace(ID))
+                input.ID = ID;
+            else
+                input.ID = Hash.GetHash();
+
+            var container = new HContainer() { ID = ContainerID, Style = "display:none;" };
+            input.onclick = JSFunctionCall.DisplayElementByID(container.ID);
+            input.onfocus = input.onclick;
+            input.oninput = input.SetInnerHTMLWithNameValueAsync(JSElement.GetByID(container.ID), _pageUrl, JSFunctionCall.DisplayElementByID(container.ID));
+            input.onfocusout = new JSIf(JSElement.GetByID(input.ID)["value"].IsEqualTo(new JSRawStringValue("")), JSFunctionCall.HideElementByID(container.ID));
+
+            return input + container;
+        }
+
+        /// <summary>
+        /// Retrieves the response-functions answer to the browser in a usable format.
+        /// </summary>
+        /// <param name="sessionData">the current sessionData</param>
+        /// <returns>the responded message</returns>
+        protected string GetResponse(SessionData sessionData)
+        {
+            string param = "";
+
+            if (sessionData is HttpSessionData)
+            {
+                param = sessionData.GetHttpHeadValue("value");
+            }
+
+            if (param == null)
+                param = "";
+
+            var entries = _func(sessionData, param).ToArray();
+
+            string ret = "";
+
+            for (int i = 0; i < entries.Length; i++)
+            {
+                ret += new HText(entries[i]);
 
                 if (i + 1 < entries.Length)
                     ret += new HNewLine();
