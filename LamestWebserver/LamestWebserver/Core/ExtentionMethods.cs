@@ -304,5 +304,36 @@ namespace LamestWebserver.Core
 
             return false;
         }
+
+        /// <summary>
+        /// Checks whether a list of lists contains a given list, that contains the provided sequence.
+        /// </summary>
+        /// <typeparam name="T">Subsequence type.</typeparam>
+        /// <param name="listOfLists">This list of lists.</param>
+        /// <param name="sequence">The sequence to look for.</param>
+        /// <returns>True if contained, False if not contained.</returns>
+        public static bool SubsequenceContains<T>(this IEnumerable<T> listOfLists, T sequence) where T : IEnumerable<T>
+        {
+            foreach (T list in listOfLists)
+                if (list.Contains(sequence))
+                    return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks whether a list of strings contains an entry, that contains the provided string.
+        /// </summary>
+        /// <param name="listOfStrings">This list of strings.</param>
+        /// <param name="search">The string to look for.</param>
+        /// <returns>True if contained, False if not contained.</returns>
+        public static bool SubsequenceContainsString(this IEnumerable<string> listOfStrings, string search)
+        {
+            foreach (string entry in listOfStrings)
+                if (entry.Contains(search))
+                    return true;
+
+            return false;
+        }
     }
 }
