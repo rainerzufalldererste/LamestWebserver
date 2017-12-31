@@ -508,6 +508,20 @@ namespace LamestWebserver
                 {
                     if (Running)
                     {
+                        if (e.InnerException != null && e.InnerException is SocketException && ((SocketException)e.InnerException).NativeErrorCode == 10060) // Timeout
+                        {
+                            try
+                            {
+                                client.Client.Shutdown(SocketShutdown.Both);
+                                client.Close();
+
+                                Logger.LogInformation($"The connection to {client.Client.RemoteEndPoint} has been closed ordinarily after the timeout has been reached.", stopwatch);
+                            }
+                            catch { };
+
+                            break;
+                        }
+
                         Logger.LogError("An exception occured in the client handler:  " + e, stopwatch);
 
                         try
