@@ -1,8 +1,3 @@
-<h1 align="center">
-  <img src="https://raw.githubusercontent.com/rainerzufalldererste/LamestWebserver/master/LamestWebserver/content/lwsbubbles2.png" style="width: 700px; max-width: 80%">
-  <br><br>
-</h1>
-
 ## Directory Overview
 
 * `Demos`: Contains a Project that demonstrates the usage of important parts of LamestWebserver. The code in here should be very descriptive or self explanatory. Basic topics should even have comments explaning them.
@@ -32,5 +27,6 @@ Depends on LamestWebserver.
 Depends on LamestWebserver and lwshostcore.
 
 <h1 align="center">
+  <br><br>
   <img src="https://raw.githubusercontent.com/rainerzufalldererste/LamestWebserver/master/LamestWebserver/content/lwsbubbles.png" style="width: 700px; max-width: 80%">
 </h1>
