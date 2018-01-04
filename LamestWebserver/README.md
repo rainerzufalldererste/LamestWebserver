@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/rainerzufalldererste/LamestWebserver/master/LamestWebserver/content/lwsbubbles.png" style="width: 700px; max-width: 80%">
+  <img src="https://raw.githubusercontent.com/rainerzufalldererste/LamestWebserver/master/LamestWebserver/content/lwsbubbles2.png" style="width: 700px; max-width: 80%">
   <br><br>
 </h1>
 
@@ -32,5 +32,5 @@ Depends on LamestWebserver.
 Depends on LamestWebserver and lwshostcore.
 
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/rainerzufalldererste/LamestWebserver/master/LamestWebserver/content/lwsbubbles2.png" style="width: 700px; max-width: 80%">
+  <img src="https://raw.githubusercontent.com/rainerzufalldererste/LamestWebserver/master/LamestWebserver/content/lwsbubbles.png" style="width: 700px; max-width: 80%">
 </h1>
