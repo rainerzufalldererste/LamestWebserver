@@ -56,6 +56,11 @@ namespace LamestWebserver
         /// </summary>
         public DateTime? ModifiedDate = null;
 
+        /// <summary>
+        /// The HTTP ContentType charset attribute. Only applicable if ContentType is not null.
+        /// </summary>
+        public string CharSet = "UTF-8";
+
 
         /// <summary>
         /// the binary data contained in the request
@@ -107,7 +112,7 @@ namespace LamestWebserver
         /// <returns>the contents as byte array</returns>
         public byte[] GetPackage()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder(WebServer.ResponseDefaultStringLength);
 
             sb.Append(Version + " " + Status + "\r\n");
             sb.Append("Date: " + Date + "\r\n");
@@ -136,7 +141,14 @@ namespace LamestWebserver
             sb.Append("Connection: Keep-Alive\r\n");
 
             if (ContentType != null)
-                sb.Append("Content-Type: " + ContentType + "; charset=UTF-8\r\n");
+            {
+                sb.Append("Content-Type: " + ContentType);
+
+                if(CharSet == null)
+                    sb.Append(";charset=UTF-8\r\n");
+                else
+                    sb.Append($";charset={CharSet}\r\n");
+            }
 
             if(Range != null)
             {

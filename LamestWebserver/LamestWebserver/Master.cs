@@ -6,6 +6,7 @@ using System.Web;
 using LamestWebserver.NotificationService;
 using LamestWebserver.UI;
 using LamestWebserver.Core;
+using System.Text;
 
 namespace LamestWebserver
 {
@@ -93,11 +94,19 @@ namespace LamestWebserver
         }
 
         /// <summary>
-        /// The prototype for a response from the server
+        /// The prototype for PageResponse Functions.
         /// </summary>
         /// <param name="data">the current SessionData</param>
         /// <returns>the response as string</returns>
         public delegate string GetContents(HttpSessionData data);
+
+        /// <summary>
+        /// A prototype for DataResponse Functions.
+        /// </summary>
+        /// <param name="data">The current SessionData.</param>
+        /// <param name="contentType">The mime-contentType of the returned data.</param>
+        /// <returns></returns>
+        public delegate byte[] GetDataContents(HttpSessionData data, out string contentType, ref Encoding encoding);
 
         /// <summary>
         /// The prototype for a response of a directory page from the server.
@@ -115,6 +124,13 @@ namespace LamestWebserver
         public delegate void AddFunction(string url, GetContents function);
 
         /// <summary>
+        /// the prototype for adding new dataResponses to the servers.
+        /// </summary>
+        /// <param name="url">the URL</param>
+        /// <param name="function">the code to execute</param>
+        public delegate void AddDataResponseFunction(string url, GetDataContents function);
+
+        /// <summary>
         /// The prototype for adding new directory pages to the servers.
         /// </summary>
         /// <param name="url">the url of the directory</param>
@@ -130,17 +146,27 @@ namespace LamestWebserver
         /// <summary>
         /// the event, that raises if a page is added
         /// </summary>
-        public static event AddFunction AddFunctionEvent;
+        public static event AddFunction AddPageResponseEvent = (url, function) => { };
 
         /// <summary>
         /// the event, that raises if a page is removed
         /// </summary>
-        public static event RemoveFunction RemoveFunctionEvent;
+        public static event RemoveFunction RemovePageResponseEvent = (url) => { };
+
+        /// <summary>
+        /// the event, that raises if a page is added
+        /// </summary>
+        public static event AddDataResponseFunction AddDataResponseEvent = (url, function) => { };
+
+        /// <summary>
+        /// the event, that raises if a page is removed
+        /// </summary>
+        public static event RemoveFunction RemoveDataResponseEvent = (url) => { };
 
         /// <summary>
         /// the event, that raises if a page, which is only available for one request, is added
         /// </summary>
-        public static event AddFunction AddOneTimeFunctionEvent;
+        public static event AddFunction AddOneTimeFunctionEvent = (url, function) => { };
 
         /// <summary>
         /// the event, that raises if a directory page is added
@@ -157,18 +183,18 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="url">the url of the page to add</param>
         /// <param name="function">the code of the page</param>
-        public static void AddFuntionToServer(string url, GetContents function)
+        public static void AddPageResponseToServer(string url, GetContents function)
         {
-            AddFunctionEvent(url, function);
+            AddPageResponseEvent(url, function);
         }
 
         /// <summary>
         /// removes an arbitrary response from the listening servers
         /// </summary>
         /// <param name="url">the URL of the page to remove</param>
-        public static void RemoveFunctionFromServer(string url)
+        public static void RemovePageResponseFromServer(string url)
         {
-            RemoveFunctionEvent(url);
+            RemovePageResponseEvent(url);
         }
 
         /// <summary>
@@ -176,9 +202,28 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="url">the URL at which this page will be available</param>
         /// <param name="function">the code to execute</param>
-        public static void AddOneTimeFuntionToServer(string url, GetContents function)
+        public static void AddOneTimePageResponseToServer(string url, GetContents function)
         {
             AddOneTimeFunctionEvent(url, function);
+        }
+        
+        /// <summary>
+        /// Adds an arbitrary data response to the listening servers
+        /// </summary>
+        /// <param name="url">the url of the page to add</param>
+        /// <param name="function">the code of the data response</param>
+        public static void AddDataResponseToServer(string url, GetDataContents function)
+        {
+            AddDataResponseEvent(url, function);
+        }
+
+        /// <summary>
+        /// removes an arbitrary data response from the listening servers.
+        /// </summary>
+        /// <param name="url">the URL of the data response to remove.</param>
+        public static void RemoveDataResponseFromServer(string url)
+        {
+            RemoveDataResponseEvent(url);
         }
 
         /// <summary>

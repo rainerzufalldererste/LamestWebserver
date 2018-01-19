@@ -203,7 +203,7 @@ namespace LamestWebserver.UI
 
         private void Register()
         {
-            Master.AddFuntionToServer(URL, GetContent);
+            Master.AddPageResponseToServer(URL, GetContent);
         }
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace LamestWebserver.UI
         /// </summary>
         protected void RemoveFromServer()
         {
-            Master.RemoveFunctionFromServer(URL);
+            Master.RemovePageResponseFromServer(URL);
         }
     }
 

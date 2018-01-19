@@ -88,7 +88,12 @@ namespace LamestWebserver
         /// <summary>
         /// The size of the Page Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
         /// </summary>
-        public static int PageResponseStorageHashMapSize = 256;
+        public static int PageResponseStorageHashMapSize = 2048;
+        
+        /// <summary>
+        /// The size of the Data Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
+        /// </summary>
+        public static int DataResponseStorageHashMapSize = 512;
 
         /// <summary>
         /// Add a webserver to be closed (IDisposable.Dispose()) whenever this webserver is closed. 
@@ -109,17 +114,23 @@ namespace LamestWebserver
         /// <summary>
         /// The size of the Websocket Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
         /// </summary>
-        public static int WebSocketResponsePageStorageHashMapSize = 64;
+        public static int WebSocketResponsePageStorageHashMapSize = 512;
 
         /// <summary>
         /// The size of the Directory Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
         /// </summary>
-        public static int DirectoryResponseStorageHashMapSize = 128;
+        public static int DirectoryResponseStorageHashMapSize = 512;
 
         /// <summary>
         /// The size that is read from the networkStream for each request.
         /// </summary>
         public static int RequestMaxPacketSize = 4096;
+        
+        /// <summary>
+        /// The size that is set as starting StringBuilder capacity for a HttpResponse.
+        /// </summary>
+        public static int ResponseDefaultStringLength = 512;
+
 
         private Mutex networkStreamsMutex = new Mutex();
         private AVLTree<int, Stream> streams = new AVLTree<int, Stream>();

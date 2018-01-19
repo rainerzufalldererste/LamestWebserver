@@ -36,7 +36,7 @@ namespace LamestWebserver
 
         private void Register()
         {
-            Master.AddFuntionToServer(URL, this.GetContents);
+            Master.AddPageResponseToServer(URL, this.GetContents);
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace LamestWebserver
         /// </summary>
         protected void RemoveFromServer()
         {
-            Master.RemoveFunctionFromServer(URL);
+            Master.RemovePageResponseFromServer(URL);
         }
 
         private string GetContents(HttpSessionData sessionData)
