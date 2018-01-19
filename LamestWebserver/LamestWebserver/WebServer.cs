@@ -194,6 +194,7 @@ namespace LamestWebserver
             RequestHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
             RequestHandler.AddRequestHandler(new WebSocketRequestHandler());
             RequestHandler.AddRequestHandler(new PageResponseRequestHandler());
+            RequestHandler.AddRequestHandler(new DataResponseRequestHandler());
             RequestHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
 
             if(folder != null)

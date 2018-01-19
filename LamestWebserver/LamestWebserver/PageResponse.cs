@@ -162,7 +162,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="URL">The URL of this page.</param>
         /// <param name="register">Shall this page automatically be registered?</param>
-        protected PageResponse(string URL, bool register = true) : base(URL)
+        public PageResponse(string URL, bool register = true) : base(URL)
         {
             if (register)
                 Master.AddPageResponseToServer(URL, GetContents);
@@ -196,7 +196,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="URL">the URL of this Page</param>
         /// <param name="register">shall this page be automatically registered?</param>
-        protected SyncronizedPageResponse(string URL, bool register = true) : base(URL, false)
+        public SyncronizedPageResponse(string URL, bool register = true) : base(URL, false)
         {
             if (register)
                 Master.AddPageResponseToServer(URL, GetContentSyncronously);
@@ -228,7 +228,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="URL">the URL of this page</param>
         /// <param name="register">shall this page be automatically registered?</param>
-        protected ElementResponse(string URL, bool register = true) : base(URL)
+        public ElementResponse(string URL, bool register = true) : base(URL)
         {
             if (register)
                 Master.AddPageResponseToServer(URL, GetContents);
@@ -267,7 +267,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="URL">the URL of this page</param>
         /// <param name="register">shall this page be automatically registered at the server?</param>
-        protected SyncronizedElementResponse(string URL, bool register = true) : base(URL, false)
+        public SyncronizedElementResponse(string URL, bool register = true) : base(URL, false)
         {
             if (register)
                 Master.AddPageResponseToServer(URL, getContents);
@@ -591,7 +591,7 @@ namespace LamestWebserver
         /// Creates a new ResponseCoreImplementation element.
         /// </summary>
         /// <param name="URL">The URL of the Response.</param>
-        protected DataResponse(string URL, bool register = true)
+        public DataResponse(string URL, bool register = true)
         {
             if (URL == null)
                 throw new ArgumentNullException(nameof(URL));
