@@ -229,7 +229,7 @@ namespace LamestWebserver.UI
         public override string GetContent(SessionData sessionData)
         {
             if (Values == null || Values.Count == 0)
-                throw new ArgumentException($"No Values given to cycle through.");
+                Logger.LogExcept(new ArgumentException($"No Values given to cycle through."));
 
             string defaultContents = "";
 
