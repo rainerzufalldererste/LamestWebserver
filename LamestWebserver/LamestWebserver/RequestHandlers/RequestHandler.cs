@@ -1231,8 +1231,8 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         public PageResponseRequestHandler()
         {
-            Master.AddFunctionEvent += AddFunction;
-            Master.RemoveFunctionEvent += RemoveFunction;
+            Master.AddPageResponseEvent += AddFunction;
+            Master.RemovePageResponseEvent += RemoveFunction;
             
             DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
         }
@@ -1617,6 +1617,126 @@ namespace LamestWebserver.RequestHandlers
 
                 if (requestFunction.Target != null && requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan, string, HttpRequest, HttpResponse>)
                     ((IDebugUpdateableResponse<Exception, TimeSpan, string, HttpRequest, HttpResponse>)requestFunction.Target).UpdateDebugResponseData(exception, stopwatch.Elapsed, _subUrl, requestPacket, httpResponse);
+            }
+        }
+    }
+
+
+    /// <summary>
+    /// A response handler for DataResponses
+    /// </summary>
+    public class DataResponseRequestHandler : AbstractMutexRetriableResponse<Master.GetDataContents>, IDebugRespondable
+    {
+        /// <summary>
+        /// Shall this RequestHandler store DebugView information?
+        /// </summary>
+        public static bool StoreDebugInformation = true;
+
+        /// <summary>
+        /// The DebugResponseNode for this DataResponseRequestHandler.
+        /// </summary>
+        public readonly DebugContainerResponseNode DebugResponseNode;
+
+        /// <summary>
+        /// A ReaderWriterLock for accessing pages synchronously.
+        /// </summary>
+        protected UsableWriteLock ReaderWriterLock = new UsableWriteLock();
+
+        /// <summary>
+        /// The currently listed DataResponses.
+        /// </summary>
+        protected AVLHashMap<string, Master.GetDataContents> DataResponses = new AVLHashMap<string, Master.GetDataContents>(WebServer.DataResponseStorageHashMapSize);
+
+        /// <summary>
+        /// Constructs a new DataResponseRequestHandler and registers this RequestHandler as listening for new DataResponses.
+        /// </summary>
+        public DataResponseRequestHandler()
+        {
+            Master.AddDataResponseEvent += AddFunction;
+            Master.RemoveDataResponseEvent += RemoveFunction;
+
+            DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
+        }
+
+        private HElement GetDebugResponse(SessionData arg)
+        {
+            if (!StoreDebugInformation)
+                return new HText($"This {GetType().Name} does not store Error-Information. If you want Error-Information to be stored enable the '{StoreDebugInformation}' Flag.") { Class = "warning" };
+
+            using (ReaderWriterLock.LockRead())
+            {
+                var ret = new HTable((from e in DataResponses select new List<HElement> { new HString(e.Key), e.Value.Method.ToString(), e.Value.Target == null ? $"Declared in {e.Value.Method.DeclaringType.Name}" : $"[{e.Value.Target.GetType().Name}] {e.Value.Target.ToString()}" }))
+                {
+                    TableHeader = new HElement[] { "Registered URL", "Associated GetDataContents Function", "Instance Object or Declaring Class" }
+                };
+
+                return ret;
+            }
+        }
+
+        /// <inheritdoc />
+        public override HttpResponse GetRetriableResponse(Master.GetDataContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
+        {
+            string contentType;
+            Encoding encoding = Encoding.Unicode;
+
+            return new HttpResponse(requestPacket, requestFunction.Invoke(sessionData, out contentType, ref encoding))
+            {
+                Cookies = sessionData.SetCookies,
+                ContentType = contentType,
+                CharSet = encoding is UnicodeEncoding ? null : encoding.EncodingName
+            };
+        }
+
+        /// <inheritdoc />
+        public override Master.GetDataContents GetResponseFunction(HttpRequest requestPacket)
+        {
+            using (ReaderWriterLock.LockRead())
+                return DataResponses[requestPacket.RequestUrl];
+        }
+
+        private void AddFunction(string url, Master.GetDataContents getDataFunction)
+        {
+            using (ReaderWriterLock.LockWrite())
+            {
+                DataResponses.Add(url, getDataFunction);
+
+                if (getDataFunction.Target != null && getDataFunction.Target is IDebugRespondable)
+                    DebugResponseNode.AddNode(((IDebugRespondable)getDataFunction.Target).GetDebugResponseNode());
+            }
+
+            ServerHandler.LogMessage("The URL '" + url + "' is now assigned to a DataResponse. (WebserverApi)");
+        }
+
+        private void RemoveFunction(string url)
+        {
+            using (ReaderWriterLock.LockWrite())
+            {
+                Master.GetDataContents getc = DataResponses[url];
+
+                if (getc != null)
+                {
+                    if (getc.Target is IDebugRespondable)
+                        DebugResponseNode.RemoveNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
+
+                    DataResponses.Remove(url);
+                    ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a DataResponse anymore. (WebserverApi)");
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public DebugResponseNode GetDebugResponseNode() => DebugResponseNode;
+
+        /// <inheritdoc />
+        public override void FinishResponse(Master.GetDataContents requestFunction, Exception exception, Stopwatch stopwatch, HttpRequest requestPacket, HttpResponse httpResponse)
+        {
+            if (StoreDebugInformation)
+            {
+                base.FinishResponse(requestFunction, exception, stopwatch, requestPacket, httpResponse);
+
+                if (requestFunction.Target != null && requestFunction.Target is IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>)
+                    ((IDebugUpdateableResponse<Exception, TimeSpan, HttpRequest, HttpResponse>)requestFunction.Target).UpdateDebugResponseData(exception, stopwatch.Elapsed, requestPacket, httpResponse);
             }
         }
     }

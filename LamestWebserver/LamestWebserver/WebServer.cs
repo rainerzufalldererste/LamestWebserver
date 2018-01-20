@@ -88,7 +88,12 @@ namespace LamestWebserver
         /// <summary>
         /// The size of the Page Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
         /// </summary>
-        public static int PageResponseStorageHashMapSize = 256;
+        public static int PageResponseStorageHashMapSize = 2048;
+        
+        /// <summary>
+        /// The size of the Data Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
+        /// </summary>
+        public static int DataResponseStorageHashMapSize = 512;
 
         /// <summary>
         /// Add a webserver to be closed (IDisposable.Dispose()) whenever this webserver is closed. 
@@ -109,17 +114,23 @@ namespace LamestWebserver
         /// <summary>
         /// The size of the Websocket Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
         /// </summary>
-        public static int WebSocketResponsePageStorageHashMapSize = 64;
+        public static int WebSocketResponsePageStorageHashMapSize = 512;
 
         /// <summary>
         /// The size of the Directory Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
         /// </summary>
-        public static int DirectoryResponseStorageHashMapSize = 128;
+        public static int DirectoryResponseStorageHashMapSize = 512;
 
         /// <summary>
         /// The size that is read from the networkStream for each request.
         /// </summary>
         public static int RequestMaxPacketSize = 4096;
+        
+        /// <summary>
+        /// The size that is set as starting StringBuilder capacity for a HttpResponse.
+        /// </summary>
+        public static int ResponseDefaultStringLength = 512;
+
 
         private Mutex networkStreamsMutex = new Mutex();
         private AVLTree<int, Stream> streams = new AVLTree<int, Stream>();
@@ -183,6 +194,7 @@ namespace LamestWebserver
             RequestHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
             RequestHandler.AddRequestHandler(new WebSocketRequestHandler());
             RequestHandler.AddRequestHandler(new PageResponseRequestHandler());
+            RequestHandler.AddRequestHandler(new DataResponseRequestHandler());
             RequestHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
 
             if(folder != null)
@@ -508,18 +520,44 @@ namespace LamestWebserver
                 {
                     if (Running)
                     {
-                        if (e.InnerException != null && e.InnerException is SocketException && ((SocketException)e.InnerException).NativeErrorCode == 10060) // Timeout
+                        if (e.InnerException != null && e.InnerException is SocketException)
                         {
-                            try
+                            if (((SocketException)e.InnerException).SocketErrorCode == SocketError.TimedOut)
                             {
-                                client.Client.Shutdown(SocketShutdown.Both);
-                                client.Close();
+                                try
+                                {
+                                    string remoteEndPoint = client.Client.RemoteEndPoint.ToString();
 
-                                Logger.LogInformation($"The connection to {client.Client.RemoteEndPoint} has been closed ordinarily after the timeout has been reached.", stopwatch);
+                                    client.Client.Shutdown(SocketShutdown.Both);
+                                    client.Close();
+
+                                    Logger.LogInformation($"The connection to {remoteEndPoint} has been closed ordinarily after the timeout has been reached.", stopwatch);
+                                }
+                                catch { };
+
+                                break;
                             }
-                            catch { };
+                            else
+                            {
+                                string remoteEndPoint = "<unknown remote endpoint>";
 
-                            break;
+                                try
+                                {
+                                    remoteEndPoint = client.Client.RemoteEndPoint.ToString();
+
+                                    client.Client.Shutdown(SocketShutdown.Both);
+                                    client.Close();
+
+                                    Logger.LogInformation($"The connection to {remoteEndPoint} has been closed ordinarily after a SocketException occured. ({((SocketException)e.InnerException).SocketErrorCode})", stopwatch);
+
+                                    break;
+                                }
+                                catch { };
+                                
+                                Logger.LogInformation($"A SocketException occured with {remoteEndPoint}. ({((SocketException)e.InnerException).SocketErrorCode})", stopwatch);
+
+                                break;
+                            }
                         }
 
                         Logger.LogError("An exception occured in the client handler:  " + e, stopwatch);
