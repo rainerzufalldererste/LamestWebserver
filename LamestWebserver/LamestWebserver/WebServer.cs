@@ -520,18 +520,44 @@ namespace LamestWebserver
                 {
                     if (Running)
                     {
-                        if (e.InnerException != null && e.InnerException is SocketException && ((SocketException)e.InnerException).NativeErrorCode == 10060) // Timeout
+                        if (e.InnerException != null && e.InnerException is SocketException)
                         {
-                            try
+                            if (((SocketException)e.InnerException).SocketErrorCode == SocketError.TimedOut)
                             {
-                                client.Client.Shutdown(SocketShutdown.Both);
-                                client.Close();
+                                try
+                                {
+                                    string remoteEndPoint = client.Client.RemoteEndPoint.ToString();
 
-                                Logger.LogInformation($"The connection to {client.Client.RemoteEndPoint} has been closed ordinarily after the timeout has been reached.", stopwatch);
+                                    client.Client.Shutdown(SocketShutdown.Both);
+                                    client.Close();
+
+                                    Logger.LogInformation($"The connection to {remoteEndPoint} has been closed ordinarily after the timeout has been reached.", stopwatch);
+                                }
+                                catch { };
+
+                                break;
                             }
-                            catch { };
+                            else
+                            {
+                                string remoteEndPoint = "<unknown remote endpoint>";
 
-                            break;
+                                try
+                                {
+                                    remoteEndPoint = client.Client.RemoteEndPoint.ToString();
+
+                                    client.Client.Shutdown(SocketShutdown.Both);
+                                    client.Close();
+
+                                    Logger.LogInformation($"The connection to {remoteEndPoint} has been closed ordinarily after a SocketException occured. ({((SocketException)e.InnerException).SocketErrorCode})", stopwatch);
+
+                                    break;
+                                }
+                                catch { };
+                                
+                                Logger.LogInformation($"A SocketException occured with {remoteEndPoint}. ({((SocketException)e.InnerException).SocketErrorCode})", stopwatch);
+
+                                break;
+                            }
                         }
 
                         Logger.LogError("An exception occured in the client handler:  " + e, stopwatch);
