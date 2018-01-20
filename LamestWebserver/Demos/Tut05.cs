@@ -15,7 +15,7 @@ namespace Demos
     {
         /// <summary>
         /// This Tutorial will be hosted at "/Tut05".
-        /// The constructor for this class should be public & parameterless in order to be automatically discoverable.
+        /// The constructor for this class should be public and parameterless in order to be automatically discoverable.
         /// </summary>
         public Tut05() : base(nameof(Tut05)) { }
 
