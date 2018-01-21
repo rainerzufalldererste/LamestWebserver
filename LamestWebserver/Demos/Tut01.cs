@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -355,7 +355,7 @@ namespace Demos
                     new HText(nameof(HList)),
                     new HText("List of elements."),
                     new HText("<ol> <ul>"),
-                    new HList(HList.EListType.OrderedList, new[] {"this", "is", "an", "ordered", "list"})
+                    new HList(HList.EListType.OrderedList, new string[] {"this", "is", "an", "ordered", "list" })
                     +
                     new HList(HList.EListType.UnorderedList, new HInput(HInput.EInputType.text, "textInput2", "Hello!"), "this", "is", "an", "unordered", "list",
                         new HImage("lwsfooter.png"))

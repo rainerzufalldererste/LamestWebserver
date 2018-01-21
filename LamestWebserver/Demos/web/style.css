@@ -1,6 +1,7 @@
 ﻿body {
     margin: 0;
-    background: #ee6959;
+    background-color: #ee6959;
+    background: linear-gradient(45deg, #ff5c73, #ff8247);
 }
 
 ::selection {
@@ -49,7 +50,7 @@ div.fit {
     font-size: 11pt;
     float: left;
     margin-top: -4em;
-    color: #bdbdbd;
+    color: #ececec;
 }
 
 .footer img {
@@ -195,21 +196,22 @@ input[type="text"]:active, input[type="text"]:focus {
 }
 
 button {
-    background: #fb905e;
-    border: 1.5pt #e07f50 solid;
-    padding: 3pt 5pt;
-    color: #fff;
-    font-size: 12pt;
-    font-weight: 700;
+    margin: 3pt 2pt 3pt 2pt;
+    background: linear-gradient(20deg, #ff6e8b, #ffa770);
+    border-radius: 5px;
+    border: none;
+    color: #ffffff;
+    text-align: center;
+    font-weight: bold;
+    font-size: 11.5pt;
+    padding: 0.5em 0.75em;
 }
 
 button:hover {
-    background: #fbb55e;
-    border-color: #e0a050;
+    background: linear-gradient(20deg, #ff8e7d, #ffcc6c);
 }
 
 button:active, button:focus {
+    background: linear-gradient(20deg, #ffc16c, #ffe66b);
     outline: none;
-    background: #fbcb5e;
-    border-color: #e0b758;
 }

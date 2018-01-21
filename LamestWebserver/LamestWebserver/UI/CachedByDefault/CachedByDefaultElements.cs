@@ -320,19 +320,13 @@ namespace LamestWebserver.UI.CachedByDefault
         }
 
         /// <inheritdoc />
-        public CList(EListType listType, IEnumerable<string> input) : base(listType, input)
+        public CList(EListType listType, params object[] elements) : base(listType, elements)
         {
             CachingType = ECachingType.Cacheable;
         }
 
         /// <inheritdoc />
-        public CList(EListType listType, params HElement[] elements) : base(listType, elements)
-        {
-            CachingType = ECachingType.Cacheable;
-        }
-
-        /// <inheritdoc />
-        public CList(EListType listType, IEnumerable<HElement> elements) : base(listType, elements)
+        public CList(EListType listType, IEnumerable<object> elements) : base(listType, elements)
         {
             CachingType = ECachingType.Cacheable;
         }

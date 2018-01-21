@@ -2298,22 +2298,31 @@ namespace LamestWebserver.UI
         {
             this.listType = listType;
         }
+        /// <summary>
+        /// Constructs a new List Element
+        /// </summary>
+        /// <param name="listType">the type of the list</param>
+        /// <param name="elements">the contents of the list</param>
+        public HList(EListType listType, params object[] elements) : this(listType, (IEnumerable<object>)elements) { }
 
         /// <summary>
         /// Constructs a new List Element
         /// </summary>
         /// <param name="listType">the type of the list</param>
-        /// <param name="input">the contents of the list</param>
-        public HList(EListType listType, IEnumerable<string> input) : this(listType)
+        /// <param name="elements">the contents of the list</param>
+        public HList(EListType listType, IEnumerable<object> elements) : this(listType)
         {
-            List<HElement> data = new List<HElement>();
-
-            foreach(string s in input)
+            foreach (object o in elements)
             {
-                data.Add(s.ToHElement());
+                if (o == null)
+                    continue;
+                else if (o is HElement)
+                    Elements.Add((HElement)o);
+                else if (o is string)
+                    Elements.Add(new HText((string)o));
+                else
+                    Elements.Add(new HText(o.ToString()));
             }
-
-            this.Elements = data;
         }
 
         /// <inheritdoc />
@@ -2333,25 +2342,6 @@ namespace LamestWebserver.UI
         /// <returns>Returns true if there are no elements in this List.</returns>
         public bool IsEmpty() => (Elements != null && Elements.Count == 0);
 
-        /// <summary>
-        /// Constructs a new List Element
-        /// </summary>
-        /// <param name="listType">the type of the list</param>
-        /// <param name="elements">the contents of the list</param>
-        public HList(EListType listType, params HElement[] elements) : this(listType)
-        {
-            this.Elements = elements.ToList();
-        }
-
-        /// <summary>
-        /// Constructs a new List Element
-        /// </summary>
-        /// <param name="listType">the type of the list</param>
-        /// <param name="elements">the contents of the list</param>
-        public HList(EListType listType, IEnumerable<HElement> elements) : this(listType)
-        {
-            this.Elements = elements.ToList();
-        }
 
         /// <summary>
         /// The type of the list
