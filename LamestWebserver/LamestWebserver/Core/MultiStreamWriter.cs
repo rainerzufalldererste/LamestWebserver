@@ -27,7 +27,7 @@ namespace LamestWebserver.Core
         {
             foreach(Stream stream in streams)
             {
-                _streamWriters.Add(new StreamWriter(stream));
+                _streamWriters.Add(new StreamWriter(stream) { AutoFlush = true });
             }
         }
 
@@ -39,7 +39,7 @@ namespace LamestWebserver.Core
         {
             foreach (Stream stream in streams)
             {
-                _streamWriters.Add(new StreamWriter(stream));
+                _streamWriters.Add(new StreamWriter(stream) { AutoFlush = true });
             }
         }
 
