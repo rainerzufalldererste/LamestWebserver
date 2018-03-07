@@ -999,6 +999,18 @@ namespace LamestWebserver.RequestHandlers
     /// </summary>
     public class ErrorRequestHandler : IRequestHandler, IDebugRespondable
     {
+        internal class Error
+        {
+            internal int Count;
+            internal int ErrorCode;
+
+            internal Error(int errorCode)
+            {
+                ErrorCode = errorCode;
+                Count = 1;
+            }
+        }
+
         /// <summary>
         /// Shall this RequestHandler store DebugView information?
         /// </summary>
@@ -1009,7 +1021,7 @@ namespace LamestWebserver.RequestHandlers
         /// </summary>
         public readonly DebugContainerResponseNode DebugResponseNode;
 
-        private AVLHashMap<string, (int, int)> _accumulatedErrors;
+        private AVLHashMap<string, Error> _accumulatedErrors;
 
         private readonly byte[] _icon;
 
@@ -1023,7 +1035,7 @@ namespace LamestWebserver.RequestHandlers
             DebugResponseNode = new DebugContainerResponseNode(GetType().Name, null, GetDebugResponse, RequestHandler.CurrentRequestHandler.DebugResponseNode);
 
             if (StoreErrorMessages)
-                _accumulatedErrors = new AVLHashMap<string, (int, int)>();
+                _accumulatedErrors = new AVLHashMap<string, Error>();
         }
 
         /// <inheritdoc />
@@ -1031,12 +1043,12 @@ namespace LamestWebserver.RequestHandlers
         {
             if(StoreErrorMessages && _accumulatedErrors != null)
             {
-                (int count, int error) t = _accumulatedErrors[requestPacket.RequestUrl];
+                Error error = _accumulatedErrors[requestPacket.RequestUrl];
 
-                t.count++;
-                t.error = requestPacket.RequestUrl.EndsWith("/") ? 403 : 404;
+                error.Count++;
+                error.ErrorCode = requestPacket.RequestUrl.EndsWith("/") ? 403 : 404;
 
-                _accumulatedErrors[requestPacket.RequestUrl] = t;
+                _accumulatedErrors[requestPacket.RequestUrl] = error;
             }
 
             if(requestPacket.RequestUrl == "favicon.ico")
@@ -1090,13 +1102,13 @@ namespace LamestWebserver.RequestHandlers
                 return new HText($"This {GetType().Name} does not store Error-Information. If you want Error-Information to be stored enable the '{StoreErrorMessages}' Flag.") { Class = "warning" };
 
             return new HTable(
-                (from KeyValuePair<string, (int count, int error)> e in
-                     (from KeyValuePair<string, (int count, int error)> _e in _accumulatedErrors select _e).OrderByDescending(x => x.Value.count)
+                (from KeyValuePair<string, Error> e in
+                     (from KeyValuePair<string, Error> _e in _accumulatedErrors select _e).OrderByDescending(x => x.Value.Count)
                  select new List<HElement>
                  {
                      e.Key,
-                     e.Value.count.ToHElement(),
-                     e.Value.error.ToHElement()
+                     e.Value.Count.ToHElement(),
+                     e.Value.ErrorCode.ToHElement()
                  }))
             {
                 TableHeader = new HElement[]
