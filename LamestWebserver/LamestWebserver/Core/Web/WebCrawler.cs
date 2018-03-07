@@ -1,4 +1,4 @@
-﻿using LamestWebserver.Collections;
+using LamestWebserver.Collections;
 using LamestWebserver.Serialization;
 using LamestWebserver.Synchronization;
 using System;
@@ -127,8 +127,8 @@ namespace LamestWebserver.Core.Web
         /// </summary>
         /// <param name="startURL">The URL to begin crawling at.</param>
         /// <param name="prefix">The valid prefix of an URL to load (usually the page domain that you want to crawl through).</param>
-        /// <param name="onNewPage">The function to execute whenever a valid page is found.</param>
-        /// <param name="onError">The function to execute whenever the response is invalid.</param>
+        /// <param name="onNewPage">The function to execute whenever a valid page is found. Returns if the links inside this page should be visited.</param>
+        /// <param name="onError">The function to execute whenever the response is invalid. Returns if the WebCrawler should continue running.</param>
         /// <param name="webRequestFactory">A WebRequestFactory to construct the Requests with.</param>
         /// <param name="threadCount">The number of worker-threads to use.</param>
         public WebCrawler(string startURL, string prefix, Func<string, WebCrawler, bool> onNewPage, Func<Exception, bool> onError, WebRequestFactory webRequestFactory, int threadCount = 1)
@@ -204,7 +204,6 @@ namespace LamestWebserver.Core.Web
                 {
                     if (CurrentState.ToGo.Count == 0)
                     {
-                        Running.Value = false;
                         break;
                     }
 
@@ -212,7 +211,15 @@ namespace LamestWebserver.Core.Web
                     CurrentState.ToGo.RemoveAt(0);
                 }
 
-                response = WebRequestFactory.GetResponse(currentSite);
+                try
+                {
+                    response = WebRequestFactory.GetResponse(currentSite);
+                }
+                catch(Exception e)
+                {
+                    Logger.LogError($"Error '{e.Message}' in {nameof(WebRequestFactory)}.{nameof(WebRequestFactory.GetResponse)} for '{currentSite}'.");
+                    continue;
+                }
 
                 if (response == null)
                 {
@@ -259,6 +266,44 @@ namespace LamestWebserver.Core.Web
                 foreach (Match m in matches)
                 {
                     string url = m.Value.Replace("href='", "").Replace("href=\"", "").Split('\'', '\"')[0];
+
+                    if (url.StartsWith("/"))
+                    {
+                        string prefix = "";
+
+                        for (int i = currentSite.Length - 1; i >= 1; i--)
+                        {
+                            if (currentSite[i] == '/')
+                            {
+                                prefix = currentSite.Substring(0, i);
+                                break;
+                            }
+                        }
+
+                        url = prefix + url;
+                    }
+                    else if (url.StartsWith("./"))
+                    {
+                        string prefix = "";
+
+                        for (int i = 0; i < currentSite.Length - 1; i++)
+                        {
+                            if (currentSite[i] == '/')
+                            {
+                                if(currentSite[i + 1] == '/')
+                                {
+                                    i++;
+                                    continue;
+                                }
+
+                                prefix = currentSite.Substring(0, i);
+                                break;
+                            }
+                        }
+
+                        url = prefix + url;
+                    }
+
                     string domainBasedUrl = url.Replace("http://", "").Replace("https://", "").Replace("www.", "");
 
                     bool alreadyVisited;
@@ -266,27 +311,26 @@ namespace LamestWebserver.Core.Web
                     using (WebCrawlerStateMutex.Lock())
                         alreadyVisited = CurrentState.VisitedPages.ContainsKey(url);
 
-                    if (!alreadyVisited && (from start in Prefixes where domainBasedUrl.StartsWith(start) select true).Any())
+                    if (!alreadyVisited && (Prefixes == null || Prefixes.Length == 0 || (from start in Prefixes where domainBasedUrl.StartsWith(start) select true).Any()))
                     {
                         if (!Running)
                             goto NotRunning;
 
                         using (WebCrawlerStateMutex.Lock())
-                        {
-                            CurrentState.ToGo.Add(url);
                             CurrentState.VisitedPages.Add(url, true);
-                        }
 
                         if (!CallSynchrously)
                         {
-                            if (Running && !OnNewPage(url, this))
-                                Running.Value = false;
+                            if (Running && OnNewPage(url, this))
+                                using (WebCrawlerStateMutex.Lock())
+                                    CurrentState.ToGo.Add(url);
                         }
                         else
                         {
                             using (FunctionCallWriteLock.Instance.LockWrite())
-                                if (Running && !OnNewPage(url, this))
-                                    Running.Value = false;
+                                if (Running && OnNewPage(url, this))
+                                    using (WebCrawlerStateMutex.Lock())
+                                        CurrentState.ToGo.Add(url);
                         }
 
                         NotRunning:
@@ -304,10 +348,25 @@ namespace LamestWebserver.Core.Web
                         }
                     }
                 }
-            }
+                
+                using (WebCrawlerStateMutex.Lock())
+                {
+                    if (CurrentState.ToGo.Count == 0)
+                    {
+                        Running.Value = false;
+                        IsDone.Value = true;
+                    }
+                    else
+                    {
+                        Running.Value = true;
+                        IsDone.Value = false;
 
-            if (CurrentState.ToGo.Count == 0)
-                IsDone.Value = true;
+                        for (int i = 0; i < crawlerThreads.Length; i++)
+                            if (crawlerThreads[i].ThreadState == ThreadState.Stopped)
+                                crawlerThreads[i] = new Thread(Crawl);
+                    }
+                }
+            }
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-﻿using LamestWebserver.Core;
+using LamestWebserver.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +20,7 @@ namespace LamestWebserver.Synchronization
     /// <typeparam name="TValue">The type of the stored Values.</typeparam>
     /// <typeparam name="TCollectionType">The internal implementation of the Dictionary used.</typeparam>
     [Serializable]
-    public class SynchronizedDictionary<TKey, TValue, TCollectionType> : NullCheckable, IDictionary<TKey, TValue>, ISerializable, IXmlSerializable where TCollectionType : IDictionary<TKey, TValue>, new()
+    public class SynchronizedDictionary<TKey, TValue, TCollectionType> : IDictionary<TKey, TValue>, ISerializable, IXmlSerializable where TCollectionType : IDictionary<TKey, TValue>, new()
     {
         /// <summary>
         /// The internal Dictionary for unsynchronized access.
@@ -73,7 +73,7 @@ namespace LamestWebserver.Synchronization
         /// Provides functionality like NullCheckable.
         /// </summary>
         /// <param name="obj">The current object.</param>
-        public static implicit operator bool(SynchronizedDictionary<TKey, TValue, TCollectionType> obj) => obj == null || obj.InnerDictionary == null;
+        public static implicit operator bool(SynchronizedDictionary<TKey, TValue, TCollectionType> obj) => !ReferenceEquals(obj, null) && !ReferenceEquals(obj.InnerDictionary, null);
 
         /// <inheritdoc />
         public TValue this[TKey key]
