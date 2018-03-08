@@ -65,6 +65,11 @@ namespace LamestWebserver
         /// </summary>
         public Stream Stream;
 
+        /// <summary>
+        /// The current TcpClient which is used for communicating.
+        /// </summary>
+        public TcpClient TcpClient;
+
         private int _contentLength = 0;
 
         /// <summary>
