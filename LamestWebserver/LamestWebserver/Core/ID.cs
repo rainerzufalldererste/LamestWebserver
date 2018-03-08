@@ -407,7 +407,11 @@ namespace LamestWebserver.Core
         /// <inheritdoc />
         public override string Value
         {
-            get => base.Value;
+            get
+            {
+                return base.Value;
+            }
+
             set
             {
                 if (value == null)

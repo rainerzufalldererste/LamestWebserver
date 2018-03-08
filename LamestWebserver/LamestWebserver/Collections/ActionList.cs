@@ -63,7 +63,18 @@ namespace LamestWebserver.Collections
         }
 
         /// <inheritdoc />
-        public T this[int index] { get => _internalList[index]; set => _internalList[index] = value; }
+        public T this[int index]
+        {
+            get
+            {
+                return _internalList[index];
+            }
+
+            set
+            {
+                _internalList[index] = value;
+            }
+        }
 
         /// <inheritdoc />
         public int Count => _internalList.Count;

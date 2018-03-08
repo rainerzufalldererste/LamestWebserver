@@ -22,7 +22,10 @@ namespace LamestWebserver.Collections
         /// </summary>
         public int MaximumCapacity
         {
-            get => _maxCapacity;
+            get
+            {
+                return _maxCapacity;
+            }
 
             set
             {

@@ -51,7 +51,10 @@ namespace LamestWebserver.Core
         /// </summary>
         public EOutputSource OutputSourceFlags
         {
-            get => _currentOutputSource;
+            get
+            {
+                return _currentOutputSource;
+            }
 
             set
             {
@@ -68,8 +71,8 @@ namespace LamestWebserver.Core
         /// </summary>
         public static EOutputSource OutputSource
         {
-            get => CurrentLogger.Instance.OutputSourceFlags;
-            set => CurrentLogger.Instance.OutputSourceFlags = value;
+            get { return CurrentLogger.Instance.OutputSourceFlags; }
+            set { CurrentLogger.Instance.OutputSourceFlags = value; }
         }
 
         /// <summary>
