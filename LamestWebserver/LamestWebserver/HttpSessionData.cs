@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using LamestWebserver.Collections;
 using LamestWebserver.Core;
+using System.IO;
+using System.Net;
 
 namespace LamestWebserver
 {
@@ -25,6 +27,26 @@ namespace LamestWebserver
         /// </summary>
         public AVLTree<string, string> Cookies { get; private set; }
 
+        /// <summary>
+        /// HttpPacket of the original Request.
+        /// </summary>
+        public HttpRequest HttpPacket { get; private set; }
+
+        /// <summary>
+        /// Stream of the original Request.
+        /// </summary>
+        public Stream Stream { get; private set; }
+
+        /// <summary>
+        /// The remoteEndpoint (if any) of the original Request.
+        /// </summary>
+        public EndPoint RemoteEndpoint;
+
+        /// <summary>
+        /// The remoteEndpoint (if any) of the original Request.
+        /// </summary>
+        public EndPoint LocalEndpoint;
+
         internal HttpSessionData(HttpRequest httpPacket)
         {
             base.HttpHeadVariables = httpPacket.VariablesHttpHead;
@@ -32,6 +54,15 @@ namespace LamestWebserver
             base.RequestedFile = httpPacket.RequestUrl;
 
             this.Cookies = new AVLTree<string, string>();
+            this.HttpPacket = httpPacket;
+            this.Stream = httpPacket.Stream;
+
+            try
+            {
+                this.RemoteEndpoint = httpPacket.TcpClient?.Client?.RemoteEndPoint;
+                this.LocalEndpoint = httpPacket.TcpClient?.Client?.LocalEndPoint;
+            }
+            catch { }
 
             if (httpPacket.Cookies != null)
             {
