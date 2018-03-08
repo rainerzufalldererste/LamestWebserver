@@ -584,6 +584,7 @@ namespace LamestWebserver
                 {
                     string msg_ = enc.GetString(msg, 0, bytes);
                     HttpRequest htp = HttpRequest.Constructor(ref msg_, lastmsg, stream);
+                    htp.TcpClient = client;
 
                     byte[] buffer;
 
