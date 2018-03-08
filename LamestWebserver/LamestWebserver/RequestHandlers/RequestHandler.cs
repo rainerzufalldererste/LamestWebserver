@@ -999,7 +999,7 @@ namespace LamestWebserver.RequestHandlers
     /// </summary>
     public class ErrorRequestHandler : IRequestHandler, IDebugRespondable
     {
-        internal class Error
+        internal struct Error
         {
             internal int Count;
             internal int ErrorCode;
