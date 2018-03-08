@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -126,7 +126,7 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.RequestUrl = Uri.UnescapeDataString(linput[i].Substring(4, index - 4));
+                    h.RequestUrl = linput[i].Substring(4, index - 4);
 
                     for (int k = 0; k < h.RequestUrl.Length - 1; k++)
                     {
@@ -203,6 +203,7 @@ namespace LamestWebserver
                     }
 
                     h.Version = linput[i].Substring(index + 1);
+                    h.RequestUrl = HttpUtility.UrlDecode(h.RequestUrl);
                     found = true;
 
                     return GetCookiesAndModified(h, linput);
@@ -221,7 +222,7 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.RequestUrl = Uri.UnescapeDataString(linput[i].Substring(5, index - 5));
+                    h.RequestUrl = linput[i].Substring(5, index - 5);
 
                     for (int k = 0; k < h.RequestUrl.Length - 1; k++)
                     {
@@ -386,6 +387,8 @@ namespace LamestWebserver
                             return new HttpRequest() { IsIncompleteRequest = true };
                         }
                     }
+
+                    h.RequestUrl = HttpUtility.UrlDecode(h.RequestUrl);
 
                     return GetCookiesAndModified(h, linput);
                 }
