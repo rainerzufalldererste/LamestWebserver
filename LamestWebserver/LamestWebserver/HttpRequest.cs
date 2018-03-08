@@ -126,7 +126,7 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.RequestUrl = linput[i].Substring(4, index - 4);
+                    h.RequestUrl = Uri.UnescapeDataString(linput[i].Substring(4, index - 4));
 
                     for (int k = 0; k < h.RequestUrl.Length - 1; k++)
                     {
@@ -221,7 +221,7 @@ namespace LamestWebserver
                         }
                     }
 
-                    h.RequestUrl = linput[i].Substring(5, index - 5);
+                    h.RequestUrl = Uri.UnescapeDataString(linput[i].Substring(5, index - 5));
 
                     for (int k = 0; k < h.RequestUrl.Length - 1; k++)
                     {
