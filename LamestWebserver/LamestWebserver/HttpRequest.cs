@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -203,6 +203,7 @@ namespace LamestWebserver
                     }
 
                     h.Version = linput[i].Substring(index + 1);
+                    h.RequestUrl = HttpUtility.UrlDecode(h.RequestUrl);
                     found = true;
 
                     return GetCookiesAndModified(h, linput);
@@ -386,6 +387,8 @@ namespace LamestWebserver
                             return new HttpRequest() { IsIncompleteRequest = true };
                         }
                     }
+
+                    h.RequestUrl = HttpUtility.UrlDecode(h.RequestUrl);
 
                     return GetCookiesAndModified(h, linput);
                 }

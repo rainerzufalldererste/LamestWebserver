@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LamestWebserver;
 using System.Net;
@@ -209,6 +209,22 @@ namespace UnitTests
             Assert.AreEqual(p.VariablesHttpHead["blob"], "");
             Assert.AreEqual(p.VariablesHttpHead[""], "meow");
             Assert.AreEqual(p.VariablesHttpPost.Count, 0);
+            
+            packet = "GET /data%20page?bla=2&blob=&&&=meow%20meow HTTP/1.1\r\n\r\nHost: www.blob.com\r\n\r\n";
+
+            p = HttpRequest.Constructor(ref packet, null, null);
+
+            Assert.AreEqual(p.Version, "HTTP/1.1");
+            Assert.AreEqual(p.HttpType, HttpType.Get);
+            Assert.AreEqual(p.IsWebsocketUpgradeRequest, false);
+            Assert.AreEqual(p.ModifiedDate, null);
+            Assert.AreEqual(p.RequestUrl, "/data page");
+            Assert.AreEqual(p.Stream, null);
+            Assert.AreEqual(p.VariablesHttpHead.Count, 3);
+            Assert.AreEqual(p.VariablesHttpHead["bla"], "2");
+            Assert.AreEqual(p.VariablesHttpHead["blob"], "");
+            Assert.AreEqual(p.VariablesHttpHead[""], "meow meow");
+            Assert.AreEqual(p.VariablesHttpPost.Count, 0);
         }
 
         [TestMethod]
@@ -230,7 +246,7 @@ namespace UnitTests
             Assert.AreEqual(p.VariablesHttpPost.Count, 0);
             Assert.IsFalse(p.IsIncompleteRequest);
 
-            packet = "POST /data HTTP/1.1\r\nContent-Length: 64\r\n\r\n";
+            packet = "POST /data%20page HTTP/1.1\r\nContent-Length: 64\r\n\r\n";
 
             p = HttpRequest.Constructor(ref packet, null, null);
             
@@ -244,7 +260,7 @@ namespace UnitTests
             Assert.AreEqual(p.HttpType, HttpType.Post);
             Assert.AreEqual(p.IsWebsocketUpgradeRequest, false);
             Assert.AreEqual(p.ModifiedDate, null);
-            Assert.AreEqual(p.RequestUrl, "/data");
+            Assert.AreEqual(p.RequestUrl, "/data page");
             Assert.AreEqual(p.Stream, null);
             Assert.AreEqual(p.VariablesHttpHead.Count, 0);
             Assert.AreEqual(p.VariablesHttpPost.Count, 1);
@@ -259,7 +275,7 @@ namespace UnitTests
             Assert.AreEqual(p.HttpType, HttpType.Post);
             Assert.AreEqual(p.IsWebsocketUpgradeRequest, false);
             Assert.AreEqual(p.ModifiedDate, null);
-            Assert.AreEqual(p.RequestUrl, "/data");
+            Assert.AreEqual(p.RequestUrl, "/data page");
             Assert.AreEqual(p.Stream, null);
             Assert.AreEqual(p.VariablesHttpHead.Count, 0);
             Assert.AreEqual(p.VariablesHttpPost.Count, 1);
@@ -274,7 +290,7 @@ namespace UnitTests
             Assert.AreEqual(p.HttpType, HttpType.Post);
             Assert.AreEqual(p.IsWebsocketUpgradeRequest, false);
             Assert.AreEqual(p.ModifiedDate, null);
-            Assert.AreEqual(p.RequestUrl, "/data");
+            Assert.AreEqual(p.RequestUrl, "/data page");
             Assert.AreEqual(p.Stream, null);
             Assert.AreEqual(p.VariablesHttpHead.Count, 0);
             Assert.AreEqual(p.VariablesHttpPost.Count, 2);
@@ -282,7 +298,7 @@ namespace UnitTests
             Assert.AreEqual(p.VariablesHttpPost["true"], "false");
             Assert.IsFalse(p.IsIncompleteRequest);
 
-            packet = "POST /data HTTP/1.1\r\nContent-Length: 64\r\n\r\nsearch=&q";
+            packet = "POST /data%20page%20test HTTP/1.1\r\nContent-Length: 64\r\n\r\nsearch=&q";
 
             p = HttpRequest.Constructor(ref packet, null, null);
 
@@ -290,7 +306,7 @@ namespace UnitTests
             Assert.AreEqual(p.HttpType, HttpType.Post);
             Assert.AreEqual(p.IsWebsocketUpgradeRequest, false);
             Assert.AreEqual(p.ModifiedDate, null);
-            Assert.AreEqual(p.RequestUrl, "/data");
+            Assert.AreEqual(p.RequestUrl, "/data page test");
             Assert.AreEqual(p.Stream, null);
             Assert.AreEqual(p.VariablesHttpHead.Count, 0);
             Assert.AreEqual(p.VariablesHttpPost.Count, 2);
@@ -331,6 +347,23 @@ namespace UnitTests
             Assert.AreEqual(p.VariablesHttpPost["search"], "");
             Assert.AreEqual(p.VariablesHttpPost["q"], "");
             Assert.AreEqual(p.VariablesHttpPost[""], "aa");
+            Assert.AreEqual(p.VariablesHttpPost["aa"], null);
+            Assert.IsFalse(p.IsIncompleteRequest);
+
+            packet = "POST /data HTTP/1.1\r\nContent-Length: 64\r\n\r\nsearch=q%20qq%20qqq&a=b%20c";
+
+            p = HttpRequest.Constructor(ref packet, null, null);
+
+            Assert.AreEqual(p.Version, "HTTP/1.1");
+            Assert.AreEqual(p.HttpType, HttpType.Post);
+            Assert.AreEqual(p.IsWebsocketUpgradeRequest, false);
+            Assert.AreEqual(p.ModifiedDate, null);
+            Assert.AreEqual(p.RequestUrl, "/data");
+            Assert.AreEqual(p.Stream, null);
+            Assert.AreEqual(p.VariablesHttpHead.Count, 0);
+            Assert.AreEqual(p.VariablesHttpPost.Count, 2);
+            Assert.AreEqual(p.VariablesHttpPost["search"], "q qq qqq");
+            Assert.AreEqual(p.VariablesHttpPost["a"], "b c");
             Assert.AreEqual(p.VariablesHttpPost["aa"], null);
             Assert.IsFalse(p.IsIncompleteRequest);
         }
