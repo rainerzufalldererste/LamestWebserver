@@ -1294,6 +1294,9 @@ namespace LamestWebserver.RequestHandlers
 
         private void AddFunction(string url, Master.GetContents getc)
         {
+            if (string.IsNullOrEmpty(url))
+                url = "/";
+
             using (ReaderWriterLock.LockWrite())
             {
                 PageResponses.Add(url, getc);
