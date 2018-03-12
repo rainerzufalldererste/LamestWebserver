@@ -46,8 +46,8 @@ namespace LamestWebserver.UI
             var container = new HContainer() { ID = ContainerID, Style = "display:none;" };
             input.onclick = JSFunctionCall.DisplayElementByID(container.ID);
             input.onfocus = input.onclick;
-            input.oninput = input.SetInnerHTMLWithNameValueAsync(JSElement.GetByID(container.ID), _pageUrl, JSFunctionCall.DisplayElementByID(container.ID));
-            input.onfocusout = JSFunctionCall.HideElementByID(container.ID);
+            input.oninput = input.SetInnerHTMLWithNameValueAsync(JSElement.GetByID(container.ID), "/" + _pageUrl, JSFunctionCall.DisplayElementByID(container.ID));
+            input.onfocusout = new JSIf(JSElement.GetByID(input.ID)["value"].IsEqualTo(new JSRawStringValue("")), JSFunctionCall.HideElementByID(container.ID));
 
             return input + container;
         }
@@ -126,7 +126,7 @@ namespace LamestWebserver.UI
             var container = new HContainer() { ID = ContainerID, Style = "display:none;" };
             input.onclick = JSFunctionCall.DisplayElementByID(container.ID);
             input.onfocus = input.onclick;
-            input.oninput = input.SetInnerHTMLWithNameValueAsync(JSElement.GetByID(container.ID), _pageUrl, JSFunctionCall.DisplayElementByID(container.ID));
+            input.oninput = input.SetInnerHTMLWithNameValueAsync(JSElement.GetByID(container.ID), "/" + _pageUrl, JSFunctionCall.DisplayElementByID(container.ID));
             input.onfocusout = new JSIf(JSElement.GetByID(input.ID)["value"].IsEqualTo(new JSRawStringValue("")), JSFunctionCall.HideElementByID(container.ID));
 
             return input + container;
