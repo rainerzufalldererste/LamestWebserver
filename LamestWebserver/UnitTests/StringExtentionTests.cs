@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +15,7 @@ namespace UnitTests
         public void TestParsingStringExtentions_TestKMP()
         {
             string a = "abcabcccabcabccacacbbabca";
-            int[] a_ = new int[] { 0,0,0,0,1,2,3,0,0,1,2,3,4,5,6,7,1,0,1,0,0,0,1,2,3 };
+            int[] a_ = new int[] { 0,0,0,1,2,3,0,0,1,2,3,4,5,6,7,1,0,1,0,0,0,1,2,3,4 };
             int[] a_ret = a.GetKMP();
 
             Assert.AreEqual(a_.Length, a_ret.Length);
@@ -37,6 +37,15 @@ namespace UnitTests
             Assert.IsFalse(b.FindString("ABCD", out b_index));
             Assert.IsTrue(b.FindString("ABC", out b_index));
             Assert.AreEqual(7, b_index);
+
+            string c = "abcabcdaabcabcadedecbabcfg";
+            Assert.IsFalse(c.FindString("abcde", out b_index));
+            Assert.IsTrue(c.FindString("abcd", out b_index));
+            Assert.AreEqual(3, b_index);
+
+            Assert.IsFalse(c.FindString("abcabcadeda", out b_index));
+            Assert.IsTrue(c.FindString("abcabca", out b_index));
+            Assert.AreEqual(8, b_index);
         }
 
         [TestMethod]
@@ -63,7 +72,7 @@ namespace UnitTests
                 Assert.AreEqual(a_[i], a_ret[i]);
             
 
-            string b = "..hello......world.!...!";
+            string b = "..hello..... .world.!...!";
             string[] b_ = new string[] { ".", ".", "hello", ".....", ".", "world", ".", "!", "...", "!" };
             List<string> b_ret = b.Parse(true, ".....", "...", ".");
 
