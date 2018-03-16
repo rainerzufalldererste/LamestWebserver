@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -38,6 +38,12 @@ namespace LamestWebserver.Core.Parsing
         /// <returns>returns true if the string could be found. otherwise false.</returns>
         public static bool FindString(this string s, string find, out int index)
         {
+            if(s.Length < find.Length)
+            {
+                index = 0;
+                return false;
+            }
+
             int[] findIndexes = find.GetKMP();
 
             for (int i = 0; i < s.Length; i++)
@@ -79,19 +85,17 @@ namespace LamestWebserver.Core.Parsing
         {
             int[] ret = new int[s.Length];
 
-            for (int i = 0; i < s.Length; i++)
-            {
-                ret[i] = -1;
+            int lastLength = 0;
+            int i = 1;
 
-                for (int j = 1; j < System.Math.Min(i, s.Length / 2); j++)
-                {
-                    if (s.Substring(i - j, j) == s.Substring(0, j))
-                        ret[i] = j;
-                }
-
-                if (ret[i] < 0)
-                    ret[i] = 0;
-            }
+            while (i < s.Length)
+                if (s[i] == s[lastLength])
+                    ret[i++] = ++lastLength;
+                else
+                    if (lastLength != 0)
+                        lastLength = ret[lastLength - 1];
+                    else
+                        ret[i++] = 0;
 
             return ret;
         }
