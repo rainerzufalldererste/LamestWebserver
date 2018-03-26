@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using LamestWebserver.UI;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.JScriptBuilder
 {
@@ -21,7 +22,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         protected JSElement()
         {
-            ID = SessionContainer.GenerateHash();
+            ID = Hash.GetHash();
         }
 
         /// <summary>
@@ -37,7 +38,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public IJSValue CreateNew()
         {
-            return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + GetContent(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("document.body.insertAdjacentHTML(\"beforeend\", " + GetContent(SessionData.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
         }
 
         /// <summary>
@@ -47,11 +48,11 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public IJSValue CreateNew(string intoID)
         {
-            return new JSInstantFunction(new JSValue("document.getElementById(\"" + intoID + "\").insertAdjacentHTML(\"beforeend\", " + GetContent(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("document.getElementById(\"" + intoID + "\").insertAdjacentHTML(\"beforeend\", " + GetContent(SessionData.CurrentSession, CallingContext.Inner).Base64Encode() + ");")).DefineAndCall();
         }
 
         /// <inheritdoc />
-        public string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return "\"" + GetContent(sessionData, CallingContext.Inner).JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
@@ -91,10 +92,10 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="context">the current CallingContext</param>
         /// <returns></returns>
-        public abstract string GetContent(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default);
+        public abstract string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default);
 
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData)
+        public override string GetContent(SessionData sessionData)
         {
             return GetContent(sessionData);
         }
@@ -104,7 +105,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public static JSElementValue getByID(string id)
+        public static JSElementValue GetByID(string id)
         {
             return new JSElementValue(new JSFunctionCall("document.getElementById", new JSStringValue(id)));
         }
@@ -130,7 +131,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return Contents;
         }
@@ -165,7 +166,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string _content = "";
 
@@ -222,9 +223,9 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<button type='" + buttonType + "' " + GetDefaultAttributes() + getEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</button>";
+            return "<button type='" + buttonType + "' " + GetDefaultAttributes() + GetEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</button>";
         }
     }
 
@@ -242,9 +243,9 @@ namespace LamestWebserver.JScriptBuilder
         public JSText(string content) { _content = content; }
 
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<p " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
+            return "<p " + GetDefaultAttributes() + GetEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
         }
     }
 
@@ -277,9 +278,9 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "' " + getEventAttributes(sessionData, CallingContext.Default) + "></input>";
+            return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "' " + GetEventAttributes(sessionData, CallingContext.Default) + "></input>";
         }
 
         /// <summary>
@@ -306,11 +307,20 @@ namespace LamestWebserver.JScriptBuilder
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
                     URL += HttpUtility.UrlEncode(Value) + "&checked=";
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".checked, true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".checked, true);xmlhttp.send();")).DefineAndCall();
 
                 default:
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".value, true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".value, true);xmlhttp.send();")).DefineAndCall();
             }
+        }
+
+        /// <summary>
+        /// Retrieves a JSValue containing the "value" property of this input element.
+        /// </summary>
+        /// <returns>The value of this element.</returns>
+        public virtual JSValue GetInnerValue()
+        {
+            return new JSValue(GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".value");
         }
 
         /// <summary>
@@ -339,14 +349,14 @@ namespace LamestWebserver.JScriptBuilder
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
                     URL += HttpUtility.UrlEncode(Value) + "&checked=";
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
-                        + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(AbstractSessionIdentificator.CurrentSession)); return ret; })).Invoke()
-                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                        + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.GetJsCode(SessionData.CurrentSession)); return ret; })).Invoke()
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
 
                 default:
-                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
-                        + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(AbstractSessionIdentificator.CurrentSession)); return ret; })).Invoke()
-                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSFunctionCall.EncodeURIComponent(getByID(ID).Value).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ",true);xmlhttp.send();")).DefineAndCall();
+                    return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                        + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.GetJsCode(SessionData.CurrentSession)); return ret; })).Invoke()
+                        + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSFunctionCall.EncodeURIComponent(GetByID(ID).Value).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ",true);xmlhttp.send();")).DefineAndCall();
             }
         }
     }
@@ -382,9 +392,9 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            string ret = "<textarea " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
+            string ret = "<textarea " + GetDefaultAttributes() + GetEventAttributes(sessionData, CallingContext.Default);
 
             if (cols.HasValue)
                 ret += "cols='" + cols.Value + "' ";
@@ -498,9 +508,9 @@ namespace LamestWebserver.JScriptBuilder
         }
         
         /// <inheritdoc />
-        public override string GetContent(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            string ret = "<select " + GetDefaultAttributes() + getEventAttributes(sessionData, CallingContext.Default);
+            string ret = "<select " + GetDefaultAttributes() + GetEventAttributes(sessionData, CallingContext.Default);
 
             ret += "size=\"" + size + "\" ";
 
@@ -549,7 +559,7 @@ namespace LamestWebserver.JScriptBuilder
                 URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
             }
 
-            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
         }
 
         /// <summary>
@@ -573,9 +583,9 @@ namespace LamestWebserver.JScriptBuilder
                 URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
             }
 
-            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + getByID(ID).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
-                + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(AbstractSessionIdentificator.CurrentSession)); return ret; })).Invoke()
-                + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSFunctionCall.EncodeURIComponent(new JSValue("elem.selectedOptions[0].value")).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + "+ \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += " + JSFunctionCall.EncodeURIComponent(new JSValue("elem.selectedOptions[i].value")).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ";if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
+            return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.GetJsCode(SessionData.CurrentSession)); return ret; })).Invoke()
+                + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + JSFunctionCall.EncodeURIComponent(new JSValue("elem.selectedOptions[0].value")).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + "+ \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += " + JSFunctionCall.EncodeURIComponent(new JSValue("elem.selectedOptions[i].value")).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ";if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
         }
     }
 
@@ -587,7 +597,7 @@ namespace LamestWebserver.JScriptBuilder
     public abstract class JSInteractableElement : JSElement
     {
         /// <inheritdoc />
-        public abstract override string GetContent(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default);
+        public abstract override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default);
 
         // #AREYOUREADYFORTHEWEB?
 
@@ -1021,251 +1031,251 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="sessionData">the sessionData</param>
         /// <param name="context">the current Calling Context</param>
         /// <returns>the event attributes as string</returns>
-        public string getEventAttributes(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public string GetEventAttributes(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             // #AREYOUREADYFORTHEWEB?
 
             string ret = " ";
 
             if (onabort != null)
-                ret += "onabort=" + onabort.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onabort='" + onabort.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onafterprint != null)
-                ret += "onafterprint=" + onafterprint.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onafterprint='" + onafterprint.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onbeforeprint != null)
-                ret += "onbeforeprint=" + onbeforeprint.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onbeforeprint='" + onbeforeprint.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onbeforeunload != null)
-                ret += "onbeforeunload=" + onbeforeunload.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onbeforeunload='" + onbeforeunload.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onblur != null)
-                ret += "onblur=" + onblur.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onblur='" + onblur.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncanplay != null)
-                ret += "oncanplay=" + oncanplay.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncanplay='" + oncanplay.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncanplaythrough != null)
-                ret += "oncanplaythrough=" + oncanplaythrough.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncanplaythrough='" + oncanplaythrough.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onchange != null)
-                ret += "onchange=" + onchange.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onchange='" + onchange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onclick != null)
-                ret += "onclick=" + onclick.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onclick='" + onclick.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncontextmenu != null)
-                ret += "oncontextmenu=" + oncontextmenu.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncontextmenu='" + oncontextmenu.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncopy != null)
-                ret += "oncopy=" + oncopy.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncopy='" + oncopy.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oncut != null)
-                ret += "oncut=" + oncut.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "oncut='" + oncut.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondblclick != null)
-                ret += "ondblclick=" + ondblclick.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondblclick='" + ondblclick.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondrag != null)
-                ret += "ondrag=" + ondrag.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondrag='" + ondrag.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragend != null)
-                ret += "ondragend=" + ondragend.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragend='" + ondragend.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragenter != null)
-                ret += "ondragenter=" + ondragenter.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragenter='" + ondragenter.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragleave != null)
-                ret += "ondragleave=" + ondragleave.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragleave='" + ondragleave.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragover != null)
-                ret += "ondragover=" + ondragover.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragover='" + ondragover.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondragstart != null)
-                ret += "ondragstart=" + ondragstart.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondragstart='" + ondragstart.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondrop != null)
-                ret += "ondrop=" + ondrop.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondrop='" + ondrop.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ondurationchange != null)
-                ret += "ondurationchange=" + ondurationchange.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ondurationchange='" + ondurationchange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onemptied != null)
-                ret += "onemptied=" + onemptied.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onemptied='" + onemptied.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onended != null)
-                ret += "onended=" + onended.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onended='" + onended.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onerror != null)
-                ret += "onerror=" + onerror.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onerror='" + onerror.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onfocus != null)
-                ret += "onfocus=" + onfocus.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onfocus='" + onfocus.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onfocusin != null)
-                ret += "onfocusin=" + onfocusin.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onfocusin='" + onfocusin.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onfocusout != null)
-                ret += "onfocusout=" + onfocusout.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onfocusout='" + onfocusout.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onhashchange != null)
-                ret += "onhashchange=" + onhashchange.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onhashchange='" + onhashchange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oninput != null)
-                ret += "oninput=" + oninput.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "oninput='" + oninput.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (oninvalid != null)
-                ret += "oninvalid=" + oninvalid.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "oninvalid='" + oninvalid.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onkeydown != null)
-                ret += "onkeydown=" + onkeydown.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onkeydown='" + onkeydown.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onkeypress != null)
-                ret += "onkeypress=" + onkeypress.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onkeypress='" + onkeypress.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onkeyup != null)
-                ret += "onkeyup=" + onkeyup.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onkeyup='" + onkeyup.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onload != null)
-                ret += "onload=" + onload.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onload='" + onload.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onloadeddata != null)
-                ret += "onloadeddata=" + onloadeddata.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onloadeddata='" + onloadeddata.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onloadedmetadata != null)
-                ret += "onloadedmetadata=" + onloadedmetadata.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onloadedmetadata='" + onloadedmetadata.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onloadstart != null)
-                ret += "onloadstart=" + onloadstart.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onloadstart='" + onloadstart.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmessage != null)
-                ret += "onmessage=" + onmessage.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmessage='" + onmessage.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmousedown != null)
-                ret += "onmousedown=" + onmousedown.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmousedown='" + onmousedown.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseenter != null)
-                ret += "onmouseenter=" + onmouseenter.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseenter='" + onmouseenter.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseleave != null)
-                ret += "onmouseleave=" + onmouseleave.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseleave='" + onmouseleave.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmousemove != null)
-                ret += "onmousemove=" + onmousemove.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmousemove='" + onmousemove.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseout != null)
-                ret += "onmouseout=" + onmouseout.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseout='" + onmouseout.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseover != null)
-                ret += "onmouseover=" + onmouseover.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseover='" + onmouseover.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmouseup != null)
-                ret += "onmouseup=" + onmouseup.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmouseup='" + onmouseup.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onmousewheel != null)
-                ret += "onmousewheel=" + onmousewheel.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onmousewheel='" + onmousewheel.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onoffline != null)
-                ret += "onoffline=" + onoffline.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onoffline='" + onoffline.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ononline != null)
-                ret += "ononline=" + ononline.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ononline='" + ononline.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onopen != null)
-                ret += "onopen=" + onopen.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onopen='" + onopen.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpagehide != null)
-                ret += "onpagehide=" + onpagehide.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpagehide='" + onpagehide.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpageshow != null)
-                ret += "onpageshow=" + onpageshow.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpageshow='" + onpageshow.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpaste != null)
-                ret += "onpaste=" + onpaste.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpaste='" + onpaste.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpause != null)
-                ret += "onpause=" + onpause.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpause='" + onpause.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onplay != null)
-                ret += "onplay=" + onplay.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onplay='" + onplay.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onplaying != null)
-                ret += "onplaying=" + onplaying.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onplaying='" + onplaying.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onpopstate != null)
-                ret += "onpopstate=" + onpopstate.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onpopstate='" + onpopstate.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onprogress != null)
-                ret += "onprogress=" + onprogress.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onprogress='" + onprogress.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onratechange != null)
-                ret += "onratechange=" + onratechange.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onratechange='" + onratechange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onreset != null)
-                ret += "onreset=" + onreset.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onreset='" + onreset.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onresize != null)
-                ret += "onresize=" + onresize.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onresize='" + onresize.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onscroll != null)
-                ret += "onscroll=" + onscroll.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onscroll='" + onscroll.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onsearch != null)
-                ret += "onsearch=" + onsearch.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onsearch='" + onsearch.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onseeked != null)
-                ret += "onseeked=" + onseeked.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onseeked='" + onseeked.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onseeking != null)
-                ret += "onseeking=" + onseeking.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onseeking='" + onseeking.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onselect != null)
-                ret += "onselect=" + onselect.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onselect='" + onselect.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onshow != null)
-                ret += "onshow=" + onshow.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onshow='" + onshow.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onstalled != null)
-                ret += "onstalled=" + onstalled.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onstalled='" + onstalled.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onstorage != null)
-                ret += "onstorage=" + onstorage.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onstorage='" + onstorage.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onsubmit != null)
-                ret += "onsubmit=" + onsubmit.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onsubmit='" + onsubmit.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onsuspend != null)
-                ret += "onsuspend=" + onsuspend.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onsuspend='" + onsuspend.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontimeupdate != null)
-                ret += "ontimeupdate=" + ontimeupdate.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontimeupdate='" + ontimeupdate.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontoggle != null)
-                ret += "ontoggle=" + ontoggle.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontoggle='" + ontoggle.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontouchcancel != null)
-                ret += "ontouchcancel=" + ontouchcancel.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontouchcancel='" + ontouchcancel.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontouchend != null)
-                ret += "ontouchend=" + ontouchend.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontouchend='" + ontouchend.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontouchmove != null)
-                ret += "ontouchmove=" + ontouchmove.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontouchmove='" + ontouchmove.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (ontouchstart != null)
-                ret += "ontouchstart=" + ontouchstart.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "ontouchstart='" + ontouchstart.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onunload != null)
-                ret += "onunload=" + onunload.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onunload='" + onunload.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onvolumechange != null)
-                ret += "onvolumechange=" + onvolumechange.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onvolumechange='" + onvolumechange.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onwaiting != null)
-                ret += "onwaiting=" + onwaiting.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onwaiting='" + onwaiting.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             if (onwheel != null)
-                ret += "onwheel=" + onwheel.getCode(sessionData, context).EvalBase64() + " ";
+                ret += "onwheel='" + onwheel.GetJsCode(sessionData, context).EvalBase64() + "' ";
 
             return ret;
         }

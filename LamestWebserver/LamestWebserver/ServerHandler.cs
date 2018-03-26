@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -32,7 +32,7 @@ namespace LamestWebserver
         /// <summary>
         /// Starts the IO-Loop for handling the server and showing logs.
         /// </summary>
-        public static void StartHandler()
+        public static void StartHandler(bool acceptUserInput = true)
         {
             nolog = false;
             Running = true;
@@ -44,12 +44,21 @@ namespace LamestWebserver
 
             explicitLogging = true;
             outp.Start();
+            string input = "";
 
             while (Running)
             {
-                string s = Console.ReadLine();
+                if (acceptUserInput)
+                {
+                    input = Console.ReadLine();
+                }
+                else
+                {
+                    Thread.Sleep(1);
+                    continue;
+                }
 
-                if (s == "exit")
+                if (input == "exit")
                 {
                     Running = false;
                     Master.StopServers();
@@ -57,7 +66,7 @@ namespace LamestWebserver
                 }
                 else
                 {
-                    switch (s)
+                    switch (input)
                     {
                         case "ports":
                         {
@@ -67,8 +76,7 @@ namespace LamestWebserver
                                 {
                                     for (int i = 0; i < WebServer.RunningServers.Count; i++)
                                     {
-                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Threads: " +
-                                                          WebServer.RunningServers[i].GetThreadCount());
+                                        Console.WriteLine("Port: " + WebServer.RunningServers[i].Port + " Worker Threads: " + WebServer.RunningServers[i].WorkerThreads.Instance.WorkerCount);
                                     }
                                 }
                                 Console.WriteLine("Done!");
@@ -330,7 +338,7 @@ namespace LamestWebserver
                             {
                                 using (outputMutex.Lock())
                                 {
-                                    Console.WriteLine("Invalid command '" + s + "'! If you need help, type 'help'.");
+                                    Console.WriteLine("Invalid command '" + input + "'! If you need help, type 'help'.");
                                 }
                             }
                             break;

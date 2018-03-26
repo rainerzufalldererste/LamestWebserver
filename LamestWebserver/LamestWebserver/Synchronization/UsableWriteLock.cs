@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LamestWebserver.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -11,7 +12,9 @@ namespace LamestWebserver.Synchronization
     public class UsableWriteLock
     {
         private ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-        private readonly string ID = SessionContainer.GenerateHash();
+        private readonly ID ID = new ID();
+        private UsableWriteLockDisposable_read _readDisposable;
+        private UsableWriteLockDisposable_write _writeDisposable;
 
         /// <summary>
         /// Locks the WriteLock for reading
@@ -20,7 +23,11 @@ namespace LamestWebserver.Synchronization
         public UsableWriteLockDisposable_read LockRead()
         {
             rwLock.EnterReadLock();
-            return new UsableWriteLockDisposable_read(this);
+
+            if (_readDisposable == null)
+                _readDisposable = new UsableWriteLockDisposable_read(this);
+
+            return _readDisposable;
         }
 
         /// <summary>
@@ -30,7 +37,11 @@ namespace LamestWebserver.Synchronization
         public UsableWriteLockDisposable_write LockWrite()
         {
             rwLock.EnterWriteLock();
-            return new UsableWriteLockDisposable_write(this);
+
+            if (_writeDisposable == null)
+                _writeDisposable = new UsableWriteLockDisposable_write(this);
+
+            return _writeDisposable;
         }
 
         /// <summary>
@@ -54,7 +65,7 @@ namespace LamestWebserver.Synchronization
 
                     if (lockys[i] == null)
                         currentIndex = j;
-                    else if (string.Compare(lockys[i].ID, locks[j].ID, StringComparison.Ordinal) < 0)
+                    else if (lockys[i].ID < locks[j].ID)
                         currentIndex = j;
                 }
 
@@ -86,7 +97,7 @@ namespace LamestWebserver.Synchronization
 
                     if (lockys[i] == null)
                         currentIndex = j;
-                    else if (string.Compare(lockys[i].ID, locks[j].ID, StringComparison.Ordinal) < 0)
+                    else if (lockys[i].ID < locks[j].ID)
                         currentIndex = j;
                 }
 

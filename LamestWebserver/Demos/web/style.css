@@ -1,6 +1,7 @@
 ﻿body {
     margin: 0;
-    background: #ee6959;
+    background-color: #ee6959;
+    background: linear-gradient(45deg, #ff5c73, #ff8247);
 }
 
 ::selection {
@@ -39,12 +40,17 @@ div.footer {
     color: #fff;
 }
 
+div.fit {
+    margin: 2em auto 2em auto;
+    max-width: 1100px;
+}
+
 .footer p {
     font-family: Consolas, "Courier New", monospace;
     font-size: 11pt;
     float: left;
     margin-top: -4em;
-    color: #bdbdbd;
+    color: #ececec;
 }
 
 .footer img {
@@ -106,12 +112,29 @@ p.code {
     font-family: Consolas, "Courier New", monospace;
 } 
 
-comment {
-    color:#ccc;
-} 
+p.smallcode {
+    background: #f3f3f3;
+    padding: 5px 10px;
+    font-size: 11pt;
+    color: #8c8c8c;
+    font-family: Consolas, "Courier New", monospace;
+    border: 3px solid #ececec;
+}
 
-marked {
-    color:#ee6959;
+comment, .comment {
+    color: #d2b7b0;
+}
+
+.symbol {
+    color: #bfbfbf;
+}
+
+marked, .highlight {
+    color: #ee6959;
+}
+
+.string {
+    color: #ff9c44;
 }
 
 h3 {
@@ -144,4 +167,51 @@ td {
 
 td p, td b, td i {
     margin: 0;
+}
+
+ul {
+    list-style-type: square;
+    list-style-position: outside;
+    margin-right: 3%;
+    list-style: url(bullet.png);
+    padding-left: 10%;
+}
+
+input[type="text"] {
+    background: #fafafa;
+    border: 1pt #cecece solid;
+    padding: 2pt 5pt;
+    margin: 5pt;
+    color: #737373;
+    font-size: 12pt;
+}
+
+input[type="text"]:hover {
+    background: #fff;
+}
+
+input[type="text"]:active, input[type="text"]:focus {
+    outline: none;
+    color: #232323;
+}
+
+button {
+    margin: 3pt 2pt 3pt 2pt;
+    background: linear-gradient(20deg, #ff6e8b, #ffa770);
+    border-radius: 5px;
+    border: none;
+    color: #ffffff;
+    text-align: center;
+    font-weight: bold;
+    font-size: 11.5pt;
+    padding: 0.5em 0.75em;
+}
+
+button:hover {
+    background: linear-gradient(20deg, #ff8e7d, #ffcc6c);
+}
+
+button:active, button:focus {
+    background: linear-gradient(20deg, #ffc16c, #ffe66b);
+    outline: none;
 }

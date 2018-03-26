@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
@@ -126,8 +126,8 @@ namespace LamestWebserver.WebServices
 
         public T GetService<T>() where T : IWebService, new()
         {
-            if (typeof(T).IsAbstract || typeof(T).IsInterface || !typeof(T).IsPublic)
-                throw new IncompatibleTypeException("Only public non-abstract Types of non-interfaces can be WebServices.");
+            if (typeof(T).IsAbstract || typeof(T).IsInterface || !typeof(T).IsPublic || typeof(T).IsSealed)
+                throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
 
             AssemblyBuilder asmBuilder = Thread.GetDomain()
                 .DefineDynamicAssembly(new AssemblyName(typeof(IWebService).Namespace + "." + typeof(IWebService).Name + "." + typeof(T).Namespace + "." + typeof(T).Name),
@@ -150,7 +150,7 @@ namespace LamestWebserver.WebServices
             {
                 typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
             }
-
+            
             var methods = typeof(T).GetMethods();
 
             foreach (var method in methods)

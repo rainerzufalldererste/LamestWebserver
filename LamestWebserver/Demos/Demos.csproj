@@ -37,6 +37,9 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>lws.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="SDILReader, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -44,6 +47,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -52,10 +56,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HelperClasses\HCodeElement.cs" />
     <Compile Include="MainPage.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tut01.cs" />
+    <Compile Include="Tut02.cs" />
+    <Compile Include="Tut03.cs" />
+    <Compile Include="Tut04.cs" />
+    <Compile Include="Tut05.cs" />
     <Compile Include="WebServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -68,8 +77,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="SDILReader.dll" />
-    <Content Include="SDILReader.pdb" />
+    <Content Include="lws.ico" />
+    <Content Include="web\bullet.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="web\lwsfooter.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

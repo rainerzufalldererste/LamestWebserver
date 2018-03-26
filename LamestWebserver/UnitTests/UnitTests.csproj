@@ -28,6 +28,7 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -38,11 +39,13 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>UnitTests.Application</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -52,24 +55,28 @@
         <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
       </ItemGroup>
     </When>
-    <Otherwise>
-      <ItemGroup>
-        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework">
-          <Private>False</Private>
-        </Reference>
-      </ItemGroup>
-    </Otherwise>
+    <Otherwise />
   </Choose>
   <ItemGroup>
     <Compile Include="CollectionUnitTests.cs" />
     <Compile Include="Application.cs" />
     <Compile Include="CompressionTest.cs" />
+    <Compile Include="LoggerTests.cs" />
+    <Compile Include="IDTests.cs" />
     <Compile Include="EncryptDecryptTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PacketUnitTest.cs" />
     <Compile Include="PasswordTest.cs" />
     <Compile Include="CollectionSerializerTests.cs" />
-    <Compile Include="UsableMutexTest.cs" />
+    <Compile Include="ResponseCacheTest.cs" />
+    <Compile Include="StringExtentionTests.cs" />
+    <Compile Include="ClampedValueTest.cs" />
+    <Compile Include="FlushableMemoryPoolTests.cs" />
+    <Compile Include="BitListTests.cs" />
+    <Compile Include="FixedSizeQueueTests.cs" />
+    <Compile Include="WalkableQueueTest.cs" />
+    <Compile Include="WebCrawlerTest.cs" />
+    <Compile Include="UsableLockerSimpleTest.cs" />
     <Compile Include="WriteLockTest.cs" />
   </ItemGroup>
   <ItemGroup>

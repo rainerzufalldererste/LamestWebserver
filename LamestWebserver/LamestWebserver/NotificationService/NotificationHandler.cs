@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using LamestWebserver.Synchronization;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.NotificationService
 {
@@ -100,7 +101,7 @@ namespace LamestWebserver.NotificationService
         /// <returns>the specified notification</returns>
         public static Notification ExecuteScript(IJSPiece piece)
         {
-            return new ExecuteScriptNotification(piece.getCode(AbstractSessionIdentificator.CurrentSession));
+            return new ExecuteScriptNotification(piece.GetJsCode(SessionData.CurrentSession));
         }
 
         /// <summary>
@@ -113,9 +114,9 @@ namespace LamestWebserver.NotificationService
         {
             return
                 new ExecuteScriptNotification(
-                    JSElement.getByID(divId)
+                    JSElement.GetByID(divId)
                         .InnerHTML.Set(content)
-                        .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                        .GetJsCode(SessionData.CurrentSession, CallingContext.Inner));
         }
 
         /// <summary>
@@ -140,7 +141,7 @@ namespace LamestWebserver.NotificationService
                 new ExecuteScriptNotification(
                     JSElement.Body
                         .InnerHTML.Set(content)
-                        .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                        .GetJsCode(SessionData.CurrentSession, CallingContext.Inner));
         }
 
         /// <summary>
@@ -162,9 +163,9 @@ namespace LamestWebserver.NotificationService
         public static Notification AddContentToDiv(string divId, IJSValue content)
         {
             return new ExecuteScriptNotification(
-                JSElement.getByID(divId).InnerHTML.Set(
-                    JSElement.getByID(divId).InnerHTML + content
-                ).getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                JSElement.GetByID(divId).InnerHTML.Set(
+                    JSElement.GetByID(divId).InnerHTML + content
+                ).GetJsCode(SessionData.CurrentSession, CallingContext.Inner));
         }
         
         /// <summary>
@@ -185,7 +186,7 @@ namespace LamestWebserver.NotificationService
         public static Notification ReloadPage()
         {
             return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(JSValue.CurrentBrowserURL)
-                .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                .GetJsCode(SessionData.CurrentSession, CallingContext.Inner));
         }
 
         /// <summary>
@@ -196,7 +197,7 @@ namespace LamestWebserver.NotificationService
         public static Notification Redirect(IJSValue newPageUrl)
         {
             return new ExecuteScriptNotification(JSValue.CurrentBrowserURL.Set(newPageUrl)
-                .getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner));
+                .GetJsCode(SessionData.CurrentSession, CallingContext.Inner));
         }
 
         /// <summary>
@@ -386,7 +387,7 @@ namespace LamestWebserver.NotificationService
         /// <summary>
         /// The id of this NotificationHandler (for easier identification in the client)
         /// </summary>
-        public string ID { get; private set; } = SessionContainer.GenerateHash();
+        public string ID { get; private set; } = Hash.GetHash();
         
         /// <summary>
         /// The amount of currently connected clients.
@@ -463,7 +464,7 @@ namespace LamestWebserver.NotificationService
         /// The javascript code that handles the Notification based Communication to the server
         /// </summary>
         public JSElement ConnectionElement => new JSPlainText("<script type='text/javascript'>" +
-                                NotificationHelper.JsonNotificationCode(AbstractSessionIdentificator.CurrentSession, URL, ID, _externalEndpoint, TraceMessagesClient) + "</script>");
+                                NotificationHelper.JsonNotificationCode(SessionData.CurrentSession, URL, ID, _externalEndpoint, TraceMessagesClient) + "</script>");
 
         /// <summary>
         /// The method which handles the sending of keepalive packages to the clients whenever the maximum time is reached.
@@ -588,7 +589,7 @@ namespace LamestWebserver.NotificationService
         {
             return
                 SendingFunction.callFunction(
-                    new JSValue(messageGetter.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner)));
+                    new JSValue(messageGetter.GetJsCode(SessionData.CurrentSession, CallingContext.Inner)));
         }
 
         /// <summary>
@@ -630,7 +631,7 @@ namespace LamestWebserver.NotificationService
         /// <summary>
         /// The current SessionData
         /// </summary>
-        public AbstractSessionIdentificator SessionData { get; private set; }
+        public SessionData SessionData { get; private set; }
 
         internal NotificationResponse(string input, WebSocketHandlerProxy proxy, string URL, NotificationHandler notificationHanlder)
         {

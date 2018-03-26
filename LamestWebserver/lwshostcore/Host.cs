@@ -9,13 +9,14 @@ using System.Threading.Tasks;
 using LamestWebserver;
 using LamestWebserver.Attributes;
 using LamestWebserver.Collections;
+using LamestWebserver.Core;
 
 namespace lwshostcore
 {
     public class Host
     {
         private FileSystemWatcher fileSystemWatcher;
-        private string ID = SessionContainer.GenerateHash();
+        private ID ID = new ID();
         private string directoryPath;
 
         public AVLHashMap<string, IEnumerable<Type>> TypesPerFile = new AVLHashMap<string, IEnumerable<Type>>();
@@ -52,7 +53,7 @@ namespace lwshostcore
         {
             fileSystemWatcher.Changed += (sender, args) =>
             {
-                ID = SessionContainer.GenerateHash();
+                ID = new ID();
                 ProcessFile(args.FullPath);
 
                 if (args.FullPath.EndsWith(".exe") || args.FullPath.EndsWith(".dll"))
@@ -90,10 +91,10 @@ namespace lwshostcore
 
             try
             {
-                string newFileName = Directory.GetCurrentDirectory() + "\\lwshost\\CurrentRun\\" + ID + file.Replace(directoryPath, "");
+                string newFileName = Directory.GetCurrentDirectory() + "\\lwshost\\CurrentRun\\" + ID.ToHexString() + file.Replace(directoryPath, "");
 
-                if (!Directory.Exists("lwshost\\CurrentRun\\" + ID))
-                    Directory.CreateDirectory("lwshost\\CurrentRun\\" + ID);
+                if (!Directory.Exists("lwshost\\CurrentRun\\" + ID.ToHexString()))
+                    Directory.CreateDirectory("lwshost\\CurrentRun\\" + ID.ToHexString());
 
                 File.Copy(file, newFileName);
                 Thread.Sleep(100);

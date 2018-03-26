@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -41,7 +41,7 @@ namespace lwshostsvc
 
                         try
                         {
-                            LamestWebserver.Security.ElevateRightsWindows.ElevateRights();
+                            LamestWebserver.Core.ElevateRightsWindows.ElevateRights();
 
                             var result = HostServiceInstaller.Install();
 
@@ -66,16 +66,17 @@ namespace lwshostsvc
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine("Installation Failed.\n" + e);
+                            Console.WriteLine("Installation Failed.\n" + e.Message);
                         }
                         return;
+
 
                     case "-u":
                     case "--uninstall":
 
                         try
                         {
-                            LamestWebserver.Security.ElevateRightsWindows.ElevateRights();
+                            LamestWebserver.Core.ElevateRightsWindows.ElevateRights();
 
                             var result = HostServiceInstaller.Install(true);
 
@@ -100,15 +101,94 @@ namespace lwshostsvc
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine("Operation Failed.\n" + e);
+                            Console.WriteLine("Operation Failed.\n" + e.Message);
                         }
                         return;
+
+
+                    case "-s":
+                    case "--start":
+
+                        try
+                        {
+                            LamestWebserver.Core.ElevateRightsWindows.ElevateRights();
+
+                            ServiceController controller = new ServiceController(HostServiceInstaller.Name);
+
+                            switch (controller.Status)
+                            {
+                                case ServiceControllerStatus.Running:
+
+                                    Console.WriteLine("The service is already running.");
+                                    break;
+
+
+                                case ServiceControllerStatus.Stopped:
+                                case ServiceControllerStatus.Paused:
+
+                                    controller.Start();
+                                    Console.WriteLine("The service has been started successfully.");
+                                    break;
+
+
+                                default:
+
+                                    Console.WriteLine($"The action could not be executed. The service state is '{controller.Status}'.");
+                                    break;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Operation Failed.\n" + e.Message);
+                        }
+                        return;
+
+
+                    case "-x":
+                    case "--stop":
+
+                        try
+                        {
+                            LamestWebserver.Core.ElevateRightsWindows.ElevateRights();
+
+                            ServiceController controller = new ServiceController(HostServiceInstaller.Name);
+
+                            switch (controller.Status)
+                            {
+                                case ServiceControllerStatus.Stopped:
+
+                                    Console.WriteLine("The service is currently not running.");
+                                    break;
+
+
+                                case ServiceControllerStatus.Running:
+                                case ServiceControllerStatus.Paused:
+
+                                    controller.Stop();
+                                    Console.WriteLine("The service has been stopped successfully.");
+                                    break;
+
+
+                                default:
+
+                                    Console.WriteLine($"The action could not be executed. The service state is '{controller.Status}'.");
+                                    break;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Operation Failed.\n" + e.Message);
+                        }
+                        return;
+
 
                     case "-?":
                     default:
                         Console.WriteLine("\n===========================================\n|||                                     |||\n|||     LamestWebserver Host Service    |||\n|||                                     |||\n===========================================\n");
                         Console.WriteLine("-i   (--install)      Install the Service");
                         Console.WriteLine("-u   (--uninstall)    Uninstall the Service");
+                        Console.WriteLine("-s   (--start)        Start the Service");
+                        Console.WriteLine("-x   (--stop)         Stop the Service");
                         return;
                 }
             }
@@ -146,18 +226,18 @@ namespace lwshostsvc
 
             HostConfig.CurrentHostConfig.ApplyConfig();
 
-            ResponseHandler.CurrentResponseHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new WebSocketRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new PageResponseRequestHandler());
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
+            RequestHandler.CurrentRequestHandler.InsertSecondaryRequestHandler(new ErrorRequestHandler());
+            RequestHandler.CurrentRequestHandler.AddRequestHandler(new WebSocketRequestHandler());
+            RequestHandler.CurrentRequestHandler.AddRequestHandler(new PageResponseRequestHandler());
+            RequestHandler.CurrentRequestHandler.AddRequestHandler(new OneTimePageResponseRequestHandler());
 
             foreach (var directory in HostConfig.CurrentHostConfig.WebserverFileDirectories)
             {
-                ResponseHandler.CurrentResponseHandler.AddRequestHandler(new CachedFileRequestHandler(directory));
+                RequestHandler.CurrentRequestHandler.AddRequestHandler(new CachedFileRequestHandler(directory));
                 ServerHandler.LogMessage($"Added WebserverFileDirectory '{directory}'");
             }
 
-            ResponseHandler.CurrentResponseHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
+            RequestHandler.CurrentRequestHandler.AddRequestHandler(new DirectoryResponseRequestHandler());
 
             foreach (var port in HostConfig.CurrentHostConfig.Ports)
             {

@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading;
 using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
+using LamestWebserver.Core;
+using LamestWebserver.Caching;
 
 namespace LamestWebserver
 {
@@ -13,6 +15,27 @@ namespace LamestWebserver
     /// </summary>
     public static class SessionContainer
     {
+        private static ECachingType _globalDefaultCachingType = ECachingType.NotCacheable;
+
+        /// <summary>
+        /// The default CachingType for Pages and Elements without a specific CachingType.
+        /// </summary>
+        public static ECachingType GlobalDefaultCachingType
+        {
+            get
+            {
+                return _globalDefaultCachingType;
+            }
+
+            set
+            {
+                if (value == ECachingType.Default)
+                    Logger.LogExcept("The global default CachingType cannot be 'Default.'");
+                else
+                    _globalDefaultCachingType = value;
+            }
+        }
+
         /// <summary>
         /// The mode for SessionID recreation.
         /// </summary>
@@ -44,11 +67,6 @@ namespace LamestWebserver
         public enum ESessionIdTransmissionType
         {
             /// <summary>
-            /// Transmitts the SessionIDs via HTTP POST
-            /// </summary>
-            [Obsolete]
-            HttpPost,
-            /// <summary>
             /// Transmitts the SessionID via Cookie
             /// </summary>
             Cookie
@@ -69,7 +87,7 @@ namespace LamestWebserver
         /// </summary>
         public static int MaxUsers = 256;
 
-        private static UsableMutex mutex = new UsableMutex();
+        private static UsableLockSimple mutex = new UsableLockSimple();
 
         private static AVLTree<string, AVLTree<string, object>> PerFileObjects = new AVLTree<string, AVLTree<string, object>>();
         
@@ -226,11 +244,6 @@ namespace LamestWebserver
 
             return hash;
         }
-        
-        private static byte[] _lastHash = null;
-        private static ICryptoTransform _cryptoTransform = null;
-
-        private static Mutex _hashMutex = new Mutex();
 
         /// <summary>
         /// generates a 128 bit AES hash that is not used in pagenames
@@ -239,7 +252,7 @@ namespace LamestWebserver
         public static string GenerateUnusedHash()
         {
             GENERATE_NEW_HASH:
-            string hash = GenerateHash();
+            string hash = Hash.GetHash();
 
             // Chris: if(hash already exists in any hash list) {goto GENERATE_NEW_HASH;}
             
@@ -250,85 +263,6 @@ namespace LamestWebserver
                 goto GENERATE_NEW_HASH;
 
             return hash;
-        }
-
-        /// <summary>
-        /// generates a 128 bit AES hash
-        /// </summary>
-        /// <returns></returns>
-        public static string GenerateHash()
-        {
-            if (_hashMutex == null)
-                _hashMutex = new Mutex();
-
-            _hashMutex.WaitOne();
-
-            // Chris: generate hash
-
-            if (_cryptoTransform == null)
-            {
-                Aes aes = new AesManaged() { Mode = CipherMode.ECB };
-                aes.GenerateIV();
-                aes.GenerateKey();
-                _cryptoTransform = aes.CreateEncryptor();
-
-                if (_lastHash == null)
-                    _lastHash = new byte[16];
-            }
-
-            _cryptoTransform.TransformBlock(_lastHash, 0, 16, _lastHash, 0);
-
-            string hash = _lastHash.ToHexString();
-
-            _hashMutex.ReleaseMutex();
-
-            return hash;
-        }
-
-        private static SHA3Managed _sha3;
-        private static readonly Mutex Sha3HashMutex = new Mutex();
-
-        /// <summary>
-        /// Generates a SHA3 512 bit Hash of the given input as Hex-String
-        /// </summary>
-        /// <param name="input">the text to hash</param>
-        /// <returns>the hash as hex string</returns>
-        public static string GetComplexHash(string input)
-        {
-            return GetComplexHash(Encoding.Unicode.GetBytes(input)).ToHexString();
-        }
-
-        /// <summary>
-        /// Generates a SHA3 512 bit Hash of the given input
-        /// </summary>
-        /// <param name="input">the byte[] to hash</param>
-        /// <returns>the hash as byte[]</returns>
-        public static byte[] GetComplexHash(byte[] input)
-        {
-            // Chris: Preparation if sha3 hasn't been initialized
-            if (_sha3 == null)
-            {
-                _sha3 = new SHA3Managed(512);
-            }
-
-            Sha3HashMutex.WaitOne();
-
-            byte[] bytes = _sha3.ComputeHash(input);
-
-            Sha3HashMutex.ReleaseMutex();
-
-            return bytes;
-        }
-
-        private static string _lastSha3Hash = GenerateHash() + GenerateHash() + GenerateHash() + GenerateHash();
-
-        /// <summary>
-        /// Generates a SHA3 512bit hash of a random piece of code
-        /// </summary>
-        /// <returns>the hash as hex string</returns>
-        public static string GenerateComplexHash()
-        {
-            return _lastSha3Hash = GetComplexHash(_lastSha3Hash + GenerateHash());
         }
 
         internal static UserInfo GetUserInfoFromSsid(string ssid)

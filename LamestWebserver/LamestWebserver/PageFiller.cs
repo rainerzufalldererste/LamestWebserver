@@ -36,7 +36,7 @@ namespace LamestWebserver
 
         private void Register()
         {
-            Master.AddFuntionToServer(URL, this.GetContents);
+            Master.AddPageResponseToServer(URL, this.GetContents);
         }
 
         /// <summary>
@@ -44,10 +44,10 @@ namespace LamestWebserver
         /// </summary>
         protected void RemoveFromServer()
         {
-            Master.RemoveFunctionFromServer(URL);
+            Master.RemovePageResponseFromServer(URL);
         }
 
-        private string GetContents(SessionData sessionData)
+        private string GetContents(HttpSessionData sessionData)
         {
             string ret = "";
 
@@ -55,12 +55,12 @@ namespace LamestWebserver
             {
                 ret = System.IO.File.ReadAllText(File);
 
-                ProcessData(((SessionData)sessionData), ref ret);
+                ProcessData(((HttpSessionData)sessionData), ref ret);
 
                 if (ReplaceHrefs)
-                    ProcessHrefs(ref ret, ((SessionData)sessionData));
+                    ProcessHrefs(ref ret, ((HttpSessionData)sessionData));
 
-                processInsertions(ref ret, ((SessionData)sessionData));
+                processInsertions(ref ret, ((HttpSessionData)sessionData));
             }
             catch(Exception e)
             {
@@ -70,7 +70,7 @@ namespace LamestWebserver
             return ret;
         }
 
-        private void processInsertions(ref string ret, SessionData sessionData)
+        private void processInsertions(ref string ret, HttpSessionData sessionData)
         {
             // <ISSID> to a hidden input containing the SSID
             ret = ret.Replace("<ISSID>","<input type='hidden' name='ssid' value='" + sessionData.Ssid + "'>");
@@ -101,7 +101,7 @@ namespace LamestWebserver
             }
         }
 
-        private void ProcessHrefs(ref string ret, SessionData sessionData)
+        private void ProcessHrefs(ref string ret, HttpSessionData sessionData)
         {
             // href="#" untouched
             // href="somelink.html?123=bla" even with onclick="xyz" will contain the ssid in post
@@ -251,7 +251,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="output">the page to return</param>
-        public abstract void ProcessData(SessionData sessionData, ref string output);
+        public abstract void ProcessData(HttpSessionData sessionData, ref string output);
 
         /// <summary>
         /// sets a value in the document

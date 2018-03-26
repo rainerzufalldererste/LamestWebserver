@@ -8,7 +8,7 @@ namespace LamestWebserver.NotificationService
 {
     internal static class NotificationHelper
     {
-        internal static string JsonNotificationCode(AbstractSessionIdentificator sessionData, string destinationURL, string NotificationHandlerID, IPEndPoint endpoint,
+        internal static string JsonNotificationCode(SessionData sessionData, string destinationURL, string NotificationHandlerID, IPEndPoint endpoint,
             bool trace = false, int timeKeepaliveClientside = 8000)
         {
             destinationURL = destinationURL.TrimStart('/', ' ');

@@ -1,0 +1,3 @@
+[submodule "LamestWebserver/dependencies/ILMerge"]
+	path = LamestWebserver/dependencies/ILMerge
+	url = https://github.com/Microsoft/ILMerge.git

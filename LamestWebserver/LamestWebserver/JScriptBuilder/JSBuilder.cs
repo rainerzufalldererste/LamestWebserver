@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Web;
 using LamestWebserver.UI;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.JScriptBuilder
 {
@@ -59,16 +60,22 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "";
 
             for (int i = 0; i < pieces.Count; i++)
             {
-                ret += pieces[i].getCode(sessionData, context);
+                ret += pieces[i].GetJsCode(sessionData, context);
             }
 
             return ret;
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return this.GetJsCode(SessionData.CurrentSession).EvalBase64();
         }
     }
 
@@ -144,7 +151,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="sessionData">the current sessionData</param>
         /// <param name="context">the current context. Default: CallingContext.Default</param>
         /// <returns>the JavaScript code as string</returns>
-        string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default);
+        string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default);
     }
 
     /// <summary>
@@ -170,12 +177,12 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of this Function
         /// </summary>
-        public override string content => _content;
+        public override string Content => _content;
 
         /// <summary>
         /// The name of this Function as JSValue
         /// </summary>
-        public IJSValue FunctionPointer => new JSValue(content);
+        public IJSValue FunctionPointer => new JSValue(Content);
 
         /// <summary>
         /// Constructs a new JSFunction
@@ -185,7 +192,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSFunction(string name, List<IJSValue> parameters)
         {
             if (String.IsNullOrWhiteSpace(name))
-                _content = "_func" + SessionContainer.GenerateHash();
+                _content = "_func" + Hash.GetHash();
             else
                 _content = name;
 
@@ -198,7 +205,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="parameters">the parameters of the Function Definition</param>
         public JSFunction(List<IJSValue> parameters)
         {
-            _content = "_func" + SessionContainer.GenerateHash();
+            _content = "_func" + Hash.GetHash();
             this.parameters = parameters;
         }
 
@@ -215,7 +222,7 @@ namespace LamestWebserver.JScriptBuilder
         public JSFunction(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                _content = "_func" + SessionContainer.GenerateHash();
+                _content = "_func" + Hash.GetHash();
             else
                 _content = name;
         }
@@ -225,7 +232,7 @@ namespace LamestWebserver.JScriptBuilder
         /// </summary>
         public JSFunction()
         {
-            _content = "_func" + SessionContainer.GenerateHash();
+            _content = "_func" + Hash.GetHash();
         }
 
         /// <summary>
@@ -257,23 +264,23 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            string ret = "function " + content + " ( ";
+            string ret = "function " + Content + " ( ";
 
             for (int i = 0; i < parameters.Count; i++)
             {
                 if (i > 0)
                     ret += ", ";
 
-                ret += parameters[i].content;
+                ret += parameters[i].Content;
             }
 
             ret += ") { ";
 
             for (int i = 0; i < pieces.Count; i++)
             {
-                ret += pieces[i].getCode(sessionData);
+                ret += pieces[i].GetJsCode(sessionData);
             }
 
             return ret + "}";
@@ -286,7 +293,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public JSFunctionCall callFunction(params IJSValue[] values)
         {
-            return new JSFunctionCall(this.content, values);
+            return new JSFunctionCall(this.Content, values);
         }
 
         /// <summary>
@@ -325,7 +332,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of the given function.
         /// </summary>
-        public override string content => _function.content;
+        public override string Content => _function.Content;
 
         /// <summary>
         /// Sets the result of this FunctionCall to a Value
@@ -338,9 +345,9 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "(" + _function.getCode(sessionData) + ")()" + (context == CallingContext.Default ? ";" : " ");
+            return "(" + _function.GetJsCode(sessionData) + ")()" + (context == CallingContext.Default ? ";" : " ");
         }
     }
 
@@ -355,7 +362,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="pieces">the code to execute on execution</param>
         public JSInstantFunction(params IJSPiece[] pieces)
         {
-            _content = "_ifunc" + SessionContainer.GenerateHash();
+            _content = "_ifunc" + Hash.GetHash();
             this.pieces = pieces.ToList();
         }
     }
@@ -368,7 +375,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of the Value
         /// </summary>
-        public abstract string content { get; }
+        public abstract string Content { get; }
 
         /// <summary>
         /// A way to quickly set this Value.
@@ -398,7 +405,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public abstract string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default);
+        public abstract string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default);
         
         /// <summary>
         /// Adds two Values
@@ -516,7 +523,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <param name="element">the HElement</param>
         public static implicit operator IJSValue(HElement element)
         {
-            return new JSValue(element.GetContent(AbstractSessionIdentificator.CurrentSession));
+            return new JSValue(element.GetContent(SessionData.CurrentSession));
         }
     }
 
@@ -532,7 +539,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// Returns the value of this Operation
         /// </summary>
-        public override string content => getCode(AbstractSessionIdentificator.CurrentSession);
+        public override string Content => GetJsCode(SessionData.CurrentSession);
 
         /// <summary>
         /// Constructs a new Operation
@@ -559,9 +566,9 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            string ret = _a.getCode(sessionData, CallingContext.Inner);
+            string ret = _a.GetJsCode(sessionData, CallingContext.Inner);
 
             switch(_operatorType)
             {
@@ -613,7 +620,7 @@ namespace LamestWebserver.JScriptBuilder
                     throw new InvalidOperationException("The operator '" + _operatorType + "' is not handled in getCode()");
             }
 
-            return ret + (_b is JSStringValue ?_b.getCode(sessionData, CallingContext.Inner).EvalBase64() : _b.getCode(sessionData, CallingContext.Inner)) + (context == CallingContext.Default ? ";" : " ");
+            return ret + (_b is JSStringValue ?_b.GetJsCode(sessionData, CallingContext.Inner).EvalBase64() : _b.GetJsCode(sessionData, CallingContext.Inner)) + (context == CallingContext.Default ? ";" : " ");
         }
 
         /// <summary>
@@ -693,10 +700,10 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string content => "\"" + _content + "\"";
+        public override string Content => "\"" + _content + "\"";
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return "\"" + _content.JSEncode() + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
@@ -709,6 +716,40 @@ namespace LamestWebserver.JScriptBuilder
         public static implicit operator JSStringValue(string value)
         {
             return new JSStringValue(value);
+        }
+    }
+
+    /// <summary>
+    /// A String literal Value in JavaScript without any processing to the string (other than '"' to '&quot;').
+    /// </summary>
+    public class JSRawStringValue : JSValue
+    {
+        /// <summary>
+        /// Constructs a new JSRawStringValue of a given string
+        /// </summary>
+        /// <param name="value">the string to set this value to</param>
+        public JSRawStringValue(string value) : base(value)
+        {
+            _content = value;
+        }
+
+        /// <inheritdoc />
+        public override string Content => "\"" + _content + "\"";
+
+        /// <inheritdoc />
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            return "\"" + _content.Replace("\"", "&quot;") + "\"" + (context == CallingContext.Default ? ";" : " ");
+        }
+
+        /// <summary>
+        /// Casts a string to a JSRawStringValue
+        /// </summary>
+        /// <param name="value">the string being casted</param>
+        /// <returns>the string as JSRawStringValue</returns>
+        public static implicit operator JSRawStringValue(string value)
+        {
+            return new JSRawStringValue(value);
         }
     }
 
@@ -727,7 +768,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return "\"" + _content.Replace("&quot;", "&amp;quot;").Replace("\"", "&quot;") + "\"" + (context == CallingContext.Default ? ";" : " ");
         }
@@ -756,7 +797,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// Retrieves the Value
         /// </summary>
-        public override string content => _content;
+        public override string Content => _content;
 
         /// <summary>
         /// Constructs a new JSValue from an Object. ToString will be Called.
@@ -805,9 +846,9 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return content + (context == CallingContext.Default ? ";" : " ");
+            return Content + (context == CallingContext.Default ? ";" : " ");
         }
 
         /// <inheritdoc />
@@ -835,7 +876,12 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of this Variable
         /// </summary>
-        public override string content => _content;
+        public override string Content => _content;
+
+        /// <summary>
+        /// Retrieves the name of the JSVariable as JSValue.
+        /// </summary>
+        public JSValue Name => new JSValue(_content);
 
         /// <summary>
         /// Constructs a new JSVariable
@@ -844,32 +890,32 @@ namespace LamestWebserver.JScriptBuilder
         public JSVariable(string name = null)
         {
             if (string.IsNullOrWhiteSpace(name))
-                this._content = "_var" + SessionContainer.GenerateHash();
+                this._content = "_var" + Hash.GetHash();
             else this._content = name;
         }
 
         /// <inheritdoc />
         public override IJSValue Set(IJSValue value)
         {
-            return new JSOperator(JSOperator.JSOperatorType.Set, new JSValue(content), value);
+            return new JSOperator(JSOperator.JSOperatorType.Set, new JSValue(Content), value);
         }
 
         /// <inheritdoc />
         public override IJSValue IsEqualTo(IJSValue value)
         {
-            return new JSOperator(JSOperator.JSOperatorType.Equals, new JSValue(content), value);
+            return new JSOperator(JSOperator.JSOperatorType.Equals, new JSValue(Content), value);
         }
 
         /// <inheritdoc />
         public override IJSValue IsNotEqualTo(IJSValue value)
         {
-            return new JSOperator(JSOperator.JSOperatorType.NotEquals, new JSValue(content), value);
+            return new JSOperator(JSOperator.JSOperatorType.NotEquals, new JSValue(Content), value);
         }
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "var " + content + (context == CallingContext.Default ? ";" : " ");
+            return "var " + Content + (context == CallingContext.Default ? ";" : " ");
         }
     }
 
@@ -884,7 +930,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The name of the Method to call
         /// </summary>
-        public override string content => _methodName;
+        public override string Content => _methodName;
 
         /// <summary>
         /// Constructs a new JavaScript functionCall
@@ -908,7 +954,7 @@ namespace LamestWebserver.JScriptBuilder
         }
         
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = _methodName + "(";
 
@@ -917,7 +963,7 @@ namespace LamestWebserver.JScriptBuilder
                 if (i > 0)
                     ret += ", ";
 
-                ret += _parameters[i].getCode(sessionData, CallingContext.Inner);
+                ret += _parameters[i].GetJsCode(sessionData, CallingContext.Inner);
             }
 
             return ret + ")" + (context == CallingContext.Default ? ";" : " ");
@@ -931,7 +977,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public static JSValue SetInterval(JSFunction function, int milliseconds)
         {
-            return new JSValue($"setInterval({function.FunctionPointer.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner)}, {milliseconds});");
+            return new JSValue($"setInterval({function.FunctionPointer.GetJsCode(SessionData.CurrentSession, CallingContext.Inner)}, {milliseconds});");
         }
 
         /// <summary>
@@ -953,8 +999,8 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public static JSValue SetInnerHTMLAsync(IJSValue value, string URL, params IJSPiece[] executeOnComplete)
         {
-            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
-                + ((Func<string>)(() => {string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(AbstractSessionIdentificator.CurrentSession)); return ret;})).Invoke()
+            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
+                + ((Func<string>)(() => {string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.GetJsCode(SessionData.CurrentSession)); return ret;})).Invoke()
                 + " } }; xmlhttp.open(\"GET\",\"" + URL + "\",true);xmlhttp.send();");
         }
 
@@ -967,8 +1013,8 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public static JSValue SetOuterHTMLAsync(IJSValue value, string URL, params IJSPiece[] executeOnComplete)
         {
-            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner) + ".outerHTML=this.responseText;"
-                + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.getCode(AbstractSessionIdentificator.CurrentSession)); return ret; })).Invoke()
+            return new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + value.GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".outerHTML=this.responseText;"
+                + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.GetJsCode(SessionData.CurrentSession)); return ret; })).Invoke()
                 + " } }; xmlhttp.open(\"GET\",\"" + URL + "\",true);xmlhttp.send();");
         }
 
@@ -979,7 +1025,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public static IJSValue EncodeURIComponent(IJSValue value)
         {
-            return new JSValue("encodeURIComponent(" + value.content + ")");
+            return new JSValue("encodeURIComponent(" + value.Content + ")");
         }
 
         /// <summary>
@@ -1019,7 +1065,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <returns>A piece of JavaScript code</returns>
         public static IJSPiece RemoveElementByID(string id)
         {
-            string varName = "_var" + SessionContainer.GenerateHash();
+            string varName = "_var" + Hash.GetHash();
 
             return new JSValue(varName + "=document.getElementById(\"" + id + "\");" + varName + ".remove();");
         }
@@ -1034,7 +1080,7 @@ namespace LamestWebserver.JScriptBuilder
         /// Constructs a new JSElementValue from a Value
         /// </summary>
         /// <param name="value">the value</param>
-        public JSElementValue(IJSValue value) { this._content = value.getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner); }
+        public JSElementValue(IJSValue value) { this._content = value.GetJsCode(SessionData.CurrentSession, CallingContext.Inner); }
 
         /// <summary>
         /// Constructs a new JSElementValue from a string
@@ -1050,12 +1096,12 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The Name of this Element or the Function retrieving it
         /// </summary>
-        public override string content => _content;
+        public override string Content => _content;
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return content + (context == CallingContext.Default ? ";" : " ");
+            return Content + (context == CallingContext.Default ? ";" : " ");
         }
         
         /// <inheritdoc />
@@ -1067,67 +1113,77 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// The 'innerHTML' attribute of this Element
         /// </summary>
-        public JSValue InnerHTML => new JSValue(content + ".innerHTML");
+        public JSValue InnerHTML => new JSValue(Content + ".innerHTML");
 
         /// <summary>
         /// The 'innerText' attribute of this Element
         /// </summary>
-        public JSValue InnerText => new JSValue(content + ".innerText");
+        public JSValue InnerText => new JSValue(Content + ".innerText");
 
         /// <summary>
         /// The 'value' attribute of this Element
         /// </summary>
-        public JSValue Value => new JSValue(content + ".value");
+        public JSValue Value => new JSValue(Content + ".value");
 
         /// <summary>
         /// The 'name' attribute of this Element
         /// </summary>
-        public JSValue Name => new JSValue(content + ".name");
+        public JSValue Name => new JSValue(Content + ".name");
 
         /// <summary>
         /// The 'id' attribute of this Element
         /// </summary>
-        public JSValue ID => new JSValue(content + ".id");
+        public JSValue ID => new JSValue(Content + ".id");
 
         /// <summary>
         /// The 'checked' attribute of this Element
         /// </summary>
-        public JSValue Checked => new JSValue(content + ".checked");
+        public JSValue Checked => new JSValue(Content + ".checked");
 
         /// <summary>
         /// The 'className' attribute of this Element
         /// </summary>
-        public JSValue ClassName => new JSValue(content + ".className");
+        public JSValue ClassName => new JSValue(Content + ".className");
 
         /// <summary>
         /// The 'outerHTML' attribute of this Element
         /// </summary>
-        public JSValue OuterHTML => new JSValue(content + ".outerHTML");
+        public JSValue OuterHTML => new JSValue(Content + ".outerHTML");
 
         /// <summary>
         /// The 'outerText' attribute of this Element
         /// </summary>
-        public JSValue OuterText => new JSValue(content + ".outerText");
+        public JSValue OuterText => new JSValue(Content + ".outerText");
 
         /// <summary>
         /// The 'selectedOptions[0].value' attribute of this Element
         /// </summary>
-        public JSValue FirstSelected => new JSValue(content + ".selectedOptions[0].value");
+        public JSValue FirstSelected => new JSValue(Content + ".selectedOptions[0].value");
 
         /// <summary>
         /// Displays (display = 'block') this Element
         /// </summary>
-        public IJSPiece Show => JSFunctionCall.DisplayElementByID(ID.content);
+        public IJSPiece Show => JSFunctionCall.DisplayElementByID(ID.Content);
 
         /// <summary>
         /// Hides (display = 'none') this Element
         /// </summary>
-        public IJSPiece Hide => JSFunctionCall.HideElementByID(ID.content);
+        public IJSPiece Hide => JSFunctionCall.HideElementByID(ID.Content);
 
         /// <summary>
         /// Removes this Element from the page
         /// </summary>
-        public IJSPiece Delete => JSFunctionCall.DisplayElementByID(ID.content);
+        public IJSPiece Delete => JSFunctionCall.DisplayElementByID(ID.Content);
+
+        /// <summary>
+        /// A custom attribute of this Element
+        /// </summary>
+        public JSValue this[string parameter] => new JSValue(Content + "." + parameter);
+
+        /// <summary>
+        /// A custom attribute of this Element
+        /// </summary>
+        public JSValue CustomParameter(string parameter) => new JSValue(Content + "." + parameter);
     }
 
     /// <summary>
@@ -1150,20 +1206,98 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return GetContent(_pieces, _booleanExpression, sessionData);
         }
         
-        internal static string GetContent(IJSPiece[] pieces, IJSValue headExpression, AbstractSessionIdentificator sessionData, string operation = "if")
+        internal static string GetContent(IJSPiece[] pieces, IJSValue headExpression, SessionData sessionData, string operation = "if")
         {
-            string ret = operation + " (" + headExpression.getCode(sessionData, CallingContext.Inner) + ") {";
+            string ret = operation + " (" + headExpression.GetJsCode(sessionData, CallingContext.Inner) + ") {";
 
             for (int i = 0; i < pieces.Length; i++)
             {
-                ret += pieces[i].getCode(sessionData);
+                ret += pieces[i].GetJsCode(sessionData);
             }
 
+            return ret + "}";
+        }
+    }
+
+    /// <summary>
+    /// A JavaScript Switch(-Case) Statement
+    /// </summary>
+    public class JSSwitch : IJSPiece
+    {
+        private readonly JSValue _switchValue;
+        private List<Tuple<IJSValue, IJSPiece>> _cases;
+        private readonly IJSPiece defaultCase = null;
+
+        /// <summary>
+        /// Creates a new JSSwitch Object
+        /// </summary>
+        /// <param name="switchValue">the value to check cases for</param>
+        public JSSwitch(JSValue switchValue)
+        {
+            _switchValue = switchValue;
+        }
+
+        /// <summary>
+        /// Creates a new JSSwitch Object
+        /// </summary>
+        /// <param name="switchValue">the value to check cases for</param>
+        /// <param name="defaultCase">how to perform in the default case</param>
+        public JSSwitch(JSValue switchValue, IJSPiece defaultCase) : this(switchValue)
+        {
+            this.defaultCase = defaultCase;
+        }
+
+        /// <summary>
+        /// Creates a new JSSwitch Object
+        /// </summary>
+        /// <param name="switchValue">the value to check cases for</param>
+        /// <param name="defaultCase">how to perform in the default case</param>
+        /// <param name="cases">how to perform for certain values</param>
+        public JSSwitch(JSValue switchValue, IJSPiece defaultCase, params Tuple<IJSValue, IJSPiece>[] cases) : this(switchValue, defaultCase)
+        {
+            _cases = cases.ToList();
+        }
+
+        /// <summary>
+        /// Creates a new JSSwitch Object
+        /// </summary>
+        /// <param name="switchValue">the value to check cases for</param>
+        /// <param name="cases">how to perform for certain values</param>
+        public JSSwitch(JSValue switchValue, params Tuple<IJSValue, IJSPiece>[] cases) : this(switchValue)
+        {
+            _cases = cases.ToList();
+        }
+
+        /// <summary>
+        /// Adds a case to the switch-case block.
+        /// </summary>
+        /// <param name="value">the value of the case</param>
+        /// <param name="code">the code to execute in this case</param>
+        public void AddCase(IJSValue value, IJSPiece code)
+        {
+            _cases.Add(new Tuple<IJSValue, IJSPiece>(value, code));
+        }
+
+        /// <inheritdoc />
+        public string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
+        {
+            string ret = "switch(" + _switchValue.GetJsCode(sessionData, CallingContext.Inner) + ") {";
+
+            _cases.ForEach(e =>
+            {
+                ret += "case " + e.Item1.GetJsCode(sessionData, CallingContext.Inner) + ": {";
+                ret += e.Item2.GetJsCode(sessionData);
+                ret += "} break;";
+            });
+
+            if (defaultCase != null)
+                ret += "default: {" + defaultCase.GetJsCode(sessionData) + "} break;";
+            
             return ret + "}";
         }
     }
@@ -1188,7 +1322,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return JSIf.GetContent(_pieces, _booleanExpression, sessionData, "else if ");
         }
@@ -1211,13 +1345,13 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "else {";
 
             for (int i = 0; i < _pieces.Length; i++)
             {
-                ret += _pieces[i].getCode(sessionData);
+                ret += _pieces[i].GetJsCode(sessionData);
             }
 
             return ret + "}";
@@ -1247,14 +1381,14 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// Retrieves the whole Inline-If-Statement
         /// </summary>
-        public override string content => getCode(AbstractSessionIdentificator.CurrentSession, CallingContext.Inner);
+        public override string Content => GetJsCode(SessionData.CurrentSession, CallingContext.Inner);
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "(" + _booleanExpression.getCode(sessionData, CallingContext.Inner) + " ? "
-                + _ifTrue.getCode(sessionData, CallingContext.Inner) + " : "
-                + _ifFalse.getCode(sessionData, CallingContext.Inner) + ")"
+            return "(" + _booleanExpression.GetJsCode(sessionData, CallingContext.Inner) + " ? "
+                + _ifTrue.GetJsCode(sessionData, CallingContext.Inner) + " : "
+                + _ifFalse.GetJsCode(sessionData, CallingContext.Inner) + ")"
                 + (context == CallingContext.Default ? ";" : " ");
         }
 
@@ -1292,7 +1426,7 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public virtual string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public virtual string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return JSIf.GetContent(Pieces, BooleanExpression, sessionData, "while ");
         }
@@ -1311,16 +1445,16 @@ namespace LamestWebserver.JScriptBuilder
         public JSDoWhileLoop(IJSValue booleanExpression, params IJSPiece[] code) : base(booleanExpression, code) { }
 
         /// <inheritdoc />
-        public override string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public override string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             string ret = "do {";
 
             for (int i = 0; i < Pieces.Length; i++)
             {
-                ret += Pieces[i].getCode(sessionData);
+                ret += Pieces[i].GetJsCode(sessionData);
             }
 
-            return ret + "} while (" + BooleanExpression.getCode(sessionData, CallingContext.Inner) + ") ";
+            return ret + "} while (" + BooleanExpression.GetJsCode(sessionData, CallingContext.Inner) + ") ";
         }
     }
 
@@ -1343,8 +1477,8 @@ namespace LamestWebserver.JScriptBuilder
         {
             _variable = new JSVariable();
             _startValue = new JSValue(0);
-            _booleanExpression = (new JSValue(_variable.content) < endValue);
-            _stepOperation = new JSValue(_variable.content).Set(new JSValue(_variable.content) + new JSValue(1));
+            _booleanExpression = (new JSValue(_variable.Content) < endValue);
+            _stepOperation = new JSValue(_variable.Content).Set(new JSValue(_variable.Content) + new JSValue(1));
             _pieces = code;
         }
 
@@ -1358,8 +1492,8 @@ namespace LamestWebserver.JScriptBuilder
         {
             _variable = variable;
             _startValue = new JSValue(0);
-            _booleanExpression = (new JSValue(variable.content) < endValue);
-            _stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            _booleanExpression = (new JSValue(variable.Content) < endValue);
+            _stepOperation = new JSValue(variable.Content).Set(new JSValue(variable.Content) + new JSValue(1));
             _pieces = code;
         }
         
@@ -1374,8 +1508,8 @@ namespace LamestWebserver.JScriptBuilder
         {
             _variable = variable;
             _startValue = startValue;
-            _booleanExpression = (new JSValue(variable.content) < endValue);
-            _stepOperation = new JSValue(variable.content).Set(new JSValue(variable.content) + new JSValue(1));
+            _booleanExpression = (new JSValue(variable.Content) < endValue);
+            _stepOperation = new JSValue(variable.Content).Set(new JSValue(variable.Content) + new JSValue(1));
             _pieces = code;
         }
 
@@ -1392,7 +1526,7 @@ namespace LamestWebserver.JScriptBuilder
         {
             _variable = variable;
             _startValue = startValue;
-            _booleanExpression = new JSOperator(_operator, new JSValue(variable.content), endValue);
+            _booleanExpression = new JSOperator(_operator, new JSValue(variable.Content), endValue);
             _stepOperation = stepOperation;
             _pieces = code;
         }
@@ -1415,12 +1549,12 @@ namespace LamestWebserver.JScriptBuilder
         }
 
         /// <inheritdoc />
-        public string getCode(AbstractSessionIdentificator sessionData, CallingContext context = CallingContext.Default)
+        public string GetJsCode(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
             return JSIf.GetContent(_pieces,
-                new JSValue(_variable.Set(_startValue).getCode(sessionData) +
-                            _booleanExpression.getCode(sessionData) +
-                             _stepOperation.getCode(sessionData, CallingContext.Inner)), sessionData, "for ");
+                new JSValue(_variable.Set(_startValue).GetJsCode(sessionData) +
+                            _booleanExpression.GetJsCode(sessionData) +
+                             _stepOperation.GetJsCode(sessionData, CallingContext.Inner)), sessionData, "for ");
         }
     }
 }
