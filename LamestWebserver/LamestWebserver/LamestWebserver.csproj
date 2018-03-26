@@ -152,7 +152,7 @@
     <Compile Include="ServerHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WebServices\IWebService.cs" />
-    <Compile Include="WebServices\RemoteException.cs" />
+    <Compile Include="WebServices\WebserviceExceptions.cs" />
     <Compile Include="WebSocketCommunicationHandler.cs" />
   </ItemGroup>
   <ItemGroup>

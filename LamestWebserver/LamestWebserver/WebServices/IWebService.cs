@@ -24,35 +24,6 @@ namespace LamestWebserver.WebServices
         }
     }
 
-    public abstract class WebServiceException : Exception
-    {
-        protected WebServiceException(string description) : base(description) { }
-    }
-
-    public class ServiceNotAvailableException : WebServiceException
-    {
-        /// <inheritdoc />
-        public ServiceNotAvailableException(string description) : base(description)
-        {
-        }
-    }
-
-    public class IncompatibleTypeException : WebServiceException
-    {
-        /// <inheritdoc />
-        public IncompatibleTypeException(string description) : base(description)
-        {
-        }
-    }
-
-    public class WebServiceIncompatibleException : WebServiceException
-    {
-        /// <inheritdoc />
-        public WebServiceIncompatibleException(string description) : base(description)
-        {
-        }
-    }
-
     [Serializable]
     public class WebServiceResponse
     {
