@@ -40,6 +40,11 @@ namespace Demos
 
     public class WebServiceTest : LamestWebserver.WebServices.IWebService
     {
+        public WebServiceTest()
+        {
+            Logger.LogTrace($"Called Constructor of {nameof(WebServiceTest)}.");
+        }
+
         public virtual void CallSomethingVoid()
         {
             string hello = "world";

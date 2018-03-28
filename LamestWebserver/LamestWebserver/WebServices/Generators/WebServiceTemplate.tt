@@ -46,7 +46,11 @@ namespace <#= Namespace #>
 					<# } #>
 					);
 
+					<# if(method.ReturnType != typeof(void)) { #>
 					LamestWebserver.Core.Logger.LogTrace("Response from method '<#= ClassName #>WebServiceGenImpl.<#= method.Name #>' has been received.");
+					<# } else { #>
+					LamestWebserver.Core.Logger.LogTrace("Method '<#= ClassName #>WebServiceGenImpl.<#= method.Name #>' has been executed.");
+					<# } #>
 
 					<# if(method.ReturnType != typeof(void)) { #> return x; <# } #>
 				}
