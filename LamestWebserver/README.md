@@ -2,7 +2,6 @@
 
 * `Demos`: Contains a Project that demonstrates the usage of important parts of LamestWebserver. The code in here should be very descriptive or self explanatory. Basic topics should even have comments explaning them.
 * `LamestWebserver`: Contains the core code of the LamestWebserver Framework & Libraries.
-* `LamestWebserver.WebServices.Generators`: Contains the code generation for WebService auto-inherited classes.
 * `UnitTests`: Contatins the unit tests for LamestWebserver Libraries.
 * `content`: Contains images & files for the `README.md` visual presentation.
 * `dependencies`: Contains the projects, LamestWebserver depends on that can't be included as a nuget package: "sha3" (An open source SHA3 Hashing Library) and "ILMerge" (An open source .Net Assembly Merger used in the build pipeline).
@@ -17,9 +16,6 @@ Depends on LamestWebserver.
 
 ### LamestWebserver
 Depends on LamestWebserver.WebServices.Generators, Fleck, Newtonsoft.Json, sha3 and ILMerge if you want the assemblies to be merged.
-
-### LamestWebserver.WebServices.Generators
-Has no dependencies.
 
 ### UnitTests
 Depends on LamestWebserver.

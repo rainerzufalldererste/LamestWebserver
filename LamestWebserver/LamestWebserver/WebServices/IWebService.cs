@@ -11,6 +11,7 @@ using System.Net;
 using System.Reflection;
 using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
+using LamestWebserver.WebServices.Generators;
 
 namespace LamestWebserver.WebServices
 {
@@ -100,50 +101,18 @@ namespace LamestWebserver.WebServices
             if (typeof(T).IsAbstract || typeof(T).IsInterface || !typeof(T).IsPublic || typeof(T).IsSealed)
                 throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
 
-            AssemblyBuilder asmBuilder = Thread.GetDomain()
-                .DefineDynamicAssembly(new AssemblyName(typeof(IWebService).Namespace + "." + typeof(IWebService).Name + "." + typeof(T).Namespace + "." + typeof(T).Name),
-                    AssemblyBuilderAccess.RunAndCollect);
-
-            ModuleBuilder moduleBuilder =
-                asmBuilder.DefineDynamicModule(typeof(IWebService).Namespace + "." + typeof(IWebService).Name + "." + typeof(T).Namespace + "." + typeof(T).Name);
-
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(typeof(IWebService).Namespace + "." + typeof(IWebService).Name + "." + typeof(T).Namespace + "." + typeof(T).Name, TypeAttributes.Public | TypeAttributes.Class,
-                typeof(T));
-
-            if (typeof(T).GetConstructor(new Type[0]) == null)
+            if (RequesterWebServiceVariants.ContainsKey(typeof(T)))
             {
-                var constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Any, new Type[0]);
-                var ilgen = constructorBuilder.GetILGenerator();
-                ilgen.Emit(OpCodes.Call, typeof(T).GetConstructor(new Type[0]));
-                ilgen.Emit(OpCodes.Ret);
+                return (T)RequesterWebServiceVariants[typeof(T)];
             }
             else
             {
-                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                T ret = WebServiceRemoteImplGenerator.GetWebServiceRemoteImpl<T>();
+
+                RequesterWebServiceVariants.Add(typeof(T), ret);
+
+                return ret;
             }
-            
-            var methods = typeof(T).GetMethods();
-
-            foreach (var method in methods)
-            {
-                if (method.IsVirtual && method.IsPublic && !method.IsAbstract && !method.IsStatic && !method.IsFinal && !method.IsGenericMethod && !method.IsGenericMethodDefinition)
-                {
-                    try
-                    {
-                        GetRequesterMethod(typeBuilder, method);
-                    }
-                    catch (Exception e)
-                    {
-                        ServerHandler.LogMessage($"Failed to get Service for '{method.Name}'.\n" + e);
-                    }
-                }
-            }
-
-            Type resultType = typeBuilder.CreateType();
-
-            var ret = resultType.GetConstructor(new Type[0]).Invoke(new object[0]);
-
-            return (T)ret;
         }
 
         public void GetRequesterMethod(TypeBuilder typeBuilder, MethodInfo method)
