@@ -24,7 +24,7 @@ namespace Demos
         /// <inheritdoc />
         protected override HElement GetElement(SessionData sessionData)
         {
-            WebServiceTest wst = WebServiceHandler.CurrentServiceHandler.GetService<WebServiceTest>();
+            WebServiceTest wst = WebServiceHandler.CurrentServiceHandler.GetLocalService<WebServiceTest>();
 
             wst.CallSomethingVoid();
             Logger.LogInformation(wst.CallSomethingReturn());

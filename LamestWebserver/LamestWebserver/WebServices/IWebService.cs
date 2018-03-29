@@ -15,13 +15,7 @@ using LamestWebserver.WebServices.Generators;
 
 namespace LamestWebserver.WebServices
 {
-    public abstract class IWebService : IURLIdentifyable
+    public interface IWebService
     {
-        public string URL { get; }
-
-        protected IWebService()
-        {
-            URL = this.GetType().FullName;
-        }
     }
 }

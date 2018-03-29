@@ -16,10 +16,15 @@ namespace LamestWebserver.WebServices.Generators
     {
         public static T GetWebServiceLocalImpl<T>()
         {
-            if (typeof(T).IsAbstract || typeof(T).IsInterface || !typeof(T).IsPublic || typeof(T).IsSealed)
+            return (T)GetWebServiceLocalImpl(typeof(T));
+        }
+
+        public static object GetWebServiceLocalImpl(Type type)
+        {
+            if (type.IsAbstract || type.IsInterface || !type.IsPublic || type.IsSealed)
                 throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
 
-            var webservice = new LamestWebserver.WebServices.Generators.LocalWebServiceTemplate() { ClassName = typeof(T).Name, ClassType = typeof(T), Namespace = GetWebServiceLocalImplNamespace(), AssemblyNameSpace = typeof(T).Namespace };
+            var webservice = new LamestWebserver.WebServices.Generators.LocalWebServiceTemplate() { ClassName = type.Name, ClassType = type, Namespace = GetWebServiceLocalImplNamespace(), AssemblyNameSpace = type.Namespace };
             string text = webservice.TransformText().Replace("global::", "");
 
             CSharpCodeProvider provider = new CSharpCodeProvider();
@@ -51,29 +56,34 @@ namespace LamestWebserver.WebServices.Generators
             }
 
             Assembly assembly = results.CompiledAssembly;
-            Type type = assembly.GetType(GetWebServiceLocalImplNamespace() + "." + GetWebServiceLocalImplName<T>());
+            Type _type = assembly.GetType(GetWebServiceLocalImplNamespace() + "." + GetWebServiceLocalImplName(type));
 
-            if (type == null)
-                Logger.LogExcept(new IncompatibleTypeException($"Compiled Type '{nameof(IWebService)}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}') could not be found."));
-            else if (type.BaseType == typeof(T))
+            if (_type == null)
+            {
+                Logger.LogExcept(new IncompatibleTypeException($"Compiled Type '{nameof(IWebService)}' (inherited from '{type.Namespace}.{type.Name}') could not be found."));
+            }
+            else if (_type.BaseType == type)
             {
                 try
                 {
-                    object obj = type.GetConstructor(new Type[0]).Invoke(new object[0]);
-                    return (T)obj;
+                    object obj = _type.GetConstructor(new Type[0]).Invoke(new object[0]);
+                    return obj;
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    Logger.LogExcept(new IncompatibleTypeException($"An exception occured when retrieving or calling the constructor of '{GetWebServiceLocalImplName<T>()}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}').", e));
+                    Logger.LogExcept(new IncompatibleTypeException($"An exception occured when retrieving or calling the constructor of '{GetWebServiceLocalImplName(type)}' (inherited from '{type.Namespace}.{type.Name}').", e));
                 }
             }
             else
-                Logger.LogExcept(new IncompatibleTypeException($"Compiled Type '{GetWebServiceLocalImplName<T>()}' was no '{nameof(IWebService)}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}')."));
+            {
+                Logger.LogExcept(new IncompatibleTypeException($"Compiled Type '{GetWebServiceLocalImplName(type)}' was no '{nameof(IWebService)}' (inherited from '{type.Namespace}.{type.Name}')."));
+            }
 
-            throw new InvalidOperationException($"Failed to retrieve generated {nameof(IWebService)} '{GetWebServiceLocalImplName<T>()}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}').");
+            throw new InvalidOperationException($"Failed to retrieve generated {nameof(IWebService)} '{GetWebServiceLocalImplName(type)}' (inherited from '{type.Namespace}.{type.Name}').");
         }
 
         public static string GetWebServiceLocalImplName<T>() => typeof(T).Name + "LocalWebServiceGenImpl";
+        public static string GetWebServiceLocalImplName(Type type) => type.Name + "LocalWebServiceGenImpl";
         public static string GetWebServiceLocalImplNamespace() => "LamestWebserver.WebService.GeneratedCode.Local";
     }
 }
