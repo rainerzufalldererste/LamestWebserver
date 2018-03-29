@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -379,6 +379,31 @@ namespace LamestWebserver.Serialization
         }
 
         /// <summary>
+        /// searches and reads an object from a xmlReader
+        /// </summary>
+        /// <param name="reader">the current reader</param>
+        /// <param name="T">The type of the element</param>
+        /// <param name="name">the name of the object</param>
+        public static object ReadElement(this XmlReader reader, Type T, string name = null)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            while (name != null && reader.Name != name)
+            {
+                if (!reader.Read())
+                    return Activator.CreateInstance(T);
+            }
+
+            if (reader.GetAttribute("xsi:nil") == "true")
+            {
+                return Activator.CreateInstance(T);
+            }
+
+            return ReadLowerElement(reader, T);
+        }
+
+        /// <summary>
         /// reads an object from a xmlReader
         /// </summary>
         /// <typeparam name="T">The type of the element</typeparam>
@@ -403,6 +428,38 @@ namespace LamestWebserver.Serialization
                 reader.Read();
 
                 T ret = (T)reader.ReadContentAs(typeof(T), null);
+
+                reader.Read();
+
+                return ret;
+            }
+        }
+
+        /// <summary>
+        /// reads an object from a xmlReader
+        /// </summary>
+        /// <param name="reader">the current reader</param>
+        /// <param name="T">The type of the element</param>
+        public static object ReadLowerElement(this XmlReader reader, Type T)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            if (reader.NodeType == XmlNodeType.Element)
+            {
+                XmlSerializer serializer;
+
+                serializer = new XmlSerializer(T, new XmlRootAttribute(reader.Name));
+
+                object ret = serializer.Deserialize(reader);
+
+                return ret;
+            }
+            else
+            {
+                reader.Read();
+
+                object ret = reader.ReadContentAs(T, null);
 
                 reader.Read();
 

@@ -12,14 +12,14 @@ using Microsoft.CSharp;
 
 namespace LamestWebserver.WebServices.Generators
 {
-    public class WebServiceRemoteImplGenerator
+    public class WebServiceImplGenerator
     {
-        public static T GetWebServiceRemoteImpl<T>()
+        public static T GetWebServiceLocalImpl<T>()
         {
             if (typeof(T).IsAbstract || typeof(T).IsInterface || !typeof(T).IsPublic || typeof(T).IsSealed)
                 throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
 
-            var webservice = new LamestWebserver.WebServices.Generators.WebServiceTemplate() { ClassName = typeof(T).Name, ClassType = typeof(T), Namespace = "LamestWebserver.WebService.GeneratedCode", AssemblyNameSpace = typeof(T).Namespace };
+            var webservice = new LamestWebserver.WebServices.Generators.LocalWebServiceTemplate() { ClassName = typeof(T).Name, ClassType = typeof(T), Namespace = GetWebServiceLocalImplNamespace(), AssemblyNameSpace = typeof(T).Namespace };
             string text = webservice.TransformText().Replace("global::", "");
 
             CSharpCodeProvider provider = new CSharpCodeProvider();
@@ -51,7 +51,7 @@ namespace LamestWebserver.WebServices.Generators
             }
 
             Assembly assembly = results.CompiledAssembly;
-            Type type = assembly.GetType("LamestWebserver.WebService.GeneratedCode." + GetWebServiceRemoteImplName<T>());
+            Type type = assembly.GetType(GetWebServiceLocalImplNamespace() + "." + GetWebServiceLocalImplName<T>());
 
             if (type == null)
                 Logger.LogExcept(new IncompatibleTypeException($"Compiled Type '{nameof(IWebService)}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}') could not be found."));
@@ -64,15 +64,16 @@ namespace LamestWebserver.WebServices.Generators
                 }
                 catch(Exception e)
                 {
-                    Logger.LogExcept(new IncompatibleTypeException($"An exception occured when retrieving or calling the constructor of '{GetWebServiceRemoteImplName<T>()}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}').", e));
+                    Logger.LogExcept(new IncompatibleTypeException($"An exception occured when retrieving or calling the constructor of '{GetWebServiceLocalImplName<T>()}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}').", e));
                 }
             }
             else
-                Logger.LogExcept(new IncompatibleTypeException($"Compiled Type '{GetWebServiceRemoteImplName<T>()}' was no '{nameof(IWebService)}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}')."));
+                Logger.LogExcept(new IncompatibleTypeException($"Compiled Type '{GetWebServiceLocalImplName<T>()}' was no '{nameof(IWebService)}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}')."));
 
-            throw new InvalidOperationException($"Failed to retrieve generated {nameof(IWebService)} '{GetWebServiceRemoteImplName<T>()}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}').");
+            throw new InvalidOperationException($"Failed to retrieve generated {nameof(IWebService)} '{GetWebServiceLocalImplName<T>()}' (inherited from '{typeof(T).Namespace}.{typeof(T).Name}').");
         }
 
-        public static string GetWebServiceRemoteImplName<T>() => typeof(T).Name + "WebServiceGenImpl";
+        public static string GetWebServiceLocalImplName<T>() => typeof(T).Name + "LocalWebServiceGenImpl";
+        public static string GetWebServiceLocalImplNamespace() => "LamestWebserver.WebService.GeneratedCode.Local";
     }
 }

@@ -214,14 +214,17 @@
     <Compile Include="WebServer.cs" />
     <Compile Include="ServerHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WebServices\Generators\WebServiceRemoteImplGenerator.cs" />
-    <Compile Include="WebServices\Generators\WebServiceTemplate.cs">
-      <DependentUpon>WebServiceTemplate.tt</DependentUpon>
+    <Compile Include="WebServices\Generators\WebServiceImplGenerator.cs" />
+    <Compile Include="WebServices\Generators\LocalWebServiceTemplate.cs">
+      <DependentUpon>LocalWebServiceTemplate.tt</DependentUpon>
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="WebServices\IWebService.cs" />
     <Compile Include="WebServices\WebServiceException.cs" />
+    <Compile Include="WebServices\WebServiceHandler.cs" />
+    <Compile Include="WebServices\WebServiceRequest.cs" />
+    <Compile Include="WebServices\WebServiceResponse.cs" />
     <Compile Include="WebSocketCommunicationHandler.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -238,9 +241,9 @@
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="WebServices\Generators\WebServiceTemplate.tt">
+    <Content Include="WebServices\Generators\LocalWebServiceTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
-      <LastGenOutput>WebServiceTemplate.cs</LastGenOutput>
+      <LastGenOutput>LocalWebServiceTemplate.cs</LastGenOutput>
     </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

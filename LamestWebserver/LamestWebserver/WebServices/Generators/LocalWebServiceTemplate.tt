@@ -13,12 +13,12 @@ using global::<#= AssemblyNameSpace #>;
 
 namespace <#= Namespace #>
 {
-    public class <#= ClassName #>WebServiceGenImpl : <#= ClassName #>
+    public class <#= ClassName #>LocalWebServiceGenImpl : <#= ClassName #>
 	{
 		<# if(ClassType.GetConstructor(new Type[0]) != null) { #>
-		public <#= ClassName #>WebServiceGenImpl() : base()
+		public <#= ClassName #>LocalWebServiceGenImpl() : base()
 		{
-			LamestWebserver.Core.Logger.LogInformation("<#= ClassName #>WebServiceGenImpl has been initialized.");
+			LamestWebserver.Core.Logger.LogInformation("<#= ClassName #>LocalWebServiceGenImpl has been initialized.");
 		}
 		<# } #>
 
@@ -36,7 +36,7 @@ namespace <#= Namespace #>
 			{
 				try 
 				{
-					LamestWebserver.Core.Logger.LogTrace("Calling method '<#= ClassName #>WebServiceGenImpl.<#= method.Name #>'.");
+					LamestWebserver.Core.Logger.LogTrace("Calling method '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>'.");
 
 					<# if(method.ReturnType != typeof(void)) { #> var x = <# } #>
 					base.<#= method.Name #>(
@@ -47,17 +47,17 @@ namespace <#= Namespace #>
 					);
 
 					<# if(method.ReturnType != typeof(void)) { #>
-					LamestWebserver.Core.Logger.LogTrace("Response from method '<#= ClassName #>WebServiceGenImpl.<#= method.Name #>' has been received.");
+					LamestWebserver.Core.Logger.LogTrace("Response from method '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>' has been received.");
 					<# } else { #>
-					LamestWebserver.Core.Logger.LogTrace("Method '<#= ClassName #>WebServiceGenImpl.<#= method.Name #>' has been executed.");
+					LamestWebserver.Core.Logger.LogTrace("Method '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>' has been executed.");
 					<# } #>
 
 					<# if(method.ReturnType != typeof(void)) { #> return x; <# } #>
 				}
 				catch(Exception e)
 				{
-					LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>WebServiceGenImpl.<#= method.Name #>'.\n" + e.Message);
-					throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>WebServiceGenImpl.<#= method.Name #>'", e);
+					LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>'.\n" + e.Message);
+					throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>'", e);
 				}
 			}
 
@@ -79,34 +79,34 @@ namespace <#= Namespace #>
 					{
 						try
 						{
-							LamestWebserver.Core.Logger.LogTrace("Getting property '<#= ClassName #>WebServiceGenImpl.<#= property.Name #>'.");
+							LamestWebserver.Core.Logger.LogTrace("Getting property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>'.");
 
 							var x = base.<#= property.Name #>;
 
-							LamestWebserver.Core.Logger.LogTrace("Response from property '<#= ClassName #>WebServiceGenImpl.<#= property.Name #>' has been received.");
+							LamestWebserver.Core.Logger.LogTrace("Response from property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>' has been received.");
 
 							return x;
 						}
 						catch(Exception e)
 						{
-							LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>WebServiceGenImpl.<#= property.Name #>.get'.\n" + e.Message);
-							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>WebServiceGenImpl.<#= property.Name #>.get'", e);
+							LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.get'.\n" + e.Message);
+							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.get'", e);
 						}
 					}
 					set
 					{
 						try
 						{
-							LamestWebserver.Core.Logger.LogTrace("Setting property '<#= ClassName #>WebServiceGenImpl.<#= property.Name #>'.");
+							LamestWebserver.Core.Logger.LogTrace("Setting property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>'.");
 
 							base.<#= property.Name #> = value;
 
-							LamestWebserver.Core.Logger.LogTrace("property '<#= ClassName #>WebServiceGenImpl.<#= property.Name #>' has been set.");
+							LamestWebserver.Core.Logger.LogTrace("property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>' has been set.");
 						}
 						catch(Exception e)
 						{
-							LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>WebServiceGenImpl.<#= property.Name #>.set'", e);
-							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>WebServiceGenImpl.<#= property.Name #>.set'.\n" + e.Message);
+							LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.set'", e);
+							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.set'.\n" + e.Message);
 						}
 					}
 				}
