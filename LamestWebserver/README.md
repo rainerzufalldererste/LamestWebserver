@@ -15,7 +15,7 @@
 Depends on LamestWebserver.
 
 ### LamestWebserver
-Depends on LamestWebserver.WebServices.Generators, Fleck, Newtonsoft.Json, sha3 and ILMerge if you want the assemblies to be merged.
+Depends on Fleck, Newtonsoft.Json, sha3 and ILMerge if you want the assemblies to be merged.
 
 ### UnitTests
 Depends on LamestWebserver.
