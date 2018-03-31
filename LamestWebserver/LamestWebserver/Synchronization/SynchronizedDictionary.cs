@@ -284,5 +284,19 @@ namespace LamestWebserver.Synchronization
                 writer.WriteEndElement();
             }
         }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            using (writeLock.LockRead())
+                return InnerDictionary.Equals(obj);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            using (writeLock.LockRead())
+                return InnerDictionary.ToString();
+        }
     }
 }
