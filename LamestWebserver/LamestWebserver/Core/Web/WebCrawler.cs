@@ -268,74 +268,7 @@ namespace LamestWebserver.Core.Web
                 {
                     string url = m.Value.Replace("href='", "").Replace("href=\"", "").Split('\'', '\"')[0];
 
-                    if (!url.StartsWith("http://") && !url.StartsWith("https://") && !url.StartsWith("www."))
-                        url = "./" + url;
-
-                    if (url.StartsWith("/"))
-                    {
-                        string prefix = "";
-
-                        for (int i = 0; i < currentSite.Length - 1; i++)
-                        {
-                            if (currentSite[i] == '/')
-                            {
-                                if (currentSite[i + 1] == '/')
-                                {
-                                    i++;
-                                    continue;
-                                }
-
-                                prefix = currentSite.Substring(0, i);
-                                break;
-                            }
-                        }
-
-                        url = prefix + url;
-                    }
-                    else if (url.StartsWith("./"))
-                    {
-                        string prefix = "";
-
-                        for (int i = currentSite.Length - 1; i >= 1; i--)
-                        {
-                            if (currentSite[i] == '/')
-                            {
-                                prefix = currentSite.Substring(0, i);
-                                break;
-                            }
-                        }
-
-                        url = prefix + url.Substring(1); // Substring(1) to get rid of the '.' in "./".
-                    }
-                    else if (url.StartsWith("../"))
-                    {
-                        string prefix = "";
-                        int count = 0;
-
-                        while (url.StartsWith("../"))
-                        {
-                            count++;
-                            url = url.Substring(3);
-                        }
-
-                        for (int i = currentSite.Length - 1; i >= 1; i--)
-                        {
-                            if (currentSite[i] == '/')
-                            {
-                                if (count > 0)
-                                {
-                                    count--;
-                                }
-                                else
-                                {
-                                    prefix = currentSite.Substring(0, i + 1);
-                                    break;
-                                }
-                            }
-                        }
-
-                        url = prefix + url;
-                    }
+                    url = url.GetRelativeLink(currentSite);
 
                     string domainBasedUrl = url.Replace("http://", "").Replace("https://", "").Replace("www.", "");
 
