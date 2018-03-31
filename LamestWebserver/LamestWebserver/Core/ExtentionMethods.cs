@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -334,6 +335,60 @@ namespace LamestWebserver.Core
                     return true;
 
             return false;
+        }
+
+        /// <summary>
+        /// Gets an Exception Description (ToString) without risking running into exceptions on the way.
+        /// </summary>
+        /// <param name="e">the current Exception</param>
+        /// <returns>The exception ToString, message or type depending on what is available.</returns>
+        public static string SafeToString(this Exception e)
+        {
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
+
+            try
+            {
+                return e.ToString();
+            }
+            catch
+            {
+                try
+                {
+                    return $"Exception '{e.GetType().Namespace}.{e.GetType().Name}': {e.Message ?? ""}\n{e.StackTrace?.ToString()}";
+                }
+                catch
+                {
+                    try
+                    {
+                        return $"Exception '{e.GetType().Namespace}.{e.GetType().Name}': {e.Message ?? ""}";
+                    }
+                    catch
+                    {
+                        return $"Exception '{e.GetType().Namespace}.{e.GetType().Name}'.";
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets an Exception Message without risking running into exceptions on the way.
+        /// </summary>
+        /// <param name="e">the current Exception</param>
+        /// <returns>The exception message or type depending on what is available.</returns>
+        public static string SafeMessage(this Exception e)
+        {
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
+
+            try
+            {
+                return e.Message;
+            }
+            catch
+            {
+                return $"Exception '{e.GetType().Namespace}.{e.GetType().Name}'.";
+            }
         }
     }
 }

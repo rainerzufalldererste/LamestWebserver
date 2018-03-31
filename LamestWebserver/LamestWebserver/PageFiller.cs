@@ -1,4 +1,5 @@
-﻿using System;
+using LamestWebserver.Core;
+using System;
 
 namespace LamestWebserver
 {
@@ -64,7 +65,7 @@ namespace LamestWebserver
             }
             catch(Exception e)
             {
-                ret = Master.GetErrorMsg("Exception in PageFiller '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.ToString());
+                ret = Master.GetErrorMsg("Exception in PageFiller '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.SafeToString());
             }
 
             return ret;

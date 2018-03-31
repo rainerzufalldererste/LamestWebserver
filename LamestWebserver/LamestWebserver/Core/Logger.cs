@@ -214,7 +214,7 @@ namespace LamestWebserver.Core
             if (MinimumLoggingLevel > ELoggingLevel.DebugExcept)
                 return;
 
-            Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + exception.Message, stopwatch);
+            Log(ELoggingLevel.DebugExcept, "{" + exception.GetType() + "} " + exception.SafeMessage(), stopwatch);
 
             if (LoggerDebugMode)
                 throw exception;
@@ -285,7 +285,7 @@ namespace LamestWebserver.Core
             if (MinimumLoggingLevel > ELoggingLevel.Except)
                 return;
 
-            Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + exception.Message, stopwatch);
+            Log(ELoggingLevel.Except, "{" + exception.GetType() + "} " + exception.SafeMessage(), stopwatch);
 
             throw exception;
         }
