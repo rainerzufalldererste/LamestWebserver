@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,12 +15,12 @@ namespace LamestWebserver.Core
         /// Returns false if the object is null.
         /// </summary>
         /// <param name="obj">the object</param>
-        public static implicit operator bool (NullCheckable obj) => obj != null;
+        public static implicit operator bool(NullCheckable obj) => !ReferenceEquals(obj, null);
 
         /// <summary>
         /// Returns true if the object is null.
         /// </summary>
         /// <param name="obj">the object</param>
-        public static bool operator ! (NullCheckable obj) => obj == null;
+        public static bool operator ! (NullCheckable obj) => ReferenceEquals(obj, null);
     }
 }

@@ -82,7 +82,7 @@ namespace LamestWebserver
                             }
                             catch (Exception e)
                             {
-                                Logger.LogError(e.ToString());
+                                Logger.LogExcept(e);
                             }
                         }
                     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace LamestWebserver.Core
 {
@@ -105,5 +105,17 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <param name="clampedValue">The ClampedValue to retrieve from.</param>
         public static implicit operator T(ClampedValue<T> clampedValue) => clampedValue.Value;
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return _value.Equals(obj);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return _value.ToString();
+        }
     }
 }

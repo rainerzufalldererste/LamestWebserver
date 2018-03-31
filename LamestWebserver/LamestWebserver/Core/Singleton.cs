@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection.Emit;
 using LamestWebserver.Synchronization;
 
@@ -110,5 +110,17 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <returns>Returns the Instance of the singleton.</returns>
         public T GetInstance() => Instance;
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return Instance.Equals(obj);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Instance.ToString();
+        }
     }
 }

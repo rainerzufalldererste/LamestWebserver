@@ -195,7 +195,7 @@ namespace LamestWebserver.UI
             }
             catch (Exception e)
             {
-                ret = Master.GetErrorMsg("Exception in PageBuilder '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.ToString());
+                ret = Master.GetErrorMsg("Exception in PageBuilder '" + URL + "'", "<b>An Error occured while processing the output</b><br>" + e.SafeToString());
             }
 
             return ret;
@@ -282,10 +282,10 @@ namespace LamestWebserver.UI
         /// <summary>
         /// Parses an element to string
         /// </summary>
-        /// <param name="e">the element</param>
-        public static explicit operator string(HElement e)
+        /// <param name="element">the element</param>
+        public static explicit operator string(HElement element)
         {
-            return e.ToString();
+            return element.ToString();
         }
 
         /// <summary>
@@ -2981,7 +2981,7 @@ namespace LamestWebserver.UI
             catch(Exception e)
             {
                 mutex.ReleaseMutex();
-                throw new Exception(e.Message, e);
+                throw new Exception(e.SafeMessage(), e);
             }
 
             return s;
