@@ -1,4 +1,4 @@
-﻿using LamestWebserver.Core;
+using LamestWebserver.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -114,6 +114,20 @@ namespace LamestWebserver.Synchronization
         {
             using (writeLock.LockRead())
                 return InnerCollection.GetEnumerator();
+        }
+        
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            using (writeLock.LockRead())
+                return InnerCollection.Equals(obj);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            using (writeLock.LockRead())
+                return InnerCollection.ToString();
         }
     }
 }

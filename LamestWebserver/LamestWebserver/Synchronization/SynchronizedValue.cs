@@ -1,4 +1,4 @@
-﻿using LamestWebserver.Core;
+using LamestWebserver.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,6 +60,20 @@ namespace LamestWebserver.Synchronization
         public static implicit operator T (SynchronizedValue<T> syncValue) 
         {
             return syncValue.Value;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            using (writeLock.LockRead())
+                return _value.Equals(obj);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            using (writeLock.LockRead())
+                return _value.ToString();
         }
     }
 }
