@@ -22,7 +22,7 @@ namespace UnitTests
                 {
                     {
                         "http://www.bla.com/",
-                        "<html><head></head><body><a href='http://www.bla.com/blob'>hello</a><a href='/blob'><a href='./xyz'>hello</a><b>Test</b><a href=\"http://www.bla.com/xyz\">abcd</a><a href='http://www.xyz.com/123'>hello</a></body></html>"
+                        "<html><head></head><body><a href='http://www.bla.com/blob'>hello</a><a href='/blob'><a href='./xyz'>hello</a><a href='secure'>hello</a><b>Test</b><a href=\"http://www.bla.com/xyz\">abcd</a><a href='http://www.xyz.com/123'>hello</a></body></html>"
                     },
                     {
                         "http://www.bla.com/blob",
