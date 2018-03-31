@@ -68,6 +68,18 @@ namespace LamestWebserver.UI.CachedByDefault
         {
             CachingType = ECachingType.Cacheable;
         }
+
+        /// <inheritdoc />
+        public CLink(HElement element, string href = "", string onclick = "") : base(element, href, onclick)
+        {
+            CachingType = ECachingType.Cacheable;
+        }
+
+        /// <inheritdoc />
+        public CLink(string href = "", params HElement[] elements) : base(href, elements)
+        {
+            CachingType = ECachingType.Cacheable;
+        }
     }
 
     /// <inheritdoc />
