@@ -60,6 +60,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net" />
     <Reference Include="System.Net.Security, Version=4.0.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -93,6 +94,7 @@
     <Compile Include="Collections\URL.cs" />
     <Compile Include="Core\ClampedValue.cs" />
     <Compile Include="Core\ExtentionMethods.cs" />
+    <Compile Include="Core\Graphics\Thumbnail.cs" />
     <Compile Include="Core\Hash.cs" />
     <Compile Include="Core\ID.cs" />
     <Compile Include="Core\Logger.cs" />
@@ -163,6 +165,7 @@
       <Name>SHA3</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>cd $(OutDir)
