@@ -215,7 +215,7 @@ namespace LamestWebserver.Core.Web
                 {
                     response = WebRequestFactory.GetResponse(currentSite);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Logger.LogError($"Error '{e.Message}' in {nameof(WebRequestFactory)}.{nameof(WebRequestFactory.GetResponse)} for '{currentSite}'.");
                     continue;
@@ -234,7 +234,7 @@ namespace LamestWebserver.Core.Web
                         if (!OnError(new NullReferenceException($"Invalid Response: WebRequestFactory.GetResponse(\"{currentSite}\") returned null.")))
                         {
                             Running.Value = false;
-                            
+
                             if (synch && usableWriteLock != null)
                                 usableWriteLock.Dispose();
 
@@ -252,12 +252,13 @@ namespace LamestWebserver.Core.Web
                             continue;
                         }
                     }
-                    catch
+                    catch (Exception e)
                     {
                         if (synch && usableWriteLock != null)
                             usableWriteLock.Dispose();
 
-                        throw;
+                        Logger.LogDebugExcept(e);
+                        continue;
                     }
                 }
 
@@ -271,26 +272,11 @@ namespace LamestWebserver.Core.Web
                     {
                         string prefix = "";
 
-                        for (int i = currentSite.Length - 1; i >= 1; i--)
-                        {
-                            if (currentSite[i] == '/')
-                            {
-                                prefix = currentSite.Substring(0, i);
-                                break;
-                            }
-                        }
-
-                        url = prefix + url;
-                    }
-                    else if (url.StartsWith("./"))
-                    {
-                        string prefix = "";
-
                         for (int i = 0; i < currentSite.Length - 1; i++)
                         {
                             if (currentSite[i] == '/')
                             {
-                                if(currentSite[i + 1] == '/')
+                                if (currentSite[i + 1] == '/')
                                 {
                                     i++;
                                     continue;
@@ -302,6 +288,21 @@ namespace LamestWebserver.Core.Web
                         }
 
                         url = prefix + url;
+                    }
+                    else if (url.StartsWith("./"))
+                    {
+                        string prefix = "";
+
+                        for (int i = currentSite.Length - 1; i >= 1; i--)
+                        {
+                            if (currentSite[i] == '/')
+                            {
+                                prefix = currentSite.Substring(0, i);
+                                break;
+                            }
+                        }
+
+                        url = prefix + url.Substring(1); // Substring(1) to get rid of '.' of "./".
                     }
 
                     string domainBasedUrl = url.Replace("http://", "").Replace("https://", "").Replace("www.", "");
@@ -348,7 +349,7 @@ namespace LamestWebserver.Core.Web
                         }
                     }
                 }
-                
+
                 using (WebCrawlerStateMutex.Lock())
                 {
                     if (CurrentState.ToGo.Count == 0)
@@ -367,6 +368,11 @@ namespace LamestWebserver.Core.Web
                     }
                 }
             }
+
+            if(!IsDone.Value)
+                using (WebCrawlerStateMutex.Lock())
+                    if(CurrentState.ToGo.Count == 0 && (from t in crawlerThreads where t == null || t.ThreadState != ThreadState.Stopped select t).Count() == 1)
+                        IsDone.Value = true;
         }
 
         /// <summary>
