@@ -28,6 +28,12 @@ namespace LamestWebserver.Core.Graphics
         /// <param name="maxHeight">The maximum height in pixels of the thumbnail.</param>
         public Thumbnail(Image image, int maxWidth, int maxHeight)
         {
+            if (image.Width < maxWidth && image.Height < maxHeight)
+            {
+                Image = image;
+                return;
+            }
+
             float invAspectRatio = (float)image.Height / (float)image.Width;
 
             int width = maxWidth;
