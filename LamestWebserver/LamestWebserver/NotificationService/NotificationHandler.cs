@@ -1,4 +1,4 @@
-﻿using LamestWebserver.JScriptBuilder;
+using LamestWebserver.JScriptBuilder;
 using System;
 using System.Collections.Generic;
 using System.Net;

@@ -1,4 +1,5 @@
-﻿using System;
+using LamestWebserver.Core;
+using System;
 using System.Threading;
 
 namespace LamestWebserver.Synchronization
@@ -53,7 +54,7 @@ namespace LamestWebserver.Synchronization
             catch(Exception e)
             {
                 obj.Mutex.ReleaseMutex();
-                throw new Exception(e.Message, e);
+                throw new Exception(e.SafeMessage(), e);
             }
 
             obj.Mutex.ReleaseMutex();
@@ -105,7 +106,7 @@ namespace LamestWebserver.Synchronization
             catch(Exception e)
             {
                 mutex.ReleaseMutex();
-                throw new Exception(e.Message, e);
+                throw new Exception(e.SafeMessage(), e);
             }
 
             mutex.ReleaseMutex();
