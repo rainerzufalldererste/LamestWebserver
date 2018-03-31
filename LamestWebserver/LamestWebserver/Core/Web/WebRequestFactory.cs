@@ -1,4 +1,4 @@
-﻿using LamestWebserver.Collections;
+using LamestWebserver.Collections;
 using LamestWebserver.Serialization;
 using LamestWebserver.Synchronization;
 using System;
@@ -39,7 +39,7 @@ namespace LamestWebserver.Core.Web
         public string UserAgentString = "LamestWebserver Webcrawler";
 
         /// <summary>
-        /// The default Timeout for every request.
+        /// The default Timeout in milliseconds for every request.
         /// </summary>
         public int Timeout = 2500;
 
@@ -91,8 +91,34 @@ namespace LamestWebserver.Core.Web
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
 
+            if (Responses && Responses.Any())
+                Logger.LogWarning($"Loading cached {nameof(WebRequestFactory)} will override {Responses.Count} responses from the cache. If you want to keep them consider using {nameof(WebRequestFactory)}.{nameof(WebRequestFactory.AppendCacheState)}.");
+
+            if (Redirects && Redirects.Any())
+                Logger.LogWarning($"Loading cached {nameof(WebRequestFactory)} will override {Redirects.Count} redirects from the cache. If you want to keep them consider using {nameof(WebRequestFactory)}.{nameof(WebRequestFactory.AppendCacheState)}.");
+
             Responses = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
             Redirects = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Redirects));
+        }
+
+        /// <summary>
+        /// Loads the cached responses and redirects from files and appends them to the current collection of responses and redirects.
+        /// </summary>
+        /// <param name="fileName">the filename. (will be suffixed with .Responses or .Redirects)</param>
+        public void AppendCacheState(string fileName)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            SynchronizedDictionary<string, string, AVLHashMap<string, string>> responses = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
+
+            foreach (var response in responses)
+                Responses.Add(response);
+
+            SynchronizedDictionary<string, string, AVLHashMap<string, string>> redirects = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Redirects));
+
+            foreach (var redirect in redirects)
+                Redirects.Add(redirect);
         }
 
         /// <summary>
@@ -101,6 +127,9 @@ namespace LamestWebserver.Core.Web
         /// <param name="fileName">the filename. (will be suffixed with .Responses or .Redirects)</param>
         public void SaveCacheState(string fileName)
         {
+            if (!Redirects || !Responses)
+                Logger.LogExcept(new InvalidOperationException($"Trying to serialize cache of uncached {nameof(WebRequestFactory)}."));
+
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
 
@@ -149,7 +178,6 @@ namespace LamestWebserver.Core.Web
 
             try
             {
-
                 if (redirects > maxRedirects)
                 {
                     statusCode = HttpStatusCode.BadGateway;
@@ -188,18 +216,29 @@ namespace LamestWebserver.Core.Web
                 }
 
                 statusCode = ((HttpWebResponse)response).StatusCode;
-                return new StreamReader(response.GetResponseStream()).ReadToEnd();
+                string responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                if (Responses)
+                    Responses.Add(URL, responseString);
+
+                return responseString;
             }
             catch(WebException e)
             {
-                if(e.Status == WebExceptionStatus.Timeout)
+                if (e.Status == WebExceptionStatus.Timeout)
                 {
                     retries++;
 
                     if (retries > MaximumRetries)
-                        throw e;
+                        Logger.LogExcept(e);
 
                     goto RESTART;
+                }
+                else
+                {
+                    statusCode = HttpStatusCode.ExpectationFailed;
+
+                    Logger.LogExcept(e);
                 }
             }
 
