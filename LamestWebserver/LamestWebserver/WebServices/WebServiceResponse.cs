@@ -16,6 +16,7 @@ using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
 using LamestWebserver.WebServices.Generators;
 using LamestWebserver.Serialization;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.WebServices
 {
@@ -85,7 +86,7 @@ namespace LamestWebserver.WebServices
             {
                 ReturnValueType = exception.GetType().FullName,
                 ExceptionThrown = exception,
-                StringifiedException = exception.ToString(),
+                StringifiedException = exception.SafeToString(),
                 ReturnType = WebServiceReturnType.ExceptionThrown
             };
 
