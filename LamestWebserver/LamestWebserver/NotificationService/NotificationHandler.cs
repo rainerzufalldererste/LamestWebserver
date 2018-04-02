@@ -533,7 +533,7 @@ namespace LamestWebserver.NotificationService
             try
             {
                 if(TraceMessagesClient && response.NotificationType != NotificationType.KeepAlive && response.NotificationType != NotificationType.Acknowledge)
-                    ServerHandler.LogMessage("WebSocket: Server << Client: " + NotificationResponse.LogNotificatoin(response));
+                    Logger.LogTrace("WebSocket: Server << Client: " + NotificationResponse.LogNotification(response));
 
                 if (response.IsMessage || (response.NotificationType == NotificationType.KeepAlive && NotifyForKeepalives))
                     OnNotification(response);
@@ -552,7 +552,7 @@ namespace LamestWebserver.NotificationService
                     }
                 }
 
-                ServerHandler.LogMessage("Invalid WebSocket Response from Client\n" + e);
+                Logger.LogError("Invalid WebSocket Response from Client\n" + e.SafeToString());
             }
         }
 
@@ -648,7 +648,7 @@ namespace LamestWebserver.NotificationService
         public void Reply(Notification notification)
         {
             if(_notificationHandler.TraceMessagesClient && notification.NotificationType != NotificationType.KeepAlive)
-                ServerHandler.LogMessage("WebSocket: Server >> Client: " + Notification.LogNotification(notification));
+                Logger.LogTrace("WebSocket: Server >> Client: " + Notification.LogNotification(notification));
 
             HandlerProxy.Respond(notification.GetNotification());
         }
@@ -717,7 +717,7 @@ namespace LamestWebserver.NotificationService
         /// </summary>
         /// <param name="response">the notificationResponse</param>
         /// <returns>the notificationResponse as string</returns>
-        public static string LogNotificatoin(NotificationResponse response)
+        public static string LogNotification(NotificationResponse response)
         {
             string ret = response.Message;
 

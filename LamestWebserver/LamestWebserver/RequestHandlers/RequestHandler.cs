@@ -10,6 +10,7 @@ using LamestWebserver.Serialization;
 using LamestWebserver.Synchronization;
 using LamestWebserver.RequestHandlers.DebugView;
 using LamestWebserver.UI;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.RequestHandlers
 {
@@ -118,7 +119,7 @@ namespace LamestWebserver.RequestHandlers
 
                     if (response != null)
                     {
-                        ServerHandler.LogMessage($"Completed Request on '{requestPacket.RequestUrl}' using '{requestHandler}'.", stopwatch);
+                        Logger.LogTrace($"Completed Request on '{requestPacket.RequestUrl}' using '{requestHandler}'.", stopwatch);
 
                         return response;
                     }
@@ -130,14 +131,14 @@ namespace LamestWebserver.RequestHandlers
 
                     if (response != null)
                     {
-                        ServerHandler.LogMessage($"Completed Request on '{requestPacket.RequestUrl}' using [secondary] '{requestHandler}'.", stopwatch);
+                        Logger.LogTrace($"Completed Request on '{requestPacket.RequestUrl}' using [secondary] '{requestHandler}'.", stopwatch);
 
                         return response;
                     }
                 }
             }
 
-            ServerHandler.LogMessage($"Failed to complete Request on '{requestPacket.RequestUrl}'.", stopwatch);
+            Logger.LogError($"Failed to complete Request on '{requestPacket.RequestUrl}'.", stopwatch);
 
             return null;
         }
@@ -612,7 +613,7 @@ namespace LamestWebserver.RequestHandlers
                             Cache.Add(fileName, new PreloadedFile(fileName, contents, lastModified.Value, false));
                         }
 
-                        ServerHandler.LogMessage("The URL '" + requestPacket.RequestUrl + "' is now available through the cache.");
+                        Logger.LogTrace("The URL '" + requestPacket.RequestUrl + "' is now available through the cache.");
                     }
                     else
                     {
@@ -649,7 +650,7 @@ namespace LamestWebserver.RequestHandlers
                         Cache.Add(fileName, new PreloadedFile(fileName, contents, lastModified.Value, isBinary));
                     }
 
-                    ServerHandler.LogMessage("The URL '" + requestPacket.RequestUrl + "' is now available through the cache.");
+                    Logger.LogTrace("The URL '" + requestPacket.RequestUrl + "' is now available through the cache.");
                 }
                 else
                 {
@@ -682,7 +683,7 @@ namespace LamestWebserver.RequestHandlers
         {
             if (!Directory.Exists(Folder))
             {
-                ServerHandler.LogMessage($"The given Directory '{Folder}' to deliver responses from does not exist. Server Environment Path: '{Environment.CurrentDirectory}'.");
+                Logger.LogExcept($"The given Directory '{Folder}' to deliver responses from does not exist. Server Environment Path: '{Environment.CurrentDirectory}'.");
                 return;
             }
 
@@ -713,7 +714,7 @@ namespace LamestWebserver.RequestHandlers
                     }
                 }
 
-                ServerHandler.LogMessage("The URL '" + e.OldName + "' has been renamed to '" + e.Name + "' in the cache and filesystem.");
+                Logger.LogTrace("The URL '" + e.OldName + "' has been renamed to '" + e.Name + "' in the cache and filesystem.");
             };
 
             FileSystemWatcher.Deleted += (object sender, FileSystemEventArgs e) =>
@@ -723,7 +724,7 @@ namespace LamestWebserver.RequestHandlers
                     Cache.Remove("/" + e.Name);
                 }
 
-                ServerHandler.LogMessage("The URL '" + e.Name + "' has been deleted from the cache and filesystem.");
+                Logger.LogTrace("The URL '" + e.Name + "' has been deleted from the cache and filesystem.");
             };
 
             FileSystemWatcher.Changed += (object sender, FileSystemEventArgs e) =>
@@ -746,7 +747,7 @@ namespace LamestWebserver.RequestHandlers
                     }
                 }
 
-                ServerHandler.LogMessage("The cached file of the URL '" + e.Name + "' has been updated.");
+                Logger.LogTrace("The cached file of the URL '" + e.Name + "' has been updated.");
             };
 
             FileSystemWatcher.EnableRaisingEvents = true;
@@ -820,7 +821,7 @@ namespace LamestWebserver.RequestHandlers
 
             string[] files = Directory.GetFiles(directoryPath, "*", includeSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
 
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is adding {files.Length} Files...");
+            Logger.LogTrace($"{nameof(PackedFileRequestHandler)} is adding {files.Length} Files...");
 
             foreach (string file in files)
             {
@@ -829,7 +830,7 @@ namespace LamestWebserver.RequestHandlers
                 var contents = FileRequestHandler.ReadFile(file);
                 _cache.Add(file.Substring(directoryPath.Length).TrimStart('\\', '/').Replace("\\", "/"), new PreloadedFile(file, contents, DateTime.UtcNow, true));
 
-                ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} added '{file}'.", stopwatch);
+                Logger.LogTrace($"{nameof(PackedFileRequestHandler)} added '{file}'.", stopwatch);
             }
         }
 
@@ -839,16 +840,16 @@ namespace LamestWebserver.RequestHandlers
         /// <param name="filename">the name of the file to load</param>
         public PackedFileRequestHandler(string filename)
         {
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is reading Files from '{filename}'...");
+            Logger.LogTrace($"{nameof(PackedFileRequestHandler)} is reading Files from '{filename}'...");
 
             byte[] bytes = File.ReadAllBytes(filename);
             byte[] decompressed = Compression.GZipCompression.Decompress(bytes);
             
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} decompressed Files: {bytes.Length} bytes -> {decompressed.Length} bytes.");
+            Logger.LogTrace($"{nameof(PackedFileRequestHandler)} decompressed Files: {bytes.Length} bytes -> {decompressed.Length} bytes.");
 
             _cache = Serializer.ReadBinaryDataInMemory<AVLHashMap<string, PreloadedFile>>(decompressed);
 
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} deserialized {_cache.Count} Files.");
+            Logger.LogTrace($"{nameof(PackedFileRequestHandler)} deserialized {_cache.Count} Files.");
         }
 
         /// <summary>
@@ -857,22 +858,22 @@ namespace LamestWebserver.RequestHandlers
         /// <param name="filename">the name of the packed file.</param>
         public void SaveToPackedFile(string filename)
         {
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} is saving Files to '{filename}'...");
+            Logger.LogTrace($"{nameof(PackedFileRequestHandler)} is saving Files to '{filename}'...");
 
             byte[] bytes = Serializer.WriteBinaryDataInMemory(_cache);
 
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} serialized {_cache.Count} Files.");
+            Logger.LogTrace($"{nameof(PackedFileRequestHandler)} serialized {_cache.Count} Files.");
 
             if(File.Exists(filename))
                 File.Delete(filename);
 
             byte[] compressed = Compression.GZipCompression.Compress(bytes);
 
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} compressed Files: {bytes.Length} bytes -> {compressed.Length} bytes.");
+            Logger.LogTrace($"{nameof(PackedFileRequestHandler)} compressed Files: {bytes.Length} bytes -> {compressed.Length} bytes.");
 
             File.WriteAllBytes(filename, compressed);
 
-            ServerHandler.LogMessage($"{nameof(PackedFileRequestHandler)} wrote Files to '{filename}'.");
+            Logger.LogTrace($"{nameof(PackedFileRequestHandler)} wrote Files to '{filename}'.");
         }
 
         /// <inheritdoc />
@@ -1305,7 +1306,7 @@ namespace LamestWebserver.RequestHandlers
                     DebugResponseNode.AddNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
             }
 
-            ServerHandler.LogMessage("The URL '" + url + "' is now assigned to a Page. (WebserverApi)");
+            Logger.LogTrace("The URL '" + url + "' is now assigned to a Page. (WebserverApi)");
         }
 
         private void RemoveFunction(string url)
@@ -1320,7 +1321,7 @@ namespace LamestWebserver.RequestHandlers
                         DebugResponseNode.RemoveNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
 
                     PageResponses.Remove(url);
-                    ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a Page anymore. (WebserverApi)");
+                    Logger.LogTrace("The URL '" + url + "' is not assigned to a Page anymore. (WebserverApi)");
                 }
             }
         }
@@ -1393,7 +1394,7 @@ namespace LamestWebserver.RequestHandlers
             OneTimeResponses.Add(url, getc);
             ReaderWriterLock.ExitWriteLock();
 
-            ServerHandler.LogMessage("The URL '" + url + "' is now assigned to a Page. (WebserverApi/OneTimeFunction)");
+            Logger.LogTrace("The URL '" + url + "' is now assigned to a Page. (WebserverApi/OneTimeFunction)");
         }
     }
 
@@ -1460,7 +1461,7 @@ namespace LamestWebserver.RequestHandlers
             WebSocketResponses.Add(handler.URL, handler);
             ReaderWriterLock.ExitWriteLock();
 
-            ServerHandler.LogMessage("The URL '" + handler.URL + "' is now assigned to a Page. (Websocket)");
+            Logger.LogTrace("The URL '" + handler.URL + "' is now assigned to a Page. (Websocket)");
         }
 
         private void RemoveWebsocketHandler(string URL)
@@ -1469,7 +1470,7 @@ namespace LamestWebserver.RequestHandlers
             WebSocketResponses.Remove(URL);
             ReaderWriterLock.ExitWriteLock();
 
-            ServerHandler.LogMessage("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
+            Logger.LogTrace("The URL '" + URL + "' is not assigned to a Page anymore. (Websocket)");
         }
 
         /// <inheritdoc />
@@ -1543,10 +1544,12 @@ namespace LamestWebserver.RequestHandlers
                 bestUrlMatch = bestUrlMatch.Remove(0);
 
             using (ReaderWriterLock.LockRead())
-                if(bestUrlMatch.Any() && bestUrlMatch.Last() == '/')
+                if(bestUrlMatch == "/")
                     response = DirectoryResponses[bestUrlMatch];
+                else if (bestUrlMatch.Length > 1 && bestUrlMatch.Last() == '/')
+                    response = DirectoryResponses[bestUrlMatch.Substring(0, bestUrlMatch.Length - 1)];
                 else
-                    response = DirectoryResponses[bestUrlMatch + '/'];
+                    response = DirectoryResponses[bestUrlMatch];
 
             if (response != null || bestUrlMatch.Length == 0)
             {
@@ -1560,7 +1563,7 @@ namespace LamestWebserver.RequestHandlers
                 {
                     if (bestUrlMatch[i] == '/')
                     {
-                        bestUrlMatch = bestUrlMatch.Substring(0, i + 1);
+                        bestUrlMatch = bestUrlMatch.Substring(0, i);
                         break;
                     }
 
@@ -1587,6 +1590,8 @@ namespace LamestWebserver.RequestHandlers
 
         private void AddDirectoryFunction(string URL, Master.GetDirectoryContents function)
         {
+            URL = URL.TrimEnd('/');
+
             using (ReaderWriterLock.LockWrite())
             {
                 DirectoryResponses.Add(URL, function);
@@ -1595,11 +1600,13 @@ namespace LamestWebserver.RequestHandlers
                     DebugResponseNode.AddNode(((IDebugRespondable)function.Target).GetDebugResponseNode());
             }
 
-            ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is now available at the Webserver. (WebserverApi)");
+            Logger.LogTrace("The Directory with the URL '" + URL + "' is now available at the Webserver. (WebserverApi)");
         }
 
         private void RemoveDirectoryFunction(string URL)
         {
+            URL = URL.TrimEnd('/');
+
             using (ReaderWriterLock.LockWrite())
             {
                 Master.GetDirectoryContents function = DirectoryResponses[URL];
@@ -1610,7 +1617,7 @@ namespace LamestWebserver.RequestHandlers
                         DebugResponseNode.RemoveNode(((IDebugRespondable)function.Target).GetDebugResponseNode());
 
                     DirectoryResponses.Remove(URL);
-                    ServerHandler.LogMessage("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
+                    Logger.LogTrace("The Directory with the URL '" + URL + "' is not available at the Webserver anymore. (WebserverApi)");
                 }
             }
         }
@@ -1731,7 +1738,7 @@ namespace LamestWebserver.RequestHandlers
                     DebugResponseNode.AddNode(((IDebugRespondable)getDataFunction.Target).GetDebugResponseNode());
             }
 
-            ServerHandler.LogMessage("The URL '" + url + "' is now assigned to a DataResponse. (WebserverApi)");
+            Logger.LogTrace("The URL '" + url + "' is now assigned to a DataResponse. (WebserverApi)");
         }
 
         private void RemoveFunction(string url)
@@ -1746,7 +1753,7 @@ namespace LamestWebserver.RequestHandlers
                         DebugResponseNode.RemoveNode(((IDebugRespondable)getc.Target).GetDebugResponseNode());
 
                     DataResponses.Remove(url);
-                    ServerHandler.LogMessage("The URL '" + url + "' is not assigned to a DataResponse anymore. (WebserverApi)");
+                    Logger.LogTrace("The URL '" + url + "' is not assigned to a DataResponse anymore. (WebserverApi)");
                 }
             }
         }

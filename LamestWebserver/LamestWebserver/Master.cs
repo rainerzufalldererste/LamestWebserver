@@ -105,6 +105,7 @@ namespace LamestWebserver
         /// </summary>
         /// <param name="data">The current SessionData.</param>
         /// <param name="contentType">The mime-contentType of the returned data.</param>
+        /// <param name="encoding">The encoding of the returned response.</param>
         /// <returns>The response as byte array.</returns>
         public delegate byte[] GetDataContents(HttpSessionData data, out string contentType, ref Encoding encoding);
 

@@ -217,8 +217,6 @@ namespace lwshostsvc
 
             }
 
-            ServerHandler.LogMessages = false;
-
             new Thread(() => {
                 ServerHandler.StartHandler();
                 hosts.ForEach(h => h.Stop());
