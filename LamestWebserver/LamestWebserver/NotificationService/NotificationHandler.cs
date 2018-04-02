@@ -552,7 +552,7 @@ namespace LamestWebserver.NotificationService
                     }
                 }
 
-                Logger.LogTrace("Invalid WebSocket Response from Client\n" + e.SafeToString());
+                Logger.LogError("Invalid WebSocket Response from Client\n" + e.SafeToString());
             }
         }
 

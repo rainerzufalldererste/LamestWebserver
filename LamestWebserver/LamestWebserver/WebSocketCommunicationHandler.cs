@@ -200,7 +200,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                Logger.LogTrace("Critical Exception in Websocket Responding:\n" + e.SafeToString());
+                Logger.LogError("Critical Exception in Websocket Responding:\n" + e.SafeToString());
             }
         }
 
@@ -243,7 +243,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                Logger.LogTrace("Critical Exception in Websocket Responding:\n" + e.SafeToString());
+                Logger.LogError("Critical Exception in Websocket Responding:\n" + e.SafeToString());
             }
         }
 
@@ -286,7 +286,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                Logger.LogTrace("Critical Exception in Websocket Responding:\n" + e.SafeToString());
+                Logger.LogError("Critical Exception in Websocket Responding:\n" + e.SafeToString());
             }
         }
 
@@ -330,7 +330,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                Logger.LogTrace("Critical Exception in Websocket Responding:\n" + e.SafeToString());
+                Logger.LogError("Critical Exception in Websocket Responding:\n" + e.SafeToString());
             }
         }
 
@@ -386,7 +386,7 @@ namespace LamestWebserver
                 }
                 catch (IOException e)
                 {
-                    Logger.LogTrace("Exception in WebSocket. The connection might already have closed.\n" + e.SafeToString());
+                    Logger.LogError("Exception in WebSocket. The connection might already have closed.\n" + e.SafeToString());
                     break;
                 }
             }
