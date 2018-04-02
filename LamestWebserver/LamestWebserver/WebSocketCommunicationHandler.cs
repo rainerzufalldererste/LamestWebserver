@@ -1,10 +1,11 @@
-﻿using Fleck.Handlers;
+using Fleck.Handlers;
 using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using LamestWebserver.Synchronization;
+using LamestWebserver.Core;
 
 namespace LamestWebserver
 {
@@ -99,7 +100,7 @@ namespace LamestWebserver
                 if (tries > 10)
                     throw e;
 
-                ServerHandler.LogMessage("MutexRetryException in Websocket - retrying...");
+                Logger.LogTrace("MutexRetryException in Websocket - retrying...");
 
                 tries++;
                 Thread.Sleep(_random.Next(5 * tries));
@@ -199,7 +200,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                ServerHandler.LogMessage("Critical Exception in Websocket Responding:\n" + e);
+                Logger.LogTrace("Critical Exception in Websocket Responding:\n" + e.SafeToString());
             }
         }
 
@@ -242,7 +243,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                ServerHandler.LogMessage("Critical Exception in Websocket Responding:\n" + e);
+                Logger.LogTrace("Critical Exception in Websocket Responding:\n" + e.SafeToString());
             }
         }
 
@@ -285,7 +286,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                ServerHandler.LogMessage("Critical Exception in Websocket Responding:\n" + e);
+                Logger.LogTrace("Critical Exception in Websocket Responding:\n" + e.SafeToString());
             }
         }
 
@@ -329,7 +330,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                ServerHandler.LogMessage("Critical Exception in Websocket Responding:\n" + e);
+                Logger.LogTrace("Critical Exception in Websocket Responding:\n" + e.SafeToString());
             }
         }
 
@@ -385,7 +386,7 @@ namespace LamestWebserver
                 }
                 catch (IOException e)
                 {
-                    ServerHandler.LogMessage("Exception in WebSocket. The connection might already have closed.\n" + e);
+                    Logger.LogTrace("Exception in WebSocket. The connection might already have closed.\n" + e.SafeToString());
                     break;
                 }
             }
@@ -449,7 +450,7 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                ServerHandler.LogMessage("Exception in WebSocket. The connection might already have closed.\n" + e);
+                Logger.LogError("Exception in WebSocket. The connection might already have closed.\n" + e.SafeToString());
                 IsActive = false;
                 _networkStream = null;
                 return false;
