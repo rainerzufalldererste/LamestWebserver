@@ -636,8 +636,6 @@ namespace LamestWebserver
                                 buffer = response.GetPackage();
                                 stream.Write(buffer, 0, buffer.Length);
 
-                                Logger.LogTrace($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(RequestHandler)}.", stopwatch);
-
                                 continue;
                             }
                             catch (ThreadAbortException)
