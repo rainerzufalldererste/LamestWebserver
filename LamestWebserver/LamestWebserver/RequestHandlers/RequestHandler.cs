@@ -1560,7 +1560,7 @@ namespace LamestWebserver.RequestHandlers
                 {
                     if (bestUrlMatch[i] == '/')
                     {
-                        bestUrlMatch = bestUrlMatch.Substring(0, i + 1);
+                        bestUrlMatch = bestUrlMatch.Substring(0, i);
                         break;
                     }
 
