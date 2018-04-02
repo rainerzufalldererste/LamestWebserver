@@ -390,5 +390,85 @@ namespace LamestWebserver.Core
                 return $"Exception '{e.GetType().Namespace}.{e.GetType().Name}'.";
             }
         }
+
+        /// <summary>
+        /// Returns the full URL of a Relative URL and Original URL.
+        /// </summary>
+        /// <param name="relativeUrl">this relative URL.</param>
+        /// <param name="url">The current original page URL.</param>
+        /// <returns>Returns the full URL of the relative Page.</returns>
+        public static string GetRelativeLink(this string relativeUrl, string url)
+        {
+            if (!relativeUrl.StartsWith("http://") && !relativeUrl.StartsWith("https://") && !relativeUrl.StartsWith("www.") && !relativeUrl.StartsWith("/") && !relativeUrl.StartsWith("./") && !relativeUrl.StartsWith("../"))
+                relativeUrl = "./" + relativeUrl;
+
+            if (relativeUrl.StartsWith("/"))
+            {
+                string prefix = "";
+
+                for (int i = 0; i < url.Length - 1; i++)
+                {
+                    if (url[i] == '/')
+                    {
+                        if (url[i + 1] == '/')
+                        {
+                            i++;
+                            continue;
+                        }
+
+                        prefix = url.Substring(0, i);
+                        break;
+                    }
+                }
+
+                relativeUrl = prefix + relativeUrl;
+            }
+            else if (relativeUrl.StartsWith("./"))
+            {
+                string prefix = "";
+
+                for (int i = url.Length - 1; i >= 1; i--)
+                {
+                    if (url[i] == '/')
+                    {
+                        prefix = url.Substring(0, i);
+                        break;
+                    }
+                }
+
+                relativeUrl = prefix + relativeUrl.Substring(1); // Substring(1) to get rid of the '.' in "./".
+            }
+            else if (relativeUrl.StartsWith("../"))
+            {
+                string prefix = "";
+                int count = 0;
+
+                while (relativeUrl.StartsWith("../"))
+                {
+                    count++;
+                    relativeUrl = relativeUrl.Substring(3);
+                }
+
+                for (int i = url.Length - 1; i >= 1; i--)
+                {
+                    if (url[i] == '/')
+                    {
+                        if (count > 0)
+                        {
+                            count--;
+                        }
+                        else
+                        {
+                            prefix = url.Substring(0, i + 1);
+                            break;
+                        }
+                    }
+                }
+
+                relativeUrl = prefix + relativeUrl;
+            }
+
+            return relativeUrl;
+        }
     }
 }

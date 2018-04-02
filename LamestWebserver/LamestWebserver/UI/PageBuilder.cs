@@ -639,14 +639,9 @@ namespace LamestWebserver.UI
     /// <summary>
     /// Represents an "a" element used for links
     /// </summary>
-    public class HLink : HSelectivelyCacheableElement
+    public class HLink : HContainer
     {
-        private readonly string _href, _onclick, _text;
-
-        /// <summary>
-        /// Additional attributes added to this tag
-        /// </summary>
-        public string DescriptionTags;
+        private readonly string _href, _onclick;
 
         /// <summary>
         /// Creates a new Link Element
@@ -654,61 +649,59 @@ namespace LamestWebserver.UI
         /// <param name="text">The Text of the Link</param>
         /// <param name="href">The URL this link points to</param>
         /// <param name="onclick">the Javasctipt action executed when clicking on this link</param>
-        public HLink(string text = "", string href = "", string onclick = "")
+        public HLink(string text = "", string href = "", string onclick = "") : base("a")
         {
-            this._text = text;
-            this._href = href;
-            this._onclick = onclick;
+            Text = text;
+            _href = href;
+            _onclick = onclick;
         }
 
         /// <summary>
-        /// This Method parses the current element to string
+        /// Creates a new Link Element
         /// </summary>
-        /// <param name="sessionData">the current ISessionIdentificator</param>
-        /// <returns>the element as string</returns>
-        public override string GetContent(SessionData sessionData)
+        /// <param name="element">The Element inside the Link</param>
+        /// <param name="href">The URL this link points to</param>
+        /// <param name="onclick">the Javasctipt action executed when clicking on this link</param>
+        public HLink(HElement element, string href = "", string onclick = "") : base("a")
         {
-            string ret = "<a ";
+            Elements.Add(element);
+            _href = href;
+            _onclick = onclick;
+        }
+
+        /// <summary>
+        /// Creates a new Link Element
+        /// </summary>
+        /// <param name="href">The URL this link points to</param>
+        /// <param name="elements">The Elements inside the Link</param>
+        public HLink(string href = "", params HElement[] elements) : base("a")
+        {
+            Elements.AddRange(elements);
+            _href = href;
+        }
+
+        /// <inheritdoc />
+        protected override string GetTagHead(string additionalParams = null)
+        {
+            if (additionalParams == null)
+                additionalParams = "";
+            else
+                additionalParams += " ";
 
             if (SessionContainer.SessionIdTransmissionType == SessionContainer.ESessionIdTransmissionType.Cookie)
             {
                 if (!string.IsNullOrWhiteSpace(_href))
-                    ret += "href='" + _href + "' ";
+                    additionalParams += "href='" + _href + "' ";
 
                 if (!string.IsNullOrWhiteSpace(_onclick))
-                    ret += "onclick='" + _onclick + "' ";
+                    additionalParams += "onclick='" + _onclick + "' ";
             }
             else
             {
                 Logger.LogExcept(new NotImplementedException($"The given SessionIdTransmissionType ({SessionContainer.SessionIdTransmissionType}) could not be handled in {GetType().ToString()}."));
             }
 
-            if (!string.IsNullOrWhiteSpace(ID))
-                ret += "id='" + ID + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Name))
-                ret += "name='" + Name + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Class))
-                ret += "class='" + Class + "' ";
-
-            if (!string.IsNullOrWhiteSpace(Style))
-                ret += "style=\"" + Style + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(Title))
-                ret += "title=\"" + Title + "\" ";
-
-            if (!string.IsNullOrWhiteSpace(DescriptionTags))
-                ret += DescriptionTags;
-
-            ret += ">";
-
-            if (!string.IsNullOrWhiteSpace(_text))
-                ret += System.Web.HttpUtility.HtmlEncode(_text).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;");
-
-            ret += "</a>";
-
-            return ret;
+            return base.GetTagHead(additionalParams);
         }
     }
 

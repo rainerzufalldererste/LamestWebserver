@@ -268,42 +268,7 @@ namespace LamestWebserver.Core.Web
                 {
                     string url = m.Value.Replace("href='", "").Replace("href=\"", "").Split('\'', '\"')[0];
 
-                    if (url.StartsWith("/"))
-                    {
-                        string prefix = "";
-
-                        for (int i = 0; i < currentSite.Length - 1; i++)
-                        {
-                            if (currentSite[i] == '/')
-                            {
-                                if (currentSite[i + 1] == '/')
-                                {
-                                    i++;
-                                    continue;
-                                }
-
-                                prefix = currentSite.Substring(0, i);
-                                break;
-                            }
-                        }
-
-                        url = prefix + url;
-                    }
-                    else if (url.StartsWith("./"))
-                    {
-                        string prefix = "";
-
-                        for (int i = currentSite.Length - 1; i >= 1; i--)
-                        {
-                            if (currentSite[i] == '/')
-                            {
-                                prefix = currentSite.Substring(0, i);
-                                break;
-                            }
-                        }
-
-                        url = prefix + url.Substring(1); // Substring(1) to get rid of '.' of "./".
-                    }
+                    url = url.GetRelativeLink(currentSite);
 
                     string domainBasedUrl = url.Replace("http://", "").Replace("https://", "").Replace("www.", "");
 

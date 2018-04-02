@@ -39,6 +39,11 @@ namespace LamestWebserver
         public static int DefaultReadTimeout = 5000;
 
         /// <summary>
+        /// When stopping the WebServer the timeout to use before quiting the worker threads forcefully.
+        /// </summary>
+        public static int? WebServerShutdownClientHandlerForceQuitTimeout = null;
+
+        /// <summary>
         /// The IP and Port of the currently Connected Client.
         /// </summary>
         [ThreadStatic] public static string CurrentClientRemoteEndpoint = null;
@@ -309,7 +314,7 @@ namespace LamestWebserver
 
             networkStreamsMutex.ReleaseMutex();
 
-            WorkerThreads.Instance.Stop();
+            WorkerThreads.Instance.Stop(WebServerShutdownClientHandlerForceQuitTimeout);
 
             using (RunningServerMutex.Lock())
                 RunningServers.Remove(this);
@@ -374,9 +379,10 @@ namespace LamestWebserver
                     TcpClient tcpClient = tcpRcvTask.Result;
                     tcpClient.ReceiveTimeout = _readTimeout;
                     tcpClient.NoDelay = true;
+                    Logger.LogTrace("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
 
                     WorkerThreads.Instance.EnqueueJob((Action)(() => { FlushableMemoryPool.AquireOrFlush(); HandleClient(tcpClient); }));
-                    Logger.LogTrace("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
+                    Logger.LogTrace("Enqueued Client Handler for " + tcpClient.Client.RemoteEndPoint.ToString() + ".");
                 }
                 catch (ThreadAbortException)
                 {
@@ -531,7 +537,7 @@ namespace LamestWebserver
                                     client.Client.Shutdown(SocketShutdown.Both);
                                     client.Close();
 
-                                    Logger.LogInformation($"The connection to {remoteEndPoint} has been closed ordinarily after the timeout has been reached.", stopwatch);
+                                    Logger.LogTrace($"The connection to {remoteEndPoint} has been closed ordinarily after the timeout has been reached.", stopwatch);
                                 }
                                 catch { };
 
@@ -548,13 +554,13 @@ namespace LamestWebserver
                                     client.Client.Shutdown(SocketShutdown.Both);
                                     client.Close();
 
-                                    Logger.LogInformation($"The connection to {remoteEndPoint} has been closed ordinarily after a SocketException occured. ({((SocketException)e.InnerException).SocketErrorCode})", stopwatch);
+                                    Logger.LogTrace($"The connection to {remoteEndPoint} has been closed ordinarily after a SocketException occured. ({((SocketException)e.InnerException).SocketErrorCode})", stopwatch);
 
                                     break;
                                 }
                                 catch { };
                                 
-                                Logger.LogInformation($"A SocketException occured with {remoteEndPoint}. ({((SocketException)e.InnerException).SocketErrorCode})", stopwatch);
+                                Logger.LogTrace($"A SocketException occured with {remoteEndPoint}. ({((SocketException)e.InnerException).SocketErrorCode})", stopwatch);
 
                                 break;
                             }
@@ -567,7 +573,7 @@ namespace LamestWebserver
                             client.Client.Shutdown(SocketShutdown.Both);
                             client.Close();
 
-                            Logger.LogInformation($"The connection to {client.Client.RemoteEndPoint} has been closed ordinarily.", stopwatch);
+                            Logger.LogTrace($"The connection to {client.Client.RemoteEndPoint} has been closed ordinarily.", stopwatch);
                         }
                         catch { };
                     }
@@ -630,7 +636,7 @@ namespace LamestWebserver
                                 buffer = response.GetPackage();
                                 stream.Write(buffer, 0, buffer.Length);
 
-                                Logger.LogInformation($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(RequestHandler)}.", stopwatch);
+                                Logger.LogTrace($"Client requested '{htp.RequestUrl}'. Answer delivered from {nameof(RequestHandler)}.", stopwatch);
 
                                 continue;
                             }
