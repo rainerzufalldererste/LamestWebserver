@@ -51,8 +51,22 @@ namespace LamestWebserver.Core.Web
         /// <summary>
         /// The time to randomly wait after a completed request. (Item1 is MinimumTime, Item2 is MaximumTime)
         /// </summary>
-        public Tuple<int, int> RandomWaitTimeMs = null;
+        public Tuple<int, int> RandomWaitTimeMs
+        {
+            get
+            {
+                return _randomWaitTimeMs;
+            }
+            set
+            {
+                if (value == null || value.Item1 <= value.Item2)
+                    _randomWaitTimeMs = value;
+                else
+                    _randomWaitTimeMs = new Tuple<int, int>(value.Item2, value.Item1);
+            }
+        }
 
+        private Tuple<int, int> _randomWaitTimeMs = null;
         private DateTime _lastRequestTime = new DateTime(0);
         private Random _random = new Random();
 
@@ -166,9 +180,11 @@ namespace LamestWebserver.Core.Web
             {
                 int randomWaitTime = _random.Next(RandomWaitTimeMs.Item1, RandomWaitTimeMs.Item2);
                 DateTime _minRequestTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(randomWaitTime);
-
+                
                 if (_minRequestTime > _lastRequestTime)
-                    Thread.Sleep(_minRequestTime - _lastRequestTime);
+                    Thread.Sleep(System.Math.Max(1, (int)System.Math.Ceiling((_lastRequestTime - _minRequestTime).TotalMilliseconds)));
+
+                _lastRequestTime = DateTime.UtcNow;
             }
 
             int redirects = 0;
