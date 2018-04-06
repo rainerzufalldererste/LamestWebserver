@@ -23,7 +23,7 @@ namespace LamestWebserver.Core
         /// <summary>
         /// The default Thread-count of a new Threaded Worker.
         /// </summary>
-        public static uint DefaultWorkerCount = (uint)Environment.ProcessorCount;
+        public static uint DefaultWorkerCount = System.Math.Max((uint)Environment.ProcessorCount * 2u, 4u); // 2 * ProcessorCount because some core tasks contain waiting for asynchronous tasks and therefore don't use much CPU.
 
         /// <summary>
         /// The count of WorkerThreads for this ThreadedWorker.
