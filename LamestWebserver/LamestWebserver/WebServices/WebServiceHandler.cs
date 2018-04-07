@@ -12,6 +12,7 @@ using System.Reflection;
 using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
 using LamestWebserver.WebServices.Generators;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.WebServices
 {
@@ -38,6 +39,25 @@ namespace LamestWebserver.WebServices
         private Dictionary<Type, object> LocalWebServiceVariants = new Dictionary<Type, object>();
 
         private AVLHashMap<string, IPEndPoint> UrlToServerHashMap = new AVLHashMap<string, IPEndPoint>();
+
+        public void RegisterTypeRemoteEndpoint(Type type, IPEndPoint remoteEndpoint)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            if (remoteEndpoint == null)
+                throw new ArgumentNullException(nameof(remoteEndpoint));
+
+            string typename = GetTypename(type);
+            IPEndPoint original = UrlToServerHashMap[typename];
+
+            if (original != null)
+                Logger.LogWarning($"Type '{typename}' will be unmapped from '{original.Address}:{original.Port}' to '{remoteEndpoint.Address}:{remoteEndpoint.Port}'.");
+
+            UrlToServerHashMap[typename] = remoteEndpoint;
+
+            Logger.LogInformation($"Type '{typename}' has been mapped to '{remoteEndpoint.Address}:{remoteEndpoint.Port}'.");
+        }
 
         public T GetLocalService<T>() where T : IWebService, new()
         {
@@ -80,13 +100,16 @@ namespace LamestWebserver.WebServices
 
         public WebServiceResponse Request(WebServiceRequest webServiceRequest)
         {
-            IPEndPoint endPoint = UrlToServerHashMap[webServiceRequest.Namespace + "." + webServiceRequest.Type];
+            string typename = webServiceRequest.Namespace + "." + webServiceRequest.Type;
+            IPEndPoint endPoint = UrlToServerHashMap[typename];
 
             if (endPoint == null)
             {
+                Logger.LogWarning($"The type '{typename}' has not been added to the WebServiceHandler yet and therefore could not be resolved. Trying to use local equivalent.");
+
                 try
                 {
-                    Type type = Type.GetType(webServiceRequest.Namespace + "." + webServiceRequest.Type);
+                    Type type = Type.GetType(typename);
                     object ws = GetLocalService(type);
                     var method = type.GetMethod(webServiceRequest.Method, webServiceRequest._parameterTypes);
 
@@ -119,5 +142,7 @@ namespace LamestWebserver.WebServices
 
             return WebServiceResponse.Exception(new ServiceNotAvailableException("test test test 123"));
         }
+
+        internal static string GetTypename(Type type) => type.Namespace + "." + type.Name;
     }
 }
