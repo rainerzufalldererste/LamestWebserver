@@ -30,7 +30,7 @@ namespace LamestWebserver.Serialization
         {
             if (filename == null)
                 throw new ArgumentNullException(nameof(filename));
-            
+
             return ReadXmlDataInMemory<T>(File.ReadAllText(filename));
         }
 
@@ -45,10 +45,44 @@ namespace LamestWebserver.Serialization
             if (xml == null)
                 throw new ArgumentNullException(nameof(xml));
 
+            return (T)ReadXmlDataInMemory(xml, typeof(T));
+        }
+
+        /// <summary>
+        /// Retrieves XML-Serialized data from a file.
+        /// </summary>
+        /// <param name="filename">The name of the file</param>
+        /// <param name="type">The Type of the data to deserialize</param>
+        /// <returns>The deserialized object</returns>
+        public static object ReadXmlData(string filename, Type type)
+        {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            return ReadXmlDataInMemory(File.ReadAllText(filename), type);
+        }
+
+        /// <summary>
+        /// Retrieves XML-Serialized data from a string.
+        /// </summary>
+        /// <param name="xml">The serialized object</param>
+        /// <param name="type">The Type of the data to deserialize</param>
+        /// <returns>The deserialized object</returns>
+        public static object ReadXmlDataInMemory(string xml, Type type)
+        {
+            if (xml == null)
+                throw new ArgumentNullException(nameof(xml));
+
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
             using (MemoryStream memStream = new MemoryStream(Encoding.Unicode.GetBytes(xml)))
             {
-                XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(typeof(T));
-                return (T)serializer.Deserialize(memStream);
+                XmlSerializer serializer = XmlSerializationTools.GetXmlSerializer(type);
+                return serializer.Deserialize(memStream);
             }
         }
 
@@ -114,7 +148,41 @@ namespace LamestWebserver.Serialization
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
 
-            return (T)JsonConvert.DeserializeObject(json, typeof(T));
+            return (T)ReadJsonDataInMemory(json, typeof(T));
+        }
+
+        /// <summary>
+        /// Retrieves a JSON-Serialized object from a file.
+        /// </summary>
+        /// <param name="filename">The name of the file</param>
+        /// <param name="type">The Type of the data to deserialize</param>
+        /// <returns>The deserialized object</returns>
+        public static object ReadJsonData(string filename, Type type)
+        {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            return ReadJsonDataInMemory(File.ReadAllText(filename), type);
+        }
+
+        /// <summary>
+        /// Retrieves JSON-Serialized data from a json string.
+        /// </summary>
+        /// <param name="json">The serialized Object</param>
+        /// <param name="type">The Type of the data to deserialize</param>
+        /// <returns>The deserialized object</returns>
+        public static object ReadJsonDataInMemory(string json, Type type)
+        {
+            if (json == null)
+                throw new ArgumentNullException(nameof(json));
+
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            return JsonConvert.DeserializeObject(json, type);
         }
 
         /// <summary>
@@ -195,11 +263,45 @@ namespace LamestWebserver.Serialization
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
 
+            return (T)ReadBinaryDataInMemory(data, typeof(T));
+        }
+
+        /// <summary>
+        /// Retrieves Binary-Serialized data from a file.
+        /// </summary>
+        /// <param name="filename">The name of the file</param>
+        /// <param name="type">The Type of the data to deserialize</param>
+        /// <returns>The deserialized object</returns>
+        public static object ReadBinaryData<T>(string filename, Type type)
+        {
+            if (filename == null)
+                throw new ArgumentNullException(nameof(filename));
+
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            return ReadBinaryDataInMemory(File.ReadAllBytes(filename), type);
+        }
+
+        /// <summary>
+        /// Retrieves Binary-Serialized data from a byte[].
+        /// </summary>
+        /// <param name="data">The serizalized object</param>
+        /// <param name="type">The Type of the data to deserialize</param>
+        /// <returns>The deserialized object</returns>
+        public static object ReadBinaryDataInMemory(byte[] data, Type type)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
             using (MemoryStream memStream = new MemoryStream(data))
             {
                 BinaryFormatter formatter = new BinaryFormatter();
 
-                return (T)formatter.Deserialize(memStream);
+                return formatter.Deserialize(memStream);
             }
         }
 

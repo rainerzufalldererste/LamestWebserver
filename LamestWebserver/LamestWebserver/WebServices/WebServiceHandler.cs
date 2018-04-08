@@ -18,26 +18,12 @@ namespace LamestWebserver.WebServices
 {
     public class WebServiceHandler
     {
-        private static WebServiceHandler _currentServiceHandler;
-        private static UsableMutexSlim _mutex = new UsableMutexSlim();
+        public static readonly Singleton<WebServiceHandler> CurrentServiceHandler = new Singleton<WebServiceHandler>(() => new WebServiceHandler());
 
-        public static WebServiceHandler CurrentServiceHandler
-        {
-            get
-            {
-                using (_mutex.Lock())
-                    if (_currentServiceHandler == null)
-                        _currentServiceHandler = new WebServiceHandler();
-
-                return _currentServiceHandler;
-            }
-        }
-
-        private UsableMutexSlim _listMutex = new UsableMutexSlim();
+        private UsableWriteLock _listLock = new UsableWriteLock();
         private Dictionary<Type, object> RequestWebServiceVariants = new Dictionary<Type, object>();
         private Dictionary<Type, object> ServerWebServiceVariants = new Dictionary<Type, object>();
         private Dictionary<Type, object> LocalWebServiceVariants = new Dictionary<Type, object>();
-
         private AVLHashMap<string, IPEndPoint> UrlToServerHashMap = new AVLHashMap<string, IPEndPoint>();
 
         public void RegisterTypeRemoteEndpoint(Type type, IPEndPoint remoteEndpoint)
@@ -75,7 +61,13 @@ namespace LamestWebserver.WebServices
             if (type.IsAbstract || type.IsInterface || !type.IsPublic || type.IsSealed)
                 throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
 
-            if (LocalWebServiceVariants.ContainsKey(type))
+            bool contained = false;
+
+
+            using (_listLock.LockRead())
+                contained = LocalWebServiceVariants.ContainsKey(type);
+
+            if (contained)
             {
                 return LocalWebServiceVariants[type];
             }
@@ -83,7 +75,8 @@ namespace LamestWebserver.WebServices
             {
                 object ret = WebServiceImplGenerator.GetWebServiceLocalImpl(type);
 
-                LocalWebServiceVariants.Add(type, ret);
+                using(_listLock.LockWrite())
+                    LocalWebServiceVariants.Add(type, ret);
 
                 return ret;
             }
