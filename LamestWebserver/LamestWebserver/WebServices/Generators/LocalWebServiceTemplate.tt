@@ -27,7 +27,7 @@ namespace <#= Namespace #>
 			if (method.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
 				continue;
 
-			if (method.IsPublic && !method.IsAbstract && !method.IsStatic && !method.IsFinal && !method.IsGenericMethod && !method.IsGenericMethodDefinition) 
+			if (method.IsPublic && !method.IsAbstract && !method.IsStatic && !method.IsFinal) 
 			{ 
 				if (!method.IsVirtual)
 				{
@@ -35,7 +35,11 @@ namespace <#= Namespace #>
 						continue; // Don't trigger for System.Object.GetType()
 					else
 						throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public method '{method.Name}'. Mark this method with the {nameof(WebServiceIgnore)} attribute to ignore it.");
-				} #>
+				} 
+				
+				if (method.IsGenericMethod || method.IsGenericMethodDefinition)
+					throw new IncompatibleTypeException($"LamestWebserver WebServices currently does not support generic methods. The Type '{ClassType.Namespace}.{ClassType.Name}' contains a public generic method '{method.Name}'. Mark this method with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+				#>
 
 			public override <# if(method.ReturnType == typeof(void)) { #> void <# } else { #> <#= method.ReturnType #> <# } #> <#= method.Name #>(
 			<# System.Reflection.ParameterInfo[] parameters = method.GetParameters().ToArray();

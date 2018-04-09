@@ -51,8 +51,9 @@ namespace Demos
 
             return MainPage.GetPage(new List<HElement>()
             {
-                new HHeadline("Success!"),
+                new HHeadline("LamestWebserver WebServices"),
                 new HText("This response runs various methods of a Test WebService. Look at the Logger output for this file to get a propper understanding of the WebService functions, that were actually executed."),
+                new HHeadline("Executed Functions", 2),
                 new HTable(from field in wst.GetType().GetFields() where field.DeclaringType == typeof(TestWebService) && field.FieldType == typeof(bool) select new List<object> { field.Name, ((bool)field.GetValue(wst)) ? "✔️" : "❌" })
             }, nameof(Tut06) + ".cs");
         }
@@ -61,7 +62,7 @@ namespace Demos
     public class TestWebService : IWebService
     {
         [WebServiceIgnore]
-        public bool Constructor, VoidMethod, VoidMethodParams, ReturnMethod, ReturnMethodParams, ExceptionMethodVoid, ExceptionMethodReturn;
+        public bool Constructor, VoidMethod, VoidMethodWithParameters, ReturningMethod, ReturningMethodWithParameters, ExceptionMethodVoid, ReturningExceptionMethod;
 
         public TestWebService()
         {
@@ -83,7 +84,7 @@ namespace Demos
             Logger.LogInformation(nameof(wello));
             Logger.LogInformation(wello);
 
-            ReturnMethod = true;
+            ReturningMethod = true;
             return wello;
         }
 
@@ -95,7 +96,7 @@ namespace Demos
                 value = value.Remove(0, 1);
             }
 
-            VoidMethodParams = true;
+            VoidMethodWithParameters = true;
         }
 
         public virtual string CallSomethingParamsReturn(string value)
@@ -111,7 +112,7 @@ namespace Demos
 
             Logger.LogInformation(ret + " | " + value);
 
-            ReturnMethodParams = true;
+            ReturningMethodWithParameters = true;
 
             return ret;
         }
@@ -124,8 +125,17 @@ namespace Demos
 
         public virtual string ExceptReturn()
         {
-            ExceptionMethodReturn = true;
+            ReturningExceptionMethod = true;
             throw new Exception("Test Exception Return.");
+        }
+
+        /// <summary>
+        /// Templated Functions are currently not supported in WebServices.
+        /// </summary>
+        [WebServiceIgnore]
+        public virtual T TemplatedFunction<T> (object obj)
+        {
+            return (T)obj;
         }
     }
 }
