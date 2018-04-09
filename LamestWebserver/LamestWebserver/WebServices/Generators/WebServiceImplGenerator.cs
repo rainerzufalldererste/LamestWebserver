@@ -38,9 +38,9 @@ namespace LamestWebserver.WebServices.Generators
                 StringBuilder sb = new StringBuilder();
 
 #if DEBUG
-	                sb.Append(text);
-	                sb.AppendLine();
-	                sb.AppendLine();
+	            sb.Append(text);
+	            sb.AppendLine();
+	            sb.AppendLine();
 #endif
 
                 foreach (CompilerError error in results.Errors)

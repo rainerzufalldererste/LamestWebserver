@@ -224,6 +224,7 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <Compile Include="WebServices\IWebService.cs" />
+    <Compile Include="WebServices\WebServiceAttribute.cs" />
     <Compile Include="WebServices\WebServiceException.cs" />
     <Compile Include="WebServices\WebServiceHandler.cs" />
     <Compile Include="WebServices\WebServiceRequest.cs" />

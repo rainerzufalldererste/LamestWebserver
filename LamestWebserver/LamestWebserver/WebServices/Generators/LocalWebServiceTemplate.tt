@@ -15,28 +15,31 @@ namespace <#= Namespace #>
 {
     public class <#= ClassName #>LocalWebServiceGenImpl : <#= ClassName #>
 	{
-		<# if(ClassType.GetConstructor(new Type[0]) != null) { #>
+		<# if (ClassType.GetConstructor(new Type[0]) != null) { #>
 		public <#= ClassName #>LocalWebServiceGenImpl() : base()
 		{
 			LamestWebserver.Core.Logger.LogInformation("<#= ClassName #>LocalWebServiceGenImpl has been initialized.");
 		}
 		<# } #>
 
-		<# foreach(var method in ClassType.GetMethods()) 
+		<# foreach (var method in ClassType.GetMethods()) 
 		{
+			if (method.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
+				continue;
+
 			if (method.IsPublic && !method.IsAbstract && !method.IsStatic && !method.IsFinal && !method.IsGenericMethod && !method.IsGenericMethodDefinition) 
 			{ 
-				if(!method.IsVirtual)
+				if (!method.IsVirtual)
 				{
 					if(method.DeclaringType == typeof(System.Object))
 						continue; // Don't trigger for System.Object.GetType()
 					else
-						throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public method '{method.Name}'.");
+						throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public method '{method.Name}'. Mark this method with the {nameof(WebServiceIgnore)} attribute to ignore it.");
 				} #>
 
 			public override <# if(method.ReturnType == typeof(void)) { #> void <# } else { #> <#= method.ReturnType #> <# } #> <#= method.Name #>(
 			<# System.Reflection.ParameterInfo[] parameters = method.GetParameters().ToArray();
-			for(int i = 0; i < parameters.Length; i++) {#>
+			for (int i = 0; i < parameters.Length; i++) {#>
 				<#= parameters[i].ParameterType.Name #> _p<#= i #> <# if (i + 1 < parameters.Length) { #>, <# } #>
 			<# } #>
 			)
@@ -61,7 +64,7 @@ namespace <#= Namespace #>
 
 					<# if(method.ReturnType != typeof(void)) { #> return x; <# } #>
 				}
-				catch(Exception e)
+				catch (Exception e)
 				{
 					LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>'.\n" + e.Message);
 					throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>'", e);
@@ -71,23 +74,25 @@ namespace <#= Namespace #>
 		<#  } 
 		}#>
 
-		<# foreach(var property in ClassType.GetProperties()) 
+		<# foreach (var property in ClassType.GetProperties()) 
 		{
+			if (property.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
+				continue;
+			
 			bool getter = property.GetMethod != null && property.GetMethod.IsPublic && !property.GetMethod.IsAbstract && !property.GetMethod.IsStatic;
 			bool setter = property.SetMethod != null && property.SetMethod.IsPublic && !property.SetMethod.IsAbstract && !property.SetMethod.IsStatic;
 
-			if(getter && !property.GetMethod.IsVirtual)
-				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property get accessor for '{property.Name}'.");
+			if (getter && !property.GetMethod.IsVirtual)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property get accessor for '{property.Name}'. Mark this property with the {nameof(WebServiceIgnore)} attribute to ignore it.");
 
-			if(setter && !property.SetMethod.IsVirtual)
-				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property set accessor for '{property.Name}'.");
+			if (setter && !property.SetMethod.IsVirtual)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property set accessor for '{property.Name}'. Mark this property with the {nameof(WebServiceIgnore)} attribute to ignore it.");
 
-			if(getter || setter)
+			if (getter || setter)
 			{ #>
-				
 				public override <#= property.PropertyType #> <#= property.Name #>
 				{
-				<# if(getter) 
+				<# if (getter)
 				{ #>
 					get
 					{
@@ -109,7 +114,7 @@ namespace <#= Namespace #>
 					}
 					<# }
 					
-					if(setter) 
+					if (setter) 
 					{ #>
 					set
 					{
@@ -131,6 +136,15 @@ namespace <#= Namespace #>
 				}
 
 			<# }
+		} #>
+
+		<# foreach (var field in ClassType.GetFields()) 
+		{
+			if (field.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
+				continue;
+			
+			if(field.IsPublic && !field.IsStatic)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a public non-static field '{field.Name}'. Mark this field with the {nameof(WebServiceIgnore)} attribute to ignore it.");
 		} #>
 	}
 }

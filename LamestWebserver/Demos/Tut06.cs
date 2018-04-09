@@ -59,6 +59,9 @@ namespace Demos
 
     public class TestWebService : IWebService
     {
+        [WebServiceIgnore]
+        public bool Value;
+
         public TestWebService()
         {
             Logger.LogTrace($"Called Constructor of {nameof(TestWebService)}.");
