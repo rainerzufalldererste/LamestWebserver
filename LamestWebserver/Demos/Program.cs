@@ -35,8 +35,9 @@ namespace Demos
                     System.Diagnostics.Process.Start($"http://localhost:{webserver.Port}/");
 
 #if DEBUG
-                    // Add a Server Instance to view the LamestWebserver DebugView with. This Webserver will run on a different port (port 8081 in this case), so you can just switch to a different port in your browser.
-                    // You should only use the DebugView for Debugging Purposes. In the final product (or in Release builds) just don't start it, if you don't want everyone to be able to see your internal debugging Data.
+                    // Add a Server Instance to view the LamestWebserver DebugView with. This Webserver will run on a different port (port 8081 in this case), 
+                    //  so you can just switch to a different port in your browser. You should only use the DebugView for Debugging Purposes. 
+                    //  In the final product (or in Release builds) just don't start it, if you don't want everyone to be able to see your internal debugging Data.
                     WebServer debugViewWebserver = new WebServer(8081, LamestWebserver.RequestHandlers.DebugView.DebugResponse.DebugViewRequestHandler);
 
                     // Add the debugViewWebserver to our main Webserver so that it'll be closed whenever our main one is closed.
@@ -44,10 +45,6 @@ namespace Demos
 #endif
 
                     Console.WriteLine("LamestWebserver Demos.\n\nType 'exit' to quit.");
-
-#if DEBUG
-                    ServerHandler.StartHandler();
-#endif
 
                     // Keep the Server available until we enter exit.
                     while (Console.ReadLine() != "exit") { }

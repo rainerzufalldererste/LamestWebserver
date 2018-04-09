@@ -53,6 +53,7 @@ namespace Demos
             {
                 new HHeadline("Success!"),
                 new HText("This response runs various methods of a Test WebService. Look at the Logger output for this file to get a propper understanding of the WebService functions, that were actually executed."),
+                new HTable(from field in wst.GetType().GetFields() where field.DeclaringType == typeof(TestWebService) && field.FieldType == typeof(bool) select new List<object> { field.Name, ((bool)field.GetValue(wst)) ? "✔️" : "❌" })
             }, nameof(Tut06) + ".cs");
         }
     }
@@ -60,11 +61,12 @@ namespace Demos
     public class TestWebService : IWebService
     {
         [WebServiceIgnore]
-        public bool Value;
+        public bool Constructor, VoidMethod, VoidMethodParams, ReturnMethod, ReturnMethodParams, ExceptionMethodVoid, ExceptionMethodReturn;
 
         public TestWebService()
         {
             Logger.LogTrace($"Called Constructor of {nameof(TestWebService)}.");
+            Constructor = true;
         }
 
         public virtual void CallSomethingVoid()
@@ -72,6 +74,7 @@ namespace Demos
             string hello = "world";
             Logger.LogInformation(nameof(hello));
             Logger.LogInformation(hello);
+            VoidMethod = true;
         }
 
         public virtual string CallSomethingReturn()
@@ -80,6 +83,7 @@ namespace Demos
             Logger.LogInformation(nameof(wello));
             Logger.LogInformation(wello);
 
+            ReturnMethod = true;
             return wello;
         }
 
@@ -90,6 +94,8 @@ namespace Demos
                 Logger.LogInformation(value);
                 value = value.Remove(0, 1);
             }
+
+            VoidMethodParams = true;
         }
 
         public virtual string CallSomethingParamsReturn(string value)
@@ -105,16 +111,20 @@ namespace Demos
 
             Logger.LogInformation(ret + " | " + value);
 
+            ReturnMethodParams = true;
+
             return ret;
         }
 
         public virtual void ExceptVoid()
         {
+            ExceptionMethodVoid = true;
             throw new Exception("Test Exception");
         }
 
         public virtual string ExceptReturn()
         {
+            ExceptionMethodReturn = true;
             throw new Exception("Test Exception Return.");
         }
     }
