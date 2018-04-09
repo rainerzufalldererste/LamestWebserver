@@ -24,9 +24,16 @@ namespace <#= Namespace #>
 
 		<# foreach(var method in ClassType.GetMethods()) 
 		{
-			if (method.IsVirtual && method.IsPublic && !method.IsAbstract && !method.IsStatic && !method.IsFinal && !method.IsGenericMethod && !method.IsGenericMethodDefinition) 
-			{ #>
-			
+			if (method.IsPublic && !method.IsAbstract && !method.IsStatic && !method.IsFinal && !method.IsGenericMethod && !method.IsGenericMethodDefinition) 
+			{ 
+				if(!method.IsVirtual)
+				{
+					if(method.DeclaringType == typeof(System.Object))
+						continue; // Don't trigger for System.Object.GetType()
+					else
+						throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public method '{method.Name}'.");
+				} #>
+
 			public override <# if(method.ReturnType == typeof(void)) { #> void <# } else { #> <#= method.ReturnType #> <# } #> <#= method.Name #>(
 			<# System.Reflection.ParameterInfo[] parameters = method.GetParameters().ToArray();
 			for(int i = 0; i < parameters.Length; i++) {#>
@@ -66,15 +73,22 @@ namespace <#= Namespace #>
 
 		<# foreach(var property in ClassType.GetProperties()) 
 		{
-			if(property.GetMethod != null && property.SetMethod != null &&
-				property.GetMethod.IsPublic && property.SetMethod.IsPublic &&
-				!property.GetMethod.IsAbstract && !property.SetMethod.IsAbstract &&
-				!property.GetMethod.IsStatic && !property.SetMethod.IsStatic &&
-				property.GetMethod.IsVirtual && property.SetMethod.IsVirtual)
+			bool getter = property.GetMethod != null && property.GetMethod.IsPublic && !property.GetMethod.IsAbstract && !property.GetMethod.IsStatic;
+			bool setter = property.SetMethod != null && property.SetMethod.IsPublic && !property.SetMethod.IsAbstract && !property.SetMethod.IsStatic;
+
+			if(getter && !property.GetMethod.IsVirtual)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property get accessor for '{property.Name}'.");
+
+			if(setter && !property.SetMethod.IsVirtual)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property set accessor for '{property.Name}'.");
+
+			if(getter || setter)
 			{ #>
 				
 				public override <#= property.PropertyType #> <#= property.Name #>
 				{
+				<# if(getter) 
+				{ #>
 					get
 					{
 						try
@@ -93,6 +107,10 @@ namespace <#= Namespace #>
 							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.get'", e);
 						}
 					}
+					<# }
+					
+					if(setter) 
+					{ #>
 					set
 					{
 						try
@@ -109,6 +127,7 @@ namespace <#= Namespace #>
 							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.set'.\n" + e.Message);
 						}
 					}
+					<# } #>
 				}
 
 			<# }

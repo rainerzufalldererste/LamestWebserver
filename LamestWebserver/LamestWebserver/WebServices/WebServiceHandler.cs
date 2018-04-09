@@ -62,8 +62,7 @@ namespace LamestWebserver.WebServices
                 throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
 
             bool contained = false;
-
-
+            
             using (_listLock.LockRead())
                 contained = LocalWebServiceVariants.ContainsKey(type);
 
