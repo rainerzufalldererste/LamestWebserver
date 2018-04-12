@@ -22,7 +22,6 @@ namespace LamestWebserver.WebServices
 
         private UsableWriteLock _listLock = new UsableWriteLock();
         private Dictionary<Type, object> RequestWebServiceVariants = new Dictionary<Type, object>();
-        private Dictionary<Type, object> ServerWebServiceVariants = new Dictionary<Type, object>();
         private Dictionary<Type, object> LocalWebServiceVariants = new Dictionary<Type, object>();
         private AVLHashMap<string, IPEndPoint> UrlToServerHashMap = new AVLHashMap<string, IPEndPoint>();
 
@@ -80,14 +79,41 @@ namespace LamestWebserver.WebServices
                 return ret;
             }
         }
-
-        public T GetServerService<T>() where T : IWebService, new()
-        {
-            return default(T);
-        }
+        
         public T GetRequestService<T>() where T : IWebService, new()
         {
-            return default(T);
+            return (T)GetRequestService(typeof(T));
+        }
+
+        public object GetRequestService(Type type)
+        {
+            if (!type.GetInterfaces().Contains(typeof(IWebService)))
+                throw new IncompatibleTypeException($"Type '{type}' is not compatible with {nameof(WebServiceHandler)}: Does not implement '{nameof(IWebService)}'.");
+
+            if (type.GetConstructor(new Type[0]) == null)
+                throw new IncompatibleTypeException($"Type '{type}' is not compatible with {nameof(WebServiceHandler)}: No empty constructor available.");
+
+            if (type.IsAbstract || type.IsInterface || !type.IsPublic || type.IsSealed)
+                throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
+
+            bool contained = false;
+
+            using (_listLock.LockRead())
+                contained = RequestWebServiceVariants.ContainsKey(type);
+
+            if (contained)
+            {
+                return RequestWebServiceVariants[type];
+            }
+            else
+            {
+                object ret = WebServiceImplGenerator.GetWebServiceRequestImpl(type);
+
+                using (_listLock.LockWrite())
+                    RequestWebServiceVariants.Add(type, ret);
+
+                return ret;
+            }
         }
 
         public WebServiceResponse Request(WebServiceRequest webServiceRequest)

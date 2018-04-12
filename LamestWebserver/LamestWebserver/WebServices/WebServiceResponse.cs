@@ -23,7 +23,7 @@ namespace LamestWebserver.WebServices
     [Serializable]
     public class WebServiceResponse : ISerializable, IXmlSerializable
     {
-        public WebServiceReturnType ReturnType = WebServiceReturnType.ReturnVoid;
+        public EWebServiceReturnType ReturnType = EWebServiceReturnType.ReturnVoid;
         public string ReturnValueType;
         public object ReturnValue = null;
         public Exception ExceptionThrown = null;
@@ -35,14 +35,14 @@ namespace LamestWebserver.WebServices
 
         public WebServiceResponse(SerializationInfo info, StreamingContext context)
         {
-            ReturnType = (WebServiceReturnType)info.GetValue(nameof(ReturnType), typeof(WebServiceReturnType));
+            ReturnType = (EWebServiceReturnType)info.GetValue(nameof(ReturnType), typeof(EWebServiceReturnType));
 
             switch (ReturnType)
             {
-                case WebServiceReturnType.ReturnVoid:
+                case EWebServiceReturnType.ReturnVoid:
                     break;
 
-                case WebServiceReturnType.ExceptionThrown:
+                case EWebServiceReturnType.ExceptionThrown:
                     ReturnValueType = info.GetString(nameof(ReturnValueType));
                     returnValueType = Type.GetType(ReturnValueType);
                     StringifiedException = info.GetString(nameof(StringifiedException));
@@ -58,7 +58,7 @@ namespace LamestWebserver.WebServices
 
                     break;
 
-                case WebServiceReturnType.ReturnValue:
+                case EWebServiceReturnType.ReturnValue:
                     ReturnValueType = info.GetString(nameof(ReturnValueType));
                     returnValueType = Type.GetType(ReturnValueType);
                     ReturnValue = info.GetValue(nameof(ReturnValue), returnValueType);
@@ -78,7 +78,7 @@ namespace LamestWebserver.WebServices
                 returnValueType = typeof(T),
                 ReturnValueType = typeof(T).FullName,
                 ReturnValue = value,
-                ReturnType = WebServiceReturnType.ReturnValue
+                ReturnType = EWebServiceReturnType.ReturnValue
             };
 
         public static WebServiceResponse Exception(Exception exception)
@@ -87,7 +87,7 @@ namespace LamestWebserver.WebServices
                 ReturnValueType = exception.GetType().FullName,
                 ExceptionThrown = exception,
                 StringifiedException = exception.SafeToString(),
-                ReturnType = WebServiceReturnType.ExceptionThrown
+                ReturnType = EWebServiceReturnType.ExceptionThrown
             };
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -96,10 +96,10 @@ namespace LamestWebserver.WebServices
 
             switch(ReturnType)
             {
-                case WebServiceReturnType.ReturnVoid:
+                case EWebServiceReturnType.ReturnVoid:
                     break;
 
-                case WebServiceReturnType.ExceptionThrown:
+                case EWebServiceReturnType.ExceptionThrown:
                     info.AddValue(nameof(ReturnValueType), ReturnValueType);
                     info.AddValue(nameof(StringifiedException), StringifiedException);
 
@@ -111,7 +111,7 @@ namespace LamestWebserver.WebServices
 
                     break;
 
-                case WebServiceReturnType.ReturnValue:
+                case EWebServiceReturnType.ReturnValue:
                     info.AddValue(nameof(ReturnValueType), ReturnValueType);
                     info.AddValue(nameof(ReturnValue), ReturnValue);
                     break;
@@ -134,15 +134,15 @@ namespace LamestWebserver.WebServices
             reader.ReadStartElement(nameof(WebServiceResponse));
 
             reader.ReadStartElement(nameof(ReturnType));
-            ReturnType = reader.ReadElement<WebServiceReturnType>();
+            ReturnType = reader.ReadElement<EWebServiceReturnType>();
             reader.ReadToEndElement(nameof(ReturnType));
 
             switch(ReturnType)
             {
-                case WebServiceReturnType.ReturnVoid:
+                case EWebServiceReturnType.ReturnVoid:
                     break;
 
-                case WebServiceReturnType.ExceptionThrown:
+                case EWebServiceReturnType.ExceptionThrown:
                     reader.ReadStartElement(nameof(ReturnValueType));
                     ReturnValueType = reader.ReadElement<string>();
                     returnValueType = Type.GetType(ReturnValueType);
@@ -165,7 +165,7 @@ namespace LamestWebserver.WebServices
 
                     break;
 
-                case WebServiceReturnType.ReturnValue:
+                case EWebServiceReturnType.ReturnValue:
                     reader.ReadStartElement(nameof(ReturnValueType));
                     ReturnValueType = reader.ReadElement<string>();
                     returnValueType = Type.GetType(ReturnValueType);
@@ -193,10 +193,10 @@ namespace LamestWebserver.WebServices
 
             switch (ReturnType)
             {
-                case WebServiceReturnType.ReturnVoid:
+                case EWebServiceReturnType.ReturnVoid:
                     break;
 
-                case WebServiceReturnType.ExceptionThrown:
+                case EWebServiceReturnType.ExceptionThrown:
                     writer.WriteElement(nameof(ReturnValueType), ReturnValueType);
                     writer.WriteElement(nameof(StringifiedException), StringifiedException);
 
@@ -208,7 +208,7 @@ namespace LamestWebserver.WebServices
 
                     break;
 
-                case WebServiceReturnType.ReturnValue:
+                case EWebServiceReturnType.ReturnValue:
                     writer.WriteElement(nameof(ReturnValueType), ReturnValueType);
                     writer.WriteElement(nameof(ReturnValue), ReturnValue);
                     break;
@@ -222,7 +222,7 @@ namespace LamestWebserver.WebServices
         }
     }
 
-    public enum WebServiceReturnType : byte
+    public enum EWebServiceReturnType : byte
     {
         ReturnVoid, ExceptionThrown, ReturnValue
     }

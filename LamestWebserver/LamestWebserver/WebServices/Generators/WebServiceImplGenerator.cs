@@ -19,6 +19,30 @@ namespace LamestWebserver.WebServices.Generators
             return (T)GetWebServiceLocalImpl(typeof(T));
         }
 
+        public static object GetWebServiceLocalImpl(Type type)
+        {
+            if (type.IsAbstract || type.IsInterface || !type.IsPublic || type.IsSealed)
+                throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
+
+            var webservice = new LamestWebserver.WebServices.Generators.LocalWebServiceTemplate() { ClassName = type.Name, ClassType = type, Namespace = GetWebServiceLocalImplName(type), AssemblyNameSpace = type.Namespace };
+
+            return CompilAndBuildObject(webservice.TransformText().Replace("global::", ""), type, GetWebServiceLocalImplName(type) + "." + GetWebServiceLocalImplName(type));
+        }
+        public static T GetWebServiceRequestImpl<T>()
+        {
+            return (T)GetWebServiceRequestImpl(typeof(T));
+        }
+
+        public static object GetWebServiceRequestImpl(Type type)
+        {
+            if (type.IsAbstract || type.IsInterface || !type.IsPublic || type.IsSealed)
+                throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
+
+            var webservice = new LamestWebserver.WebServices.Generators.LocalWebServiceTemplate() { ClassName = type.Name, ClassType = type, Namespace = GetWebServiceRequestImplName(type), AssemblyNameSpace = type.Namespace };
+
+            return CompilAndBuildObject(webservice.TransformText().Replace("global::", ""), type, GetWebServiceRequestImplName(type) + "." + GetWebServiceRequestImplName(type));
+        }
+
         public static object CompilAndBuildObject(string code, Type type, string typeName)
         {
             CSharpCodeProvider provider = new CSharpCodeProvider();
@@ -75,26 +99,12 @@ namespace LamestWebserver.WebServices.Generators
             throw new InvalidOperationException($"Failed to retrieve generated {nameof(IWebService)} '{typeName}' (inherited from '{type.Namespace}.{type.Name}').");
         }
 
-        public static object GetWebServiceLocalImpl(Type type)
-        {
-            if (type.IsAbstract || type.IsInterface || !type.IsPublic || type.IsSealed)
-                throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
-
-            var webservice = new LamestWebserver.WebServices.Generators.LocalWebServiceTemplate() { ClassName = type.Name, ClassType = type, Namespace = GetWebServiceLocalImplName(type), AssemblyNameSpace = type.Namespace };
-
-            return CompilAndBuildObject(webservice.TransformText().Replace("global::", ""), type, GetWebServiceLocalImplName(type) + "." + GetWebServiceLocalImplName(type));
-        }
-
         public static string GetWebServiceLocalImplName<T>() => GetWebServiceLocalImplName(typeof(T));
         public static string GetWebServiceLocalImplName(Type type) => type.Name + "LocalWebServiceGenImpl";
         public static string GetWebServiceLocalImplNamespace() => "LamestWebserver.WebService.GeneratedCode.Local";
 
-        public static string GetWebServiceResponseImplName<T>() => GetWebServiceResponseImplName(typeof(T));
-        public static string GetWebServiceResponseImplName(Type type) => type.Name + "LocalWebServiceGenImpl";
-        public static string GetWebServiceResponseImplNamespace() => "LamestWebserver.WebService.GeneratedCode.Response";
-
         public static string GetWebServiceRequestImplName<T>() => GetWebServiceRequestImplName(typeof(T));
-        public static string GetWebServiceRequestImplName(Type type) => type.Name + "LocalWebServiceGenImpl";
+        public static string GetWebServiceRequestImplName(Type type) => type.Name + "RequesterWebServiceImpl";
         public static string GetWebServiceRequestImplNamespace() => "LamestWebserver.WebService.GeneratedCode.Request";
     }
 }

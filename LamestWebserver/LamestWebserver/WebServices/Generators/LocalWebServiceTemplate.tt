@@ -128,7 +128,7 @@ namespace <#= Namespace #>
 
 							base.<#= property.Name #> = value;
 
-							LamestWebserver.Core.Logger.LogTrace("property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>' has been set.");
+							LamestWebserver.Core.Logger.LogTrace("Property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>' has been set.");
 						}
 						catch(Exception e)
 						{
