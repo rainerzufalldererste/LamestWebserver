@@ -21,7 +21,7 @@ namespace LamestWebserver.WebServices
         public static readonly Singleton<WebServiceHandler> CurrentServiceHandler = new Singleton<WebServiceHandler>(() => new WebServiceHandler());
 
         private UsableWriteLock _listLock = new UsableWriteLock();
-        private Dictionary<Type, object> RequestWebServiceVariants = new Dictionary<Type, object>();
+        private Dictionary<Type, object> RequestertWebServiceVariants = new Dictionary<Type, object>();
         private Dictionary<Type, object> LocalWebServiceVariants = new Dictionary<Type, object>();
         private AVLHashMap<string, IPEndPoint> UrlToServerHashMap = new AVLHashMap<string, IPEndPoint>();
 
@@ -80,12 +80,12 @@ namespace LamestWebserver.WebServices
             }
         }
         
-        public T GetRequestService<T>() where T : IWebService, new()
+        public T GetRequesterService<T>() where T : IWebService, new()
         {
-            return (T)GetRequestService(typeof(T));
+            return (T)GetRequesterService(typeof(T));
         }
 
-        public object GetRequestService(Type type)
+        public object GetRequesterService(Type type)
         {
             if (!type.GetInterfaces().Contains(typeof(IWebService)))
                 throw new IncompatibleTypeException($"Type '{type}' is not compatible with {nameof(WebServiceHandler)}: Does not implement '{nameof(IWebService)}'.");
@@ -99,18 +99,18 @@ namespace LamestWebserver.WebServices
             bool contained = false;
 
             using (_listLock.LockRead())
-                contained = RequestWebServiceVariants.ContainsKey(type);
+                contained = RequestertWebServiceVariants.ContainsKey(type);
 
             if (contained)
             {
-                return RequestWebServiceVariants[type];
+                return RequestertWebServiceVariants[type];
             }
             else
             {
                 object ret = WebServiceImplGenerator.GetWebServiceRequestImpl(type);
 
                 using (_listLock.LockWrite())
-                    RequestWebServiceVariants.Add(type, ret);
+                    RequestertWebServiceVariants.Add(type, ret);
 
                 return ret;
             }

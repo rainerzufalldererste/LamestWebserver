@@ -144,7 +144,7 @@ namespace <#= Namespace #>
 						{
 							LamestWebserver.Core.Logger.LogTrace("Requesting property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>'.");
 							
-							var request = new WebServiceRequest<<#= ClassName #>>(__RESPONDER_WEBSERVICE__GET__<#= property.Name #>, new Type[0]);
+							var request = new WebServiceRequest<<#= ClassName #>>(__RESPONDER_WEBSERVICE__PROPERTY_GET__<#= property.Name #>, new Type[0]);
 							var response = WebServiceHandler.CurrentServiceHandler.Instance.Request(request);
 
 							switch (response.ReturnType)
@@ -182,7 +182,7 @@ namespace <#= Namespace #>
 						{
 							LamestWebserver.Core.Logger.LogTrace("Requesting to set the property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>'.");
 							
-							var request = new WebServiceRequest<<#= ClassName #>>(__RESPONDER_WEBSERVICE__SET__<#= property.Name #>, new Type[] { typeof(<#= property.PropertyType #>) }, value);
+							var request = new WebServiceRequest<<#= ClassName #>>(__RESPONDER_WEBSERVICE__PROPERTY_SET__<#= property.Name #>, new Type[] { typeof(<#= property.PropertyType #>) }, value);
 							var response = WebServiceHandler.CurrentServiceHandler.Instance.Request(request);
 
 							switch (response.ReturnType)

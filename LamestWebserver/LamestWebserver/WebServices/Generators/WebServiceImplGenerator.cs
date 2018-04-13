@@ -62,7 +62,7 @@ namespace LamestWebserver.WebServices.Generators
                 StringBuilder sb = new StringBuilder();
 
 #if DEBUG
-	            sb.Append(text);
+	            sb.Append(code);
 	            sb.AppendLine();
 	            sb.AppendLine();
 #endif

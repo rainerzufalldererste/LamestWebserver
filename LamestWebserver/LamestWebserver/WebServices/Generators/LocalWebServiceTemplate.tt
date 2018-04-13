@@ -43,7 +43,8 @@ namespace <#= Namespace #>
 
 			public override <# if(method.ReturnType == typeof(void)) { #> void <# } else { #> <#= method.ReturnType #> <# } #> <#= method.Name #>(
 			<# System.Reflection.ParameterInfo[] parameters = method.GetParameters().ToArray();
-			for (int i = 0; i < parameters.Length; i++) {#>
+			for (int i = 0; i < parameters.Length; i++) 
+			{ #>
 				<#= parameters[i].ParameterType.Name #> _p<#= i #> <# if (i + 1 < parameters.Length) { #>, <# } #>
 			<# } #>
 			)
@@ -75,6 +76,43 @@ namespace <#= Namespace #>
 				}
 			}
 
+			public WebServiceResponse __RESPONDER_WEBSERVICE__<#= method.Name #>(
+			<# for (int i = 0; i < parameters.Length; i++) 
+			{ #>
+				<#= parameters[i].ParameterType.Name #> _p<#= i #> <# if (i + 1 < parameters.Length) { #>, <# } #>
+			<# } #>
+			)
+			{
+				WebServiceResponse ret = null;
+
+				try
+				{
+					<# if(method.ReturnType != typeof(void)) { #> var x = <# } #>
+
+					this.<#= method.Name #>(
+					<# for (int i = 0; i < parameters.Length; i++) 
+					{ #>
+						_p<#= i #> <# if (i + 1 < parameters.Length) { #>, <# } #>
+					<# } #>
+					);
+
+					<# if(method.ReturnType != typeof(void)) 
+					{ #> 
+						ret = WebServiceResponse.Return<<#= method.ReturnType #>>(x);
+					<# } 
+					else
+					{ #>
+						ret = WebServiceResponse.Return();
+					<# } #>
+				}
+				catch (Exception e)
+				{
+					ret = WebServiceResponse.Exception(e);
+				}
+
+				return ret;
+			}
+
 		<#  } 
 		}#>
 
@@ -104,11 +142,11 @@ namespace <#= Namespace #>
 						{
 							LamestWebserver.Core.Logger.LogTrace("Getting property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>'.");
 
-							var x = base.<#= property.Name #>;
+							var ret = base.<#= property.Name #>;
 
 							LamestWebserver.Core.Logger.LogTrace("Response from property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>' has been received.");
 
-							return x;
+							return ret;
 						}
 						catch(Exception e)
 						{
@@ -138,6 +176,48 @@ namespace <#= Namespace #>
 					}
 					<# } #>
 				}
+
+				<# if(getter)
+				{ #>
+					public WebServiceResponse __RESPONDER_WEBSERVICE__PROPERTY_GET__<#= property.Name #>()
+					{
+						WebServiceResponse ret = null;
+
+						try
+						{
+							var x = this.<#= property.Name #>;
+
+							ret = WebServiceResponse.Return<<#= property.PropertyType #>>(x);
+						}
+						catch (Exception e)
+						{
+							ret = WebServiceResponse.Exception(e);
+						}
+
+						return ret;
+					}
+				<# } #>
+
+				<# if(setter)
+				{ #>
+					public WebServiceResponse __RESPONDER_WEBSERVICE__PROPERTY_SET__<#= property.Name #>(<#= property.PropertyType #> _p0)
+					{
+						WebServiceResponse ret = null;
+
+						try
+						{
+							this.<#= property.Name #> = _p0;
+
+							ret = WebServiceResponse.Return();
+						}
+						catch (Exception e)
+						{
+							ret = WebServiceResponse.Exception(e);
+						}
+
+						return ret;
+					}
+				<# } #>
 
 			<# }
 		} #>

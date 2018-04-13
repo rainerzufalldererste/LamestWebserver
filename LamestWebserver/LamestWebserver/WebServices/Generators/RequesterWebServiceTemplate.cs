@@ -441,7 +441,7 @@ namespace LamestWebserver.WebServices.Generators
             
             #line default
             #line hidden
-            this.Write(">(__RESPONDER_WEBSERVICE__GET__");
+            this.Write(">(__RESPONDER_WEBSERVICE__PROPERTY_GET__");
             
             #line 147 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
@@ -547,7 +547,7 @@ namespace LamestWebserver.WebServices.Generators
             
             #line default
             #line hidden
-            this.Write(">(__RESPONDER_WEBSERVICE__SET__");
+            this.Write(">(__RESPONDER_WEBSERVICE__PROPERTY_SET__");
             
             #line 185 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
