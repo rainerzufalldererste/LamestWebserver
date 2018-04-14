@@ -49,6 +49,8 @@ namespace Demos
                 Logger.LogError(e.SafeToString());
             }
 
+            wst = WebServiceHandler.CurrentServiceHandler.Instance.GetLocalService<TestWebService>();
+
             return MainPage.GetPage(new List<HElement>()
             {
                 new HHeadline("LamestWebserver WebServices"),
