@@ -49,6 +49,7 @@ namespace Demos
                 Logger.LogError(e.SafeToString());
             }
 
+            // Getting the actually modified and executed instance.
             wst = WebServiceHandler.CurrentServiceHandler.Instance.GetLocalService<TestWebService>();
 
             return MainPage.GetPage(new List<HElement>()

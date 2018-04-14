@@ -1,14 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.CodeDom;
 using System.Net;
-using System.Reflection;
 using LamestWebserver.Collections;
 using LamestWebserver.Synchronization;
 using LamestWebserver.WebServices.Generators;
@@ -16,8 +9,14 @@ using LamestWebserver.Core;
 
 namespace LamestWebserver.WebServices
 {
+    /// <summary>
+    /// A WebServiceHandler communicates with Local &amp; Remote WebServices.
+    /// </summary>
     public class WebServiceHandler
     {
+        /// <summary>
+        /// The WebServiceHandler Singleton.
+        /// </summary>
         public static readonly Singleton<WebServiceHandler> CurrentServiceHandler = new Singleton<WebServiceHandler>(() => new WebServiceHandler());
 
         private UsableWriteLock _listLock = new UsableWriteLock();
@@ -25,7 +24,20 @@ namespace LamestWebserver.WebServices
         private Dictionary<Type, object> LocalWebServiceVariants = new Dictionary<Type, object>();
         private AVLHashMap<string, IPEndPoint> UrlToServerHashMap = new AVLHashMap<string, IPEndPoint>();
 
-        public void RegisterTypeRemoteEndpoint(Type type, IPEndPoint remoteEndpoint)
+        /// <summary>
+        /// Just a private Constructor because it just works with the Singleton WebServiceHandler.CurrentServiceHandler.
+        /// </summary>
+        private WebServiceHandler()
+        {
+            Logger.LogTrace("The WebServiceHandler has been created.");
+        }
+
+        /// <summary>
+        /// Assigns an IPEndPoint to a specific type to be found on Remote Machine as WebServices.
+        /// </summary>
+        /// <param name="type">The type to assign to.</param>
+        /// <param name="remoteEndpoint">The IPEndpoint of the Remote Machine.</param>
+        public void AssignRemoteEndpointToType(Type type, IPEndPoint remoteEndpoint)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -44,11 +56,21 @@ namespace LamestWebserver.WebServices
             Logger.LogInformation($"Type '{typename}' has been mapped to '{remoteEndpoint.Address}:{remoteEndpoint.Port}'.");
         }
 
+        /// <summary>
+        /// Retrieves a local WebService of a specified Type.
+        /// </summary>
+        /// <typeparam name="T">The type to generate a local Object of.</typeparam>
+        /// <returns>Returns an instance of the local WebService implementation.</returns>
         public T GetLocalService<T>() where T : IWebService, new()
         {
             return (T)GetLocalService(typeof(T));
         }
 
+        /// <summary>
+        /// Retrieves a local WebService of a specified Type.
+        /// </summary>
+        /// <param name="type">The type to generate a local Object of.</param>
+        /// <returns>Returns an instance of the local WebService implementation.</returns>
         public object GetLocalService(Type type)
         {
             if (!type.GetInterfaces().Contains(typeof(IWebService)))
@@ -79,12 +101,22 @@ namespace LamestWebserver.WebServices
                 return ret;
             }
         }
-        
+
+        /// <summary>
+        /// Retrieves a requesting WebService of a specified Type, that will contact the remote WebService whenever a method is executed or a property is being set or retrieved.
+        /// </summary>
+        /// <typeparam name="T">The type to generate a requesting Object of.</typeparam>
+        /// <returns>Returns an instance of the requesting WebService implementation.</returns>
         public T GetRequesterService<T>() where T : IWebService, new()
         {
             return (T)GetRequesterService(typeof(T));
         }
 
+        /// <summary>
+        /// Retrieves a requesting WebService of a specified Type, that will contact the remote WebService whenever a method is executed or a property is being set or retrieved.
+        /// </summary>
+        /// <param name="type">The type to generate a requesting Object of.</param>
+        /// <returns>Returns an instance of the requesting WebService implementation.</returns>
         public object GetRequesterService(Type type)
         {
             if (!type.GetInterfaces().Contains(typeof(IWebService)))
@@ -115,7 +147,12 @@ namespace LamestWebserver.WebServices
                 return ret;
             }
         }
-
+        
+        /// <summary>
+        /// Requests a certain WebServiceRequest at the local WebServiceHandler.
+        /// </summary>
+        /// <param name="webServiceRequest">The WebServiceRequest to reply to.</param>
+        /// <returns>Returns the response as WebServiceResponse.</returns>
         public WebServiceResponse Request(WebServiceRequest webServiceRequest)
         {
             string typename = webServiceRequest.Namespace + "." + webServiceRequest.Type;
@@ -123,45 +160,42 @@ namespace LamestWebserver.WebServices
 
             if (endPoint == null)
             {
-                Logger.LogWarning($"The type '{typename}' has not been added to the WebServiceHandler yet and therefore could not be resolved. Trying to use local equivalent.");
+                Logger.LogWarning($"The type '{typename}' has not been added to the WebServiceHandler yet and therefore could not be resolved. Trying to generate local equivalent.");
 
                 try
                 {
-                    Type type = Type.GetType(typename);
+                    Type type = null;
+                    var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-                    if (type == null)
+                    foreach (var assembly in assemblies)
                     {
-                        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                        type = assembly.GetType(typename);
 
-                        foreach (var assembly in assemblies)
+                        if (type != null)
                         {
-                            type = assembly.GetType(typename);
-
-                            if (type != null)
-                                break;
+                            Logger.LogInformation($"Auto generating Local WebService Implementation of Type '{typename}' from Assembly '{assembly.GetName()}'.");
+                            break;
                         }
                     }
 
                     if (type == null)
-                        throw new IncompatibleTypeException($"Type '{typename}' could not be found.");
+                        throw new IncompatibleTypeException($"Type '{typename}' could not be found in the current {nameof(AppDomain)}.");
 
                     object ws = GetLocalService(type);
                     var method = ws.GetType().GetMethod(webServiceRequest.Method, webServiceRequest._parameterTypes);
 
                     try
                     {
-                        var ret = method.Invoke(ws, webServiceRequest.Parameters);
-
                         if (method.ReturnType == typeof(WebServiceResponse))
-                            return (WebServiceResponse)ret;
+                            return (WebServiceResponse)method.Invoke(ws, webServiceRequest.Parameters);
                         else
-                            return WebServiceResponse.Exception(new IncompatibleTypeException($"Return type was not '{nameof(WebServiceResponse)}'."));
+                            throw new IncompatibleTypeException($"Return type of method '{typename}.{method.Name}' was not '{nameof(WebServiceResponse)}'.");
                     }
-                    catch(WebServiceException)
+                    catch (WebServiceException)
                     {
                         throw;
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         throw new RemoteException($"Failed to execute method '{webServiceRequest.Namespace}.{webServiceRequest.Type}.{webServiceRequest.Method}'.", e);
                     }
