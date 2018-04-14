@@ -52,19 +52,21 @@ namespace <#= Namespace #>
 				{
 					LamestWebserver.Core.Logger.LogTrace("Requesting method '<#= ClassName #>RequesterWebServiceImpl.<#= method.Name #>'.");
 
-					var request = new WebServiceRequest<<#= ClassName #>>
+					var request = WebServiceRequest.Request<<#= ClassName #>>
 						(
-							__RESPONDER_WEBSERVICE__<#= method.Name #>, 
+							"__RESPONDER_WEBSERVICE__<#= method.Name #>", 
 							new Type[] {
 								<# foreach (var p in parameters) 
 								{ #> 
 									typeof(<#= p.ParameterType.Name #>), 
-								<# } #>	}, 
-							<# for (int i = 0; i < parameters.Length; i++) 
-							{#>
-								_p<#= i #> 
-								<# if (i + 1 < parameters.Length) { #>, 
-							<# } #>
+								<# } #>	
+								}
+								<# if(parameters.Any()) { #> , <# } #> 
+								<# for (int i = 0; i < parameters.Length; i++) 
+								{ #>
+									_p<#= i #> 
+									<# if (i + 1 < parameters.Length) { #>, <# }
+								} #>
 						);
 
 					var response = WebServiceHandler.CurrentServiceHandler.Instance.Request(request);
@@ -79,9 +81,8 @@ namespace <#= Namespace #>
 							<# } 
 							else 
 							{ #>
-								return response.ReturnValue;
+								return (<#= method.ReturnType #>)response.ReturnValue;
 							<# } #>
-							break;
 						}
 
 						case EWebServiceReturnType.ReturnVoid:
@@ -94,7 +95,6 @@ namespace <#= Namespace #>
 							{ #>
 								return;
 							<# } #>
-							break;
 						}
 
 						case EWebServiceReturnType.ExceptionThrown:
@@ -103,8 +103,10 @@ namespace <#= Namespace #>
 								throw new NullReferenceException("EWebServiceReturnType was 'ExceptionThrown', but no Exception was given.");
 
 							throw response.ExceptionThrown;
-							break;
 						}
+
+						default:
+							throw new InvalidOperationException("EWebServiceReturnType was invalid.");
 					}
 				}
 				catch (Exception e)
@@ -113,9 +115,7 @@ namespace <#= Namespace #>
 					throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>RequesterWebServiceImpl.<#= method.Name #>'", e);
 				}
 			}
-
-			<#  }
-			}
+			<# }
 		}#>
 
 		<# foreach (var property in ClassType.GetProperties()) 
@@ -144,14 +144,14 @@ namespace <#= Namespace #>
 						{
 							LamestWebserver.Core.Logger.LogTrace("Requesting property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>'.");
 							
-							var request = new WebServiceRequest<<#= ClassName #>>(__RESPONDER_WEBSERVICE__PROPERTY_GET__<#= property.Name #>, new Type[0]);
+							var request = WebServiceRequest.Request<<#= ClassName #>>("__RESPONDER_WEBSERVICE__PROPERTY_GET__<#= property.Name #>", new Type[0]);
 							var response = WebServiceHandler.CurrentServiceHandler.Instance.Request(request);
 
 							switch (response.ReturnType)
 							{
 								case EWebServiceReturnType.ReturnValue:
 									LamestWebserver.Core.Logger.LogTrace("Response from property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>' has been received.");
-									return response.ReturnValue;
+									return (<#= property.PropertyType #>)response.ReturnValue;
 
 								case EWebServiceReturnType.ReturnVoid:
 									throw new IncompatibleTypeException("Method that should have returned a value returned void.");
@@ -162,8 +162,10 @@ namespace <#= Namespace #>
 										throw new NullReferenceException("EWebServiceReturnType was 'ExceptionThrown', but no Exception was given.");
 
 									throw response.ExceptionThrown;
-									break;
 								}
+
+								default:
+									throw new InvalidOperationException("EWebServiceReturnType was invalid.");
 							}
 						}
 						catch(Exception e)
@@ -182,7 +184,7 @@ namespace <#= Namespace #>
 						{
 							LamestWebserver.Core.Logger.LogTrace("Requesting to set the property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>'.");
 							
-							var request = new WebServiceRequest<<#= ClassName #>>(__RESPONDER_WEBSERVICE__PROPERTY_SET__<#= property.Name #>, new Type[] { typeof(<#= property.PropertyType #>) }, value);
+							var request = WebServiceRequest.Request<<#= ClassName #>>("__RESPONDER_WEBSERVICE__PROPERTY_SET__<#= property.Name #>", new Type[] { typeof(<#= property.PropertyType #>) }, value);
 							var response = WebServiceHandler.CurrentServiceHandler.Instance.Request(request);
 
 							switch (response.ReturnType)
@@ -200,8 +202,10 @@ namespace <#= Namespace #>
 										throw new NullReferenceException("EWebServiceReturnType was 'ExceptionThrown', but no Exception was given.");
 
 									throw response.ExceptionThrown;
-									break;
 								}
+
+								default:
+									throw new InvalidOperationException("EWebServiceReturnType was invalid.");
 							}
 
 						}

@@ -204,21 +204,21 @@ namespace LamestWebserver.WebServices.Generators
             
             #line default
             #line hidden
-            this.Write("\'.\");\r\n\r\n\t\t\t\t\tvar request = new WebServiceRequest<");
+            this.Write("\'.\");\r\n\r\n\t\t\t\t\tvar request = WebServiceRequest.Request<");
             
             #line 55 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
-            this.Write(">\r\n\t\t\t\t\t\t(\r\n\t\t\t\t\t\t\t__RESPONDER_WEBSERVICE__");
+            this.Write(">\r\n\t\t\t\t\t\t(\r\n\t\t\t\t\t\t\t\"__RESPONDER_WEBSERVICE__");
             
             #line 57 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(method.Name));
             
             #line default
             #line hidden
-            this.Write(", \r\n\t\t\t\t\t\t\tnew Type[] {\r\n\t\t\t\t\t\t\t\t");
+            this.Write("\", \r\n\t\t\t\t\t\t\tnew Type[] {\r\n\t\t\t\t\t\t\t\t");
             
             #line 59 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  foreach (var p in parameters) 
@@ -240,32 +240,47 @@ namespace LamestWebserver.WebServices.Generators
             
             #line default
             #line hidden
-            this.Write("\t}, \r\n\t\t\t\t\t\t\t");
+            this.Write("\t\r\n\t\t\t\t\t\t\t\t}\r\n\t\t\t\t\t\t\t\t");
             
-            #line 63 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
- for (int i = 0; i < parameters.Length; i++) 
-							{
+            #line 64 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+ if(parameters.Any()) { 
             
             #line default
             #line hidden
-            this.Write("\t\t\t\t\t\t\t\t_p");
+            this.Write(" , ");
             
-            #line 65 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(i));
+            #line 64 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+ } 
             
             #line default
             #line hidden
             this.Write(" \r\n\t\t\t\t\t\t\t\t");
             
-            #line 66 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 65 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+ for (int i = 0; i < parameters.Length; i++) 
+								{ 
+            
+            #line default
+            #line hidden
+            this.Write("\t\t\t\t\t\t\t\t\t_p");
+            
+            #line 67 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(i));
+            
+            #line default
+            #line hidden
+            this.Write(" \r\n\t\t\t\t\t\t\t\t\t");
+            
+            #line 68 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  if (i + 1 < parameters.Length) { 
             
             #line default
             #line hidden
-            this.Write(", \r\n\t\t\t\t\t\t\t");
+            this.Write(", ");
             
-            #line 67 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
- } 
+            #line 68 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+ }
+								} 
             
             #line default
             #line hidden
@@ -273,7 +288,7 @@ namespace LamestWebserver.WebServices.Generators
                     "Request(request);\r\n\r\n\t\t\t\t\tswitch (response.ReturnType)\r\n\t\t\t\t\t{\r\n\t\t\t\t\t\tcase EWebS" +
                     "erviceReturnType.ReturnValue:\r\n\t\t\t\t\t\t{\r\n\t\t\t\t\t\t\t");
             
-            #line 76 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 78 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  if(method.ReturnType == typeof(void)) 
 							{ 
             
@@ -282,24 +297,30 @@ namespace LamestWebserver.WebServices.Generators
             this.Write(" \r\n\t\t\t\t\t\t\t\tthrow new IncompatibleTypeException(\"Method that should have returned " +
                     "void returned a value.\"); \r\n\t\t\t\t\t\t\t");
             
-            #line 79 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 81 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  } 
 							else 
 							{ 
             
             #line default
             #line hidden
-            this.Write("\t\t\t\t\t\t\t\treturn response.ReturnValue;\r\n\t\t\t\t\t\t\t");
+            this.Write("\t\t\t\t\t\t\t\treturn (");
             
-            #line 83 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 84 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(method.ReturnType));
+            
+            #line default
+            #line hidden
+            this.Write(")response.ReturnValue;\r\n\t\t\t\t\t\t\t");
+            
+            #line 85 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  } 
             
             #line default
             #line hidden
-            this.Write("\t\t\t\t\t\t\tbreak;\r\n\t\t\t\t\t\t}\r\n\r\n\t\t\t\t\t\tcase EWebServiceReturnType.ReturnVoid:\r\n\t\t\t\t\t\t{\r\n" +
-                    "\t\t\t\t\t\t\t");
+            this.Write("\t\t\t\t\t\t}\r\n\r\n\t\t\t\t\t\tcase EWebServiceReturnType.ReturnVoid:\r\n\t\t\t\t\t\t{\r\n\t\t\t\t\t\t\t");
             
-            #line 89 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 90 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  if(method.ReturnType != typeof(void)) 
 							{ 
             
@@ -308,7 +329,7 @@ namespace LamestWebserver.WebServices.Generators
             this.Write(" \r\n\t\t\t\t\t\t\t\tthrow new IncompatibleTypeException(\"Method that should have returned " +
                     "a value returned void.\"); \r\n\t\t\t\t\t\t\t");
             
-            #line 92 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 93 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  } 
 							else 
 							{ 
@@ -317,13 +338,12 @@ namespace LamestWebserver.WebServices.Generators
             #line hidden
             this.Write("\t\t\t\t\t\t\t\treturn;\r\n\t\t\t\t\t\t\t");
             
-            #line 96 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 97 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  } 
             
             #line default
             #line hidden
-            this.Write(@"							break;
-						}
+            this.Write(@"						}
 
 						case EWebServiceReturnType.ExceptionThrown:
 						{
@@ -331,22 +351,24 @@ namespace LamestWebserver.WebServices.Generators
 								throw new NullReferenceException(""EWebServiceReturnType was 'ExceptionThrown', but no Exception was given."");
 
 							throw response.ExceptionThrown;
-							break;
 						}
+
+						default:
+							throw new InvalidOperationException(""EWebServiceReturnType was invalid."");
 					}
 				}
 				catch (Exception e)
 				{
 					LamestWebserver.Core.Logger.LogError(""Exception in Webservice '");
             
-            #line 112 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 114 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
             this.Write("RequesterWebServiceImpl.");
             
-            #line 112 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 114 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(method.Name));
             
             #line default
@@ -354,23 +376,22 @@ namespace LamestWebserver.WebServices.Generators
             this.Write("\'.\\n\" + e.Message);\r\n\t\t\t\t\tthrow new LamestWebserver.WebServices.RemoteException(\"" +
                     "Exception in Webservice \'");
             
-            #line 113 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 115 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
             this.Write("RequesterWebServiceImpl.");
             
-            #line 113 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 115 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(method.Name));
             
             #line default
             #line hidden
-            this.Write("\'\", e);\r\n\t\t\t\t}\r\n\t\t\t}\r\n\r\n\t\t\t");
+            this.Write("\'\", e);\r\n\t\t\t\t}\r\n\t\t\t}\r\n\t\t\t");
             
-            #line 117 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
-  }
-			}
+            #line 118 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+ }
 		}
             
             #line default
@@ -434,21 +455,21 @@ namespace LamestWebserver.WebServices.Generators
             
             #line default
             #line hidden
-            this.Write("\'.\");\r\n\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tvar request = new WebServiceRequest<");
+            this.Write("\'.\");\r\n\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tvar request = WebServiceRequest.Request<");
             
             #line 147 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
-            this.Write(">(__RESPONDER_WEBSERVICE__PROPERTY_GET__");
+            this.Write(">(\"__RESPONDER_WEBSERVICE__PROPERTY_GET__");
             
             #line 147 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
-            this.Write(@", new Type[0]);
+            this.Write(@""", new Type[0]);
 							var response = WebServiceHandler.CurrentServiceHandler.Instance.Request(request);
 
 							switch (response.ReturnType)
@@ -468,8 +489,14 @@ namespace LamestWebserver.WebServices.Generators
             
             #line default
             #line hidden
-            this.Write(@"' has been received."");
-									return response.ReturnValue;
+            this.Write("\' has been received.\");\r\n\t\t\t\t\t\t\t\t\treturn (");
+            
+            #line 154 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(property.PropertyType));
+            
+            #line default
+            #line hidden
+            this.Write(@")response.ReturnValue;
 
 								case EWebServiceReturnType.ReturnVoid:
 									throw new IncompatibleTypeException(""Method that should have returned a value returned void."");
@@ -480,22 +507,24 @@ namespace LamestWebserver.WebServices.Generators
 										throw new NullReferenceException(""EWebServiceReturnType was 'ExceptionThrown', but no Exception was given."");
 
 									throw response.ExceptionThrown;
-									break;
 								}
+
+								default:
+									throw new InvalidOperationException(""EWebServiceReturnType was invalid."");
 							}
 						}
 						catch(Exception e)
 						{
 							LamestWebserver.Core.Logger.LogError(""Exception in Webservice '");
             
-            #line 171 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 173 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
             this.Write("RequesterWebServiceImpl.");
             
-            #line 171 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 173 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
@@ -503,21 +532,21 @@ namespace LamestWebserver.WebServices.Generators
             this.Write(".get\'.\\n\" + e.Message);\r\n\t\t\t\t\t\t\tthrow new LamestWebserver.WebServices.RemoteExcep" +
                     "tion(\"Exception in Webservice \'");
             
-            #line 172 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 174 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
             this.Write("RequesterWebServiceImpl.");
             
-            #line 172 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 174 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write(".get\'\", e);\r\n\t\t\t\t\t\t}\r\n\t\t\t\t\t}\r\n\t\t\t\t\t");
             
-            #line 175 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 177 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  }
 					
 					if (setter) 
@@ -528,35 +557,35 @@ namespace LamestWebserver.WebServices.Generators
             this.Write("\t\t\t\t\tset\r\n\t\t\t\t\t{\r\n\t\t\t\t\t\ttry\r\n\t\t\t\t\t\t{\r\n\t\t\t\t\t\t\tLamestWebserver.Core.Logger.LogTrace" +
                     "(\"Requesting to set the property \'");
             
-            #line 183 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 185 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
             this.Write("RequesterWebServiceImpl.");
             
-            #line 183 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 185 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
-            this.Write("\'.\");\r\n\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tvar request = new WebServiceRequest<");
+            this.Write("\'.\");\r\n\t\t\t\t\t\t\t\r\n\t\t\t\t\t\t\tvar request = WebServiceRequest.Request<");
             
-            #line 185 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 187 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
-            this.Write(">(__RESPONDER_WEBSERVICE__PROPERTY_SET__");
+            this.Write(">(\"__RESPONDER_WEBSERVICE__PROPERTY_SET__");
             
-            #line 185 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 187 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
-            this.Write(", new Type[] { typeof(");
+            this.Write("\", new Type[] { typeof(");
             
-            #line 185 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 187 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.PropertyType));
             
             #line default
@@ -572,14 +601,14 @@ namespace LamestWebserver.WebServices.Generators
 								case EWebServiceReturnType.ReturnVoid:
 									LamestWebserver.Core.Logger.LogTrace(""Property '");
             
-            #line 194 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 196 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
             this.Write("RequesterWebServiceImpl.");
             
-            #line 194 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 196 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
@@ -593,8 +622,10 @@ namespace LamestWebserver.WebServices.Generators
 										throw new NullReferenceException(""EWebServiceReturnType was 'ExceptionThrown', but no Exception was given."");
 
 									throw response.ExceptionThrown;
-									break;
 								}
+
+								default:
+									throw new InvalidOperationException(""EWebServiceReturnType was invalid."");
 							}
 
 						}
@@ -602,14 +633,14 @@ namespace LamestWebserver.WebServices.Generators
 						{
 							LamestWebserver.Core.Logger.LogError(""Exception in Webservice '");
             
-            #line 210 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 214 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
             this.Write("RequesterWebServiceImpl.");
             
-            #line 210 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 214 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
@@ -617,28 +648,28 @@ namespace LamestWebserver.WebServices.Generators
             this.Write(".set\'\", e);\r\n\t\t\t\t\t\t\tthrow new LamestWebserver.WebServices.RemoteException(\"Except" +
                     "ion in Webservice \'");
             
-            #line 211 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 215 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ClassName));
             
             #line default
             #line hidden
             this.Write("RequesterWebServiceImpl.");
             
-            #line 211 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 215 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write(".set\'.\\n\" + e.Message);\r\n\t\t\t\t\t\t}\r\n\t\t\t\t\t}\r\n\t\t\t\t\t");
             
-            #line 214 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 218 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  } 
             
             #line default
             #line hidden
             this.Write("\t\t\t\t}\r\n\r\n\t\t\t");
             
-            #line 217 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 221 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  }
 		} 
             
@@ -646,7 +677,7 @@ namespace LamestWebserver.WebServices.Generators
             #line hidden
             this.Write("\r\n\t\t");
             
-            #line 220 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+            #line 224 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
  foreach (var field in ClassType.GetFields()) 
 		{
 			if (field.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
@@ -662,7 +693,7 @@ namespace LamestWebserver.WebServices.Generators
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 231 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
+        #line 235 "C:\Users\raine\source\repos\LamestWebserver\LamestWebserver\LamestWebserver\WebServices\Generators\RequesterWebServiceTemplate.tt"
 
 public string Namespace;
 public string ClassName;

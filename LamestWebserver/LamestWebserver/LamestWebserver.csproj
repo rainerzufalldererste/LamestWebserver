@@ -222,7 +222,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>RequesterWebServiceTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Include="WebServices\Generators\WebServiceImplGenerator.cs" />
+    <Compile Include="WebServices\Generators\WebServiceImplementationGenerator.cs" />
     <Compile Include="WebServices\Generators\LocalWebServiceTemplate.cs">
       <DependentUpon>LocalWebServiceTemplate.tt</DependentUpon>
       <AutoGen>True</AutoGen>

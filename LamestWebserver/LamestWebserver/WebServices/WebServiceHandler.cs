@@ -71,7 +71,7 @@ namespace LamestWebserver.WebServices
             }
             else
             {
-                object ret = WebServiceImplGenerator.GetWebServiceLocalImpl(type);
+                object ret = WebServiceImplementationGenerator.GetWebServiceLocalImplementation(type);
 
                 using(_listLock.LockWrite())
                     LocalWebServiceVariants.Add(type, ret);
@@ -107,7 +107,7 @@ namespace LamestWebserver.WebServices
             }
             else
             {
-                object ret = WebServiceImplGenerator.GetWebServiceRequestImpl(type);
+                object ret = WebServiceImplementationGenerator.GetWebServiceRequestImplementation(type);
 
                 using (_listLock.LockWrite())
                     RequestertWebServiceVariants.Add(type, ret);
@@ -128,12 +128,34 @@ namespace LamestWebserver.WebServices
                 try
                 {
                     Type type = Type.GetType(typename);
+
+                    if (type == null)
+                    {
+                        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+                        foreach (var assembly in assemblies)
+                        {
+                            type = assembly.GetType(typename);
+
+                            if (type != null)
+                                break;
+                        }
+                    }
+
+                    if (type == null)
+                        throw new IncompatibleTypeException($"Type '{typename}' could not be found.");
+
                     object ws = GetLocalService(type);
-                    var method = type.GetMethod(webServiceRequest.Method, webServiceRequest._parameterTypes);
+                    var method = ws.GetType().GetMethod(webServiceRequest.Method, webServiceRequest._parameterTypes);
 
                     try
                     {
-                        method.Invoke(ws, webServiceRequest.Parameters);
+                        var ret = method.Invoke(ws, webServiceRequest.Parameters);
+
+                        if (method.ReturnType == typeof(WebServiceResponse))
+                            return (WebServiceResponse)ret;
+                        else
+                            return WebServiceResponse.Exception(new IncompatibleTypeException($"Return type was not '{nameof(WebServiceResponse)}'."));
                     }
                     catch(WebServiceException)
                     {
