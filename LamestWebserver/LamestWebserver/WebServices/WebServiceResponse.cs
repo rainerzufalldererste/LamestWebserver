@@ -21,7 +21,7 @@ using LamestWebserver.Core;
 namespace LamestWebserver.WebServices
 {
     [Serializable]
-    public class WebServiceResponse : ISerializable, IXmlSerializable
+    public class WebServiceResponse : NullCheckable, ISerializable, IXmlSerializable
     {
         public EWebServiceReturnType ReturnType = EWebServiceReturnType.ReturnVoid;
         public string ReturnValueType;

@@ -16,12 +16,34 @@ using LamestWebserver.WebServices.Generators;
 using System.Xml;
 using System.Xml.Schema;
 using LamestWebserver.Serialization;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.WebServices
 {
     [Serializable]
-    public class WebServiceRequest : ISerializable, IXmlSerializable
+    public class WebServiceRequest : NullCheckable, ISerializable, IXmlSerializable
     {
+        private WebServiceHandler _webServiceHandler = null;
+
+        internal WebServiceHandler WebServiceHandler
+        {
+            get
+            {
+                return _webServiceHandler;
+            }
+
+            set
+            {
+                if (_webServiceHandler)
+                    throw new InvalidOperationException("The WebServiceHandler of this WebServiceRequest can't be set multiple times.");
+
+                if (!value)
+                    throw new NullReferenceException(nameof(value));
+
+                _webServiceHandler = value;
+            }
+        }
+
         public string Namespace;
         public string Type;
         public string Method;

@@ -182,6 +182,7 @@
     <Compile Include="HttpResponse.cs" />
     <Compile Include="RequestHandlers\DebugView\IDebugUpdateableResponse.cs" />
     <Compile Include="Serialization\SerializableKeyValuePair.cs" />
+    <Compile Include="ServerCore.cs" />
     <Compile Include="SessionData.cs" />
     <Compile Include="Compression\GZipCompression.cs" />
     <Compile Include="JScriptBuilder\JSElement.cs" />
@@ -234,6 +235,7 @@
     <Compile Include="WebServices\WebServiceHandler.cs" />
     <Compile Include="WebServices\WebServiceRequest.cs" />
     <Compile Include="WebServices\WebServiceResponse.cs" />
+    <Compile Include="WebServices\WebServiceServer.cs" />
     <Compile Include="WebSocketCommunicationHandler.cs" />
   </ItemGroup>
   <ItemGroup>

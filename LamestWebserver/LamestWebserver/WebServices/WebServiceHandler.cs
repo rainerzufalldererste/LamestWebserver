@@ -12,7 +12,7 @@ namespace LamestWebserver.WebServices
     /// <summary>
     /// A WebServiceHandler communicates with Local &amp; Remote WebServices.
     /// </summary>
-    public class WebServiceHandler
+    public class WebServiceHandler : NullCheckable
     {
         /// <summary>
         /// The WebServiceHandler Singleton.
@@ -158,6 +158,9 @@ namespace LamestWebserver.WebServices
             string typename = webServiceRequest.Namespace + "." + webServiceRequest.Type;
             IPEndPoint endPoint = UrlToServerHashMap[typename];
 
+            if (!webServiceRequest.WebServiceHandler)
+                webServiceRequest.WebServiceHandler = this;
+
             if (endPoint == null)
             {
                 Logger.LogWarning($"The type '{typename}' has not been added to the WebServiceHandler yet and therefore could not be resolved. Trying to generate local equivalent.");
@@ -214,7 +217,7 @@ namespace LamestWebserver.WebServices
                 
             }
 
-            return WebServiceResponse.Exception(new ServiceNotAvailableException("test test test 123"));
+            return WebServiceResponse.Exception(new InvalidOperationException("The request could not be resolved."));
         }
 
         internal static string GetTypename(Type type) => type.Namespace + "." + type.Name;

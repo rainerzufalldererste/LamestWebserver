@@ -61,9 +61,12 @@ namespace <#= Namespace #>
 					<# } #>
 					);
 
-					<# if(method.ReturnType != typeof(void)) { #>
+					<# if(method.ReturnType != typeof(void)) 
+					{ #>
 					LamestWebserver.Core.Logger.LogTrace("Response from method '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>' has been received.");
-					<# } else { #>
+					<# }
+					else 
+					{ #>
 					LamestWebserver.Core.Logger.LogTrace("Method '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>' has been executed.");
 					<# } #>
 
