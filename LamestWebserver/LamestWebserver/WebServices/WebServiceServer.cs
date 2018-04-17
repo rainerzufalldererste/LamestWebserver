@@ -3,7 +3,7 @@ using System.Net.Sockets;
 
 namespace LamestWebserver.WebServices
 {
-    public class WebServiceServer : ServerCore, IDisposable
+    public class WebServiceServer : ServerCore
     {
         public readonly WebServiceHandler RequestHandler;
 
@@ -15,7 +15,7 @@ namespace LamestWebserver.WebServices
             RequestHandler = webRequestHandler;
         }
 
-        protected override void HandleClient(TcpClient tcpClient)
+        protected override void HandleClient(TcpClient tcpClient, NetworkStream networkStream)
         {
             throw new NotImplementedException();
         }

@@ -1,32 +1,30 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net;
-using System.Threading;
-using System.Net.Sockets;
-using LamestWebserver.Collections;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.Serialization;
-using LamestWebserver.Synchronization;
 using System.Reflection;
-using LamestWebserver.RequestHandlers;
-using Newtonsoft.Json;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using LamestWebserver.Collections;
 using LamestWebserver.Core;
 using LamestWebserver.Core.Memory;
-
-using ThreadState = System.Threading.ThreadState;
+using LamestWebserver.RequestHandlers;
+using LamestWebserver.Synchronization;
 
 namespace LamestWebserver
 {
     /// <summary>
     /// A Webserver. The central unit in LamestWebserver.
     /// </summary>
-    public class WebServer : ServerCore, IDisposable
+    public class WebServer : ServerCore
     {
         internal static List<WebServer> RunningServers = new List<WebServer>();
         internal static UsableMutexSlim RunningServerMutex = new UsableMutexSlim();
@@ -202,6 +200,7 @@ namespace LamestWebserver
                 RunningServers.Add(this);
         }
 
+        /// <inheritdoc />
         public override void Stop()
         {
             base.Stop();
@@ -225,26 +224,26 @@ namespace LamestWebserver
             }
         }
 
-        protected override void HandleClient(TcpClient client)
+        /// <inheritdoc />
+        protected override void HandleClient(TcpClient client, NetworkStream networkStream)
         {
             FlushableMemoryPool.AquireOrFlush();
             client.NoDelay = true;
-
-            NetworkStream nws = client.GetStream();
             
-            Stream stream = nws; 
+            Stream stream = networkStream; 
 
-            UTF8Encoding enc = new UTF8Encoding();
+            Encoding enc = Encoding.UTF8;
             string lastmsg = null;
-            WebServer.CurrentClientRemoteEndpoint = client.Client.RemoteEndPoint.ToString();
+            CurrentClientRemoteEndpoint = client.Client.RemoteEndPoint.ToString();
 
             if (Certificate != null)
             {
                 try
                 {
-                    System.Net.Security.SslStream sslStream = new System.Net.Security.SslStream(nws, false);
+                    System.Net.Security.SslStream sslStream = new System.Net.Security.SslStream(networkStream, false);
                     sslStream.AuthenticateAsServer(Certificate, false, EnabledSslProtocols, true);
                     stream = sslStream;
+                    CurrentThreadStream = stream;
                 }
                 catch (ThreadAbortException)
                 {
@@ -284,7 +283,7 @@ namespace LamestWebserver
                             Status = "500 Internal Server Error"
                         }.GetPackage();
 
-                        nws.Write(response, 0, response.Length);
+                        networkStream.Write(response, 0, response.Length);
                         
                         Logger.LogInformation($"Replied authentication error to client.");
                     }
@@ -316,9 +315,8 @@ namespace LamestWebserver
             }
 
             byte[] msg;
-            int bytes = 0; SetClientStream(stream);
-
-
+            int bytes = 0;
+            
             Stopwatch stopwatch = new Stopwatch();
 
             while (Running)
@@ -381,7 +379,7 @@ namespace LamestWebserver
                             }
                         }
 
-                        Logger.LogError("An exception occured in the client handler:  " + e, stopwatch);
+                        Logger.LogError("An exception occured in the client handler:  " + e.SafeToString(), stopwatch);
 
                         try
                         {
@@ -481,9 +479,9 @@ namespace LamestWebserver
                                 buffer = htp_.GetPackage();
                                 stream.Write(buffer, 0, buffer.Length);
 
-                                Logger.LogWarning($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e, stopwatch);
+                                Logger.LogWarning($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e.SafeToString(), stopwatch);
 
-                                ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e, stopwatch);
+                                ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e.SafeToString(), stopwatch);
 
                                 continue;
                             }
@@ -527,7 +525,7 @@ namespace LamestWebserver
                     }
                     catch (Exception e)
                     {
-                        Logger.LogError("An error occured in the client handler: " + e, stopwatch);
+                        Logger.LogError("An error occurred in the client handler: " + e.SafeToString(), stopwatch);
                     }
                 }
                 catch (ThreadAbortException)
@@ -542,7 +540,7 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError("An error occured in the client handler: " + e, stopwatch);
+                    Logger.LogError("An error occurred in the client handler: " + e.SafeToString(), stopwatch);
                 }
             }
         }

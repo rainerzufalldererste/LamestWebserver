@@ -175,29 +175,77 @@ namespace LamestWebserver
             }
         }
 
-        private void CallHandleClient(Object obj) => HandleClient((TcpClient)obj);
-
-        protected abstract void HandleClient(TcpClient tcpClient);
-
-        protected void SetClientStream(Stream stream)
+        private void CallHandleClient(object obj)
         {
+            if (obj == null)
+                Logger.LogExcept(new NullReferenceException(nameof(obj)));
 
+            if (!(obj is TcpClient))
+                Logger.LogExcept($"'{nameof(CallHandleClient)}' was called with an object of incorrect Type. '{nameof(TcpClient)}' expected.");
 
-            _networkStreamsMutex.WaitOne();
+            TcpClient tcpClient = (TcpClient)obj;
+            NetworkStream networkStream = tcpClient.GetStream();
 
-            Stream lastStream = _streams[Thread.CurrentThread.ManagedThreadId];
-
-            if (lastStream != null)
+            try
+            {
+                CurrentThreadStream = networkStream;
+                HandleClient(tcpClient, networkStream);
+            }
+            catch (ThreadAbortException)
+            {
+            }
+            catch (Exception e)
             {
                 try
                 {
-                    lastStream.Dispose();
+                    Logger.LogExcept(e);
                 }
-                catch { };
+                catch { }
+            }
+            finally
+            {
+                try
+                {
+                    CurrentThreadStream?.Close();
+                }
+                catch { }
+            }
+        }
+
+        protected abstract void HandleClient(TcpClient tcpClient, NetworkStream networkStream);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        protected Stream CurrentThreadStream
+        {
+            get
+            {
+                _networkStreamsMutex.WaitOne();
+                Stream ret = _streams[Thread.CurrentThread.ManagedThreadId];
+                _networkStreamsMutex.ReleaseMutex();
+
+                return ret;
             }
 
-            _streams.Add(Thread.CurrentThread.ManagedThreadId, stream);
-            _networkStreamsMutex.ReleaseMutex();
+            set
+            {
+                _networkStreamsMutex.WaitOne();
+
+                Stream lastStream = _streams[Thread.CurrentThread.ManagedThreadId];
+
+                if (lastStream != null)
+                {
+                    try
+                    {
+                        lastStream.Dispose();
+                    }
+                    catch { };
+                }
+
+                _streams.Add(Thread.CurrentThread.ManagedThreadId, value);
+                _networkStreamsMutex.ReleaseMutex();
+            }
         }
 
         /// <summary>
