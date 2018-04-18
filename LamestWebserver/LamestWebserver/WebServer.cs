@@ -228,10 +228,7 @@ namespace LamestWebserver
         protected override void HandleClient(TcpClient client, NetworkStream networkStream)
         {
             FlushableMemoryPool.AquireOrFlush();
-            client.NoDelay = true;
-            
-            Stream stream = networkStream; 
-
+            Stream stream = networkStream;
             Encoding enc = Encoding.UTF8;
             string lastmsg = null;
             CurrentClientRemoteEndpoint = client.Client.RemoteEndPoint.ToString();
