@@ -8,8 +8,14 @@ using System.Threading;
 
 namespace LamestWebserver.WebServices
 {
+    /// <summary>
+    /// A WebServiceServer makes a WebServiceHandler available to Remote Machines.
+    /// </summary>
     public class WebServiceServer : ServerCore
     {
+        /// <summary>
+        /// The internal WebRequestHandler of this WebServiceServer.
+        /// </summary>
         public readonly WebServiceHandler RequestHandler;
 
         /// <summary>
@@ -17,12 +23,20 @@ namespace LamestWebserver.WebServices
         /// </summary>
         public static int RequestMaxPacketSize = 1024 * 128;
 
+        public WebServiceServer(int port = 8310) : this(WebServiceHandler.CurrentServiceHandler.Instance, port) { }
+
+        /// <summary>
+        /// Starts a WebServiceServer at a given port using a specified WebRequestHandler to resolve requests.
+        /// </summary>
+        /// <param name="webRequestHandler">The WebRequestHandler to resolve requests with.</param>
+        /// <param name="port">The Port to listen on.</param>
         public WebServiceServer(WebServiceHandler webRequestHandler, int port = 8310) : base(port)
         {
             if (webRequestHandler == null)
                 throw new NullReferenceException(nameof(webRequestHandler));
             
             RequestHandler = webRequestHandler;
+            Start();
         }
 
         /// <inheritdoc />
@@ -116,6 +130,8 @@ namespace LamestWebserver.WebServices
                 try
                 {
                     WebServiceRequest request = Serializer.ReadJsonDataInMemory<WebServiceRequest>(enc.GetString(msg, 0, bytes));
+                    request.IsRemoteRequest = true;
+
                     WebServiceResponse response = null;
 
                     try

@@ -161,6 +161,9 @@ namespace LamestWebserver.WebServices
             if (!webServiceRequest.WebServiceHandler)
                 webServiceRequest.WebServiceHandler = this;
 
+            if (webServiceRequest.IsRemoteRequest && endPoint != null)
+                return WebServiceResponse.Exception(new ServiceNotAvailableException($"The requested Type '{typename}' is not locally available on this {nameof(WebServiceHandler)}, but was requested from a remote {nameof(WebServiceRequest)}."));
+
             if (endPoint == null)
             {
                 Logger.LogWarning($"The type '{typename}' has not been added to the WebServiceHandler yet and therefore could not be resolved. Trying to generate local equivalent.");

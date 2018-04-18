@@ -44,6 +44,8 @@ namespace LamestWebserver.WebServices
             }
         }
 
+        internal bool IsRemoteRequest = false;
+
         public string Namespace;
         public string Type;
         public string Method;
