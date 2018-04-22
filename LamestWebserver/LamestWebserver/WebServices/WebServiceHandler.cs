@@ -215,12 +215,17 @@ namespace LamestWebserver.WebServices
                     throw new IncompatibleTypeException($"Type '{webServiceRequest.Namespace}.{webServiceRequest.Type}' could not be created.", e);
                 }
             }
-            else
+            else // Request from Remote WebServiceServer.
             {
-                // Request from Remote.
+                try
+                {
+                    return WebServiceServerRequest.Request(webServiceRequest, endPoint);
+                }
+                catch (Exception e)
+                {
+                    throw new ServiceNotAvailableException($"Exception in requesting from a remote WebServiceServer at '{endPoint}'.", e);
+                }
             }
-
-            return WebServiceResponse.Exception(new InvalidOperationException("The request could not be resolved."));
         }
 
         internal static string GetTypename(Type type) => type.Namespace + "." + type.Name;

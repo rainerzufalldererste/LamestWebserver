@@ -184,11 +184,6 @@ namespace LamestWebserver
         /// <param name="enabledSslProtocols">The available ssl protocols if the connection is https.</param>
         private WebServer(int port, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12) : base(port)
         {
-            if (!TcpPortIsUnused(port))
-            {
-                Logger.LogExcept(new InvalidOperationException("The tcp port " + port + " is currently used by another application."));
-            }
-
             EnabledSslProtocols = enabledSslProtocols;
             Certificate = certificate;
 

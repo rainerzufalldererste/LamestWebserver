@@ -236,6 +236,7 @@
     <Compile Include="WebServices\WebServiceRequest.cs" />
     <Compile Include="WebServices\WebServiceResponse.cs" />
     <Compile Include="WebServices\WebServiceServer.cs" />
+    <Compile Include="WebServices\WebServiceServerRequest.cs" />
     <Compile Include="WebSocketCommunicationHandler.cs" />
   </ItemGroup>
   <ItemGroup>
