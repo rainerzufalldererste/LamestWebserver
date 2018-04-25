@@ -77,6 +77,7 @@
     <Compile Include="WalkableQueueTest.cs" />
     <Compile Include="WebCrawlerTest.cs" />
     <Compile Include="UsableLockerSimpleTest.cs" />
+    <Compile Include="WebServiceTest.cs" />
     <Compile Include="WriteLockTest.cs" />
   </ItemGroup>
   <ItemGroup>

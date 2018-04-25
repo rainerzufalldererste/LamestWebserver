@@ -244,6 +244,9 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
+                    if (e.InnerException != null && e.InnerException is ObjectDisposedException)
+                        return;
+
                     Logger.LogExcept("The TcpListener failed.", e);
                 }
             }
@@ -278,6 +281,9 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
+                    if (e.InnerException != null && e.InnerException is ObjectDisposedException)
+                        return;
+
                     Logger.LogExcept("The TcpListener failed.", e);
                 }
             }
@@ -304,11 +310,14 @@ namespace LamestWebserver
             }
             catch (Exception e)
             {
-                try
+                if (e.InnerException == null || !(e.InnerException is ObjectDisposedException))
                 {
-                    Logger.LogExcept(e);
+                    try
+                    {
+                        Logger.LogExcept(e);
+                    }
+                    catch { }
                 }
-                catch { }
             }
             finally
             {
