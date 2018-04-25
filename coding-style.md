@@ -20,7 +20,7 @@ The general rule we follow is "use Visual Studio defaults".
 * We do not comment on obvious things but document every method that is exposed by being `public` or `protected`.
 * We prefer using `$"Some String {someVariable}."` instead of concatenating strings manually.
 * Fields should be specified at the top within type declarations.
-* We write UnitTests for our code if you write it's to some degree testable.
+* We write UnitTests for our code if a component is to some degree unit-testable.
 * We check all arguments to a method call on if they are within the certain criteria and throw `FormatException`s, `NullReferenceException`s, `IndexOutOfBoundsException`s where applicable.
 * For non code files (xml etc) our current best guidance is consistency. When editing files, keep new code and changes consistent with the style in the files. For new files, it should conform to the style for that component. Last, if there's a completely new component, anything that is reasonably broadly accepted is fine.
 * When including non-ASCII characters in the source code we prefer to use Unicode escape sequences (\uXXXX) instead of literal characters. Literal non-ASCII characters occasionally get garbled by a tool or editor.
