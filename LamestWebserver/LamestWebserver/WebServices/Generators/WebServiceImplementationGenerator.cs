@@ -12,39 +12,86 @@ using Microsoft.CSharp;
 
 namespace LamestWebserver.WebServices.Generators
 {
+    /// <summary>
+    /// Generates WebService Implementations from the WebService Implementation Templates.
+    /// </summary>
     public class WebServiceImplementationGenerator
     {
-        public static T GetWebServiceLocalImplementation<T>()
+        /// <summary>
+        /// Compiles, builds and retrieves an instance of a local WebServiceImplementation inherited from the given type belonging to the given WebServiceHandler.
+        /// </summary>
+        /// <typeparam name="T">The type to inherit from.</typeparam>
+        /// <param name="webServiceHandler">The corresponding WebServiceHandler.</param>
+        /// <returns>An object of the local WebService.</returns>
+        public static T GetWebServiceLocalImplementation<T>(WebServiceHandler webServiceHandler)
         {
-            return (T)GetWebServiceLocalImplementation(typeof(T));
+            return (T)GetWebServiceLocalImplementation(typeof(T), webServiceHandler);
         }
 
-        public static object GetWebServiceLocalImplementation(Type type)
+        /// <summary>
+        /// Compiles, builds and retrieves an instance of a local WebServiceImplementation inherited from the given type belonging to the given WebServiceHandler.
+        /// </summary>
+        /// <param name="type">The type to inherit from.</param>
+        /// <param name="webServiceHandler">The corresponding WebServiceHandler.</param>
+        /// <returns>An object of the local WebService.</returns>
+        public static object GetWebServiceLocalImplementation(Type type, WebServiceHandler webServiceHandler)
         {
+            if (type == null)
+                throw new NullReferenceException(nameof(type));
+
+            if (webServiceHandler == null)
+                throw new NullReferenceException(nameof(webServiceHandler));
+
             if (type.IsAbstract || type.IsInterface || !type.IsPublic || type.IsSealed)
                 throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
 
             var webservice = new LocalWebServiceTemplate() { ClassName = type.Name, ClassType = type, Namespace = GetWebServiceLocalImplementationNamespace(), AssemblyNameSpace = type.Namespace };
 
-            return CompileAndBuildObject(webservice.TransformText().Replace("global::", ""), type, GetWebServiceLocalImplementationNamespace() + "." + GetWebServiceLocalImplementationName(type));
+            return CompileAndBuildObject(webservice.TransformText().Replace("global::", ""), type, GetWebServiceLocalImplementationNamespace() + "." + GetWebServiceLocalImplementationName(type), webServiceHandler);
         }
 
-        public static T GetWebServiceRequestImplementation<T>()
+        /// <summary>
+        /// Compiles, builds and retrieves an instance of a remote WebServiceImplementation inherited from the given type belonging to the given WebServiceHandler.
+        /// </summary>
+        /// <typeparam name="T">The type to inherit from.</typeparam>
+        /// <param name="webServiceHandler">The corresponding WebServiceHandler.</param>
+        /// <returns>An object of the remote WebService.</returns>
+        public static T GetWebServiceRequestImplementation<T>(WebServiceHandler webServiceHandler)
         {
-            return (T)GetWebServiceRequestImplementation(typeof(T));
+            return (T)GetWebServiceRequestImplementation(typeof(T), webServiceHandler);
         }
 
-        public static object GetWebServiceRequestImplementation(Type type)
+        /// <summary>
+        /// Compiles, builds and retrieves an instance of a remote WebServiceImplementation inherited from the given type belonging to the given WebServiceHandler.
+        /// </summary>
+        /// <param name="type">The type to inherit from.</param>
+        /// <param name="webServiceHandler">The corresponding WebServiceHandler.</param>
+        /// <returns>An object of the remote WebService.</returns>
+        public static object GetWebServiceRequestImplementation(Type type, WebServiceHandler webServiceHandler)
         {
+            if (type == null)
+                throw new NullReferenceException(nameof(type));
+
+            if (webServiceHandler == null)
+                throw new NullReferenceException(nameof(webServiceHandler));
+
             if (type.IsAbstract || type.IsInterface || !type.IsPublic || type.IsSealed)
                 throw new IncompatibleTypeException("Only public non-abstract non-sealed Types of classes can be WebServices.");
 
             var webservice = new RequesterWebServiceTemplate() { ClassName = type.Name, ClassType = type, Namespace = GetWebServiceRequestImplementationNamespace(), AssemblyNameSpace = type.Namespace };
 
-            return CompileAndBuildObject(webservice.TransformText().Replace("global::", ""), type, GetWebServiceRequestImplementationNamespace() + "." + GetWebServiceRequestImplementationName(type));
+            return CompileAndBuildObject(webservice.TransformText().Replace("global::", ""), type, GetWebServiceRequestImplementationNamespace() + "." + GetWebServiceRequestImplementationName(type), webServiceHandler);
         }
 
-        public static object CompileAndBuildObject(string code, Type type, string typeName)
+        /// <summary>
+        /// Compiles a piece of code and builds an instance of the given type.
+        /// </summary>
+        /// <param name="code">The code to compile.</param>
+        /// <param name="type">The baseType of the 'typeName' type.</param>
+        /// <param name="typeName">The type to retrieve &amp; build an instance of from the compiled code.</param>
+        /// <param name="webServiceHandler">The current WebServiceHandler.</param>
+        /// <returns>Returns the instance of the given type.</returns>
+        public static object CompileAndBuildObject(string code, Type type, string typeName, WebServiceHandler webServiceHandler)
         {
             CSharpCodeProvider provider = new CSharpCodeProvider();
             CompilerParameters parameters = new CompilerParameters();
@@ -91,11 +138,16 @@ namespace LamestWebserver.WebServices.Generators
             {
                 try
                 {
-                    return Activator.CreateInstance(_type);
+                    var constructors = (from c in _type.GetConstructors() where c.DeclaringType == _type && c.IsPublic && c.GetParameters().Count() == 1 && c.GetParameters().First().ParameterType == typeof(WebServiceHandler) select c);
+
+                    if (!constructors.Any())
+                        throw new IncompatibleTypeException($"No compatible constructor taking '{nameof(WebServiceHandler)}' as parameter found.");
+
+                    return constructors.First().Invoke(new object[] { webServiceHandler });
                 }
                 catch (Exception e)
                 {
-                    Logger.LogExcept(new IncompatibleTypeException($"An exception occured when trying to create an object of the type '{typeName}' (inherited from '{type.Namespace}.{type.Name}').", e));
+                    Logger.LogExcept(new IncompatibleTypeException($"An exception occurred when trying to create an object of the type '{typeName}' (inherited from '{type.Namespace}.{type.Name}').", e));
                 }
             }
             else
@@ -106,12 +158,44 @@ namespace LamestWebserver.WebServices.Generators
             throw new InvalidOperationException($"Failed to retrieve generated {nameof(IWebService)} '{typeName}' (inherited from '{type.Namespace}.{type.Name}').");
         }
 
+        /// <summary>
+        /// Retrieves the Name of a local WebService that would derive from the given type.
+        /// </summary>
+        /// <typeparam name="T">The type to derive a WebService from.</typeparam>
+        /// <returns>Returns the name of the type as string.</returns>
         public static string GetWebServiceLocalImplementationName<T>() => GetWebServiceLocalImplementationName(typeof(T));
+
+        /// <summary>
+        /// Retrieves the Name of a local WebService that would derive from the given type.
+        /// </summary>
+        /// <param name="type">The type to derive a WebService from.</param>
+        /// <returns>Returns the name of the type as string.</returns>
         public static string GetWebServiceLocalImplementationName(Type type) => type.Name + "LocalWebServiceGenImpl";
+
+        /// <summary>
+        /// Retrieves the namespace of a local WebService.
+        /// </summary>
+        /// <returns>Returns the name of the namespace of a local WebService.</returns>
         public static string GetWebServiceLocalImplementationNamespace() => "LamestWebserver.WebService.GeneratedCode.Local";
 
+        /// <summary>
+        /// Retrieves the Name of a remote WebService that would derive from the given type.
+        /// </summary>
+        /// <typeparam name="T">The type to derive a WebService from.</typeparam>
+        /// <returns>Returns the name of the type as string.</returns>
         public static string GetWebServiceRequestImplementationName<T>() => GetWebServiceRequestImplementationName(typeof(T));
+
+        /// <summary>
+        /// Retrieves the Name of a remote WebService that would derive from the given type.
+        /// </summary>
+        /// <param name="type">The type to derive a WebService from.</param>
+        /// <returns>Returns the name of the type as string.</returns>
         public static string GetWebServiceRequestImplementationName(Type type) => type.Name + "RequesterWebServiceImpl";
+
+        /// <summary>
+        /// Retrieves the namespace of a remote WebService.
+        /// </summary>
+        /// <returns>Returns the name of the namespace of a remote WebService.</returns>
         public static string GetWebServiceRequestImplementationNamespace() => "LamestWebserver.WebService.GeneratedCode.Request";
     }
 }

@@ -176,7 +176,8 @@ namespace LamestWebserver
         /// </summary>
         protected virtual void Start()
         {
-            _tcpListenerThread.Start();
+            if(_tcpListenerThread.ThreadState == ThreadState.Unstarted)
+                _tcpListenerThread.Start();
         }
 
         internal void ClearStreams()

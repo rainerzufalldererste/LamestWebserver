@@ -93,7 +93,7 @@ namespace LamestWebserver.WebServices
             }
             else
             {
-                object ret = WebServiceImplementationGenerator.GetWebServiceLocalImplementation(type);
+                object ret = WebServiceImplementationGenerator.GetWebServiceLocalImplementation(type, this);
 
                 using(_listLock.LockWrite())
                     LocalWebServiceVariants.Add(type, ret);
@@ -139,7 +139,7 @@ namespace LamestWebserver.WebServices
             }
             else
             {
-                object ret = WebServiceImplementationGenerator.GetWebServiceRequestImplementation(type);
+                object ret = WebServiceImplementationGenerator.GetWebServiceRequestImplementation(type, this);
 
                 using (_listLock.LockWrite())
                     RequestertWebServiceVariants.Add(type, ret);

@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace LamestWebserver.WebServices
 {
+    /// <summary>
+    /// An abstract Exception type for grouping WebServiceExceptions.
+    /// </summary>
     public abstract class WebServiceException : Exception
     {
         /// <inheritdoc />
@@ -40,6 +43,9 @@ namespace LamestWebserver.WebServices
         protected RemoteException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 
+    /// <summary>
+    /// An exception for when a WebService is not available.
+    /// </summary>
     public class ServiceNotAvailableException : WebServiceException
     {
         /// <inheritdoc />
@@ -55,6 +61,9 @@ namespace LamestWebserver.WebServices
         protected ServiceNotAvailableException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 
+    /// <summary>
+    /// An exception for when a Type is not compatible with the specifications.
+    /// </summary>
     public class IncompatibleTypeException : WebServiceException
     {
         /// <inheritdoc />
@@ -70,6 +79,9 @@ namespace LamestWebserver.WebServices
         protected IncompatibleTypeException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 
+    /// <summary>
+    /// An exception for when a remote WebService is behaving different than expected.
+    /// </summary>
     public class WebServiceIncompatibleException : WebServiceException
     {
         /// <inheritdoc />

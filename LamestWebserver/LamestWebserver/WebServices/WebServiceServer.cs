@@ -23,6 +23,10 @@ namespace LamestWebserver.WebServices
         /// </summary>
         public static int RequestMaxPacketSize = 1024 * 128;
 
+        /// <summary>
+        /// Starts a new WebServiceServer on a specified port.
+        /// </summary>
+        /// <param name="port">The port to start on.</param>
         public WebServiceServer(int port = 8310) : this(WebServiceHandler.CurrentServiceHandler.Instance, port) { }
 
         /// <summary>

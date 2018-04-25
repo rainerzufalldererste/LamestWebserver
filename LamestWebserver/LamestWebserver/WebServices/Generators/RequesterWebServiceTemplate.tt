@@ -15,9 +15,12 @@ namespace <#= Namespace #>
 {
     public class <#= ClassName #>RequesterWebServiceImpl : <#= ClassName #>
 	{
+		private readonly WebServiceHandler _webServiceHandler;
+
 		<# if (ClassType.GetConstructor(new Type[0]) != null) { #>
-		public <#= ClassName #>RequesterWebServiceImpl() : base()
+		public <#= ClassName #>RequesterWebServiceImpl(WebServiceHandler webServiceHandler) : base()
 		{
+			_webServiceHandler = webServiceHandler;
 			LamestWebserver.Core.Logger.LogInformation("<#= ClassName #>RequesterWebServiceImpl has been initialized.");
 		}
 		<# } #>
@@ -69,7 +72,7 @@ namespace <#= Namespace #>
 								} #>
 						);
 
-					var response = WebServiceHandler.CurrentServiceHandler.Instance.Request(request);
+					var response = _webServiceHandler.Request(request);
 
 					switch (response.ReturnType)
 					{
@@ -145,7 +148,7 @@ namespace <#= Namespace #>
 							LamestWebserver.Core.Logger.LogTrace("Requesting property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>'.");
 							
 							var request = WebServiceRequest.Request<<#= ClassName #>>("__RESPONDER_WEBSERVICE__PROPERTY_GET__<#= property.Name #>", new Type[0]);
-							var response = WebServiceHandler.CurrentServiceHandler.Instance.Request(request);
+							var response = _webServiceHandler.Request(request);
 
 							switch (response.ReturnType)
 							{
@@ -185,7 +188,7 @@ namespace <#= Namespace #>
 							LamestWebserver.Core.Logger.LogTrace("Requesting to set the property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>'.");
 							
 							var request = WebServiceRequest.Request<<#= ClassName #>>("__RESPONDER_WEBSERVICE__PROPERTY_SET__<#= property.Name #>", new Type[] { typeof(<#= property.PropertyType #>) }, value);
-							var response = WebServiceHandler.CurrentServiceHandler.Instance.Request(request);
+							var response = _webServiceHandler.Request(request);
 
 							switch (response.ReturnType)
 							{
@@ -233,8 +236,23 @@ namespace <#= Namespace #>
 }
 
 <#+
+/// <summary>
+/// The name of the Namespace to build this class in.
+/// </summary>
 public string Namespace;
+
+/// <summary>
+/// The name of the Class to inherit from.
+/// </summary>
 public string ClassName;
+
+/// <summary>
+/// The name of the Namespace that the type to inherit from is defined in.
+/// </summary>
 public string AssemblyNameSpace;
+
+/// <summary>
+/// The Type of the Class to inherit from.
+/// </summary>
 public Type ClassType;
 #>

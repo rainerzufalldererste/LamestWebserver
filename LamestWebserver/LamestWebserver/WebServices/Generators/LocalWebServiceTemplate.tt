@@ -15,9 +15,12 @@ namespace <#= Namespace #>
 {
     public class <#= ClassName #>LocalWebServiceGenImpl : <#= ClassName #>
 	{
+		private readonly WebServiceHandler _webServiceHandler;
+
 		<# if (ClassType.GetConstructor(new Type[0]) != null) { #>
-		public <#= ClassName #>LocalWebServiceGenImpl() : base()
+		public <#= ClassName #>LocalWebServiceGenImpl(WebServiceHandler webServiceHandler) : base()
 		{
+			_webServiceHandler = webServiceHandler;
 			LamestWebserver.Core.Logger.LogInformation("<#= ClassName #>LocalWebServiceGenImpl has been initialized.");
 		}
 		<# } #>
@@ -237,8 +240,23 @@ namespace <#= Namespace #>
 }
 
 <#+
+/// <summary>
+/// The name of the Namespace to build this class in.
+/// </summary>
 public string Namespace;
+
+/// <summary>
+/// The name of the Class to inherit from.
+/// </summary>
 public string ClassName;
+
+/// <summary>
+/// The name of the Namespace that the type to inherit from is defined in.
+/// </summary>
 public string AssemblyNameSpace;
+
+/// <summary>
+/// The Type of the Class to inherit from.
+/// </summary>
 public Type ClassType;
 #>

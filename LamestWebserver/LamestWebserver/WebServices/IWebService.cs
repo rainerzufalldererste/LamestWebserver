@@ -1,21 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.CodeDom;
-using System.Net;
-using System.Reflection;
-using LamestWebserver.Collections;
-using LamestWebserver.Synchronization;
-using LamestWebserver.WebServices.Generators;
 
 namespace LamestWebserver.WebServices
 {
+    /// <summary>
+    /// This interface marks the a type as LamestWebserver WebService.
+    /// </summary>
     public interface IWebService
     {
+
     }
 }

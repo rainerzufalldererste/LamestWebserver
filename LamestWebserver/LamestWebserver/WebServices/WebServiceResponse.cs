@@ -1,38 +1,56 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.CodeDom;
-using System.Net;
-using System.Reflection;
 using System.Xml.Serialization;
 using System.Xml;
 using System.Xml.Schema;
-using LamestWebserver.Collections;
-using LamestWebserver.Synchronization;
-using LamestWebserver.WebServices.Generators;
 using LamestWebserver.Serialization;
 using LamestWebserver.Core;
 
 namespace LamestWebserver.WebServices
 {
+    /// <summary>
+    /// A response from a WebService retrieving the result of a method call.
+    /// </summary>
     [Serializable]
     public class WebServiceResponse : NullCheckable, ISerializable, IXmlSerializable
     {
+        /// <summary>
+        /// The return type of the method call.
+        /// </summary>
         public EWebServiceReturnType ReturnType = EWebServiceReturnType.ReturnVoid;
+
+        /// <summary>
+        /// The type of the returned value (if any).
+        /// </summary>
         public string ReturnValueType;
+
+        /// <summary>
+        /// The returned value (if any).
+        /// </summary>
         public object ReturnValue = null;
+        
+        /// <summary>
+        /// The thrown exception (if any).
+        /// </summary>
         public Exception ExceptionThrown = null;
+
+        /// <summary>
+        /// The thrown exception as string (if any).
+        /// </summary>
         public string StringifiedException;
 
         private Type returnValueType;
 
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
         public WebServiceResponse() { }
 
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
+        /// <param name="info">SerializationInfo.</param>
+        /// <param name="context">StreamingContext.</param>
         public WebServiceResponse(SerializationInfo info, StreamingContext context)
         {
             ReturnType = (EWebServiceReturnType)info.GetValue(nameof(ReturnType), typeof(EWebServiceReturnType));
@@ -66,12 +84,19 @@ namespace LamestWebserver.WebServices
 
                 default:
                     throw new NotImplementedException($"Unhandled case: {nameof(ReturnType)} is '{ReturnType}'.");
-                    break;
             }
         }
 
+        /// <summary>
+        /// Builds a new WebServiceResponse for a method that returned `void`.
+        /// </summary>
+        /// <returns>The corresponding WebServiceResponse.</returns>
         public static WebServiceResponse Return() => new WebServiceResponse();
 
+        /// <summary>
+        /// Builds a new WebServiceResponse for a method that returned a value.
+        /// </summary>
+        /// <returns>The corresponding WebServiceResponse.</returns>
         public static WebServiceResponse Return<T>(T value)
             => new WebServiceResponse()
             {
@@ -81,6 +106,10 @@ namespace LamestWebserver.WebServices
                 ReturnType = EWebServiceReturnType.ReturnValue
             };
 
+        /// <summary>
+        /// Builds a new WebServiceResponse for a method that threw an exception.
+        /// </summary>
+        /// <returns>The corresponding WebServiceResponse.</returns>
         public static WebServiceResponse Exception(Exception exception)
             => new WebServiceResponse()
             {
@@ -90,6 +119,7 @@ namespace LamestWebserver.WebServices
                 ReturnType = EWebServiceReturnType.ExceptionThrown
             };
 
+        /// <inheritdoc />
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(ReturnType), ReturnType);
@@ -118,7 +148,6 @@ namespace LamestWebserver.WebServices
 
                 default:
                     throw new NotImplementedException($"Unhandled case: {nameof(ReturnType)} is '{ReturnType}'.");
-                    break;
             }
 
             info.AddValue(nameof(ReturnValueType), ReturnValueType);
@@ -126,8 +155,10 @@ namespace LamestWebserver.WebServices
             info.AddValue(nameof(ReturnValueType), ReturnValueType);
         }
 
+        /// <inheritdoc />
         public XmlSchema GetSchema() => null;
 
+        /// <inheritdoc />
         public void ReadXml(XmlReader reader)
         {
             reader.ReadStartElement();
@@ -178,13 +209,13 @@ namespace LamestWebserver.WebServices
 
                 default:
                     throw new NotImplementedException($"Unhandled case: {nameof(ReturnType)} is '{ReturnType}'.");
-                    break;
             }
 
             reader.ReadToEndElement(nameof(WebServiceResponse));
             reader.ReadEndElement();
         }
 
+        /// <inheritdoc />
         public void WriteXml(XmlWriter writer)
         {
             writer.WriteStartElement(nameof(WebServiceResponse));
@@ -215,15 +246,30 @@ namespace LamestWebserver.WebServices
 
                 default:
                     throw new NotImplementedException($"Unhandled case: {nameof(ReturnType)} is '{ReturnType}'.");
-                    break;
             }
 
             writer.WriteEndElement();
         }
     }
 
+    /// <summary>
+    /// The return type of a WebServiceResponse.
+    /// </summary>
     public enum EWebServiceReturnType : byte
     {
-        ReturnVoid, ExceptionThrown, ReturnValue
+        /// <summary>
+        /// The method returned `void`.
+        /// </summary>
+        ReturnVoid,
+
+        /// <summary>
+        /// The method returned a value.
+        /// </summary>
+        ReturnValue,
+
+        /// <summary>
+        /// The method threw an exception.
+        /// </summary>
+        ExceptionThrown
     }
 }

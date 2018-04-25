@@ -1,18 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.CodeDom;
-using System.Net;
-using System.Reflection;
 using System.Xml.Serialization;
-using LamestWebserver.Collections;
-using LamestWebserver.Synchronization;
-using LamestWebserver.WebServices.Generators;
 using System.Xml;
 using System.Xml.Schema;
 using LamestWebserver.Serialization;
@@ -20,6 +9,9 @@ using LamestWebserver.Core;
 
 namespace LamestWebserver.WebServices
 {
+    /// <summary>
+    /// A request to a WebService.
+    /// </summary>
     [Serializable]
     public class WebServiceRequest : NullCheckable, ISerializable, IXmlSerializable
     {
@@ -46,31 +38,70 @@ namespace LamestWebserver.WebServices
 
         internal bool IsRemoteRequest = false;
 
+        /// <summary>
+        /// The namespace of the requested type.
+        /// </summary>
         public string Namespace;
+
+        /// <summary>
+        /// The name of the requested type.
+        /// </summary>
         public string Type;
+
+        /// <summary>
+        /// The name of the method that will be requested.
+        /// </summary>
         public string Method;
+
+        /// <summary>
+        /// The parameters of the method call.
+        /// </summary>
         public object[] Parameters;
+
+        /// <summary>
+        /// The names of the parameter types of the method definition.
+        /// </summary>
         public string[] MethodParameterTypes;
+
+        /// <summary>
+        /// The names of the types that were passed as parameters to the method.
+        /// </summary>
         public string[] ParameterTypes;
         
         internal Type[] _methodParameterTypes;
         internal Type[] _parameterTypes;
 
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
         public WebServiceRequest() { }
 
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
+        /// <param name="info">SerializationInfo.</param>
+        /// <param name="context">StreamingContext.</param>
         public WebServiceRequest(SerializationInfo info, StreamingContext context)
         {
             Namespace = info.GetString(nameof(Namespace));
             Type = info.GetString(nameof(Type));
             Method = info.GetString(nameof(Method));
             Parameters = (object[])info.GetValue(nameof(Parameters), typeof(object[]));
-            MethodParameterTypes = (string[])info.GetValue(nameof(Parameters), typeof(string[]));
-            ParameterTypes = (string[])info.GetValue(nameof(Parameters), typeof(string[]));
+            MethodParameterTypes = (string[])info.GetValue(nameof(MethodParameterTypes), typeof(string[]));
+            ParameterTypes = (string[])info.GetValue(nameof(ParameterTypes), typeof(string[]));
 
             _methodParameterTypes = (from p in MethodParameterTypes select System.Type.GetType(p)).ToArray();
             _parameterTypes = (from p in ParameterTypes select System.Type.GetType(p)).ToArray();
         }
 
+        /// <summary>
+        /// Builds a request to a specified method of a specified type using the given parameters.
+        /// </summary>
+        /// <typeparam name="T">The Type of the method to call.</typeparam>
+        /// <param name="method">The name of the method to call.</param>
+        /// <param name="methodParameterTypes">The types of the method definition.</param>
+        /// <param name="parameters">The parameters to pass to the method.</param>
+        /// <returns>Returns a WebServiceRequest containing the given specification.</returns>
         public static WebServiceRequest Request<T>(string method, Type[] methodParameterTypes, params object[] parameters)
             => new WebServiceRequest()
             {
@@ -84,6 +115,7 @@ namespace LamestWebserver.WebServices
                 ParameterTypes = (from p in parameters select p.GetType().Namespace + "." + p.GetType().Name).ToArray()
             };
 
+        /// <inheritdoc />
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Namespace), Namespace);
@@ -94,8 +126,10 @@ namespace LamestWebserver.WebServices
             info.AddValue(nameof(ParameterTypes), ParameterTypes);
         }
 
+        /// <inheritdoc />
         public XmlSchema GetSchema() => null;
 
+        /// <inheritdoc />
         public void ReadXml(XmlReader reader)
         {
             reader.ReadStartElement();
@@ -133,6 +167,7 @@ namespace LamestWebserver.WebServices
             _parameterTypes = (from p in ParameterTypes select System.Type.GetType(p)).ToArray();
         }
 
+        /// <inheritdoc />
         public void WriteXml(XmlWriter writer)
         {
             writer.WriteStartElement(nameof(WebServiceRequest));
