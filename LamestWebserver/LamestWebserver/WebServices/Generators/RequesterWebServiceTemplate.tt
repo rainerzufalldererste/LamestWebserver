@@ -20,6 +20,9 @@ namespace <#= Namespace #>
 		<# if (ClassType.GetConstructor(new Type[0]) != null) { #>
 		public <#= ClassName #>RequesterWebServiceImpl(WebServiceHandler webServiceHandler) : base()
 		{
+			if (webServiceHandler == null)
+				throw new NullReferenceException("webServiceHandler");
+
 			_webServiceHandler = webServiceHandler;
 			LamestWebserver.Core.Logger.LogInformation("<#= ClassName #>RequesterWebServiceImpl has been initialized.");
 		}

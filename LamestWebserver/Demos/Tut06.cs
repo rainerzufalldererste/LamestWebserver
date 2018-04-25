@@ -6,30 +6,44 @@ using LamestWebserver.WebServices;
 using LamestWebserver;
 using LamestWebserver.UI;
 using LamestWebserver.Core;
+using System.Net;
 
 namespace Demos
 {
     public class Tut06 : ElementResponse
     {
+        WebServiceHandler serverWebServiceHandler;
+        TestWebService clientImplementation;
+        TestWebService serverImplementation;
+        WebServiceServer webServiceServer;
+
         /// <inheritdoc />
         public Tut06() : base(nameof(Tut06))
         {
             Logger.CurrentLogger.Instance.MinimumLoggingLevel = Logger.ELoggingLevel.Trace;
+
+            serverWebServiceHandler = new WebServiceHandler();
+            webServiceServer = new WebServiceServer(serverWebServiceHandler);
+
+            WebServiceHandler.CurrentServiceHandler.Instance.AssignRemoteEndpointToType(typeof(TestWebService), new IPEndPoint((from addr in Dns.GetHostEntry(Dns.GetHostName()).AddressList where addr.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork select addr).First(), webServiceServer.Port));
         }
 
         /// <inheritdoc />
         protected override HElement GetElement(SessionData sessionData)
         {
-            TestWebService wst = WebServiceHandler.CurrentServiceHandler.Instance.GetRequesterService<TestWebService>();
+            clientImplementation = WebServiceHandler.CurrentServiceHandler.Instance.GetRequesterService<TestWebService>();
+            serverImplementation = serverWebServiceHandler.GetLocalService<TestWebService>();
 
-            wst.CallSomethingVoid();
-            Logger.LogInformation(wst.CallSomethingReturn());
-            wst.CallSomethingParamsVoid("hello");
-            Logger.LogInformation(wst.CallSomethingParamsReturn("LamestWebserver"));
+            clientImplementation.CallSomethingVoid();
+            Logger.LogInformation(clientImplementation.CallSomethingReturn());
+            clientImplementation.CallSomethingParamsVoid("hello");
+            Logger.LogInformation(clientImplementation.CallSomethingParamsReturn("LamestWebserver"));
+            clientImplementation.CallSomethingDefaultParamsVoid("");
+            Logger.LogInformation(clientImplementation.CallSomethingDefaultParamsReturn("CallSomethingDefaultParamsReturn: Correct Output."));
 
             try
             {
-                wst.ExceptVoid();
+                clientImplementation.ExceptVoid();
 
                 Logger.LogExcept("THIS SHOULD NOT BE THROWN.");
             }
@@ -40,7 +54,7 @@ namespace Demos
 
             try
             {
-                wst.ExceptReturn();
+                clientImplementation.ExceptReturn();
 
                 Logger.LogExcept("THIS SHOULD NOT BE THROWN.");
             }
@@ -48,16 +62,13 @@ namespace Demos
             {
                 Logger.LogError(e.SafeToString());
             }
-
-            // Getting the actually modified and executed instance.
-            wst = WebServiceHandler.CurrentServiceHandler.Instance.GetLocalService<TestWebService>();
 
             return MainPage.GetPage(new List<HElement>()
             {
                 new HHeadline("LamestWebserver WebServices"),
                 new HText("This response runs various methods of a Test WebService. Look at the Logger output for this file to get a propper understanding of the WebService functions, that were actually executed."),
                 new HHeadline("Executed Functions", 2),
-                new HTable(from field in wst.GetType().GetFields() where field.DeclaringType == typeof(TestWebService) && field.FieldType == typeof(bool) select new List<object> { field.Name, ((bool)field.GetValue(wst)) ? "✔️" : "❌" })
+                new HTable(from field in serverImplementation.GetType().GetFields() where field.DeclaringType == typeof(TestWebService) && field.FieldType == typeof(bool) select new List<object> { field.Name, ((bool)field.GetValue(serverImplementation)) ? "✔️" : "❌" })
             }, nameof(Tut06) + ".cs");
         }
     }
@@ -65,7 +76,7 @@ namespace Demos
     public class TestWebService : IWebService
     {
         [WebServiceIgnore]
-        public bool Constructor, VoidMethod, VoidMethodWithParameters, ReturningMethod, ReturningMethodWithParameters, ExceptionMethodVoid, ReturningExceptionMethod;
+        public bool Constructor, VoidMethod, VoidMethodWithParameters, ReturningMethod, ReturningMethodWithParameters, ExceptionMethodVoid, ReturningExceptionMethod, VoidMethodWithDefaultParameters, ReturningMethodWithDefaultParameters;
 
         public TestWebService()
         {
@@ -130,6 +141,24 @@ namespace Demos
         {
             ReturningExceptionMethod = true;
             throw new Exception("Test Exception Return.");
+        }
+
+        public virtual void CallSomethingDefaultParamsVoid(string a, string b = "b", string c = "c")
+        {
+            if (b != "b" || c != "c")
+                throw new InvalidOperationException();
+
+            VoidMethodWithDefaultParameters = true;
+            return;
+        }
+
+        public virtual string CallSomethingDefaultParamsReturn(string a, string b = "b", string c = "c")
+        {
+            if (b != "b" || c != "c")
+                throw new InvalidOperationException();
+
+            ReturningMethodWithDefaultParameters = true;
+            return a;
         }
 
         /// <summary>

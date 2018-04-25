@@ -149,10 +149,6 @@ namespace LamestWebserver.WebServices
                 default:
                     throw new NotImplementedException($"Unhandled case: {nameof(ReturnType)} is '{ReturnType}'.");
             }
-
-            info.AddValue(nameof(ReturnValueType), ReturnValueType);
-            info.AddValue(nameof(ReturnValueType), ReturnValueType);
-            info.AddValue(nameof(ReturnValueType), ReturnValueType);
         }
 
         /// <inheritdoc />

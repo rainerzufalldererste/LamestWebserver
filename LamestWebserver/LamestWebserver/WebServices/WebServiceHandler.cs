@@ -25,11 +25,11 @@ namespace LamestWebserver.WebServices
         private AVLHashMap<string, IPEndPoint> UrlToServerHashMap = new AVLHashMap<string, IPEndPoint>();
 
         /// <summary>
-        /// Just a private Constructor because it just works with the Singleton WebServiceHandler.CurrentServiceHandler.
+        /// Creates a WebServiceHandler instance.
         /// </summary>
-        private WebServiceHandler()
+        public WebServiceHandler()
         {
-            Logger.LogTrace("The WebServiceHandler has been created.");
+            Logger.LogTrace("A WebServiceHandler has been created.");
         }
 
         /// <summary>
