@@ -1,0 +1,261 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+using global::System;
+using global::System.Collections.Generic;
+using global::LamestWebserver.WebServices;
+using global::LamestWebserver;
+using global::LamestWebserver.Core;
+using global::<#= AssemblyNameSpace #>;
+
+namespace <#= Namespace #>
+{
+    public class <#= ClassName #>RequesterWebServiceImpl : <#= ClassName #>
+	{
+		private readonly WebServiceHandler _webServiceHandler;
+
+		<# if (ClassType.GetConstructor(new Type[0]) != null) { #>
+		public <#= ClassName #>RequesterWebServiceImpl(WebServiceHandler webServiceHandler) : base()
+		{
+			if (webServiceHandler == null)
+				throw new NullReferenceException("webServiceHandler");
+
+			_webServiceHandler = webServiceHandler;
+			LamestWebserver.Core.Logger.LogInformation("<#= ClassName #>RequesterWebServiceImpl has been initialized.");
+		}
+		<# } #>
+
+		<# foreach (var method in ClassType.GetMethods()) 
+		{
+			if (method.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
+				continue;
+
+			if (method.IsPublic && !method.IsAbstract && !method.IsStatic && !method.IsFinal) 
+			{ 
+				if (!method.IsVirtual)
+				{
+					if(method.DeclaringType == typeof(System.Object))
+						continue; // Don't trigger for System.Object.GetType()
+					else
+						throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public method '{method.Name}'. Mark this method with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+				} 
+				
+				if (method.IsGenericMethod || method.IsGenericMethodDefinition)
+					throw new IncompatibleTypeException($"LamestWebserver WebServices currently does not support generic methods. The Type '{ClassType.Namespace}.{ClassType.Name}' contains a public generic method '{method.Name}'. Mark this method with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+				#>
+
+			public override <# if(method.ReturnType == typeof(void)) { #> void <# } else { #> <#= method.ReturnType #> <# } #> <#= method.Name #>(
+			<# System.Reflection.ParameterInfo[] parameters = method.GetParameters().ToArray();
+			for (int i = 0; i < parameters.Length; i++) {#>
+				<#= parameters[i].ParameterType.Name #> _p<#= i #> <# if (i + 1 < parameters.Length) { #>, <# } #>
+			<# } #>
+			)
+			{
+				try
+				{
+					LamestWebserver.Core.Logger.LogTrace("Requesting method '<#= ClassName #>RequesterWebServiceImpl.<#= method.Name #>'.");
+
+					var request = WebServiceRequest.Request<<#= ClassName #>>
+						(
+							"__RESPONDER_WEBSERVICE__<#= method.Name #>", 
+							new Type[] {
+								<# foreach (var p in parameters) 
+								{ #> 
+									typeof(<#= p.ParameterType.Name #>), 
+								<# } #>	
+								}
+								<# if(parameters.Any()) { #> , <# } #> 
+								<# for (int i = 0; i < parameters.Length; i++) 
+								{ #>
+									_p<#= i #> 
+									<# if (i + 1 < parameters.Length) { #>, <# }
+								} #>
+						);
+
+					var response = _webServiceHandler.Request(request);
+
+					switch (response.ReturnType)
+					{
+						case EWebServiceReturnType.ReturnValue:
+						{
+							<# if(method.ReturnType == typeof(void)) 
+							{ #> 
+								throw new IncompatibleTypeException("Method that should have returned void returned a value."); 
+							<# } 
+							else 
+							{ #>
+								return (<#= method.ReturnType #>)response.ReturnValue;
+							<# } #>
+						}
+
+						case EWebServiceReturnType.ReturnVoid:
+						{
+							<# if(method.ReturnType != typeof(void)) 
+							{ #> 
+								throw new IncompatibleTypeException("Method that should have returned a value returned void."); 
+							<# } 
+							else 
+							{ #>
+								return;
+							<# } #>
+						}
+
+						case EWebServiceReturnType.ExceptionThrown:
+						{
+							if(response.ExceptionThrown == null)
+								throw new NullReferenceException("EWebServiceReturnType was 'ExceptionThrown', but no Exception was given.");
+
+							throw response.ExceptionThrown;
+						}
+
+						default:
+							throw new InvalidOperationException("EWebServiceReturnType was invalid.");
+					}
+				}
+				catch (Exception e)
+				{
+					LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>RequesterWebServiceImpl.<#= method.Name #>'.\n" + e.Message);
+					throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>RequesterWebServiceImpl.<#= method.Name #>'", e);
+				}
+			}
+			<# }
+		}#>
+
+		<# foreach (var property in ClassType.GetProperties()) 
+		{
+			if (property.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
+				continue;
+			
+			bool getter = property.GetMethod != null && property.GetMethod.IsPublic && !property.GetMethod.IsAbstract && !property.GetMethod.IsStatic;
+			bool setter = property.SetMethod != null && property.SetMethod.IsPublic && !property.SetMethod.IsAbstract && !property.SetMethod.IsStatic;
+
+			if (getter && !property.GetMethod.IsVirtual)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property get accessor for '{property.Name}'. Mark this property with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+
+			if (setter && !property.SetMethod.IsVirtual)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property set accessor for '{property.Name}'. Mark this property with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+
+			if (getter || setter)
+			{ #>
+				public override <#= property.PropertyType #> <#= property.Name #>
+				{
+				<# if (getter)
+				{ #>
+					get
+					{
+						try
+						{
+							LamestWebserver.Core.Logger.LogTrace("Requesting property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>'.");
+							
+							var request = WebServiceRequest.Request<<#= ClassName #>>("__RESPONDER_WEBSERVICE__PROPERTY_GET__<#= property.Name #>", new Type[0]);
+							var response = _webServiceHandler.Request(request);
+
+							switch (response.ReturnType)
+							{
+								case EWebServiceReturnType.ReturnValue:
+									LamestWebserver.Core.Logger.LogTrace("Response from property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>' has been received.");
+									return (<#= property.PropertyType #>)response.ReturnValue;
+
+								case EWebServiceReturnType.ReturnVoid:
+									throw new IncompatibleTypeException("Method that should have returned a value returned void.");
+
+								case EWebServiceReturnType.ExceptionThrown:
+								{
+									if(response.ExceptionThrown == null)
+										throw new NullReferenceException("EWebServiceReturnType was 'ExceptionThrown', but no Exception was given.");
+
+									throw response.ExceptionThrown;
+								}
+
+								default:
+									throw new InvalidOperationException("EWebServiceReturnType was invalid.");
+							}
+						}
+						catch(Exception e)
+						{
+							LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>.get'.\n" + e.Message);
+							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>.get'", e);
+						}
+					}
+					<# }
+					
+					if (setter) 
+					{ #>
+					set
+					{
+						try
+						{
+							LamestWebserver.Core.Logger.LogTrace("Requesting to set the property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>'.");
+							
+							var request = WebServiceRequest.Request<<#= ClassName #>>("__RESPONDER_WEBSERVICE__PROPERTY_SET__<#= property.Name #>", new Type[] { typeof(<#= property.PropertyType #>) }, value);
+							var response = _webServiceHandler.Request(request);
+
+							switch (response.ReturnType)
+							{
+								case EWebServiceReturnType.ReturnValue:
+									throw new IncompatibleTypeException("Method that should have returned void returned a value.");
+
+								case EWebServiceReturnType.ReturnVoid:
+									LamestWebserver.Core.Logger.LogTrace("Property '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>' has been set.");
+									return;
+
+								case EWebServiceReturnType.ExceptionThrown:
+								{
+									if(response.ExceptionThrown == null)
+										throw new NullReferenceException("EWebServiceReturnType was 'ExceptionThrown', but no Exception was given.");
+
+									throw response.ExceptionThrown;
+								}
+
+								default:
+									throw new InvalidOperationException("EWebServiceReturnType was invalid.");
+							}
+
+						}
+						catch(Exception e)
+						{
+							LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>.set'", e);
+							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>RequesterWebServiceImpl.<#= property.Name #>.set'.\n" + e.Message);
+						}
+					}
+					<# } #>
+				}
+
+			<# }
+		} #>
+
+		<# foreach (var field in ClassType.GetFields()) 
+		{
+			if (field.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
+				continue;
+			
+			if(field.IsPublic && !field.IsStatic)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a public non-static field '{field.Name}'. Mark this field with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+		} #>
+	}
+}
+
+<#+
+/// <summary>
+/// The name of the Namespace to build this class in.
+/// </summary>
+public string Namespace;
+
+/// <summary>
+/// The name of the Class to inherit from.
+/// </summary>
+public string ClassName;
+
+/// <summary>
+/// The name of the Namespace that the type to inherit from is defined in.
+/// </summary>
+public string AssemblyNameSpace;
+
+/// <summary>
+/// The Type of the Class to inherit from.
+/// </summary>
+public Type ClassType;
+#>

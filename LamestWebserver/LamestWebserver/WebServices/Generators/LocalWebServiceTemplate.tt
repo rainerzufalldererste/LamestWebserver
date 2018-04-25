@@ -1,0 +1,265 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+using global::System;
+using global::System.Collections.Generic;
+using global::LamestWebserver.WebServices;
+using global::LamestWebserver;
+using global::LamestWebserver.Core;
+using global::<#= AssemblyNameSpace #>;
+
+namespace <#= Namespace #>
+{
+    public class <#= ClassName #>LocalWebServiceGenImpl : <#= ClassName #>
+	{
+		private readonly WebServiceHandler _webServiceHandler;
+
+		<# if (ClassType.GetConstructor(new Type[0]) != null) { #>
+		public <#= ClassName #>LocalWebServiceGenImpl(WebServiceHandler webServiceHandler) : base()
+		{
+			if (webServiceHandler == null)
+				throw new NullReferenceException("webServiceHandler");
+			
+			_webServiceHandler = webServiceHandler;
+			LamestWebserver.Core.Logger.LogInformation("<#= ClassName #>LocalWebServiceGenImpl has been initialized.");
+		}
+		<# } #>
+
+		<# foreach (var method in ClassType.GetMethods()) 
+		{
+			if (method.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
+				continue;
+
+			if (method.IsPublic && !method.IsAbstract && !method.IsStatic && !method.IsFinal) 
+			{ 
+				if (!method.IsVirtual)
+				{
+					if(method.DeclaringType == typeof(System.Object))
+						continue; // Don't trigger for System.Object.GetType()
+					else
+						throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public method '{method.Name}'. Mark this method with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+				} 
+				
+				if (method.IsGenericMethod || method.IsGenericMethodDefinition)
+					throw new IncompatibleTypeException($"LamestWebserver WebServices currently does not support generic methods. The Type '{ClassType.Namespace}.{ClassType.Name}' contains a public generic method '{method.Name}'. Mark this method with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+				#>
+
+			public override <# if(method.ReturnType == typeof(void)) { #> void <# } else { #> <#= method.ReturnType #> <# } #> <#= method.Name #>(
+			<# System.Reflection.ParameterInfo[] parameters = method.GetParameters().ToArray();
+			for (int i = 0; i < parameters.Length; i++) 
+			{ #>
+				<#= parameters[i].ParameterType.Name #> _p<#= i #> <# if (i + 1 < parameters.Length) { #>, <# } #>
+			<# } #>
+			)
+			{
+				try 
+				{
+					LamestWebserver.Core.Logger.LogTrace("Calling method '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>'.");
+
+					<# if(method.ReturnType != typeof(void)) { #> var x = <# } #>
+					base.<#= method.Name #>(
+					<# for(int i = 0; i < parameters.Length; i++) 
+					{#>
+						_p<#= i #> <# if (i + 1 < parameters.Length) { #>, <# } #>
+					<# } #>
+					);
+
+					<# if(method.ReturnType != typeof(void)) 
+					{ #>
+					LamestWebserver.Core.Logger.LogTrace("Response from method '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>' has been received.");
+					<# }
+					else 
+					{ #>
+					LamestWebserver.Core.Logger.LogTrace("Method '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>' has been executed.");
+					<# } #>
+
+					<# if(method.ReturnType != typeof(void)) { #> return x; <# } #>
+				}
+				catch (Exception e)
+				{
+					LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>'.\n" + e.Message);
+					throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= method.Name #>'", e);
+				}
+			}
+
+			public WebServiceResponse __RESPONDER_WEBSERVICE__<#= method.Name #>(
+			<# for (int i = 0; i < parameters.Length; i++) 
+			{ #>
+				<#= parameters[i].ParameterType.Name #> _p<#= i #> <# if (i + 1 < parameters.Length) { #>, <# } #>
+			<# } #>
+			)
+			{
+				WebServiceResponse ret = null;
+
+				try
+				{
+					<# if(method.ReturnType != typeof(void)) { #> var x = <# } #>
+
+					this.<#= method.Name #>(
+					<# for (int i = 0; i < parameters.Length; i++) 
+					{ #>
+						_p<#= i #> <# if (i + 1 < parameters.Length) { #>, <# } #>
+					<# } #>
+					);
+
+					<# if(method.ReturnType != typeof(void)) 
+					{ #> 
+						ret = WebServiceResponse.Return<<#= method.ReturnType #>>(x);
+					<# } 
+					else
+					{ #>
+						ret = WebServiceResponse.Return();
+					<# } #>
+				}
+				catch (Exception e)
+				{
+					ret = WebServiceResponse.Exception(e);
+				}
+
+				return ret;
+			}
+
+		<#  } 
+		}#>
+
+		<# foreach (var property in ClassType.GetProperties()) 
+		{
+			if (property.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
+				continue;
+			
+			bool getter = property.GetMethod != null && property.GetMethod.IsPublic && !property.GetMethod.IsAbstract && !property.GetMethod.IsStatic;
+			bool setter = property.SetMethod != null && property.SetMethod.IsPublic && !property.SetMethod.IsAbstract && !property.SetMethod.IsStatic;
+
+			if (getter && !property.GetMethod.IsVirtual)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property get accessor for '{property.Name}'. Mark this property with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+
+			if (setter && !property.SetMethod.IsVirtual)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a non-virtual public property set accessor for '{property.Name}'. Mark this property with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+
+			if (getter || setter)
+			{ #>
+				public override <#= property.PropertyType #> <#= property.Name #>
+				{
+				<# if (getter)
+				{ #>
+					get
+					{
+						try
+						{
+							LamestWebserver.Core.Logger.LogTrace("Getting property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>'.");
+
+							var ret = base.<#= property.Name #>;
+
+							LamestWebserver.Core.Logger.LogTrace("Response from property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>' has been received.");
+
+							return ret;
+						}
+						catch(Exception e)
+						{
+							LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.get'.\n" + e.Message);
+							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.get'", e);
+						}
+					}
+					<# }
+					
+					if (setter) 
+					{ #>
+					set
+					{
+						try
+						{
+							LamestWebserver.Core.Logger.LogTrace("Setting property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>'.");
+
+							base.<#= property.Name #> = value;
+
+							LamestWebserver.Core.Logger.LogTrace("Property '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>' has been set.");
+						}
+						catch(Exception e)
+						{
+							LamestWebserver.Core.Logger.LogError("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.set'", e);
+							throw new LamestWebserver.WebServices.RemoteException("Exception in Webservice '<#= ClassName #>LocalWebServiceGenImpl.<#= property.Name #>.set'.\n" + e.Message);
+						}
+					}
+					<# } #>
+				}
+
+				<# if(getter)
+				{ #>
+					public WebServiceResponse __RESPONDER_WEBSERVICE__PROPERTY_GET__<#= property.Name #>()
+					{
+						WebServiceResponse ret = null;
+
+						try
+						{
+							var x = this.<#= property.Name #>;
+
+							ret = WebServiceResponse.Return<<#= property.PropertyType #>>(x);
+						}
+						catch (Exception e)
+						{
+							ret = WebServiceResponse.Exception(e);
+						}
+
+						return ret;
+					}
+				<# } #>
+
+				<# if(setter)
+				{ #>
+					public WebServiceResponse __RESPONDER_WEBSERVICE__PROPERTY_SET__<#= property.Name #>(<#= property.PropertyType #> _p0)
+					{
+						WebServiceResponse ret = null;
+
+						try
+						{
+							this.<#= property.Name #> = _p0;
+
+							ret = WebServiceResponse.Return();
+						}
+						catch (Exception e)
+						{
+							ret = WebServiceResponse.Exception(e);
+						}
+
+						return ret;
+					}
+				<# } #>
+
+			<# }
+		} #>
+
+		<# foreach (var field in ClassType.GetFields()) 
+		{
+			if (field.GetCustomAttributes(typeof(WebServiceIgnore), true).Any())
+				continue;
+			
+			if(field.IsPublic && !field.IsStatic)
+				throw new IncompatibleTypeException($"The Type '{ClassType.Namespace}.{ClassType.Name}' contains a public non-static field '{field.Name}'. Mark this field with the {nameof(WebServiceIgnore)} attribute to ignore it.");
+		} #>
+	}
+}
+
+<#+
+/// <summary>
+/// The name of the Namespace to build this class in.
+/// </summary>
+public string Namespace;
+
+/// <summary>
+/// The name of the Class to inherit from.
+/// </summary>
+public string ClassName;
+
+/// <summary>
+/// The name of the Namespace that the type to inherit from is defined in.
+/// </summary>
+public string AssemblyNameSpace;
+
+/// <summary>
+/// The Type of the Class to inherit from.
+/// </summary>
+public Type ClassType;
+#>

@@ -77,7 +77,10 @@ namespace Demos
         internal static HSelectivelyCacheableElement GetPage(IEnumerable<HElement> elements, string filename)
         {
             // Create the page
-            var page = new PageBuilder("LamestWebserver Reference") { StylesheetLinks = {"/style.css"} };
+            var page = new PageBuilder("LamestWebserver Reference")
+            {
+                StylesheetLinks = {"/style.css" } // <- Slash in front of the style.css tells the browser to always look for the files in the top directory
+            };
 
             // Add the main-Container with all the elements and the footer
             page.AddElements(
@@ -94,7 +97,7 @@ namespace Demos
                     Class = "footer",
                     Elements =
                     {
-                        new HImage("/lwsfooter.png"),
+                        new HImage("/lwsfooter.png"), // <- Slash in front of the lwsfooter.png tells the browser to always look for the files in the top directory
                         new HText(filename + "\nLamestWebserver Reference v" + typeof(MainPage).Assembly.GetName().Version)
                     },
 

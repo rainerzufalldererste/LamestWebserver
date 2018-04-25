@@ -1,79 +1,40 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net;
-using System.Threading;
-using System.Net.Sockets;
-using LamestWebserver.Collections;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.Serialization;
-using LamestWebserver.Synchronization;
 using System.Reflection;
-using LamestWebserver.RequestHandlers;
-using Newtonsoft.Json;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using LamestWebserver.Collections;
 using LamestWebserver.Core;
 using LamestWebserver.Core.Memory;
-
-using ThreadState = System.Threading.ThreadState;
+using LamestWebserver.RequestHandlers;
+using LamestWebserver.Synchronization;
 
 namespace LamestWebserver
 {
     /// <summary>
     /// A Webserver. The central unit in LamestWebserver.
     /// </summary>
-    public class WebServer : IDisposable
+    public class WebServer : ServerCore
     {
-        internal readonly Singleton<ThreadedWorker> WorkerThreads = new Singleton<ThreadedWorker>(() => new ThreadedWorker()); 
-
         internal static List<WebServer> RunningServers = new List<WebServer>();
         internal static UsableMutexSlim RunningServerMutex = new UsableMutexSlim();
-
-        /// <summary>
-        /// The default time to wait until a NetworkStream is being closed because of a no data coming in.
-        /// </summary>
-        public static int DefaultReadTimeout = 5000;
-
-        /// <summary>
-        /// When stopping the WebServer the timeout to use before quiting the worker threads forcefully.
-        /// </summary>
-        public static int? WebServerShutdownClientHandlerForceQuitTimeout = null;
 
         /// <summary>
         /// The IP and Port of the currently Connected Client.
         /// </summary>
         [ThreadStatic] public static string CurrentClientRemoteEndpoint = null;
 
-        private readonly TcpListener _tcpListener;
-        private readonly Thread _mThread;
         private List<WebServer> _dependentWebservers = new List<WebServer>();
-        private readonly int _readTimeout = DefaultReadTimeout;
-
-        /// <summary>
-        /// The Port, the server is listening at.
-        /// </summary>
-        public readonly int Port;
-
-        internal bool Running
-        {
-            get
-            {
-                _runningLock.EnterReadLock();
-                var ret = _running;
-                _runningLock.ExitReadLock();
-                return ret;
-            }
-            set
-            {
-                _runningLock.EnterWriteLock();
-                _running = value;
-                _runningLock.ExitWriteLock();
-            }
-        }
 
         /// <summary>
         /// The number of currently running servers.
@@ -86,9 +47,6 @@ namespace LamestWebserver
                     return RunningServers.Count;
             }
         }
-
-        private bool _running = true;
-        private ReaderWriterLockSlim _runningLock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// The size of the Page Response AVLTree-Hashmap. This is not the maximum amount this Hashmap can handle.
@@ -135,12 +93,6 @@ namespace LamestWebserver
         /// The size that is set as starting StringBuilder capacity for a HttpResponse.
         /// </summary>
         public static int ResponseDefaultStringLength = 512;
-
-
-        private Mutex networkStreamsMutex = new Mutex();
-        private AVLTree<int, Stream> streams = new AVLTree<int, Stream>();
-
-        private Task<TcpClient> tcpRcvTask;
 
         /// <summary>
         /// SSL Certificate. server will use ssl if certificate not null.
@@ -230,91 +182,23 @@ namespace LamestWebserver
         /// <para /> If the webserver does not respond after including your certificate, it might not be loaded or set up correctly.
         /// Consider looking at the LamestWebserver Logger output.</param>
         /// <param name="enabledSslProtocols">The available ssl protocols if the connection is https.</param>
-        private WebServer(int port, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12)
+        private WebServer(int port, X509Certificate2 certificate = null, SslProtocols enabledSslProtocols = SslProtocols.Tls12) : base(port)
         {
-            if (!TcpPortIsUnused(port))
-            {
-                Logger.LogExcept(new InvalidOperationException("The tcp port " + port + " is currently used by another application."));
-            }
-
             EnabledSslProtocols = enabledSslProtocols;
             Certificate = certificate;
 
             RequestHandler = RequestHandler.CurrentRequestHandler;
 
-            this.Port = port;
-            this._tcpListener = new TcpListener(IPAddress.Any, port);
-
-            _mThread = new Thread(new ThreadStart(HandleTcpListener));
-            _mThread.Start();
+            Start();
 
             using (RunningServerMutex.Lock())
                 RunningServers.Add(this);
         }
 
         /// <inheritdoc />
-        ~WebServer()
+        public override void Stop()
         {
-            try
-            {
-                Stop();
-            }
-            catch (Exception)
-            {
-            }
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            Stop();
-        }
-
-        /// <summary>
-        /// Stops the Server from running.
-        /// </summary>
-        public void Stop()
-        {
-            Running = false;
-
-            try
-            {
-                _tcpListener.Stop();
-            }
-            catch { }
-
-            // Give the _mThread Thread time to finish.
-            Thread.Sleep(1);
-
-            if (_mThread.ThreadState != ThreadState.Stopped)
-            {
-                try
-                {
-                    Master.ForceQuitThread(_mThread);
-                }
-                catch { }
-            }
-
-            try
-            {
-                tcpRcvTask.Dispose();
-            }
-            catch { }
-
-            networkStreamsMutex.WaitOne();
-
-            foreach (KeyValuePair<int, Stream> stream in streams)
-            {
-                try
-                {
-                    stream.Value.Close();
-                }
-                catch { }
-            }
-
-            networkStreamsMutex.ReleaseMutex();
-
-            WorkerThreads.Instance.Stop(WebServerShutdownClientHandlerForceQuitTimeout);
+            base.Stop();
 
             using (RunningServerMutex.Lock())
                 RunningServers.Remove(this);
@@ -335,86 +219,23 @@ namespace LamestWebserver
             }
         }
 
-        internal void ClearStreams()
+        /// <inheritdoc />
+        protected override void HandleClient(TcpClient client, NetworkStream networkStream)
         {
-            networkStreamsMutex.WaitOne();
-
-            foreach (Stream stream in streams.Values)
-            {
-                if (stream != null)
-                {
-                    try
-                    {
-                        stream.Close();
-                    }
-                    catch { }
-                }
-            }
-
-            streams.Clear();
-
-            networkStreamsMutex.ReleaseMutex();
-        }
-
-        private void HandleTcpListener()
-        {
-            try
-            {
-                _tcpListener.Start();
-                Logger.LogInformation($"{nameof(WebServer)} {nameof(TcpListener)} successfully started on port {Port}.");
-            }
-            catch (Exception e)
-            {
-                Logger.LogDebugExcept("The TcpListener couldn't be started. The Port is probably blocked.", e);
-
-                return;
-            }
-
-            while (Running)
-            {
-                try
-                {
-                    tcpRcvTask = _tcpListener.AcceptTcpClientAsync();
-                    tcpRcvTask.Wait();
-                    TcpClient tcpClient = tcpRcvTask.Result;
-                    tcpClient.ReceiveTimeout = _readTimeout;
-                    tcpClient.NoDelay = true;
-                    Logger.LogTrace("Client Connected: " + tcpClient.Client.RemoteEndPoint.ToString());
-
-                    WorkerThreads.Instance.EnqueueJob((Action)(() => { FlushableMemoryPool.AquireOrFlush(); HandleClient(tcpClient); }));
-                    Logger.LogTrace("Enqueued Client Handler for " + tcpClient.Client.RemoteEndPoint.ToString() + ".");
-                }
-                catch (ThreadAbortException)
-                {
-                    break;
-                }
-                catch (Exception e)
-                {
-                    Logger.LogDebugExcept("The TcpListener failed.", e);
-                }
-            }
-        }
-
-        private void HandleClient(object obj)
-        {
-            TcpClient client = (TcpClient) obj;
-            client.NoDelay = true;
-
-            NetworkStream nws = client.GetStream();
-            
-            Stream stream = nws; 
-
-            UTF8Encoding enc = new UTF8Encoding();
+            FlushableMemoryPool.AquireOrFlush();
+            Stream stream = networkStream;
+            Encoding enc = Encoding.UTF8;
             string lastmsg = null;
-            WebServer.CurrentClientRemoteEndpoint = client.Client.RemoteEndPoint.ToString();
+            CurrentClientRemoteEndpoint = client.Client.RemoteEndPoint.ToString();
 
             if (Certificate != null)
             {
                 try
                 {
-                    System.Net.Security.SslStream sslStream = new System.Net.Security.SslStream(nws, false);
+                    System.Net.Security.SslStream sslStream = new System.Net.Security.SslStream(networkStream, false);
                     sslStream.AuthenticateAsServer(Certificate, false, EnabledSslProtocols, true);
                     stream = sslStream;
+                    CurrentThreadStream = stream;
                 }
                 catch (ThreadAbortException)
                 {
@@ -454,7 +275,7 @@ namespace LamestWebserver
                             Status = "500 Internal Server Error"
                         }.GetPackage();
 
-                        nws.Write(response, 0, response.Length);
+                        networkStream.Write(response, 0, response.Length);
                         
                         Logger.LogInformation($"Replied authentication error to client.");
                     }
@@ -487,23 +308,7 @@ namespace LamestWebserver
 
             byte[] msg;
             int bytes = 0;
-
-            networkStreamsMutex.WaitOne();
             
-            Stream lastStream = streams[Thread.CurrentThread.ManagedThreadId];
-
-            if(lastStream != null)
-            {
-                try
-                {
-                    lastStream.Dispose();
-                }
-                catch { };
-            }
-            
-            streams.Add(Thread.CurrentThread.ManagedThreadId, stream);
-            networkStreamsMutex.ReleaseMutex();
-
             Stopwatch stopwatch = new Stopwatch();
 
             while (Running)
@@ -566,7 +371,7 @@ namespace LamestWebserver
                             }
                         }
 
-                        Logger.LogError("An exception occured in the client handler:  " + e, stopwatch);
+                        Logger.LogError("An exception occured in the client handler:  " + e.SafeToString(), stopwatch);
 
                         try
                         {
@@ -666,7 +471,9 @@ namespace LamestWebserver
                                 buffer = htp_.GetPackage();
                                 stream.Write(buffer, 0, buffer.Length);
 
-                                Logger.LogWarning($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e, stopwatch);
+                                Logger.LogWarning($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e.SafeToString(), stopwatch);
+
+                                ServerHandler.LogMessage($"Client requested '{htp.RequestUrl}'. {e.GetType()} thrown.\n" + e.SafeToString(), stopwatch);
 
                                 continue;
                             }
@@ -710,7 +517,7 @@ namespace LamestWebserver
                     }
                     catch (Exception e)
                     {
-                        Logger.LogError("An error occured in the client handler: " + e, stopwatch);
+                        Logger.LogError("An error occurred in the client handler: " + e.SafeToString(), stopwatch);
                     }
                 }
                 catch (ThreadAbortException)
@@ -725,34 +532,9 @@ namespace LamestWebserver
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError("An error occured in the client handler: " + e, stopwatch);
+                    Logger.LogError("An error occurred in the client handler: " + e.SafeToString(), stopwatch);
                 }
             }
-        }
-
-        /// <summary>
-        /// Source: http://stackoverflow.com/questions/570098/in-c-how-to-check-if-a-tcp-port-is-available
-        /// </summary>
-        /// <param name="port">The TCP-Port to check for</param>
-        /// <returns>true if unused</returns>
-        public static bool TcpPortIsUnused(int port)
-        {
-            // Evaluate current system tcp connections. This is the same information provided
-            // by the netstat command line application, just in .Net strongly-typed object
-            // form.  We will look through the list, and if our port we would like to use
-            // in our TcpClient is occupied, we will set isAvailable to false.
-            System.Net.NetworkInformation.IPGlobalProperties ipGlobalProperties = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties();
-            IPEndPoint[] tcpConnInfoArray = ipGlobalProperties.GetActiveTcpListeners();
-
-            foreach (IPEndPoint endpoint in tcpConnInfoArray)
-            {
-                if (endpoint.Port == port)
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         /// <summary>

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LamestWebserver", "LamestWebserver\LamestWebserver.csproj", "{2E0E1F99-3DE7-4636-9E18-93E5CB837965}"
 	ProjectSection(ProjectDependencies) = postProject

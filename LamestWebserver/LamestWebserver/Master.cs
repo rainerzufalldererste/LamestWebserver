@@ -277,13 +277,13 @@ namespace LamestWebserver
                    + title + "</h1><hr>" + message.Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "<img style='position: fixed;bottom: 1em;right: 1em;cursor: pointer;' src=\"" + lwsLogoBase64 + "\" onclick=\"window.location='https://github.com/rainerzufalldererste/LamestWebserver'\"/></p></body>";
         }
 
-        [Obsolete]
         /// <summary>
         /// Starts a new Webserver listening for pages to add &amp; remove.
         /// </summary>
         /// <param name="port">the port of the server</param>
         /// <param name="directory">the main web directory of the server (e.g. &quot;./web&quot;)</param>
         /// <param name="silent">shall the server print output to the console?</param>
+        [Obsolete]
         public static void StartServer(int port, string directory, bool silent = false)
         {
             new WebServer(port, directory);

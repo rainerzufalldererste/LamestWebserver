@@ -34,7 +34,7 @@ namespace LamestWebserver.Synchronization
                     _value = value;
             }
         }
-        
+
         /// <summary>
         /// Empty or Deserialition Constructor.
         /// </summary>
@@ -57,7 +57,7 @@ namespace LamestWebserver.Synchronization
         /// (You can easily get unsynchronized access using this cast if you set a variable 'T x' to this and then start using 'x' instead of this SynchronizedValue&lt;T&gt;)
         /// </summary>
         /// <param name="syncValue">The SynchronizedValue to read from.</param>
-        public static implicit operator T (SynchronizedValue<T> syncValue) 
+        public static implicit operator T(SynchronizedValue<T> syncValue)
         {
             return syncValue.Value;
         }
@@ -74,6 +74,13 @@ namespace LamestWebserver.Synchronization
         {
             using (writeLock.LockRead())
                 return _value.ToString();
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            using (writeLock.LockRead())
+                return _value.GetHashCode();
         }
     }
 }
