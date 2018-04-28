@@ -42,7 +42,7 @@ namespace UnitTests
                 // ExtentionMethods.DecodeHtml
                 // ExtentionMethods.EncodeHtml
 
-                Dictionary<string, string> html = new Dictionary<string, string> { { "", "" }, { "&amp;", "&" }, { "hello", "hello" }, { "&#228;", "ä" }, { "&lt;&gt;", "<>" }};
+                Dictionary<string, string> html = new Dictionary<string, string> { { "", "" }, { "&amp;", "&" }, { "hello", "hello" }, { "&#228;", "ä" }, { "&lt;&gt;", "<>" } };
 
                 foreach (var kvpair in html)
                 {
@@ -50,6 +50,21 @@ namespace UnitTests
                     Assert.AreEqual(kvpair.Value.EncodeHtml(), kvpair.Key);
                     Assert.AreEqual(kvpair.Value.EncodeHtml().DecodeHtml(), kvpair.Key.DecodeHtml());
                     Assert.AreEqual(kvpair.Value.EncodeHtml(), kvpair.Key.DecodeHtml().EncodeHtml());
+                }
+            }
+
+            {
+                // ExtentionMethods.DecodeUrl
+                // ExtentionMethods.EncodeUrl
+
+                Dictionary<string, string> html = new Dictionary<string, string> { { "", "" }, { "+", " " }, { "%26", "&" }, { "hello", "hello" } };
+
+                foreach (var kvpair in html)
+                {
+                    Assert.AreEqual(kvpair.Value, kvpair.Key.DecodeUrl());
+                    Assert.AreEqual(kvpair.Value.EncodeUrl(), kvpair.Key);
+                    Assert.AreEqual(kvpair.Value.EncodeUrl().DecodeUrl(), kvpair.Key.DecodeUrl());
+                    Assert.AreEqual(kvpair.Value.EncodeUrl(), kvpair.Key.DecodeUrl().EncodeUrl());
                 }
             }
 
@@ -107,16 +122,6 @@ namespace UnitTests
 
                 string message = "This is the message.";
                 Assert.AreEqual(message, new Exception(message).SafeMessage());
-
-                try
-                {
-                    // SEHExceptions are harder to deal with because they throw an Exception on .ToString()
-                    new System.Runtime.InteropServices.SEHException().SafeMessage();
-                }
-                catch
-                {
-                    Assert.Fail();
-                }
             }
 
             {
@@ -125,16 +130,6 @@ namespace UnitTests
                 try
                 {
                     new Exception().SafeToString();
-                }
-                catch
-                {
-                    Assert.Fail();
-                }
-
-                try
-                {
-                    // SEHExceptions are harder to deal with because they throw an Exception on .ToString()
-                    new System.Runtime.InteropServices.SEHException().SafeToString();
                 }
                 catch
                 {

@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using LamestWebserver.Core;
 using System;
 using System.Collections.Generic;
@@ -191,7 +191,7 @@ namespace UnitTests
 
             id0 = new ID("ffffffffffffffff");
 
-            Assert.AreEqual("ffffffffffffffff", id0.ToHexString());
+            Assert.AreEqual("FFFFFFFFFFFFFFFF", id0.ToHexString());
             Assert.AreEqual(id0.Value, id0.ToString());
             Assert.AreEqual(1, id0.GetUlongArray().Length);
             Assert.AreEqual(ulong.MaxValue, id0.GetUlongArray()[0]);
@@ -214,7 +214,7 @@ namespace UnitTests
 
             for (int i = 0; i < bytes.Length; i++)
             {
-                Assert.AreEqual("0123456789abcdef".Substring(i * 2, 2), new byte[] { bytes[i] }.ToHexString());
+                Assert.AreEqual("FEDCBA9876543210".Substring((bytes.Length - 1 - i) * 2, 2), new byte[] { bytes[i] }.ToHexString());
             }
 
             string serialized = Serializer.WriteXmlDataInMemory(id1);
