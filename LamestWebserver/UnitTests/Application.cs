@@ -10,6 +10,7 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            new WebServerTests().TestWebServer();
             new CoreUnitTests().TestExtentionMethods();
             new WebServiceTest().TestWebServices();
             new WalkableQueueTest().TestWalkableQueue();
