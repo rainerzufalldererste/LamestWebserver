@@ -10,6 +10,9 @@ namespace UnitTests
     {
         public static void Main(string[] args)
         {
+            LamestWebserver.Core.Logger.OutputSource = LamestWebserver.Core.Logger.EOutputSource.Console;
+            LamestWebserver.Core.Logger.DefaultMinimumLoggingLevel = LamestWebserver.Core.Logger.ELoggingLevel.Trace;
+
             new WebServerTests().TestWebServer();
             new CoreUnitTests().TestExtentionMethods();
             new WebServiceTest().TestWebServices();
