@@ -21,7 +21,7 @@ namespace LamestWebserver.Core.Web
         /// <summary>
         /// The cached Responses of recent Requests.
         /// </summary>
-        protected SynchronizedDictionary<string, string, AVLHashMap<string, string>> Responses;
+        protected SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>> Responses;
 
         /// <summary>
         /// The cached Redirects of recent Redirects.
@@ -79,7 +79,7 @@ namespace LamestWebserver.Core.Web
         {
             if (cacheResponses)
             {
-                Responses = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>();
+                Responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>();
                 Redirects = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>();
             }
         }
@@ -105,13 +105,32 @@ namespace LamestWebserver.Core.Web
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
 
-            if (Responses && Responses.Any())
+            if (Responses && Responses.Count() > 0)
                 Logger.LogWarning($"Loading cached {nameof(WebRequestFactory)} will override {Responses.Count} responses from the cache. If you want to keep them consider using {nameof(WebRequestFactory)}.{nameof(WebRequestFactory.AppendCacheState)}.");
 
-            if (Redirects && Redirects.Any())
+            if (Redirects && Redirects.Count() > 0)
                 Logger.LogWarning($"Loading cached {nameof(WebRequestFactory)} will override {Redirects.Count} redirects from the cache. If you want to keep them consider using {nameof(WebRequestFactory)}.{nameof(WebRequestFactory.AppendCacheState)}.");
 
-            Responses = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
+            if (File.Exists(fileName + ".ooc.json"))
+            {
+                Responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>(new OutOfCoreHashmap<string, string>(fileName + ".ooc.json"));
+            }
+            else if(File.Exists(fileName + "." + nameof(Responses)))
+            {
+                SynchronizedDictionary<string, string, AVLHashMap<string, string>> old = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
+
+                Responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>(new OutOfCoreHashmap<string, string>(1024, fileName + ".ooc.json"));
+
+                LamestWebserver.Core.Logger.LogInformation($"Importing {old.Count} responses for {nameof(WebRequestFactory)} from '{fileName}.{nameof(Responses)}'...");
+
+                foreach (var kvpair in old)
+                    Responses[kvpair.Key] = kvpair.Value;
+            }
+            else
+            {
+                Logger.LogExcept(new IOException($"File not found '{fileName}.ooc.json'."));
+            }
+
             Redirects = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Redirects));
         }
 
@@ -123,11 +142,27 @@ namespace LamestWebserver.Core.Web
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
+            
+            if (File.Exists(fileName + ".ooc.json"))
+            {
+                SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>> responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>(new OutOfCoreHashmap<string, string>(fileName + ".ooc.json"));
 
-            SynchronizedDictionary<string, string, AVLHashMap<string, string>> responses = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
+                foreach (var key in responses.Keys)
+                    Responses[key] = responses[key];
+            }
+            else if (File.Exists(fileName + "." + nameof(Responses)))
+            {
+                SynchronizedDictionary<string, string, AVLHashMap<string, string>> responses = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
 
-            foreach (var response in responses)
-                Responses.Add(response);
+                LamestWebserver.Core.Logger.LogInformation($"Importing {responses.Count} responses for {nameof(WebRequestFactory)} from '{fileName}.{nameof(Responses)}'...");
+                
+                foreach (var response in responses)
+                    Responses.Add(response);
+            }
+            else
+            {
+                Logger.LogExcept(new IOException($"File not found '{fileName}.ooc.json'."));
+            }
 
             SynchronizedDictionary<string, string, AVLHashMap<string, string>> redirects = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Redirects));
 
@@ -146,8 +181,7 @@ namespace LamestWebserver.Core.Web
 
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
-
-            Serializer.WriteJsonData(Responses, fileName + "." + nameof(Responses));
+            
             Serializer.WriteJsonData(Redirects, fileName + "." + nameof(Redirects));
         }
 

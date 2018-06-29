@@ -2387,7 +2387,7 @@ namespace LamestWebserver.UI
         /// <param name="data">the contents of this table</param>
         public HTable(params IEnumerable<object>[] data)
         {
-            if (data == null || data.Contains(null))
+            if (data == null)
                 throw new ArgumentNullException(nameof(_elements));
 
             if (data.Length == 1 && data[0] is IEnumerable<object>)
