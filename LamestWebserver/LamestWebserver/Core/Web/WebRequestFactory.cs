@@ -191,11 +191,41 @@ namespace LamestWebserver.Core.Web
         /// <param name="URL">The requested URL.</param>
         /// <param name="maxRedirects">The maximum amount of redirects before stop following.</param>
         /// <returns>Returns the response as string.</returns>
-        public string GetResponse(string URL, int maxRedirects = 10)
+        public string GetResponse(string URL, string POST = null, int maxRedirects = 10, string accept = null, WebHeaderCollection webHeaderCollection = null)
         {
             HttpStatusCode statusCode;
 
-            return GetResponse(URL, out statusCode, maxRedirects);
+            return GetResponse(URL, out statusCode, POST, maxRedirects, accept, webHeaderCollection);
+        }
+
+        /// <summary>
+        /// Has this particular URL been cached?
+        /// </summary>
+        /// <param name="URL">The URL.</param>
+        /// <returns>Returns true if the URL has been cached.</returns>
+        public virtual bool HasCached(string URL, string POST = null, int maxRedirects = 10)
+        {
+            if (!Redirects || !Responses)
+                return false;
+
+            int redirects = 0;
+
+            RESTART:
+
+            if (redirects > maxRedirects)
+                return false;
+
+            if (Redirects && Redirects.ContainsKey(GetInternalUrlPostStorageName(URL, POST)))
+            {
+                URL = Redirects[GetInternalUrlPostStorageName(URL, POST)];
+                redirects++;
+                goto RESTART;
+            }
+
+            if (Responses && Responses.ContainsKey(GetInternalUrlPostStorageName(URL, POST)))
+                return true;
+
+            return false;
         }
 
         /// <summary>
@@ -205,7 +235,7 @@ namespace LamestWebserver.Core.Web
         /// <param name="statusCode">The status code of the Request.</param>
         /// <param name="maxRedirects">The maximum amount of redirects before stop following.</param>
         /// <returns>Returns the response as string.</returns>
-        public virtual string GetResponse(string URL, out HttpStatusCode statusCode, int maxRedirects = 10)
+        public virtual string GetResponse(string URL, out HttpStatusCode statusCode, string POST = null, int maxRedirects = 10, string accept = null, WebHeaderCollection webHeaderCollection = null)
         {
             if (URL == null)
                 throw new ArgumentNullException(nameof(URL));
@@ -234,17 +264,17 @@ namespace LamestWebserver.Core.Web
                     return null;
                 }
 
-                if (Redirects && Redirects.ContainsKey(URL))
+                if (Redirects && Redirects.ContainsKey(GetInternalUrlPostStorageName(URL, POST)))
                 {
-                    URL = Redirects[URL];
+                    URL = Redirects[GetInternalUrlPostStorageName(URL, POST)];
                     redirects++;
                     goto RESTART;
                 }
 
-                if (Responses && Responses.ContainsKey(URL))
+                if (Responses && Responses.ContainsKey(GetInternalUrlPostStorageName(URL, POST)))
                 {
                     statusCode = HttpStatusCode.NotModified;
-                    return Responses[URL];
+                    return Responses[GetInternalUrlPostStorageName(URL, POST)];
                 }
 
                 WebRequest request = WebRequest.Create(URL);
@@ -252,13 +282,39 @@ namespace LamestWebserver.Core.Web
                 (request as HttpWebRequest).Timeout = Timeout;
                 (request as HttpWebRequest).AllowAutoRedirect = false;
                 (request as HttpWebRequest).CookieContainer = Cookies;
+
+                if (accept != null)
+                    (request as HttpWebRequest).Accept = accept;
+
+                if (webHeaderCollection != null)
+                {
+                    if ((request as HttpWebRequest).Headers == null)
+                        (request as HttpWebRequest).Headers = webHeaderCollection;
+                    else
+                        (request as HttpWebRequest).Headers.Add(webHeaderCollection);
+                }
+
+                string location = null;
+
+                if (POST != null)
+                {
+                    byte[] bytes = Encoding.ASCII.GetBytes(POST);
+
+                    (request as HttpWebRequest).Method = "POST";
+                    (request as HttpWebRequest).ContentType = "application/x-www-form-urlencoded";
+                    (request as HttpWebRequest).ContentLength = bytes.Length;
+
+                    using (var requestStream = request.GetRequestStream())
+                        requestStream.Write(bytes, 0, bytes.Length);
+                }
+
                 var response = request.GetResponse();
-                string location = ((HttpWebResponse)response).GetResponseHeader("location");
+                location = ((HttpWebResponse)response).GetResponseHeader("location");
 
                 if (!string.IsNullOrEmpty(location) && location != URL)
                 {
                     if (Redirects)
-                        Redirects.Add(URL, location);
+                        Redirects.Add(GetInternalUrlPostStorageName(URL, POST), location);
 
                     URL = location;
                     redirects++;
@@ -269,7 +325,7 @@ namespace LamestWebserver.Core.Web
                 string responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
                 if (Responses)
-                    Responses.Add(URL, responseString);
+                    Responses.Add(GetInternalUrlPostStorageName(URL, POST), responseString);
 
                 return responseString;
             }
@@ -327,6 +383,14 @@ namespace LamestWebserver.Core.Web
 
             statusCode = ((HttpWebResponse)response).StatusCode;
             return new StreamReader(response.GetResponseStream()).ReadToEnd();
+        }
+
+        private static string GetInternalUrlPostStorageName(string URL, string POST)
+        {
+            if (POST == null)
+                return URL;
+            else
+                return URL + " " + POST;
         }
     }
 }
