@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,7 +30,7 @@ namespace LamestWebserver.Collections
         {
             _filename = loadFromFilename;
             _keys = Serializer.ReadJsonData<AVLHashMap<TKey, long?>>(_filename);
-            nextIndex = _keys.Max(k => k.Value.Value) + 1;
+            nextIndex = _keys.Count > 0 ? _keys.Max(k => k.Value.Value) + 1 : 0;
         }
 
         public OutOfCoreHashmap()
