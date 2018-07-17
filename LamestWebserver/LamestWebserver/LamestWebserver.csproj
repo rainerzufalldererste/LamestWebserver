@@ -174,6 +174,7 @@
     <Compile Include="Collections\OutOfCoreHashmap.cs" />
     <Compile Include="Collections\WalkableQueue.cs" />
     <Compile Include="Collections\URL.cs" />
+    <Compile Include="Core\AsyncHelper.cs" />
     <Compile Include="Core\ClampedValue.cs" />
     <Compile Include="Core\ExtentionMethods.cs" />
     <Compile Include="Core\Graphics\Thumbnail.cs" />
