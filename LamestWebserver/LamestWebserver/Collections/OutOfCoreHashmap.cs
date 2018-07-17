@@ -30,6 +30,28 @@ namespace LamestWebserver.Collections
         {
             _filename = loadFromFilename;
             _keys = Serializer.ReadJsonData<AVLHashMap<TKey, long?>>(_filename);
+
+            if(!System.IO.File.Exists(GetCompressedFile()))
+            {
+                Logger.LogInformation("Updating OutOfCoreHashmap values...");
+
+                foreach (var key in _keys)
+                {
+                    long keyIndex = key.Value.Value;
+                    TValue data = (TValue)Serializer.ReadJsonData($"{GetFileNameOld(keyIndex)}", typeof(TValue));
+                    System.IO.File.WriteAllBytes(GetFileName(keyIndex), Compression.GZipCompression.CompressString(Serializer.WriteJsonDataInMemory(data, false)));
+                }
+
+                System.IO.File.WriteAllText(GetCompressedFile(), "compressed: gzip");
+
+                foreach (var key in _keys)
+                {
+                    long keyIndex = key.Value.Value;
+                    TValue data = (TValue)Serializer.ReadJsonData($"{GetFileNameOld(keyIndex)}", typeof(TValue));
+                    System.IO.File.Move(GetFileNameOld(keyIndex), GetFileNameOld(keyIndex) + ".trash");
+                }
+            }
+            
             nextIndex = _keys.Count > 0 ? _keys.Max(k => k.Value.Value) + 1 : 0;
         }
 
@@ -39,7 +61,9 @@ namespace LamestWebserver.Collections
             _keys = new AVLHashMap<TKey, long?>();
         }
 
-        private string GetFileName(long keyValue) => $"{_filename}_/{keyValue}";
+        private string GetFileNameOld(long keyValue) => $"{_filename}_/{keyValue}";
+        private string GetFileName(long keyValue) => $"{_filename}_/{keyValue}.bin";
+        private string GetCompressedFile() => $"{_filename}.compressed";
 
         public TValue this[TKey key]
         {
@@ -54,7 +78,8 @@ namespace LamestWebserver.Collections
 
                     try
                     {
-                        return (TValue)Serializer.ReadJsonData($"{GetFileName(value.Value)}", typeof(TValue));
+                        return (TValue)Serializer.ReadJsonDataInMemory(Compression.GZipCompression.DecompressString(System.IO.File.ReadAllBytes($"{GetFileName(value.Value)}")), typeof(TValue));
+                        //return (TValue)Serializer.ReadJsonData($"{GetFileName(value.Value)}", typeof(TValue));
                     }
                     catch (Exception e)
                     {
@@ -84,7 +109,8 @@ namespace LamestWebserver.Collections
 
                     try
                     {
-                        Serializer.WriteJsonData(value, GetFileName(_value.Value));
+                        System.IO.File.WriteAllBytes(GetFileName(_value.Value), Compression.GZipCompression.CompressString(Serializer.WriteJsonDataInMemory(value, false)));
+                        //Serializer.WriteJsonData(value, GetFileName(_value.Value));
                     }
                     catch (Exception e)
                     {
@@ -107,7 +133,9 @@ namespace LamestWebserver.Collections
 
                     try
                     {
-                        Serializer.WriteJsonData(value, GetFileName(val));
+                        System.IO.File.WriteAllBytes(GetFileName(val), Compression.GZipCompression.CompressString(Serializer.WriteJsonDataInMemory(value, false)));
+                        //Serializer.WriteJsonData(value, GetFileName(val));
+
                         _keys.Add(key, val);
                         Serializer.WriteJsonData(_keys, _filename);
                     }

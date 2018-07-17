@@ -84,6 +84,20 @@ namespace LamestWebserver.Core.Web
             }
         }
 
+        public SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>> CachedResponses { get => Responses; }
+
+        public SynchronizedDictionary<string, string, AVLHashMap<string, string>> CachedRedirects { get => Redirects; }
+
+        public void AddRedirect(string from, string post, string to)
+        {
+            Redirects.Add(GetInternalUrlPostStorageName(from, post), to);
+        }
+
+        public void AddResponse(string from, string post, string response)
+        {
+            Responses.Add(GetInternalUrlPostStorageName(from, post), response);
+        }
+
         /// <summary>
         /// Clears the caches for Responses and Redirects if they were enabled.
         /// </summary>
