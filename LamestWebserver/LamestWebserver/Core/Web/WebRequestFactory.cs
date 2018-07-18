@@ -84,9 +84,9 @@ namespace LamestWebserver.Core.Web
             }
         }
 
-        public SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>> CachedResponses { get => Responses; }
+        public SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>> CachedResponses { get { return Responses; } }
 
-        public SynchronizedDictionary<string, string, AVLHashMap<string, string>> CachedRedirects { get => Redirects; }
+        public SynchronizedDictionary<string, string, AVLHashMap<string, string>> CachedRedirects { get { return Redirects; } }
 
         public void AddRedirect(string from, string post, string to)
         {
