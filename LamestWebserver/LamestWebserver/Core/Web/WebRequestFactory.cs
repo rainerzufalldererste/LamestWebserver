@@ -197,6 +197,7 @@ namespace LamestWebserver.Core.Web
                 throw new ArgumentNullException(nameof(fileName));
             
             Serializer.WriteJsonData(Redirects, fileName + "." + nameof(Redirects));
+            Responses.InnerDictionary.SaveKeysToDisk();
         }
 
         /// <summary>

@@ -19,6 +19,7 @@ namespace LamestWebserver.Collections
         private string _filename;
         private AVLHashMap<TKey, long?> _keys;
         private long nextIndex = 0;
+        public bool SaveKeysAutomatically = true;
 
         public OutOfCoreHashmap(int size, string filename)
         {
@@ -59,6 +60,11 @@ namespace LamestWebserver.Collections
         {
             _filename = Hash.GetHash();
             _keys = new AVLHashMap<TKey, long?>();
+        }
+
+        ~OutOfCoreHashmap()
+        {
+            SaveKeysToDisk();
         }
 
         private string GetFileNameOld(long keyValue) => $"{_filename}_/{keyValue}";
@@ -137,7 +143,9 @@ namespace LamestWebserver.Collections
                         //Serializer.WriteJsonData(value, GetFileName(val));
 
                         _keys.Add(key, val);
-                        Serializer.WriteJsonData(_keys, _filename);
+
+                        if (SaveKeysAutomatically)
+                            SaveKeysToDisk();
                     }
                     catch (Exception e)
                     {
@@ -153,6 +161,11 @@ namespace LamestWebserver.Collections
                     }
                 }
             }
+        }
+
+        public void SaveKeysToDisk()
+        {
+            Serializer.WriteJsonData(_keys, _filename);
         }
 
         public int Count =>_keys.Count;
