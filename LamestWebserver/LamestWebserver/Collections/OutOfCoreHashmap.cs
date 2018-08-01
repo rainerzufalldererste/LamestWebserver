@@ -40,7 +40,7 @@ namespace LamestWebserver.Collections
                 {
                     long keyIndex = key.Value.Value;
                     TValue data = (TValue)Serializer.ReadJsonData($"{GetFileNameOld(keyIndex)}", typeof(TValue));
-                    System.IO.File.WriteAllBytes(GetFileName(keyIndex), Compression.GZipCompression.CompressString(Serializer.WriteJsonDataInMemory(data, false)));
+                    SetValueToFile(keyIndex, data);
                 }
 
                 System.IO.File.WriteAllText(GetCompressedFile(), "compressed: gzip");
@@ -71,6 +71,22 @@ namespace LamestWebserver.Collections
         private string GetFileName(long keyValue) => $"{_filename}_/{keyValue}.bin";
         private string GetCompressedFile() => $"{_filename}.compressed";
 
+        private TValue GetValueFromFile(long key)
+        {
+            if (typeof(TValue).Equals(typeof(string)))
+                return (TValue)(object)Compression.GZipCompression.DecompressString(System.IO.File.ReadAllBytes($"{GetFileName(key)}"));
+            else
+                return (TValue)Serializer.ReadJsonDataInMemory(Compression.GZipCompression.DecompressString(System.IO.File.ReadAllBytes($"{GetFileName(key)}")), typeof(TValue));
+        }
+
+        private void SetValueToFile(long key, TValue value)
+        {
+            if (typeof(TValue).Equals(typeof(string)))
+                System.IO.File.WriteAllBytes(GetFileName(key), Compression.GZipCompression.CompressString(value.ToString()));
+            else
+                System.IO.File.WriteAllBytes(GetFileName(key), Compression.GZipCompression.CompressString(Serializer.WriteJsonDataInMemory(value, false)));
+        }
+
         public TValue this[TKey key]
         {
             get
@@ -84,7 +100,7 @@ namespace LamestWebserver.Collections
 
                     try
                     {
-                        return (TValue)Serializer.ReadJsonDataInMemory(Compression.GZipCompression.DecompressString(System.IO.File.ReadAllBytes($"{GetFileName(value.Value)}")), typeof(TValue));
+                        return GetValueFromFile(value.Value);
                         //return (TValue)Serializer.ReadJsonData($"{GetFileName(value.Value)}", typeof(TValue));
                     }
                     catch (Exception e)
@@ -115,7 +131,7 @@ namespace LamestWebserver.Collections
 
                     try
                     {
-                        System.IO.File.WriteAllBytes(GetFileName(_value.Value), Compression.GZipCompression.CompressString(Serializer.WriteJsonDataInMemory(value, false)));
+                        SetValueToFile(_value.Value, value);
                         //Serializer.WriteJsonData(value, GetFileName(_value.Value));
                     }
                     catch (Exception e)
@@ -139,7 +155,7 @@ namespace LamestWebserver.Collections
 
                     try
                     {
-                        System.IO.File.WriteAllBytes(GetFileName(val), Compression.GZipCompression.CompressString(Serializer.WriteJsonDataInMemory(value, false)));
+                        SetValueToFile(val, value);
                         //Serializer.WriteJsonData(value, GetFileName(val));
 
                         _keys.Add(key, val);
