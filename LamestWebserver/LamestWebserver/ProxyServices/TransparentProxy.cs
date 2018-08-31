@@ -141,9 +141,9 @@ namespace LamestWebserver.ProxyServices
                     int count = stream.Read(inputBuffer, 0, _packetSize);
 
                     if (count == 0)
-                        continue;
+                        return;
 
-                    Logger.LogInformation($"Transparent Proxy: Accepted Request ({count} bytes)");
+                    Logger.LogInformation($"Transparent Proxy ({ProxyServerPort}): Accepted Request ({count} bytes)");
 
                     Thread t = new Thread(() =>
                     {
@@ -166,16 +166,16 @@ namespace LamestWebserver.ProxyServices
 
                                 if (readCount > 0)
                                 {
-                                    stream.Write(gateWayBuffer, 0, readCount);
-                                    Logger.LogInformation($"Transparent Proxy: Delivered Response ({readCount} bytes)");
+                                    stream.WriteAsync(gateWayBuffer, 0, readCount);
+                                    Logger.LogInformation($"Transparent Proxy ({ProxyServerPort}): Delivered Response ({readCount} bytes)");
                                 }
                             }
                             else
                             {
                                 try
                                 {
-                                    stream.Write(_responseIfNotAvailable, 0, _responseIfNotAvailable.Length);
-                                    Logger.LogError("Transparent Proxy: Resource Not Available. (Connection Failure)");
+                                    stream.WriteAsync(_responseIfNotAvailable, 0, _responseIfNotAvailable.Length);
+                                    Logger.LogError($"Transparent Proxy ({ProxyServerPort}): Resource Not Available. (Connection Failure)");
                                 }
                                 catch (ObjectDisposedException)
                                 {
@@ -189,7 +189,8 @@ namespace LamestWebserver.ProxyServices
                         }
                         catch (Exception e)
                         {
-                            Logger.LogError($"Transparent Proxy: Resource Not Available. ({e.Message})");
+                            stream.WriteAsync(_responseIfNotAvailable, 0, _responseIfNotAvailable.Length);
+                            Logger.LogError($"Transparent Proxy ({ProxyServerPort}): Resource Not Available. ({e.Message})");
                         }
                     });
 
@@ -204,8 +205,6 @@ namespace LamestWebserver.ProxyServices
                     break;
                 }
             }
-
-            //stream.Dispose();
         }
     }
 }
