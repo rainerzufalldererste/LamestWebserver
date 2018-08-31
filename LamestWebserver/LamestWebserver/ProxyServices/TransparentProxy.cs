@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using LamestWebserver.Core;
 
 namespace LamestWebserver.ProxyServices
 {
@@ -41,6 +42,7 @@ namespace LamestWebserver.ProxyServices
         private bool _active = true;
         private TcpListener _listener;
         private readonly int _gatewayTimeout;
+        private readonly int _packetSize;
 
         /// <inheritdoc />
         public int ProxyServerPort { get; }
@@ -62,14 +64,16 @@ namespace LamestWebserver.ProxyServices
         /// <param name="response">the default response if the service is not available</param>
         /// <param name="timeout">the timeout at which to drop the connection to a client</param>
         /// <param name="gatewayTimeout">the timeout at which to expect the replicated service to be not available</param>
+        /// <param name="packetSize">the size of a single packet that is forwarded</param>
         /// <exception cref="InvalidOperationException">Throws an exception if the port is currently blocked</exception>
-        public TransparentProxy(IPEndPoint gateway, int proxyServerPort, byte[] response = null, int timeout = 15000, int gatewayTimeout = 250)
+        public TransparentProxy(IPEndPoint gateway, int proxyServerPort, byte[] response = null, int timeout = 15000, int gatewayTimeout = 250, int packetSize = 2048)
         {
             Gateway = gateway;
             ProxyServerPort = proxyServerPort;
             _responseIfNotAvailable = response;
             _timeout = timeout;
             _gatewayTimeout = gatewayTimeout;
+            _packetSize = packetSize;
 
             if (!WebServer.TcpPortIsUnused(proxyServerPort))
                 throw new InvalidOperationException("The TCP-Port " + proxyServerPort + " is currently blocked by another Application.");
@@ -94,10 +98,11 @@ namespace LamestWebserver.ProxyServices
                     {
                         try
                         {
-                            var task = _listener.AcceptTcpClientAsync();
+                            var listener = _listener.AcceptTcpClientAsync();
+                            listener.Wait();
+                            Logger.LogInformation($"Transparent Proxy: Client Connected from {listener.Result.Client.RemoteEndPoint.ToString()}.");
                             Thread t = new Thread(HandleClient);
-                            task.Wait();
-                            t.Start(task.Result);
+                            t.Start(listener.Result);
                         }
                         catch (Exception)
                         {
@@ -123,42 +128,54 @@ namespace LamestWebserver.ProxyServices
         private void HandleClient(object result)
         {
             TcpClient client = (TcpClient) result;
+            client.NoDelay = true;
             NetworkStream stream = client.GetStream();
-
+            stream.ReadTimeout = _timeout;
+            
             while (_active)
             {
                 try
                 {
-                    byte[] inputBuffer = new byte[4096];
+                    byte[] inputBuffer = new byte[_packetSize];
 
-                    var task = stream.ReadAsync(inputBuffer, 0, 4096);
+                    int count = stream.Read(inputBuffer, 0, _packetSize);
 
-                    if (!task.Wait(_timeout))
-                        return;
-                    else
+                    if (count == 0)
+                        continue;
+
+                    Logger.LogInformation($"Transparent Proxy: Accepted Request ({count} bytes)");
+
+                    Thread t = new Thread(() =>
                     {
-                        TcpClient tcpC = new TcpClient();
-                        var proxyTask = tcpC.ConnectAsync(Gateway.Address, Gateway.Port);
-
-                        if (proxyTask.Wait(_gatewayTimeout))
+                        try
                         {
-                            NetworkStream nws = tcpC.GetStream();
+                            TcpClient tcpC = new TcpClient();
+                            var proxyTask = tcpC.ConnectAsync(Gateway.Address, Gateway.Port);
 
-                            nws.Write(inputBuffer, 0, task.Result);
-
-                            byte[] gateWayBuffer = new byte[4096];
-
-                            var readTask = nws.ReadAsync(gateWayBuffer, 0, 4096);
-
-                            if (readTask.Wait(_gatewayTimeout))
+                            if (proxyTask.Wait(_gatewayTimeout))
                             {
-                                stream.Write(gateWayBuffer, 0, readTask.Result);
+                                NetworkStream nws = tcpC.GetStream();
+                                nws.ReadTimeout = _gatewayTimeout;
+                                nws.WriteTimeout = _timeout;
+
+                                nws.Write(inputBuffer, 0, count);
+
+                                byte[] gateWayBuffer = new byte[_packetSize];
+
+                                int readCount = nws.Read(gateWayBuffer, 0, _packetSize);
+
+                                if (readCount > 0)
+                                {
+                                    stream.Write(gateWayBuffer, 0, readCount);
+                                    Logger.LogInformation($"Transparent Proxy: Delivered Response ({readCount} bytes)");
+                                }
                             }
                             else
                             {
                                 try
                                 {
-                                    stream.WriteAsync(_responseIfNotAvailable, 0, _responseIfNotAvailable.Length);
+                                    stream.Write(_responseIfNotAvailable, 0, _responseIfNotAvailable.Length);
+                                    Logger.LogError("Transparent Proxy: Resource Not Available. (Connection Failure)");
                                 }
                                 catch (ObjectDisposedException)
                                 {
@@ -170,30 +187,25 @@ namespace LamestWebserver.ProxyServices
                                 }
                             }
                         }
-                        else
+                        catch (Exception e)
                         {
-                            try
-                            {
-                                stream.WriteAsync(_responseIfNotAvailable, 0, _responseIfNotAvailable.Length);
-                            }
-                            catch (ObjectDisposedException)
-                            {
-                                return;
-                            }
-                            catch (IOException)
-                            {
-                                return;
-                            }
+                            Logger.LogError($"Transparent Proxy: Resource Not Available. ({e.Message})");
                         }
-                    }
+                    });
+
+                    t.Start();
                 }
                 catch (IOException)
                 {
                     break;
                 }
+                catch (Exception)
+                {
+                    break;
+                }
             }
 
-            stream.Dispose();
+            //stream.Dispose();
         }
     }
 }

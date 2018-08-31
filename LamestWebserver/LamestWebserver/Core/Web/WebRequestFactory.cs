@@ -148,6 +148,12 @@ namespace LamestWebserver.Core.Web
             Redirects = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Redirects));
         }
 
+        public void SetCacheName(string fileName)
+        {
+            Responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>(new OutOfCoreHashmap<string, string>(1024, fileName + ".ooc.json"));
+            Redirects = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>();
+        }
+
         /// <summary>
         /// Loads the cached responses and redirects from files and appends them to the current collection of responses and redirects.
         /// </summary>
