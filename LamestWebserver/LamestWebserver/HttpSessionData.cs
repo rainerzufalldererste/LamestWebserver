@@ -109,7 +109,7 @@ namespace LamestWebserver
         public string ForceGetNextSsid()
         {
             if (!KnownUser)
-                throw new Exception("The current user is unknown. Please check for SessionData.knownUser before calling this method.");
+                throw new Exception("The current user is unknown. Please check for SessionData.KnownUser before calling this method.");
 
             Ssid = SessionContainer.ForceGetNextSSID(UserName);
 

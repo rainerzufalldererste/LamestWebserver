@@ -39,7 +39,7 @@ namespace UnitTests
                 };
             }
 
-            public override string GetResponse(string URL, out HttpStatusCode statusCode, int maxRedirects = 10)
+            public override string GetResponse(string URL, out HttpStatusCode statusCode, string POST = null, int maxRedirects = 10, string accept = null, WebHeaderCollection webHeaderCollection = null)
             {
                 string ret = PremadeResponses[URL];
 

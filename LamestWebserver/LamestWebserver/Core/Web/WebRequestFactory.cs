@@ -21,7 +21,7 @@ namespace LamestWebserver.Core.Web
         /// <summary>
         /// The cached Responses of recent Requests.
         /// </summary>
-        protected SynchronizedDictionary<string, string, AVLHashMap<string, string>> Responses;
+        protected SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>> Responses;
 
         /// <summary>
         /// The cached Redirects of recent Redirects.
@@ -79,9 +79,23 @@ namespace LamestWebserver.Core.Web
         {
             if (cacheResponses)
             {
-                Responses = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>();
+                Responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>();
                 Redirects = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>();
             }
+        }
+
+        public SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>> CachedResponses { get { return Responses; } }
+
+        public SynchronizedDictionary<string, string, AVLHashMap<string, string>> CachedRedirects { get { return Redirects; } }
+
+        public void AddRedirect(string from, string post, string to)
+        {
+            Redirects.Add(GetInternalUrlPostStorageName(from, post), to);
+        }
+
+        public void AddResponse(string from, string post, string response)
+        {
+            Responses.Add(GetInternalUrlPostStorageName(from, post), response);
         }
 
         /// <summary>
@@ -105,14 +119,39 @@ namespace LamestWebserver.Core.Web
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
 
-            if (Responses && Responses.Any())
+            if (Responses && Responses.Count() > 0)
                 Logger.LogWarning($"Loading cached {nameof(WebRequestFactory)} will override {Responses.Count} responses from the cache. If you want to keep them consider using {nameof(WebRequestFactory)}.{nameof(WebRequestFactory.AppendCacheState)}.");
 
-            if (Redirects && Redirects.Any())
+            if (Redirects && Redirects.Count() > 0)
                 Logger.LogWarning($"Loading cached {nameof(WebRequestFactory)} will override {Redirects.Count} redirects from the cache. If you want to keep them consider using {nameof(WebRequestFactory)}.{nameof(WebRequestFactory.AppendCacheState)}.");
 
-            Responses = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
+            if (File.Exists(fileName + ".ooc.json"))
+            {
+                Responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>(new OutOfCoreHashmap<string, string>(fileName + ".ooc.json"));
+            }
+            else if(File.Exists(fileName + "." + nameof(Responses)))
+            {
+                SynchronizedDictionary<string, string, AVLHashMap<string, string>> old = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
+
+                Responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>(new OutOfCoreHashmap<string, string>(1024, fileName + ".ooc.json"));
+
+                LamestWebserver.Core.Logger.LogInformation($"Importing {old.Count} responses for {nameof(WebRequestFactory)} from '{fileName}.{nameof(Responses)}'...");
+
+                foreach (var kvpair in old)
+                    Responses[kvpair.Key] = kvpair.Value;
+            }
+            else
+            {
+                Logger.LogExcept(new IOException($"File not found '{fileName}.ooc.json'."));
+            }
+
             Redirects = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Redirects));
+        }
+
+        public void SetCacheName(string fileName)
+        {
+            Responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>(new OutOfCoreHashmap<string, string>(1024, fileName + ".ooc.json"));
+            Redirects = new SynchronizedDictionary<string, string, AVLHashMap<string, string>>();
         }
 
         /// <summary>
@@ -123,11 +162,27 @@ namespace LamestWebserver.Core.Web
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
+            
+            if (File.Exists(fileName + ".ooc.json"))
+            {
+                SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>> responses = new SynchronizedDictionary<string, string, OutOfCoreHashmap<string, string>>(new OutOfCoreHashmap<string, string>(fileName + ".ooc.json"));
 
-            SynchronizedDictionary<string, string, AVLHashMap<string, string>> responses = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
+                foreach (var key in responses.Keys)
+                    Responses[key] = responses[key];
+            }
+            else if (File.Exists(fileName + "." + nameof(Responses)))
+            {
+                SynchronizedDictionary<string, string, AVLHashMap<string, string>> responses = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Responses));
 
-            foreach (var response in responses)
-                Responses.Add(response);
+                LamestWebserver.Core.Logger.LogInformation($"Importing {responses.Count} responses for {nameof(WebRequestFactory)} from '{fileName}.{nameof(Responses)}'...");
+                
+                foreach (var response in responses)
+                    Responses.Add(response);
+            }
+            else
+            {
+                Logger.LogExcept(new IOException($"File not found '{fileName}.ooc.json'."));
+            }
 
             SynchronizedDictionary<string, string, AVLHashMap<string, string>> redirects = Serializer.ReadJsonData<SynchronizedDictionary<string, string, AVLHashMap<string, string>>>(fileName + "." + nameof(Redirects));
 
@@ -146,9 +201,9 @@ namespace LamestWebserver.Core.Web
 
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
-
-            Serializer.WriteJsonData(Responses, fileName + "." + nameof(Responses));
+            
             Serializer.WriteJsonData(Redirects, fileName + "." + nameof(Redirects));
+            Responses.InnerDictionary.SaveKeysToDisk();
         }
 
         /// <summary>
@@ -157,11 +212,41 @@ namespace LamestWebserver.Core.Web
         /// <param name="URL">The requested URL.</param>
         /// <param name="maxRedirects">The maximum amount of redirects before stop following.</param>
         /// <returns>Returns the response as string.</returns>
-        public string GetResponse(string URL, int maxRedirects = 10)
+        public string GetResponse(string URL, string POST = null, int maxRedirects = 10, string accept = null, WebHeaderCollection webHeaderCollection = null)
         {
             HttpStatusCode statusCode;
 
-            return GetResponse(URL, out statusCode, maxRedirects);
+            return GetResponse(URL, out statusCode, POST, maxRedirects, accept, webHeaderCollection);
+        }
+
+        /// <summary>
+        /// Has this particular URL been cached?
+        /// </summary>
+        /// <param name="URL">The URL.</param>
+        /// <returns>Returns true if the URL has been cached.</returns>
+        public virtual bool HasCached(string URL, string POST = null, int maxRedirects = 10)
+        {
+            if (!Redirects || !Responses)
+                return false;
+
+            int redirects = 0;
+
+            RESTART:
+
+            if (redirects > maxRedirects)
+                return false;
+
+            if (Redirects && Redirects.ContainsKey(GetInternalUrlPostStorageName(URL, POST)))
+            {
+                URL = Redirects[GetInternalUrlPostStorageName(URL, POST)];
+                redirects++;
+                goto RESTART;
+            }
+
+            if (Responses && Responses.ContainsKey(GetInternalUrlPostStorageName(URL, POST)))
+                return true;
+
+            return false;
         }
 
         /// <summary>
@@ -171,7 +256,7 @@ namespace LamestWebserver.Core.Web
         /// <param name="statusCode">The status code of the Request.</param>
         /// <param name="maxRedirects">The maximum amount of redirects before stop following.</param>
         /// <returns>Returns the response as string.</returns>
-        public virtual string GetResponse(string URL, out HttpStatusCode statusCode, int maxRedirects = 10)
+        public virtual string GetResponse(string URL, out HttpStatusCode statusCode, string POST = null, int maxRedirects = 10, string accept = null, WebHeaderCollection webHeaderCollection = null)
         {
             if (URL == null)
                 throw new ArgumentNullException(nameof(URL));
@@ -200,17 +285,17 @@ namespace LamestWebserver.Core.Web
                     return null;
                 }
 
-                if (Redirects && Redirects.ContainsKey(URL))
+                if (Redirects && Redirects.ContainsKey(GetInternalUrlPostStorageName(URL, POST)))
                 {
-                    URL = Redirects[URL];
+                    URL = Redirects[GetInternalUrlPostStorageName(URL, POST)];
                     redirects++;
                     goto RESTART;
                 }
 
-                if (Responses && Responses.ContainsKey(URL))
+                if (Responses && Responses.ContainsKey(GetInternalUrlPostStorageName(URL, POST)))
                 {
                     statusCode = HttpStatusCode.NotModified;
-                    return Responses[URL];
+                    return Responses[GetInternalUrlPostStorageName(URL, POST)];
                 }
 
                 WebRequest request = WebRequest.Create(URL);
@@ -218,13 +303,39 @@ namespace LamestWebserver.Core.Web
                 (request as HttpWebRequest).Timeout = Timeout;
                 (request as HttpWebRequest).AllowAutoRedirect = false;
                 (request as HttpWebRequest).CookieContainer = Cookies;
+
+                if (accept != null)
+                    (request as HttpWebRequest).Accept = accept;
+
+                if (webHeaderCollection != null)
+                {
+                    if ((request as HttpWebRequest).Headers == null)
+                        (request as HttpWebRequest).Headers = webHeaderCollection;
+                    else
+                        (request as HttpWebRequest).Headers.Add(webHeaderCollection);
+                }
+
+                string location = null;
+
+                if (POST != null)
+                {
+                    byte[] bytes = Encoding.ASCII.GetBytes(POST);
+
+                    (request as HttpWebRequest).Method = "POST";
+                    (request as HttpWebRequest).ContentType = "application/x-www-form-urlencoded";
+                    (request as HttpWebRequest).ContentLength = bytes.Length;
+
+                    using (var requestStream = request.GetRequestStream())
+                        requestStream.Write(bytes, 0, bytes.Length);
+                }
+
                 var response = request.GetResponse();
-                string location = ((HttpWebResponse)response).GetResponseHeader("location");
+                location = ((HttpWebResponse)response).GetResponseHeader("location");
 
                 if (!string.IsNullOrEmpty(location) && location != URL)
                 {
                     if (Redirects)
-                        Redirects.Add(URL, location);
+                        Redirects.Add(GetInternalUrlPostStorageName(URL, POST), location);
 
                     URL = location;
                     redirects++;
@@ -235,7 +346,7 @@ namespace LamestWebserver.Core.Web
                 string responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
 
                 if (Responses)
-                    Responses.Add(URL, responseString);
+                    Responses.Add(GetInternalUrlPostStorageName(URL, POST), responseString);
 
                 return responseString;
             }
@@ -293,6 +404,14 @@ namespace LamestWebserver.Core.Web
 
             statusCode = ((HttpWebResponse)response).StatusCode;
             return new StreamReader(response.GetResponseStream()).ReadToEnd();
+        }
+
+        private static string GetInternalUrlPostStorageName(string URL, string POST)
+        {
+            if (POST == null)
+                return URL;
+            else
+                return URL + " " + POST;
         }
     }
 }
