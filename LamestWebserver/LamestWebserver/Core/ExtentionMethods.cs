@@ -16,30 +16,30 @@ namespace LamestWebserver.Core
         /// <summary>
         /// Decodes the characters of a HTML string.
         /// </summary>
-        /// <param name="s">the string to decode</param>
+        /// <param name="text">the string to decode</param>
         /// <returns>the decoded string</returns>
-        public static string DecodeHtml(this string s) => System.Web.HttpUtility.HtmlDecode(s);
+        public static string DecodeHtml(this string text) => System.Web.HttpUtility.HtmlDecode(text);
 
         /// <summary>
         /// Decodes the characters of a Url string.
         /// </summary>
-        /// <param name="s">the string to decode</param>
+        /// <param name="text">the string to decode</param>
         /// <returns>the decoded string</returns>
-        public static string DecodeUrl(this string s) => System.Web.HttpUtility.UrlDecode(s);
+        public static string DecodeUrl(this string text) => System.Web.HttpUtility.UrlDecode(text);
 
         /// <summary>
         /// HTTP URL encodes a given input
         /// </summary>
-        /// <param name="input">the input</param>
+        /// <param name="text">the input</param>
         /// <returns>the input encoded as HTTP URL</returns>
-        public static string EncodeUrl(this string input) => System.Web.HttpUtility.UrlEncode(input);
+        public static string EncodeUrl(this string text) => System.Web.HttpUtility.UrlEncode(text);
 
         /// <summary>
         /// HTML encodes a given input
         /// </summary>
         /// <param name="text">the input</param>
         /// <returns>the input encoded as HTML</returns>
-        public static string EncodeHtml(this string text) => new System.Web.HtmlString(text).ToHtmlString();
+        public static string EncodeHtml(this string text) => System.Web.HttpUtility.HtmlEncode(text);
 
         /// <summary>
         /// Appends all contained values separated by a given string.
@@ -61,7 +61,7 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
-        /// Gets the index of an Element from a List
+        /// Gets the index of an Element from a List.
         /// </summary>
         /// <typeparam name="T">The Type of the List-Elements</typeparam>
         /// <param name="list">The List</param>
@@ -83,25 +83,105 @@ namespace LamestWebserver.Core
             return null;
         }
 
-        internal static char[] HexToCharLookupTable = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+        /// <summary>
+        /// Gets the index of an Element from an Array.
+        /// </summary>
+        /// <typeparam name="T">The Type of the Array-Elements</typeparam>
+        /// <param name="list">The Array</param>
+        /// <param name="value">The Value</param>
+        /// <returns>Index or null if not contained or value is null</returns>
+        public static int? GetIndex<T>(this T[] list, T value)
+        {
+            if (value == null)
+                return null;
+
+            for (int i = 0; i < list.Length; i++)
+            {
+                if (list[i] != null && list[i].Equals(value))
+                {
+                    return i;
+                }
+            }
+
+            return null;
+        }
+
+        internal static char[] HexToCharLookupTable = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
         /// <summary>
-        /// Converts a byte[] to a hex string
+        /// Converts a byte[] to a hex string.
         /// </summary>
-        /// <param name="bytes">the byte[]</param>
+        /// <param name="bytes">The byte[].</param>
         /// <returns>the byte[] as hex string</returns>
         public static string ToHexString(this byte[] bytes)
         {
             char[] s = new char[bytes.Length * 2];
+            int byteIndex = bytes.Length * 2 - 1;
 
             for (int i = 0; i < bytes.Length; i++)
             {
-                s[i * 2] = HexToCharLookupTable[bytes[i] & 0x0F];
-                s[i * 2 + 1] = HexToCharLookupTable[(bytes[i] & 0xF0) >> 4];
+                s[byteIndex--] = HexToCharLookupTable[bytes[i] & 0x0F];
+                s[byteIndex--] = HexToCharLookupTable[(bytes[i] & 0xF0) >> 4];
             }
 
             return new string(s);
         }
+
+        /// <summary>
+        /// Converts a number to a hex string.
+        /// </summary>
+        /// <param name="value">The number.</param>
+        /// <returns>The number as hex string.</returns>
+        public static string ToHexString(this ulong value) => BitConverter.GetBytes(value).ToHexString();
+
+        /// <summary>
+        /// Converts a number to a hex string.
+        /// </summary>
+        /// <param name="value">The number.</param>
+        /// <returns>The number as hex string.</returns>
+        public static string ToHexString(this uint value) => BitConverter.GetBytes(value).ToHexString();
+
+        /// <summary>
+        /// Converts a number to a hex string.
+        /// </summary>
+        /// <param name="value">The number.</param>
+        /// <returns>The number as hex string.</returns>
+        public static string ToHexString(this ushort value) => BitConverter.GetBytes(value).ToHexString();
+
+        /// <summary>
+        /// Converts a number to a hex string.
+        /// </summary>
+        /// <param name="value">The number.</param>
+        /// <returns>The number as hex string.</returns>
+        public static string ToHexString(this byte value) => new byte[1] { value }.ToHexString();
+
+        /// <summary>
+        /// Converts a number to a hex string.
+        /// </summary>
+        /// <param name="value">The number.</param>
+        /// <returns>The number as hex string.</returns>
+        public static string ToHexString(this long value) => BitConverter.GetBytes(value).ToHexString();
+
+        /// <summary>
+        /// Converts a number to a hex string.
+        /// </summary>
+        /// <param name="value">The number.</param>
+        /// <returns>The number as hex string.</returns>
+        public static string ToHexString(this int value) => BitConverter.GetBytes(value).ToHexString();
+
+        /// <summary>
+        /// Converts a number to a hex string.
+        /// </summary>
+        /// <param name="value">The number.</param>
+        /// <returns>The number as hex string.</returns>
+        public static string ToHexString(this short value) => BitConverter.GetBytes(value).ToHexString();
+
+        /// <summary>
+        /// Converts a number to a hex string.
+        /// </summary>
+        /// <param name="value">The number.</param>
+        /// <returns>The number as hex string.</returns>
+        public static string ToHexString(this sbyte value) => BitConverter.GetBytes(value)[0].ToHexString();
 
         private static string ToBitString(this ulong value, int sizeOfType)
         {
@@ -118,7 +198,7 @@ namespace LamestWebserver.Core
                     u <<= 1;
                 }
 
-                return new string(pChars);
+                return new string(pChars, 0, bits);
             }
         }
 
@@ -162,133 +242,168 @@ namespace LamestWebserver.Core
         /// </summary>
         /// <param name="value">The integer.</param>
         /// <returns>The Bits as '1' and '0'.</returns>
-        public static string ToBitString(this int value) => BitConverter.ToUInt64(BitConverter.GetBytes(value), 0).ToBitString(sizeof(int));
+        public static string ToBitString(this int value) => ((ulong)BitConverter.ToUInt32(BitConverter.GetBytes(value), 0)).ToBitString(sizeof(int));
 
         /// <summary>
         /// Retrieves the bits of a given integer.
         /// </summary>
         /// <param name="value">The integer.</param>
         /// <returns>The Bits as '1' and '0'.</returns>
-        public static string ToBitString(this short value) => BitConverter.ToUInt64(BitConverter.GetBytes(value), 0).ToBitString(sizeof(short));
+        public static string ToBitString(this short value) => ((ulong)BitConverter.ToUInt16(BitConverter.GetBytes(value), 0)).ToBitString(sizeof(short));
 
         /// <summary>
         /// Retrieves the bits of a given integer.
         /// </summary>
         /// <param name="value">The integer.</param>
         /// <returns>The Bits as '1' and '0'.</returns>
-        public static string ToBitString(this sbyte value) => BitConverter.ToUInt64(BitConverter.GetBytes(value), 0).ToBitString(sizeof(sbyte));
+        public static string ToBitString(this sbyte value) => ((ulong)BitConverter.ToUInt16(BitConverter.GetBytes(value).Concat(new byte[8]).ToArray(), 0)).ToBitString(sizeof(sbyte));
 
         /// <summary>
         /// Casts a Tuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The tuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1>(this Tuple<T1> tuple) => new object[] { tuple.Item1 };
+        public static IEnumerable<object> ToEnumerable<T1>(this Tuple<T1> tuple) => new object[] { tuple.Item1 };
 
         /// <summary>
         /// Casts a Tuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The tuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2>(this Tuple<T1, T2> tuple) => new object[] { tuple.Item1, tuple.Item2 };
+        public static IEnumerable<object> ToEnumerable<T1, T2>(this Tuple<T1, T2> tuple) => new object[] { tuple.Item1, tuple.Item2 };
 
         /// <summary>
         /// Casts a Tuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The tuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3>(this Tuple<T1, T2, T3> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3>(this Tuple<T1, T2, T3> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3 };
 
         /// <summary>
         /// Casts a Tuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The tuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4 };
 
         /// <summary>
         /// Casts a Tuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The tuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5>(this Tuple<T1, T2, T3, T4, T5> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4, T5>(this Tuple<T1, T2, T3, T4, T5> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5 };
 
         /// <summary>
         /// Casts a Tuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The tuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6>(this Tuple<T1, T2, T3, T4, T5, T6> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4, T5, T6>(this Tuple<T1, T2, T3, T4, T5, T6> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6 };
 
         /// <summary>
         /// Casts a Tuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The tuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6, T7>(this Tuple<T1, T2, T3, T4, T5, T6, T7> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4, T5, T6, T7>(this Tuple<T1, T2, T3, T4, T5, T6, T7> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7 };
 
         /// <summary>
         /// Casts a Tuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The tuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6, T7, T8>(this Tuple<T1, T2, T3, T4, T5, T6, T7, T8> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7, tuple.Rest };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4, T5, T6, T7, T8>(this Tuple<T1, T2, T3, T4, T5, T6, T7, T8> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7, tuple.Rest };
 
         /// <summary>
         /// Casts a ValueTuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1>(this ValueTuple<T1> tuple) => new object[] { tuple.Item1 };
+        public static IEnumerable<object> ToEnumerable<T1>(this ValueTuple<T1> tuple) => new object[] { tuple.Item1 };
 
         /// <summary>
         /// Casts a ValueTuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2>(this ValueTuple<T1, T2> tuple) => new object[] { tuple.Item1, tuple.Item2 };
+        public static IEnumerable<object> ToEnumerable<T1, T2>(this ValueTuple<T1, T2> tuple) => new object[] { tuple.Item1, tuple.Item2 };
 
         /// <summary>
         /// Casts a ValueTuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3>(this ValueTuple<T1, T2, T3> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3>(this ValueTuple<T1, T2, T3> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3 };
 
         /// <summary>
         /// Casts a ValueTuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4>(this ValueTuple<T1, T2, T3, T4> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4>(this ValueTuple<T1, T2, T3, T4> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4 };
 
         /// <summary>
         /// Casts a ValueTuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5>(this ValueTuple<T1, T2, T3, T4, T5> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4, T5>(this ValueTuple<T1, T2, T3, T4, T5> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5 };
 
         /// <summary>
         /// Casts a ValueTuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6>(this ValueTuple<T1, T2, T3, T4, T5, T6> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4, T5, T6>(this ValueTuple<T1, T2, T3, T4, T5, T6> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6 };
 
         /// <summary>
         /// Casts a ValueTuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<T1, T2, T3, T4, T5, T6, T7> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7 };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<T1, T2, T3, T4, T5, T6, T7> tuple) => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7 };
 
         /// <summary>
         /// Casts a ValueTuple to an IEnumerable.
         /// </summary>
         /// <param name="tuple">The valueTuple to cast to IEnumerable.</param>
         /// <returns>The elements in order as IEnumerable (object[]).</returns>
-        public static IEnumerable ToEnumerable<T1, T2, T3, T4, T5, T6, T7, T8>(this ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8> tuple) where T8 : struct => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7, tuple.Rest };
+        public static IEnumerable<object> ToEnumerable<T1, T2, T3, T4, T5, T6, T7, T8>(this ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8> tuple) where T8 : struct => new object[] { tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, tuple.Item7, tuple.Rest };
+
+        /// <summary>
+        /// Checks whether a list starts with a certain sequence.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements of the list.</typeparam>
+        /// <param name="list">The list to check.</param>
+        /// <param name="startsWith">The sequence the list has to start with.</param>
+        /// <returns>Returns true if the list starts with the given sequence. False if not.</returns>
+        public static bool StartsWith<T>(this IEnumerable<T> list, IEnumerable<T> startsWith)
+        {
+            if (list.Count() < startsWith.Count())
+                return false;
+
+            IEnumerator<T> listEnumerator = list.GetEnumerator();
+            IEnumerator<T> startsWithEnumerator = startsWith.GetEnumerator();
+
+            while(listEnumerator.MoveNext())
+            {
+                if (!startsWithEnumerator.MoveNext())
+                    return true;
+
+                if(listEnumerator.Current == null)
+                {
+                    if (startsWithEnumerator.Current == null)
+                        continue;
+                    else
+                        return false;
+                }
+
+                if (!listEnumerator.Current.Equals(startsWithEnumerator.Current))
+                    return false;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Checks whether a list of lists contains a given list, that is equal to the provided sequence.
@@ -307,15 +422,73 @@ namespace LamestWebserver.Core
         }
 
         /// <summary>
+        /// A generic Contains function for IEnumerables.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements to compare.</typeparam>
+        /// <param name="list">The list to search through.</param>
+        /// <param name="containedList">The potentially contained list.</param>
+        /// <returns>Returns true if contained, false if not contained.</returns>
+        public static bool Contains<T>(this IEnumerable<T> list, IEnumerable<T> containedList)
+        {
+            if (!containedList.Any())
+                return true;
+
+            IEnumerator<T> mainIterator = list.GetEnumerator();
+            IEnumerator<T> containedIterator = null;
+            T first = containedList.First();
+            int matchStartMainIterator = 0;
+            int position = 0;
+
+            while (mainIterator.MoveNext())
+            {
+                T element = mainIterator.Current;
+
+                if (containedIterator == null)
+                {
+                    if (element.Equals(first))
+                    {
+                        containedIterator = containedList.GetEnumerator();
+                        matchStartMainIterator = position + 1;
+
+                        if (!containedIterator.MoveNext() || !containedIterator.MoveNext())
+                            return true;
+                    }
+                }
+                else
+                {
+                    if (element.Equals(containedIterator.Current))
+                    {
+                        if (!containedIterator.MoveNext())
+                            return true;
+                    }
+                    else
+                    {
+                        containedIterator = null;
+                        position = matchStartMainIterator;
+                        mainIterator.Reset();
+
+                        for (int i = 0; i <= position; i++)
+                            if (!mainIterator.MoveNext())
+                                return false;
+                    }
+                }
+
+                position++;
+            }
+
+            return false;
+        }
+        
+        /// <summary>
         /// Checks whether a list of lists contains a given list, that contains the provided sequence.
         /// </summary>
         /// <typeparam name="T">Subsequence type.</typeparam>
         /// <param name="listOfLists">This list of lists.</param>
         /// <param name="sequence">The sequence to look for.</param>
         /// <returns>True if contained, False if not contained.</returns>
-        public static bool SubsequenceContains<T>(this IEnumerable<T> listOfLists, T sequence) where T : IEnumerable<T>
+        public static bool SubsequenceContains<T>(this IEnumerable<IEnumerable<T>> listOfLists, IEnumerable<T> sequence)
         {
-            foreach (T list in listOfLists)
+            foreach (IEnumerable<T> list in listOfLists)
                 if (list.Contains(sequence))
                     return true;
 
@@ -416,12 +589,12 @@ namespace LamestWebserver.Core
                             continue;
                         }
 
-                        prefix = url.Substring(0, i);
+                        prefix = url.Substring(0, i + 1);
                         break;
                     }
                 }
 
-                relativeUrl = prefix + relativeUrl;
+                return prefix + relativeUrl.TrimStart('/');
             }
             else if (relativeUrl.StartsWith("./"))
             {
@@ -436,7 +609,7 @@ namespace LamestWebserver.Core
                     }
                 }
 
-                relativeUrl = prefix + relativeUrl.Substring(1); // Substring(1) to get rid of the '.' in "./".
+                return prefix + relativeUrl.Substring(1); // Substring(1) to get rid of the '.' in "./".
             }
             else if (relativeUrl.StartsWith("../"))
             {
@@ -465,10 +638,12 @@ namespace LamestWebserver.Core
                     }
                 }
 
-                relativeUrl = prefix + relativeUrl;
+                return prefix + relativeUrl;
             }
-
-            return relativeUrl;
+            else
+            {
+                return relativeUrl;
+            }
         }
     }
 }

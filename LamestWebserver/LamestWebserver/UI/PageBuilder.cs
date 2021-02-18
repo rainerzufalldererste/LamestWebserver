@@ -2375,7 +2375,7 @@ namespace LamestWebserver.UI
         /// <param name="elements">the contained elements</param>
         public HTable(IEnumerable<IEnumerable<object>> elements)
         {
-            if (elements == null || elements.Contains(null))
+            if (elements == null)
                 throw new ArgumentNullException(nameof(elements));
 
             this._elements = elements;
