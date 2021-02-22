@@ -138,6 +138,11 @@ namespace LamestWebserver
         public readonly RequestHandler RequestHandler;
 
         /// <summary>
+        /// If enabled will provide callers with a fresh FlushableMemoryPool.
+        /// </summary>
+        public bool RequireUnsafeMemory = false;
+
+        /// <summary>
         /// Starts a new Webserver and adds the folder and default components to the CurrentRequestHandler. If you are just adding a server listening on another port as well - just use a different constructor.
         /// </summary>
         /// <param name="port">The port to listen to</param>
@@ -222,7 +227,9 @@ namespace LamestWebserver
         /// <inheritdoc />
         protected override void HandleClient(TcpClient client, NetworkStream networkStream)
         {
-            FlushableMemoryPool.AquireOrFlush();
+            if (RequireUnsafeMemory)
+                FlushableMemoryPool.AquireOrFlush();
+
             Stream stream = networkStream;
             Encoding enc = Encoding.UTF8;
             string lastmsg = null;

@@ -1711,7 +1711,7 @@ namespace LamestWebserver.RequestHandlers
         public override HttpResponse GetRetriableResponse(Master.GetDataContents requestFunction, HttpRequest requestPacket, HttpSessionData sessionData)
         {
             string contentType;
-            Encoding encoding = Encoding.Unicode;
+            Encoding encoding = Encoding.UTF8;
 
             return new HttpResponse(requestPacket, requestFunction.Invoke(sessionData, out contentType, ref encoding))
             {
