@@ -705,11 +705,11 @@ namespace LamestWebserver
 
                 post = post.TrimStart('&');
 
-                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string, string>(timeSpan, DateTime.Now, ip, head, post, response.ContentType ?? "", response.CharSet ?? "UTF-8"));
+                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string, string>(timeSpan, DateTime.Now, ip, head, post, response?.ContentType ?? "", response?.CharSet ?? "UTF-8"));
             }
             else
             {
-                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string, string>(timeSpan, DateTime.Now, "", "", "", response.ContentType ?? "", response.CharSet ?? "UTF-8"));
+                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string, string>(timeSpan, DateTime.Now, "", "", "", response?.ContentType ?? "", response?.CharSet ?? "UTF-8"));
             }
 
             _averageResponseTime = (_averageResponseTime * (_totalPageViews - 1) + timeSpan.TotalMilliseconds) / _totalPageViews;
@@ -861,11 +861,11 @@ namespace LamestWebserver
 
                 post = post.TrimStart('&');
 
-                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string, string>(timeSpan, DateTime.Now, ip, head, post, response.ContentType ?? "", response.CharSet ?? "UTF-8"));
+                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string, string>(timeSpan, DateTime.Now, ip, head, post, response?.ContentType ?? "", response?.CharSet ?? "UTF-8"));
             }
             else
             {
-                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string, string>(timeSpan, DateTime.Now, "", "", "", response.ContentType ?? "", response.CharSet ?? "UTF-8"));
+                _responseTimes.Push(new Tuple<TimeSpan, DateTime, string, string, string, string, string>(timeSpan, DateTime.Now, "", "", "", response?.ContentType ?? "", response?.CharSet ?? "UTF-8"));
             }
 
             _averageResponseTime = (_averageResponseTime * (_totalPageViews - 1) + timeSpan.TotalMilliseconds) / _totalPageViews;
