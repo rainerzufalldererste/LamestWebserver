@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
+using System.Text.Encodings.Web;
 using LamestWebserver.UI;
 using LamestWebserver.Core;
 
@@ -28,7 +28,8 @@ namespace LamestWebserver.JScriptBuilder
         /// <summary>
         /// Retrieves the Body of the currentDocument
         /// </summary>
-        public static JSElementValue Body {
+        public static JSElementValue Body
+        {
             get { return new JSElementValue("document.body"); }
         }
 
@@ -225,7 +226,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<button type='" + buttonType + "' " + GetDefaultAttributes() + GetEventAttributes(sessionData, context) + ">" + HttpUtility.HtmlEncode(buttonText).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</button>";
+            return "<button type='" + buttonType + "' " + GetDefaultAttributes() + GetEventAttributes(sessionData, context) + ">" + HtmlEncoder.Default.Encode(buttonText).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</button>";
         }
     }
 
@@ -245,7 +246,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<p " + GetDefaultAttributes() + GetEventAttributes(sessionData, CallingContext.Default) + ">" + HttpUtility.HtmlEncode(_content).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
+            return "<p " + GetDefaultAttributes() + GetEventAttributes(sessionData, CallingContext.Default) + ">" + HtmlEncoder.Default.Encode(_content).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</p>";
         }
     }
 
@@ -280,7 +281,7 @@ namespace LamestWebserver.JScriptBuilder
         /// <inheritdoc />
         public override string GetContent(SessionData sessionData, CallingContext context = CallingContext.Default)
         {
-            return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "' " + GetEventAttributes(sessionData, CallingContext.Default) + "></input>";
+            return "<input type='" + inputType + "' " + GetDefaultAttributes() + " value='" + HtmlEncoder.Default.Encode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "' " + GetEventAttributes(sessionData, CallingContext.Default) + "></input>";
         }
 
         /// <summary>
@@ -291,22 +292,22 @@ namespace LamestWebserver.JScriptBuilder
         {
             if (URL.Contains('?') && URL[URL.Length - 1] != '?')
             {
-                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "&name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
             else if (URL[URL.Length - 1] != '?')
             {
-                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "?name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
             else
             {
-                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
 
             switch (inputType)
             {
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
-                    URL += HttpUtility.UrlEncode(Value) + "&checked=";
+                    URL += UrlEncoder.Default.Encode(Value) + "&checked=";
                     return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".checked, true);xmlhttp.send();")).DefineAndCall();
 
                 default:
@@ -333,22 +334,22 @@ namespace LamestWebserver.JScriptBuilder
         {
             if (URL.Contains('?') && URL[URL.Length - 1] != '?')
             {
-                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "&name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
             else if (URL[URL.Length - 1] != '?')
             {
-                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "?name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
             else
             {
-                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
 
             switch (inputType)
             {
                 case HInput.EInputType.checkbox:
                 case HInput.EInputType.radio:
-                    URL += HttpUtility.UrlEncode(Value) + "&checked=";
+                    URL += UrlEncoder.Default.Encode(Value) + "&checked=";
                     return new JSInstantFunction(new JSValue("var xmlhttp; if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
                         + ((Func<string>)(() => { string ret = ""; executeOnComplete.ToList().ForEach(piece => ret += piece.GetJsCode(SessionData.CurrentSession)); return ret; })).Invoke()
                         + " } }; xmlhttp.open(\"GET\",\"" + URL + "\" + " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".checked,true);xmlhttp.send();")).DefineAndCall();
@@ -402,7 +403,7 @@ namespace LamestWebserver.JScriptBuilder
             if (rows.HasValue)
                 ret += "rows='" + rows.Value + "' ";
 
-            ret += ">" + HttpUtility.HtmlEncode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</textarea>";
+            ret += ">" + HtmlEncoder.Default.Encode(Value).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</textarea>";
 
             return ret;
         }
@@ -526,12 +527,12 @@ namespace LamestWebserver.JScriptBuilder
             {
                 for (int i = 0; i < _options.Length; i++)
                 {
-                    ret += "<option value=\"" + HttpUtility.UrlEncode(_options[i].Item2) + "\" ";
+                    ret += "<option value=\"" + UrlEncoder.Default.Encode(_options[i].Item2) + "\" ";
 
                     if (selectedIndexes.Contains(i))
                         ret += "selected=\"selected\" ";
 
-                    ret += ">" + HttpUtility.HtmlEncode(_options[i].Item1).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</option>";
+                    ret += ">" + HtmlEncoder.Default.Encode(_options[i].Item1).Replace("\n", "<br>").Replace("\t", "&nbsp;&nbsp;&nbsp;") + "</option>";
                 }
             }
 
@@ -548,15 +549,15 @@ namespace LamestWebserver.JScriptBuilder
         {
             if (URL.Contains('?') && URL[URL.Length - 1] != '?')
             {
-                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "&name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
             else if (URL[URL.Length - 1] != '?')
             {
-                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "?name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
             else
             {
-                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
 
             return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); } xmlhttp.open(\"GET\",\"" + URL + "\" + elem.selectedOptions[0].value + \"&all=\" + (() => {var c = \"\"; for(var i = 0; i < elem.selectedOptions.length; i++){c += elem.selectedOptions[i].value;if(i+1<elem.selectedOptions.length) c+= \";\"} return c;})(),true);xmlhttp.send();")).DefineAndCall();
@@ -572,15 +573,15 @@ namespace LamestWebserver.JScriptBuilder
         {
             if (URL.Contains('?') && URL[URL.Length - 1] != '?')
             {
-                URL += "&name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "&name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
             else if (URL[URL.Length - 1] != '?')
             {
-                URL += "?name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "?name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
             else
             {
-                URL += "name=" + HttpUtility.UrlEncode(Name) + "&value=";
+                URL += "name=" + UrlEncoder.Default.Encode(Name) + "&value=";
             }
 
             return new JSInstantFunction(new JSValue("var xmlhttp; var elem = " + GetByID(ID).GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ";if (window.XMLHttpRequest) {xmlhttp=new XMLHttpRequest();} else {xmlhttp=new ActiveXObject(\"Microsoft.XMLHTTP\"); }  xmlhttp.onreadystatechange=function() { if (this.readyState==4 && this.status==200) { " + element.GetJsCode(SessionData.CurrentSession, CallingContext.Inner) + ".innerHTML=this.responseText;"
